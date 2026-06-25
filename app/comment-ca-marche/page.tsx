@@ -11,11 +11,11 @@ export default function GrandesLignesPage() {
   return (
     <main className="min-h-screen" style={{ backgroundColor: "#F5F0E8" }}>
       {/* Header */}
-      <header style={{ backgroundColor: "#5C2516" }} className="sticky top-0 z-50">
-        <div className="max-w-6xl mx-auto px-4 h-16 flex items-center justify-between">
+      <header style={{ backgroundColor: "#4E1F12" }} className="sticky top-0 z-50">
+        <div className="max-w-6xl mx-auto px-4 h-12 flex items-center justify-between">
           <Link href="/"><Logo variant="light" /></Link>
           <nav className="hidden md:flex items-center gap-6 text-sm" style={{ color: "rgba(245,240,232,0.55)" }}>
-            <Link href="/comment-ca-marche" style={{ color: "#C95B2A" }}>Grandes Lignes du LMNP</Link>
+            <Link href="/comment-ca-marche" style={{ color: "#C95B2A" }}>LMNP</Link>
             <Link href="/blog" className="hover:text-[#F5F0E8] transition-colors">Blog</Link>
             <Link href="/tarifs" className="hover:text-[#F5F0E8] transition-colors">Tarifs</Link>
           </nav>
@@ -27,20 +27,17 @@ export default function GrandesLignesPage() {
       </header>
 
       {/* Hero */}
-      <div style={{ backgroundColor: "#5C2516" }} className="py-16 px-4">
+      <div style={{ backgroundColor: "#4E1F12" }} className="py-10 px-4">
         <div className="max-w-4xl mx-auto">
-          <Link href="/"
+          <Link href="/#simulateur"
             className="inline-flex items-center gap-2 text-sm font-medium px-4 py-2 rounded-md mb-6 transition-opacity hover:opacity-80"
             style={{ background: "rgba(201,91,42,0.25)", color: "#F5F0E8", border: "1px solid rgba(201,91,42,0.4)" }}>
-            ← Retour à l&apos;accueil
+            ← Retour à la simulation
           </Link>
           <h1 className="font-light mb-3"
             style={{ fontSize: "clamp(2rem,5vw,3.2rem)", color: "#F5F0E8", letterSpacing: "-0.025em" }}>
-            LMNP
+            LMNP : tout comprendre sur ce statut
           </h1>
-          <p style={{ color: "rgba(245,240,232,0.5)", maxWidth: 600 }}>
-            Comprendre le statut de Loueur Meublé Non Professionnel et ses avantages fiscaux en 2026.
-          </p>
         </div>
       </div>
 
@@ -62,6 +59,72 @@ export default function GrandesLignesPage() {
             <strong style={{ color: "#1A1612", fontWeight: 500 }}>inférieurs à 23 000 €/an</strong>{" "}
             OU représenter moins de 50 % de vos revenus globaux. Au-delà, vous passez LMP (Loueur Meublé Professionnel).
           </p>
+        </section>
+
+        {/* Véhicules juridiques */}
+        <section>
+          <div className="flex items-center gap-3 mb-6">
+            <div className="w-1 h-8 rounded-full flex-shrink-0" style={{ background: "#C95B2A" }} />
+            <h2 className="font-light" style={{ fontSize: "1.6rem", letterSpacing: "-0.02em", color: "#1A1612" }}>
+              Sous quelle structure exercer le LMNP ?
+            </h2>
+          </div>
+          <p className="mb-5" style={{ color: "rgba(26,22,18,0.7)", lineHeight: 1.75 }}>
+            Le statut LMNP peut s&apos;exercer sous plusieurs formes juridiques, chacune avec ses propres implications fiscales et patrimoniales.
+          </p>
+          <div className="space-y-3">
+            {[
+              {
+                title: "En nom propre (direct)",
+                badge: "Le plus courant",
+                badgeAccent: true,
+                content: "La grande majorité des investisseurs LMNP louent directement en leur nom. Les revenus sont déclarés dans la catégorie BIC (Bénéfices Industriels et Commerciaux) sur votre déclaration personnelle. C'est la solution la plus simple : pas de constitution de société, pas de frais de gestion supplémentaires.",
+              },
+              {
+                title: "Entreprise Individuelle (EI)",
+                badge: "Depuis la réforme 2022",
+                badgeAccent: false,
+                content: "Depuis la loi du 14 février 2022, l'Entreprise Individuelle bénéficie d'une séparation automatique entre patrimoine personnel et patrimoine professionnel. Pour un LMNP, cela offre une protection supplémentaire sans changer la fiscalité : les revenus restent imposés à l'IR dans la catégorie BIC, avec possibilité d'opter pour le régime réel et ses amortissements.",
+              },
+              {
+                title: "SARL de famille",
+                badge: "Avantage IR + transmission",
+                badgeAccent: true,
+                content: "Réservée aux membres d'une même famille (ascendants, descendants, frères et sœurs, conjoints ou partenaires de PACS), la SARL de famille peut opter pour l'imposition à l'Impôt sur le Revenu (IR). Chaque associé est alors imposé sur sa quote-part des bénéfices, avec accès au régime réel et à l'amortissement LMNP. C'est un excellent outil pour détenir un bien à plusieurs et préparer la transmission.",
+              },
+              {
+                title: "SARL classique ou SAS",
+                badge: "Impôt sur les Sociétés",
+                badgeAccent: false,
+                content: "Une SARL ou SAS classique est soumise à l'Impôt sur les Sociétés (IS). Si l'amortissement reste déductible, la fiscalité est radicalement différente : les bénéfices sont d'abord imposés à l'IS (15 % jusqu'à 42 500 €, puis 25 %), puis les dividendes versés sont soumis à la flat tax (30 %). Cette structure est généralement déconseillée pour un LMNP individuel mais peut avoir un intérêt dans le cadre d'une stratégie patrimoniale complexe.",
+              },
+              {
+                title: "SCI (Société Civile Immobilière)",
+                badge: "Attention au meublé",
+                badgeAccent: false,
+                content: "La SCI est souvent envisagée pour la gestion et la transmission de patrimoine immobilier. Attention : dès lors qu'une SCI exerce une activité de location meublée de manière habituelle, elle bascule automatiquement à l'IS. Elle perd alors le régime IR et la transparence fiscale. La SCI reste donc inadaptée au LMNP sauf à rester à la marge du meublé.",
+              },
+            ].map(({ title, badge, badgeAccent, content }) => (
+              <div key={title} className="rounded-xl p-5"
+                style={{ background: "#EDE7DC", border: "0.5px solid rgba(26,22,18,0.08)" }}>
+                <div className="flex items-start justify-between gap-3 mb-2">
+                  <h3 className="font-medium text-sm" style={{ color: "#1A1612" }}>{title}</h3>
+                  <span className="text-[10px] uppercase tracking-[0.1em] font-medium px-2 py-0.5 rounded flex-shrink-0"
+                    style={{
+                      background: badgeAccent ? "#C95B2A" : "rgba(26,22,18,0.08)",
+                      color: badgeAccent ? "#F5F0E8" : "rgba(26,22,18,0.5)",
+                    }}>
+                    {badge}
+                  </span>
+                </div>
+                <p className="text-sm" style={{ color: "rgba(26,22,18,0.65)", lineHeight: 1.7 }}>{content}</p>
+              </div>
+            ))}
+          </div>
+          <div className="mt-4 p-4 rounded-lg text-[13px]"
+            style={{ background: "rgba(201,91,42,0.06)", border: "0.5px solid rgba(201,91,42,0.15)", color: "rgba(26,22,18,0.65)", lineHeight: 1.6 }}>
+            <strong style={{ color: "#1A1612" }}>En résumé :</strong> pour la grande majorité des investisseurs, la détention en nom propre ou via une SARL de famille (si investissement en famille) offre le meilleur équilibre entre simplicité, fiscalité avantageuse et flexibilité. Consultez un expert-comptable ou un notaire avant de choisir votre structure.
+          </div>
         </section>
 
         {/* Pourquoi le régime réel */}
@@ -185,7 +248,7 @@ export default function GrandesLignesPage() {
         </section>
 
         {/* CTA */}
-        <div className="rounded-xl p-8 text-center" style={{ background: "#5C2516" }}>
+        <div className="rounded-xl p-8 text-center" style={{ background: "#4E1F12" }}>
           <h3 className="font-light text-2xl mb-3" style={{ color: "#F5F0E8", letterSpacing: "-0.025em" }}>
             Prêt à calculer votre rentabilité ?
           </h3>
@@ -205,7 +268,7 @@ export default function GrandesLignesPage() {
         <div className="max-w-6xl mx-auto flex flex-col md:flex-row justify-between items-center gap-4">
           <Link href="/"><Logo /></Link>
           <nav className="flex gap-6 text-sm" style={{ color: "rgba(26,22,18,0.4)" }}>
-            <Link href="/comment-ca-marche" className="hover:text-[#1A1612] transition-colors">Grandes Lignes du LMNP</Link>
+            <Link href="/comment-ca-marche" className="hover:text-[#1A1612] transition-colors">LMNP</Link>
             <Link href="/blog" className="hover:text-[#1A1612] transition-colors">Blog</Link>
             <Link href="/tarifs" className="hover:text-[#1A1612] transition-colors">Tarifs</Link>
           </nav>
