@@ -3,7 +3,7 @@ import Link from "next/link";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Grandes Lignes du LMNP – Guide complet 2026",
+  title: "LMNP – Guide complet 2026",
   description: "Tout comprendre sur le statut LMNP : conditions, avantages fiscaux, amortissement, régime réel vs micro-BIC. Guide mis à jour 2026.",
 };
 
@@ -11,9 +11,9 @@ export default function GrandesLignesPage() {
   return (
     <main className="min-h-screen" style={{ backgroundColor: "#F5F0E8" }}>
       {/* Header */}
-      <header style={{ backgroundColor: "#1A1612" }} className="sticky top-0 z-50">
+      <header style={{ backgroundColor: "#5C2516" }} className="sticky top-0 z-50">
         <div className="max-w-6xl mx-auto px-4 h-16 flex items-center justify-between">
-          <Link href="/"><Logo /></Link>
+          <Link href="/"><Logo variant="light" /></Link>
           <nav className="hidden md:flex items-center gap-6 text-sm" style={{ color: "rgba(245,240,232,0.55)" }}>
             <Link href="/comment-ca-marche" style={{ color: "#C95B2A" }}>Grandes Lignes du LMNP</Link>
             <Link href="/blog" className="hover:text-[#F5F0E8] transition-colors">Blog</Link>
@@ -27,13 +27,16 @@ export default function GrandesLignesPage() {
       </header>
 
       {/* Hero */}
-      <div style={{ backgroundColor: "#1A1612" }} className="py-16 px-4">
+      <div style={{ backgroundColor: "#5C2516" }} className="py-16 px-4">
         <div className="max-w-4xl mx-auto">
-          <Link href="/" className="text-sm hover:underline mb-4 inline-block transition-colors"
-            style={{ color: "#C95B2A" }}>← Accueil</Link>
+          <Link href="/"
+            className="inline-flex items-center gap-2 text-sm font-medium px-4 py-2 rounded-md mb-6 transition-opacity hover:opacity-80"
+            style={{ background: "rgba(201,91,42,0.25)", color: "#F5F0E8", border: "1px solid rgba(201,91,42,0.4)" }}>
+            ← Retour à l&apos;accueil
+          </Link>
           <h1 className="font-light mb-3"
-            style={{ fontSize: "clamp(1.8rem,4vw,2.8rem)", color: "#F5F0E8", letterSpacing: "-0.025em" }}>
-            Grandes Lignes du LMNP
+            style={{ fontSize: "clamp(2rem,5vw,3.2rem)", color: "#F5F0E8", letterSpacing: "-0.025em" }}>
+            LMNP
           </h1>
           <p style={{ color: "rgba(245,240,232,0.5)", maxWidth: 600 }}>
             Comprendre le statut de Loueur Meublé Non Professionnel et ses avantages fiscaux en 2026.
@@ -45,9 +48,12 @@ export default function GrandesLignesPage() {
 
         {/* Qu'est-ce que le LMNP */}
         <section>
-          <h2 className="font-light mb-6" style={{ fontSize: "1.6rem", letterSpacing: "-0.02em", color: "#1A1612" }}>
-            Qu&apos;est-ce que le LMNP ?
-          </h2>
+          <div className="flex items-center gap-3 mb-6">
+            <div className="w-1 h-8 rounded-full flex-shrink-0" style={{ background: "#C95B2A" }} />
+            <h2 className="font-light" style={{ fontSize: "1.6rem", letterSpacing: "-0.02em", color: "#1A1612" }}>
+              Qu&apos;est-ce que le LMNP ?
+            </h2>
+          </div>
           <p style={{ color: "rgba(26,22,18,0.7)", lineHeight: 1.75 }} className="mb-4">
             Le statut de <strong style={{ color: "#1A1612", fontWeight: 500 }}>Loueur Meublé Non Professionnel (LMNP)</strong> permet à tout particulier de louer un bien immobilier équipé et de bénéficier d&apos;un régime fiscal avantageux.
           </p>
@@ -58,11 +64,14 @@ export default function GrandesLignesPage() {
           </p>
         </section>
 
-        {/* Pourquoi le régime réel — section déplacée depuis la home */}
+        {/* Pourquoi le régime réel */}
         <section>
-          <h2 className="font-light mb-8" style={{ fontSize: "1.6rem", letterSpacing: "-0.02em", color: "#1A1612" }}>
-            Pourquoi choisir le régime réel LMNP ?
-          </h2>
+          <div className="flex items-center gap-3 mb-8">
+            <div className="w-1 h-8 rounded-full flex-shrink-0" style={{ background: "#C95B2A" }} />
+            <h2 className="font-light" style={{ fontSize: "1.6rem", letterSpacing: "-0.02em", color: "#1A1612" }}>
+              Pourquoi choisir le régime réel LMNP ?
+            </h2>
+          </div>
           <p className="mb-6" style={{ color: "rgba(26,22,18,0.6)", lineHeight: 1.75 }}>
             Depuis la réforme 2025, l&apos;avantage est encore plus marqué par rapport au micro-BIC (abattement ramené de 50 % à 30 %).
           </p>
@@ -71,19 +80,25 @@ export default function GrandesLignesPage() {
               {
                 title: "Amortissement déductible",
                 desc: "Déduisez chaque année l'usure de votre bien (bâti 30 ans, mobilier 7 ans). Résultat : souvent 0 € d'impôt pendant 10 à 15 ans.",
+                accent: true,
               },
               {
                 title: "Charges réelles déductibles",
                 desc: "Intérêts d'emprunt, taxe foncière, charges de copropriété, frais de gestion… tout se déduit des loyers perçus.",
+                accent: false,
               },
               {
                 title: "Micro-BIC 2025 : −30 % seulement",
                 desc: "Depuis janvier 2025, l'abattement micro-BIC est passé de 50 % à 30 %. Le régime réel devient incontournable pour les investisseurs avisés.",
+                accent: false,
               },
-            ].map(({ title, desc }) => (
+            ].map(({ title, desc, accent }) => (
               <div key={title} className="rounded-xl p-5"
-                style={{ background: "#EDE7DC", border: "0.5px solid rgba(26,22,18,0.08)" }}>
-                <h3 className="font-medium text-[#1A1612] mb-3 text-sm">{title}</h3>
+                style={{
+                  background: accent ? "rgba(201,91,42,0.08)" : "#EDE7DC",
+                  border: accent ? "1px solid rgba(201,91,42,0.2)" : "0.5px solid rgba(26,22,18,0.08)",
+                }}>
+                <h3 className="font-medium mb-3 text-sm" style={{ color: accent ? "#C95B2A" : "#1A1612" }}>{title}</h3>
                 <p className="text-sm" style={{ color: "rgba(26,22,18,0.6)", lineHeight: 1.7 }}>{desc}</p>
               </div>
             ))}
@@ -92,9 +107,12 @@ export default function GrandesLignesPage() {
 
         {/* Les deux régimes */}
         <section>
-          <h2 className="font-light mb-6" style={{ fontSize: "1.6rem", letterSpacing: "-0.02em", color: "#1A1612" }}>
-            Les deux régimes fiscaux
-          </h2>
+          <div className="flex items-center gap-3 mb-6">
+            <div className="w-1 h-8 rounded-full flex-shrink-0" style={{ background: "#C95B2A" }} />
+            <h2 className="font-light" style={{ fontSize: "1.6rem", letterSpacing: "-0.02em", color: "#1A1612" }}>
+              Les deux régimes fiscaux
+            </h2>
+          </div>
           <div className="grid md:grid-cols-2 gap-5">
             <div className="rounded-xl p-6" style={{ background: "#EDE7DC", border: "0.5px solid rgba(26,22,18,0.08)" }}>
               <h3 className="font-medium text-[#1A1612] text-lg mb-4">Micro-BIC</h3>
@@ -107,7 +125,7 @@ export default function GrandesLignesPage() {
               </ul>
             </div>
             <div className="rounded-xl p-6"
-              style={{ background: "rgba(201,91,42,0.06)", border: "0.5px solid rgba(201,91,42,0.2)" }}>
+              style={{ background: "rgba(201,91,42,0.06)", border: "1px solid rgba(201,91,42,0.2)" }}>
               <div className="flex justify-between items-start mb-4">
                 <h3 className="font-medium text-[#1A1612] text-lg">Régime réel simplifié</h3>
                 <span className="text-xs font-medium px-2 py-0.5 rounded"
@@ -126,16 +144,19 @@ export default function GrandesLignesPage() {
 
         {/* Comment fonctionne l'amortissement */}
         <section>
-          <h2 className="font-light mb-6" style={{ fontSize: "1.6rem", letterSpacing: "-0.02em", color: "#1A1612" }}>
-            Comment fonctionne l&apos;amortissement ?
-          </h2>
+          <div className="flex items-center gap-3 mb-6">
+            <div className="w-1 h-8 rounded-full flex-shrink-0" style={{ background: "#C95B2A" }} />
+            <h2 className="font-light" style={{ fontSize: "1.6rem", letterSpacing: "-0.02em", color: "#1A1612" }}>
+              Comment fonctionne l&apos;amortissement ?
+            </h2>
+          </div>
           <p className="mb-5" style={{ color: "rgba(26,22,18,0.7)", lineHeight: 1.75 }}>
             En régime réel, le fisc reconnaît que votre bien se déprécie dans le temps. Il vous autorise à déduire cette dépréciation de vos revenus locatifs chaque année.
           </p>
           <div className="rounded-xl p-6" style={{ background: "#EDE7DC", border: "0.5px solid rgba(26,22,18,0.08)" }}>
             <div className="grid md:grid-cols-2 gap-6">
               <div>
-                <div className="text-[11px] uppercase tracking-[0.14em] mb-2" style={{ color: "rgba(26,22,18,0.4)" }}>
+                <div className="text-[11px] uppercase tracking-[0.14em] mb-2 font-medium" style={{ color: "#C95B2A" }}>
                   Bâti (les murs)
                 </div>
                 <p className="text-sm" style={{ color: "rgba(26,22,18,0.7)", lineHeight: 1.7 }}>
@@ -145,7 +166,7 @@ export default function GrandesLignesPage() {
                 </p>
               </div>
               <div>
-                <div className="text-[11px] uppercase tracking-[0.14em] mb-2" style={{ color: "rgba(26,22,18,0.4)" }}>
+                <div className="text-[11px] uppercase tracking-[0.14em] mb-2 font-medium" style={{ color: "#C95B2A" }}>
                   Mobilier
                 </div>
                 <p className="text-sm" style={{ color: "rgba(26,22,18,0.7)", lineHeight: 1.7 }}>
@@ -155,8 +176,8 @@ export default function GrandesLignesPage() {
                 </p>
               </div>
             </div>
-            <div className="mt-4 pt-4" style={{ borderTop: "0.5px solid rgba(26,22,18,0.08)" }}>
-              <p className="text-sm" style={{ color: "rgba(26,22,18,0.6)", lineHeight: 1.7 }}>
+            <div className="mt-4 pt-4 p-3 rounded-lg" style={{ borderTop: "0.5px solid rgba(26,22,18,0.08)", background: "rgba(201,91,42,0.06)" }}>
+              <p className="text-sm" style={{ color: "rgba(26,22,18,0.7)", lineHeight: 1.7 }}>
                 <strong style={{ color: "#1A1612" }}>Exemple</strong> — Bien à 200 000 € : amortissement bâti 5 667 €/an + mobilier 4 286 €/an = <strong style={{ color: "#C95B2A" }}>9 952 €/an déductibles</strong>. Si vos loyers annuels sont 10 000 € et vos charges 3 000 €, la base imposable tombe à 0 € (avec report possible des amortissements non utilisés).
               </p>
             </div>
@@ -164,8 +185,7 @@ export default function GrandesLignesPage() {
         </section>
 
         {/* CTA */}
-        <div className="rounded-xl p-8 text-center"
-          style={{ background: "#1A1612" }}>
+        <div className="rounded-xl p-8 text-center" style={{ background: "#5C2516" }}>
           <h3 className="font-light text-2xl mb-3" style={{ color: "#F5F0E8", letterSpacing: "-0.025em" }}>
             Prêt à calculer votre rentabilité ?
           </h3>

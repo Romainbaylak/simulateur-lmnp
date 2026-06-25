@@ -112,3 +112,98 @@ export const villesList = Object.entries(loyersData).map(([key, v]) => ({
   key,
   label: v.label,
 }));
+
+// Villes françaises supplémentaires (sans données de loyer disponibles)
+const additionalVillesNames: string[] = [
+  "Abbeville","Agen","Ajaccio","Albertville","Albi","Alençon","Alès","Amboise",
+  "Angers","Annecy-le-Vieux","Annonay","Antibes","Apt","Arcachon","Arles","Arras",
+  "Aubagne","Aubenas","Auch","Aurillac","Auxerre","Avranches","Bagnols-sur-Cèze",
+  "Bar-le-Duc","Bayeux","Beaucaire","Beaune","Beauvais","Belfort","Bergerac",
+  "Béziers","Blois","Boulogne-Billancourt","Bourg-en-Bresse","Bourg-lès-Valence",
+  "Bourges","Brive-la-Gaillarde","Bruay-la-Buissière","Cambrai","Carcassonne",
+  "Castres","Cavaillon","Châlons-en-Champagne","Châtellerault","Châteauroux",
+  "Cherbourg-en-Cotentin","Cholet","Cognac","Compiègne","Corbeil-Essonnes",
+  "Creil","Dax","Douai","Draguignan","Dreux","Évreux","Fréjus","Gap",
+  "Grasse","Guéret","Haguenau","Hyères","La Ciotat","La Roche-sur-Yon",
+  "La Seyne-sur-Mer","Laon","Le Puy-en-Velay","Les Sables-d'Olonne",
+  "Libourne","Lisieux","Longwy","Lons-le-Saunier","Lourdes","Mâcon",
+  "Martigues","Meaux","Melun","Menton","Montargis","Montauban","Montbéliard",
+  "Montélimar","Mont-de-Marsan","Montluçon","Moulins","Niort","Narbonne",
+  "Nogent-sur-Marne","Noyon","Nîmes","Périgueux","Pont-à-Mousson","Pontoise",
+  "Privas","Rambouillet","Riom","Roanne","Rodez","Romans-sur-Isère",
+  "Roubaix","Saintes","Saint-Avold","Saint-Chamond","Saint-Denis",
+  "Saint-Dizier","Saint-Gaudens","Saint-Germain-en-Laye","Saint-Malo",
+  "Saint-Nazaire","Saint-Omer","Saint-Quentin","Salon-de-Provence","Sarrebourg",
+  "Sarreguemines","Saumur","Sedan","Sens","Soissons","Tarbes","Thionville",
+  "Thonon-les-Bains","Thouars","Tourcoing","Tulle","Valence","Vénissieux",
+  "Verdun","Versailles","Vienne","Villefranche-sur-Saône","Villejuif",
+  "Villeneuve-d'Ascq","Vincennes","Vitre","Voiron","Wattignies","Wittenheim",
+  "Yssingeaux","Yerres","Yerlan","Évry-Courcouronnes","Épinal","Évreux",
+  "Étampes","Fontenay-le-Comte","Fontenay-sous-Bois","Forbach","Freyming-Merlebach",
+  "Gagny","Garde (La)","Gennevilliers","Gien","Givors","Gonesse",
+  "Hagondange","Issy-les-Moulineaux","Ivry-sur-Seine","Joué-lès-Tours",
+  "Kremlin-Bicêtre (Le)","L'Haÿ-les-Roses","Levallois-Perret","Livry-Gargan",
+  "Maisons-Alfort","Malakoff","Massy","Montreuil","Montrouge","Neuilly-sur-Seine",
+  "Noisy-le-Grand","Noisy-le-Sec","Pantin","Puteaux","Rosny-sous-Bois",
+  "Rueil-Malmaison","Saint-Maur-des-Fossés","Saint-Ouen","Sarcelles","Sevran",
+  "Suresnes","Vitry-sur-Seine","Argenteuil","Asnières-sur-Seine","Aubervilliers",
+  "Aulnay-sous-Bois","Bagnolet","Bobigny","Bondy","Champigny-sur-Marne",
+  "Charenton-le-Pont","Châtenay-Malabry","Châtillon","Clamart","Clichy",
+  "Courbevoie","Créteil","Drancy","Épinay-sur-Seine","Fontenay-aux-Roses",
+  "Fresnes","La Courneuve","Le Blanc-Mesnil","Le Bourget","Le Perreux-sur-Marne",
+  "Le Pré-Saint-Gervais","Les Lilas","Les Pavillons-sous-Bois","Montfermeil",
+  "Nanterre","Noisiel","Orly","Palaiseau","Pierrefitte-sur-Seine","Plaisir",
+  "Poissy","Pontault-Combault","Rungis","Sartrouville","Savigny-sur-Orge",
+  "Stains","Thiais","Tremblay-en-France","Vaires-sur-Marne","Vanves",
+  "Vélizy-Villacoublay","Verneuil-sur-Seine","Villecresnes","Villeneuve-Saint-Georges",
+  "Villeneuve-le-Roi","Villepinte","Villetaneuse","Vitry-le-François",
+  "Aix-les-Bains","Albertville","Alfortville","Andrézieux-Bouthéon","Annemasse",
+  "Armentières","Arras","Auriol","Beausoleil","Bellegarde-sur-Valserine",
+  "Béziers","Biarritz","Blagnac","Bordeaux-Mérignac","Bron","Brumath",
+  "Cagnes-sur-Mer","Cannes","Cap d'Ail","Carpentras","Carquefou",
+  "Castelnau-le-Lez","Cergy","Cestas","Chalon-sur-Saône","Challans",
+  "Charleville-Mézières","Châteaubriant","Chelles","Chennevières-sur-Marne",
+  "Clermont-l'Hérault","Concarneau","Conflans-Sainte-Honorine","Croissy-sur-Seine",
+  "Décines-Charpieu","Dole","Écully","Elbeuf","Échirolles","Flins-sur-Seine",
+  "Floirac","Francheville","Gaillard","Grande-Synthe","Grenoble","Guyancourt",
+  "Hayange","Hendaye","Herblay","Hoenheim","Illkirch-Graffenstaden",
+  "Istres","Joigny","La Baule-Escoublac","La Chapelle-sur-Erdre",
+  "La Roche-sur-Foron","La Trinité-sur-Mer","Lambersart","Landerneau",
+  "Lanester","Lannion","Lattes","Le Creusot","Le Grau-du-Roi","Levier",
+  "L'Isle-d'Abeau","Lomme","Lunel","Lunéville","Lure","Luxeuil-les-Bains",
+  "Mantes-la-Jolie","Marange-Silvange","Marcq-en-Barœul","Marignane",
+  "Maubeuge","Mauguio","Mazan","Méaux","Menton","Merignac","Miramas",
+  "Montbrison","Montfavet","Morlaix","Mougins","Moulins-lès-Metz","Mulhouse",
+  "Muret","Nantes-Saint-Herblain","Nice-ouest","Nogent-le-Rotrou",
+  "Oberhausbergen","Olivet","Oullins","Oyonnax","Pamiers","Péronnas",
+  "Ploemeur","Ploufragan","Plougastel-Daoulas","Plouedern","Pont-l'Évêque",
+  "Pornic","Porto-Vecchio","Propriano","Ramonville-Saint-Agne","Rezé",
+  "Rive-de-Gier","Roanne","Ronchin","Rosheim","Rousset","Roubaix",
+  "Rumilly","Saint-André-lez-Lille","Saint-Cyr-l'École","Saint-Genis-Laval",
+  "Saint-Genis-les-Ollières","Saint-Grégoire","Saint-Herblain","Saint-Jean-de-Luz",
+  "Saint-Jean-de-Védas","Saint-Julien-en-Genevois","Saint-Laurent-du-Var",
+  "Saint-Martin-d'Hères","Saint-Médard-en-Jalles","Saint-Priest","Saint-Raphaël",
+  "Sainte-Foy-lès-Lyon","Sainte-Luce-sur-Loire","Sallanches","Savigny-le-Temple",
+  "Schiltigheim","Seynod","Sierentz","Six-Fours-les-Plages","Sophia Antipolis",
+  "Sotteville-lès-Rouen","Talence","Tassin-la-Demi-Lune","Terville","Tinqueux",
+  "Torcy","Toulouse-Blagnac","Tresses","Ugine","Ussel","Uzès","Vénissieux",
+  "Verneuil-sur-Avre","Vernon","Vic-en-Bigorre","Vichy","Vienne",
+  "Villefontaine","Villeneuve-Loubet","Villeneuve-lès-Avignon","Villeurbanne",
+  "Vincennes","Vitre","Voiron","Wittelsheim","Wolschwiller",
+];
+
+function toKey(name: string): string {
+  return name.toLowerCase()
+    .normalize("NFD").replace(/[̀-ͯ]/g, "")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-|-$/g, "");
+}
+
+const additionalVilles = additionalVillesNames
+  .map(name => ({ key: toKey(name), label: name }))
+  .filter(v => !loyersData[v.key]);
+
+export const allVillesList: { key: string; label: string; hasData: boolean }[] = [
+  ...villesList.map(v => ({ ...v, hasData: true })),
+  ...additionalVilles.map(v => ({ ...v, hasData: false })),
+].sort((a, b) => a.label.localeCompare(b.label, "fr"));

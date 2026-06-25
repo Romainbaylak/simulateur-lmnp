@@ -96,9 +96,9 @@ export default async function ArticlePage({ params }: { params: Promise<{ slug: 
 
   return (
     <main className="min-h-screen" style={{ backgroundColor: "#F5F0E8" }}>
-      <header style={{ backgroundColor: "#1A1612" }} className="sticky top-0 z-50">
+      <header style={{ backgroundColor: "#5C2516" }} className="sticky top-0 z-50">
         <div className="max-w-6xl mx-auto px-4 h-16 flex items-center justify-between">
-          <Link href="/"><Logo /></Link>
+          <Link href="/"><Logo variant="light" /></Link>
           <a href="/#simulateur" className="text-sm font-medium px-4 py-2 transition-opacity hover:opacity-[0.88]"
             style={{ backgroundColor: "#C95B2A", color: "#F5F0E8", borderRadius: 6 }}>
             Simuler
@@ -106,10 +106,10 @@ export default async function ArticlePage({ params }: { params: Promise<{ slug: 
         </div>
       </header>
 
-      <div style={{ backgroundColor: "#1A1612" }} className="py-12 px-4">
+      <div style={{ backgroundColor: "#5C2516" }} className="py-12 px-4">
         <div className="max-w-3xl mx-auto">
-          <Link href="/blog" className="text-sm hover:underline mb-4 inline-block" style={{ color: "#C95B2A" }}>
-            ← Blog
+          <Link href="/blog" className="inline-flex items-center gap-2 text-sm font-medium px-4 py-2 rounded-md mb-4 transition-opacity hover:opacity-80" style={{ background: "rgba(201,91,42,0.25)", color: "#F5F0E8", border: "1px solid rgba(201,91,42,0.4)" }}>
+            ← Retour au blog
           </Link>
           <span className="inline-block text-[10px] uppercase tracking-[0.12em] font-medium px-2.5 py-0.5 rounded mb-4"
             style={{ background: "rgba(201,91,42,0.2)", color: "#C95B2A" }}>
