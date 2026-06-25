@@ -12,15 +12,15 @@ export default function TarifsPage() {
     <main className="min-h-screen" style={{ backgroundColor: "#F5F0E8" }}>
       <header style={{ backgroundColor: "#4E1F12" }} className="sticky top-0 z-50">
         <div className="max-w-6xl mx-auto px-4 h-12 flex items-center justify-between">
-          <Link href="/"><Logo variant="light" /></Link>
+          <Link href="/"><Logo compact /></Link>
           <nav className="hidden md:flex items-center gap-6 text-sm" style={{ color: "rgba(245,240,232,0.55)" }}>
             <Link href="/comment-ca-marche" className="hover:text-[#F5F0E8] transition-colors">LMNP</Link>
-            <Link href="/blog" className="hover:text-[#F5F0E8] transition-colors">Blog</Link>
+            <Link href="/blog" className="hover:text-[#F5F0E8] transition-colors">Articles</Link>
             <Link href="/tarifs" style={{ color: "#C95B2A" }}>Tarifs</Link>
           </nav>
           <a href="/#simulateur" className="text-sm font-medium px-4 py-2 transition-opacity hover:opacity-[0.88]"
             style={{ backgroundColor: "#C95B2A", color: "#F5F0E8", borderRadius: 6 }}>
-            Simuler
+            Simuler maintenant
           </a>
         </div>
       </header>
@@ -28,7 +28,7 @@ export default function TarifsPage() {
       <div style={{ backgroundColor: "#4E1F12" }} className="py-10 px-4 text-center">
         <div className="max-w-4xl mx-auto">
           <Link href="/#simulateur" className="inline-flex items-center gap-2 text-sm font-medium px-4 py-2 rounded-md mb-6 transition-opacity hover:opacity-80" style={{ background: "rgba(201,91,42,0.25)", color: "#F5F0E8", border: "1px solid rgba(201,91,42,0.4)" }}>← Retour à la simulation</Link>
-          <h1 className="font-light mb-3" style={{ fontSize: "2.5rem", color: "#F5F0E8", letterSpacing: "-0.025em" }}>
+          <h1 className="font-bold mb-3" style={{ fontSize: "2.5rem", color: "#C95B2A", letterSpacing: "-0.025em" }}>
             Tarifs simples et transparents
           </h1>
           <p style={{ color: "rgba(245,240,232,0.5)" }}>Commencez gratuitement. Passez Premium quand vous en avez besoin.</p>

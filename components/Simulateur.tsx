@@ -283,24 +283,6 @@ export default function Simulateur() {
                     onBlur={() => handleBlur("notaire")}
                     className={INPUT} style={AUTO_STYLE} />
                 </div>
-                {form.type === "ap" ? (
-                  <div>
-                    <label className={LABEL}>Charges copro/an (auto)</label>
-                    <input type="number" value={form.chargesCopro}
-                      onChange={e => updateField("chargesCopro", e.target.value)}
-                      onBlur={() => handleBlur("chargesCopro")}
-                      className={INPUT} style={AUTO_STYLE} />
-                  </div>
-                ) : (
-                  <div>
-                    <label className={LABEL}>Charges copro/an</label>
-                    <input type="number" value="0" readOnly
-                      className={INPUT} style={{ ...INPUT_STYLE, opacity: 0.4 }} />
-                  </div>
-                )}
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className={LABEL}>Apport personnel (€)</label>
                   <input type="number" value={form.apport}
@@ -308,12 +290,27 @@ export default function Simulateur() {
                     onBlur={() => handleBlur("apport")}
                     placeholder="0" className={INPUT} style={INPUT_STYLE} />
                 </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className={LABEL}>Taxe foncière/an (€)</label>
                   <input type="number" value={form.taxeFonciere}
                     onChange={e => updateField("taxeFonciere", e.target.value)}
                     onBlur={() => handleBlur("taxeFonciere")}
                     placeholder="À renseigner" className={INPUT} style={INPUT_STYLE} />
+                </div>
+                <div>
+                  <label className={LABEL}>
+                    Charges copropriété/an (€)
+                    {form.type !== "ap" && <span className="ml-1 text-[10px] normal-case tracking-normal" style={{ color: "rgba(26,22,18,0.35)" }}>maison</span>}
+                  </label>
+                  <input type="number" value={form.chargesCopro}
+                    onChange={e => updateField("chargesCopro", e.target.value)}
+                    onBlur={() => handleBlur("chargesCopro")}
+                    placeholder="0"
+                    className={INPUT}
+                    style={form.chargesCopro && parseFloat(form.chargesCopro) > 0 ? AUTO_STYLE : INPUT_STYLE} />
                 </div>
               </div>
 

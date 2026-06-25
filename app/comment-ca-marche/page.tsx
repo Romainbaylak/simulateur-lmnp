@@ -13,10 +13,10 @@ export default function GrandesLignesPage() {
       {/* Header */}
       <header style={{ backgroundColor: "#4E1F12" }} className="sticky top-0 z-50">
         <div className="max-w-6xl mx-auto px-4 h-12 flex items-center justify-between">
-          <Link href="/"><Logo variant="light" /></Link>
+          <Link href="/"><Logo compact /></Link>
           <nav className="hidden md:flex items-center gap-6 text-sm" style={{ color: "rgba(245,240,232,0.55)" }}>
             <Link href="/comment-ca-marche" style={{ color: "#C95B2A" }}>LMNP</Link>
-            <Link href="/blog" className="hover:text-[#F5F0E8] transition-colors">Blog</Link>
+            <Link href="/blog" className="hover:text-[#F5F0E8] transition-colors">Articles</Link>
             <Link href="/tarifs" className="hover:text-[#F5F0E8] transition-colors">Tarifs</Link>
           </nav>
           <a href="/#simulateur" className="text-sm font-medium px-4 py-2 transition-opacity hover:opacity-[0.88]"
@@ -34,8 +34,8 @@ export default function GrandesLignesPage() {
             style={{ background: "rgba(201,91,42,0.25)", color: "#F5F0E8", border: "1px solid rgba(201,91,42,0.4)" }}>
             ← Retour à la simulation
           </Link>
-          <h1 className="font-light mb-3"
-            style={{ fontSize: "clamp(2rem,5vw,3.2rem)", color: "#F5F0E8", letterSpacing: "-0.025em" }}>
+          <h1 className="font-bold mb-3"
+            style={{ fontSize: "clamp(2rem,5vw,3.2rem)", color: "#C95B2A", letterSpacing: "-0.025em" }}>
             LMNP : tout comprendre sur ce statut
           </h1>
         </div>
@@ -269,7 +269,7 @@ export default function GrandesLignesPage() {
           <Link href="/"><Logo /></Link>
           <nav className="flex gap-6 text-sm" style={{ color: "rgba(26,22,18,0.4)" }}>
             <Link href="/comment-ca-marche" className="hover:text-[#1A1612] transition-colors">LMNP</Link>
-            <Link href="/blog" className="hover:text-[#1A1612] transition-colors">Blog</Link>
+            <Link href="/blog" className="hover:text-[#1A1612] transition-colors">Articles</Link>
             <Link href="/tarifs" className="hover:text-[#1A1612] transition-colors">Tarifs</Link>
           </nav>
           <p className="text-xs" style={{ color: "rgba(26,22,18,0.35)" }}>
