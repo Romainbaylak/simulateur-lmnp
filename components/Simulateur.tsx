@@ -1,22 +1,9 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
+import Link from "next/link";
+import { loyersData, villesList } from "@/data/loyers";
 
-const villes = {
-  paris:       { tf: 0.055, ap: { b: 20, m: 27, h: 35 }, ma: { b: 15, m: 20, h: 26 }, label: "Paris" },
-  lyon:        { tf: 0.045, ap: { b: 11, m: 15, h: 20 }, ma: { b: 9,  m: 12, h: 16 }, label: "Lyon" },
-  bordeaux:    { tf: 0.040, ap: { b: 10, m: 14, h: 18 }, ma: { b: 8,  m: 11, h: 15 }, label: "Bordeaux" },
-  toulouse:    { tf: 0.035, ap: { b: 9,  m: 13, h: 17 }, ma: { b: 7,  m: 10, h: 14 }, label: "Toulouse" },
-  nantes:      { tf: 0.038, ap: { b: 10, m: 13, h: 17 }, ma: { b: 8,  m: 11, h: 14 }, label: "Nantes" },
-  marseille:   { tf: 0.030, ap: { b: 8,  m: 12, h: 16 }, ma: { b: 7,  m: 10, h: 13 }, label: "Marseille" },
-  lille:       { tf: 0.042, ap: { b: 9,  m: 12, h: 16 }, ma: { b: 7,  m: 10, h: 13 }, label: "Lille" },
-  montpellier: { tf: 0.036, ap: { b: 10, m: 13, h: 17 }, ma: { b: 8,  m: 11, h: 14 }, label: "Montpellier" },
-  rennes:      { tf: 0.037, ap: { b: 10, m: 13, h: 17 }, ma: { b: 8,  m: 11, h: 14 }, label: "Rennes" },
-  nice:        { tf: 0.038, ap: { b: 12, m: 17, h: 23 }, ma: { b: 10, m: 14, h: 19 }, label: "Nice" },
-  autre:       { tf: 0.038, ap: { b: 7,  m: 11, h: 15 }, ma: { b: 6,  m: 9,  h: 12 }, label: "votre ville" },
-} as const;
-
-type VilleKey = keyof typeof villes;
 type TypeBien = "ap" | "ma";
 type TMI = 0 | 11 | 30 | 41 | 45;
 type DureeCredit = 15 | 20 | 25;
@@ -24,7 +11,8 @@ type DureeCredit = 15 | 20 | 25;
 interface FormState {
   type: TypeBien;
   surface: string;
-  ville: VilleKey;
+  villeKey: string;
+  villeLabel: string;
   prix: string;
   travaux: string;
   notaire: string;
@@ -60,12 +48,13 @@ interface Resultats {
 }
 
 function formatEuro(n: number, decimals = 0): string {
-  return new Intl.NumberFormat("fr-FR", { style: "currency", currency: "EUR", maximumFractionDigits: decimals, minimumFractionDigits: decimals }).format(n);
+  return new Intl.NumberFormat("fr-FR", {
+    style: "currency", currency: "EUR",
+    maximumFractionDigits: decimals, minimumFractionDigits: decimals,
+  }).format(n);
 }
 
-function formatPct(n: number): string {
-  return n.toFixed(2) + " %";
-}
+function formatPct(n: number): string { return n.toFixed(2) + " %"; }
 
 function calcMensualite(capital: number, tauxAnnuel: number, dureeAns: number): number {
   if (capital <= 0 || tauxAnnuel <= 0) return capital / (dureeAns * 12);
@@ -74,11 +63,16 @@ function calcMensualite(capital: number, tauxAnnuel: number, dureeAns: number): 
   return capital * (r * Math.pow(1 + r, n)) / (Math.pow(1 + r, n) - 1);
 }
 
+const INPUT = "w-full px-3 py-2.5 text-sm rounded-md text-[#1A1612] placeholder-[rgba(26,22,18,0.35)] focus:outline-none focus:ring-1 focus:ring-[#C95B2A]";
+const INPUT_STYLE = { background: "#F5F0E8", border: "0.5px solid rgba(26,22,18,0.12)" };
+const LABEL = "block text-[11px] font-medium uppercase tracking-[0.14em] text-[rgba(26,22,18,0.45)] mb-1.5";
+
 export default function Simulateur() {
   const [form, setForm] = useState<FormState>({
     type: "ap",
     surface: "",
-    ville: "paris",
+    villeKey: "",
+    villeLabel: "",
     prix: "",
     travaux: "0",
     notaire: "",
@@ -91,40 +85,57 @@ export default function Simulateur() {
     tmi: 30,
   });
 
+  const [villeSearch, setVilleSearch] = useState("");
+  const [showDropdown, setShowDropdown] = useState(false);
   const [loyerSlider, setLoyerSlider] = useState<number>(0);
   const [showAmort, setShowAmort] = useState(false);
   const [rendementTab, setRendementTab] = useState<number>(5);
   const [resultats, setResultats] = useState<Resultats | null>(null);
+  const dropdownRef = useRef<HTMLDivElement>(null);
 
-  const villeData = villes[form.ville];
-  const typeRates = villeData[form.type];
-
+  const villeData = form.villeKey ? loyersData[form.villeKey] : null;
   const surface = parseFloat(form.surface) || 0;
-  const loyerBas = surface > 0 ? typeRates.b * surface : 0;
-  const loyerMoyen = surface > 0 ? typeRates.m * surface : 0;
-  const loyerHaut = surface > 0 ? typeRates.h * surface : 0;
-  const showFourchette = surface > 0 && form.ville;
+  const typeKey = form.type;
+
+  const loyerBas   = villeData && surface > 0 ? villeData[typeKey].b * surface : 0;
+  const loyerMoyen = villeData && surface > 0 ? villeData[typeKey].m * surface : 0;
+  const loyerHaut  = villeData && surface > 0 ? villeData[typeKey].h * surface : 0;
+  const showFourchette = !!villeData && surface > 0;
+  const showSeloger = villeSearch.length >= 2 && !villeData && !showDropdown;
+
+  const filteredVilles = villeSearch.length >= 1
+    ? villesList.filter(v => v.label.toLowerCase().includes(villeSearch.toLowerCase())).slice(0, 8)
+    : [];
 
   const updateField = useCallback(<K extends keyof FormState>(key: K, value: FormState[K]) => {
     setForm(prev => ({ ...prev, [key]: value }));
   }, []);
 
-  // Auto-compute derived fields when prix or ville changes
+  // Close dropdown on outside click
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+        setShowDropdown(false);
+      }
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, []);
+
+  // Auto-compute notaire + charges copro when prix changes
   useEffect(() => {
     const prix = parseFloat(form.prix) || 0;
     if (prix > 0) {
       const notaire = Math.round(prix * 0.075);
-      const taxeFonciere = Math.round(prix * villeData.tf);
       const chargesCopro = form.type === "ap" ? Math.round(prix * 0.01) : 0;
       setForm(prev => ({
         ...prev,
         notaire: notaire.toString(),
-        taxeFonciere: taxeFonciere.toString(),
         chargesCopro: chargesCopro.toString(),
       }));
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [form.prix, form.ville, form.type]);
+  }, [form.prix, form.type]);
 
   // Compute results
   useEffect(() => {
@@ -137,10 +148,7 @@ export default function Simulateur() {
     const loyerMensuel = loyerSlider > 0 ? loyerSlider : (parseFloat(form.loyer) || 0);
     const taxeFonciere = parseFloat(form.taxeFonciere) || 0;
 
-    if (prix <= 0 || loyerMensuel <= 0) {
-      setResultats(null);
-      return;
-    }
+    if (prix <= 0 || loyerMensuel <= 0) { setResultats(null); return; }
 
     const investTotal = prix + travaux + notaire;
     const montantCredit = Math.max(0, investTotal - apport);
@@ -183,10 +191,10 @@ export default function Simulateur() {
 
   const verdict = resultats
     ? resultats.rendementNet > 5 && resultats.cashflowReelMensuel > 0
-      ? { label: "Excellent investissement", color: "bg-green-500 text-white", icon: "✓" }
+      ? { label: "Excellent investissement", bg: "#1A7A52", icon: "✓" }
       : resultats.rendementNet > 3
-      ? { label: "Investissement correct", color: "bg-amber-400 text-white", icon: "~" }
-      : { label: "Rentabilité faible", color: "bg-red-500 text-white", icon: "✗" }
+      ? { label: "Investissement correct", bg: "#B08A2A", icon: "~" }
+      : { label: "Rentabilité faible", bg: "#B03A2A", icon: "✗" }
     : null;
 
   const loyerPourRendement = (pct: number) =>
@@ -195,158 +203,125 @@ export default function Simulateur() {
   const anneesZeroImpot = resultats
     ? resultats.baseImposableReel === 0
       ? "Toute la durée du crédit"
-      : resultats.amortTotal > resultats.chargesDeductibles
-      ? Math.ceil((resultats.amortTotal - (resultats.loyerAnnuel - resultats.chargesDeductibles)) / resultats.amortTotal).toString() + " ans env."
       : "Calcul selon votre situation"
     : "-";
 
   const loyerEffectif = loyerSlider > 0 ? loyerSlider : parseFloat(form.loyer) || 0;
+  const sliderMin = Math.max(100, Math.round(loyerBas * 0.7));
+  const sliderMax = loyerHaut > 0 ? Math.round(loyerHaut * 1.5) : Math.round((parseFloat(form.loyer) || 500) * 2);
+
+  const cardStyle = { background: "#EDE7DC", border: "0.5px solid rgba(26,22,18,0.08)" };
+  const sectionStyle = { background: "#EDE7DC", border: "0.5px solid rgba(26,22,18,0.08)" };
 
   return (
-    <section id="simulateur" className="py-16 bg-gradient-to-b from-slate-50 to-white">
+    <section id="simulateur" className="py-16" style={{ backgroundColor: "#F5F0E8" }}>
       <div className="max-w-6xl mx-auto px-4">
-        <div className="text-center mb-12">
-          <span className="inline-block bg-[#1D9E75]/10 text-[#1D9E75] text-sm font-semibold px-4 py-1.5 rounded-full mb-4">
-            Simulateur gratuit
-          </span>
-          <h2 className="text-3xl md:text-4xl font-bold text-[#1B2B4B] mb-4">
+        <div className="text-center mb-10">
+          <h2 className="text-3xl md:text-4xl font-light text-[#1A1612] mb-3" style={{ letterSpacing: "-0.025em" }}>
             Calculez votre rentabilité LMNP
           </h2>
-          <p className="text-gray-500 max-w-xl mx-auto">
-            Renseignez les informations de votre bien et obtenez une analyse complète en temps réel.
+          <p style={{ color: "rgba(26,22,18,0.45)", fontSize: 15 }}>
+            Renseignez les informations de votre bien et obtenez une analyse complète.
           </p>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-5 gap-8">
-          {/* Form */}
-          <div className="lg:col-span-2 space-y-6">
-            <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 space-y-5">
-              <h3 className="font-semibold text-[#1B2B4B] text-lg">Votre bien</h3>
+        {/* ─── FORM ─── */}
+        <div className="rounded-xl p-6 md:p-8 mb-8" style={sectionStyle}>
 
-              {/* Type toggle */}
-              <div>
-                <label className="block text-sm font-medium text-gray-600 mb-2">Type de bien</label>
-                <div className="flex rounded-xl overflow-hidden border border-gray-200">
-                  {(["ap", "ma"] as TypeBien[]).map(t => (
-                    <button
-                      key={t}
-                      onClick={() => updateField("type", t)}
-                      className={`flex-1 py-2.5 text-sm font-medium transition-colors ${form.type === t ? "bg-[#1B2B4B] text-white" : "text-gray-500 hover:bg-gray-50"}`}
-                    >
-                      {t === "ap" ? "🏢 Appartement" : "🏠 Maison"}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* Surface */}
-              <div>
-                <label className="block text-sm font-medium text-gray-600 mb-2">Surface (m²)</label>
-                <input
-                  type="number"
-                  value={form.surface}
-                  onChange={e => updateField("surface", e.target.value)}
-                  placeholder="Ex: 45"
-                  className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#1D9E75] focus:border-transparent"
-                />
-              </div>
-
-              {/* Ville */}
-              <div>
-                <label className="block text-sm font-medium text-gray-600 mb-2">Ville</label>
-                <select
-                  value={form.ville}
-                  onChange={e => updateField("ville", e.target.value as VilleKey)}
-                  className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#1D9E75] bg-white"
+          {/* Type de bien */}
+          <div className="mb-6">
+            <div className={LABEL}>Type de bien</div>
+            <div className="flex rounded-md overflow-hidden" style={{ border: "0.5px solid rgba(26,22,18,0.12)", width: "fit-content" }}>
+              {(["ap", "ma"] as TypeBien[]).map(t => (
+                <button
+                  key={t}
+                  onClick={() => updateField("type", t)}
+                  className="px-5 py-2.5 text-sm font-medium transition-colors"
+                  style={{
+                    background: form.type === t ? "#1A1612" : "#F5F0E8",
+                    color: form.type === t ? "#F5F0E8" : "rgba(26,22,18,0.55)",
+                  }}
                 >
-                  {(Object.entries(villes) as [VilleKey, typeof villes[VilleKey]][]).map(([k, v]) => (
-                    <option key={k} value={k}>{v.label}</option>
-                  ))}
-                </select>
-              </div>
+                  {t === "ap" ? "Appartement" : "Maison"}
+                </button>
+              ))}
+            </div>
+          </div>
 
-              {/* Prix */}
-              <div>
-                <label className="block text-sm font-medium text-gray-600 mb-2">Prix d&apos;achat (€)</label>
-                <input
-                  type="number"
-                  value={form.prix}
-                  onChange={e => updateField("prix", e.target.value)}
-                  placeholder="Ex: 250000"
-                  className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#1D9E75] focus:border-transparent"
-                />
-              </div>
+          {/* Grid 2 cols: financial | location+loyer */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
 
-              {/* Travaux */}
-              <div>
-                <label className="block text-sm font-medium text-gray-600 mb-2">Travaux (€)</label>
-                <input
-                  type="number"
-                  value={form.travaux}
-                  onChange={e => updateField("travaux", e.target.value)}
-                  placeholder="0"
-                  className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#1D9E75] focus:border-transparent"
-                />
-              </div>
+            {/* ── LEFT : Bien & Financement ── */}
+            <div className="space-y-4">
+              <p className={LABEL} style={{ opacity: 1, color: "#1A1612", fontSize: 11 }}>
+                Bien & Financement
+              </p>
 
-              {/* Auto fields */}
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs font-medium text-gray-500 mb-1.5">Frais de notaire (auto)</label>
-                  <input
-                    type="number"
-                    value={form.notaire}
+                  <label className={LABEL}>Prix d&apos;achat (€)</label>
+                  <input type="number" value={form.prix}
+                    onChange={e => updateField("prix", e.target.value)}
+                    placeholder="250 000" className={INPUT} style={INPUT_STYLE} />
+                </div>
+                <div>
+                  <label className={LABEL}>Travaux (€)</label>
+                  <input type="number" value={form.travaux}
+                    onChange={e => updateField("travaux", e.target.value)}
+                    placeholder="0" className={INPUT} style={INPUT_STYLE} />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className={LABEL}>Frais de notaire (auto)</label>
+                  <input type="number" value={form.notaire}
                     onChange={e => updateField("notaire", e.target.value)}
-                    className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#1D9E75] bg-amber-50"
-                  />
+                    className={INPUT}
+                    style={{ ...INPUT_STYLE, background: "rgba(201,91,42,0.06)" }} />
                 </div>
-                <div>
-                  <label className="block text-xs font-medium text-gray-500 mb-1.5">Taxe foncière (auto)</label>
-                  <input
-                    type="number"
-                    value={form.taxeFonciere}
-                    onChange={e => updateField("taxeFonciere", e.target.value)}
-                    className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#1D9E75] bg-amber-50"
-                  />
-                </div>
-                {form.type === "ap" && (
-                  <div className="col-span-2">
-                    <label className="block text-xs font-medium text-gray-500 mb-1.5">Charges copropriété/an (auto)</label>
-                    <input
-                      type="number"
-                      value={form.chargesCopro}
+                {form.type === "ap" ? (
+                  <div>
+                    <label className={LABEL}>Charges copropriété/an (auto)</label>
+                    <input type="number" value={form.chargesCopro}
                       onChange={e => updateField("chargesCopro", e.target.value)}
-                      className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#1D9E75] bg-amber-50"
-                    />
+                      className={INPUT}
+                      style={{ ...INPUT_STYLE, background: "rgba(201,91,42,0.06)" }} />
+                  </div>
+                ) : (
+                  <div>
+                    <label className={LABEL}>Charges copropriété/an</label>
+                    <input type="number" value="0" readOnly className={INPUT}
+                      style={{ ...INPUT_STYLE, opacity: 0.4 }} />
                   </div>
                 )}
               </div>
-            </div>
 
-            {/* Financement */}
-            <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 space-y-5">
-              <h3 className="font-semibold text-[#1B2B4B] text-lg">Financement</h3>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-600 mb-2">Apport personnel (€)</label>
-                <input
-                  type="number"
-                  value={form.apport}
-                  onChange={e => updateField("apport", e.target.value)}
-                  placeholder="0"
-                  className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#1D9E75] focus:border-transparent"
-                />
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className={LABEL}>Apport personnel (€)</label>
+                  <input type="number" value={form.apport}
+                    onChange={e => updateField("apport", e.target.value)}
+                    placeholder="0" className={INPUT} style={INPUT_STYLE} />
+                </div>
+                <div>
+                  <label className={LABEL}>Taxe foncière/an (€)</label>
+                  <input type="number" value={form.taxeFonciere}
+                    onChange={e => updateField("taxeFonciere", e.target.value)}
+                    placeholder="À renseigner" className={INPUT} style={INPUT_STYLE} />
+                </div>
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-600 mb-2">Durée du crédit</label>
-                <div className="flex rounded-xl overflow-hidden border border-gray-200">
+                <label className={LABEL}>Durée du crédit</label>
+                <div className="flex rounded-md overflow-hidden" style={{ border: "0.5px solid rgba(26,22,18,0.12)" }}>
                   {([15, 20, 25] as DureeCredit[]).map(d => (
-                    <button
-                      key={d}
-                      onClick={() => updateField("duree", d)}
-                      className={`flex-1 py-2.5 text-sm font-medium transition-colors ${form.duree === d ? "bg-[#1B2B4B] text-white" : "text-gray-500 hover:bg-gray-50"}`}
-                    >
+                    <button key={d} onClick={() => updateField("duree", d)}
+                      className="flex-1 py-2.5 text-sm font-medium transition-colors"
+                      style={{
+                        background: form.duree === d ? "#1A1612" : "#F5F0E8",
+                        color: form.duree === d ? "#F5F0E8" : "rgba(26,22,18,0.55)",
+                      }}>
                       {d} ans
                     </button>
                   ))}
@@ -354,56 +329,144 @@ export default function Simulateur() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-600 mb-2">Taux d&apos;intérêt annuel (%)</label>
-                <input
-                  type="number"
-                  step="0.1"
-                  value={form.taux}
+                <label className={LABEL}>Taux d&apos;intérêt annuel (%)</label>
+                <input type="number" step="0.1" value={form.taux}
                   onChange={e => updateField("taux", e.target.value)}
-                  placeholder="3.5"
-                  className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#1D9E75] focus:border-transparent"
-                />
+                  placeholder="3.5" className={INPUT} style={INPUT_STYLE} />
+              </div>
+            </div>
+
+            {/* ── RIGHT : Localisation & Loyer ── */}
+            <div className="space-y-4">
+              <p className={LABEL} style={{ opacity: 1, color: "#1A1612", fontSize: 11 }}>
+                Localisation & Loyer
+              </p>
+
+              {/* Ville autocomplete */}
+              <div>
+                <label className={LABEL}>Ville</label>
+                <div className="relative" ref={dropdownRef}>
+                  <input
+                    type="text"
+                    value={villeSearch}
+                    onChange={e => {
+                      setVilleSearch(e.target.value);
+                      setShowDropdown(true);
+                      if (!e.target.value) {
+                        updateField("villeKey", "");
+                        updateField("villeLabel", "");
+                      }
+                    }}
+                    onFocus={() => villeSearch.length >= 1 && setShowDropdown(true)}
+                    placeholder="Tapez une ville..."
+                    className={INPUT}
+                    style={INPUT_STYLE}
+                  />
+                  {showDropdown && filteredVilles.length > 0 && (
+                    <div className="absolute z-20 w-full mt-1 rounded-md shadow-lg overflow-hidden"
+                      style={{ background: "#F5F0E8", border: "0.5px solid rgba(26,22,18,0.12)" }}>
+                      {filteredVilles.map(v => (
+                        <button
+                          key={v.key}
+                          className="w-full text-left px-3 py-2 text-sm transition-colors"
+                          style={{ color: "#1A1612" }}
+                          onMouseEnter={e => (e.currentTarget.style.background = "#EDE7DC")}
+                          onMouseLeave={e => (e.currentTarget.style.background = "transparent")}
+                          onMouseDown={() => {
+                            setVilleSearch(v.label);
+                            updateField("villeKey", v.key);
+                            updateField("villeLabel", v.label);
+                            setShowDropdown(false);
+                          }}
+                        >
+                          {v.label}
+                          <span className="ml-2 text-[10px] uppercase tracking-wide"
+                            style={{ color: "rgba(26,22,18,0.35)" }}>
+                            officiel
+                          </span>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+                {form.villeKey && (
+                  <p className="mt-1 text-[11px]" style={{ color: "rgba(26,22,18,0.40)" }}>
+                    Source : Observatoire des loyers · data.gouv.fr
+                  </p>
+                )}
               </div>
 
+              {/* Surface */}
               <div>
-                <label className="block text-sm font-medium text-gray-600 mb-2">
-                  Loyer mensuel cible (€)
-                  {showFourchette && (
-                    <span className="ml-2 text-xs text-gray-400">Fourchette :</span>
-                  )}
-                </label>
-                {showFourchette && (
-                  <div className="flex gap-2 mb-3">
-                    {[{ label: "Bas", val: loyerBas }, { label: "Moyen", val: loyerMoyen }, { label: "Haut", val: loyerHaut }].map(({ label, val }) => (
-                      <button
-                        key={label}
-                        onClick={() => { updateField("loyer", Math.round(val).toString()); setLoyerSlider(Math.round(val)); }}
-                        className="flex-1 rounded-xl border border-[#1D9E75]/30 bg-[#1D9E75]/5 hover:bg-[#1D9E75]/10 py-2 text-center transition-colors"
-                      >
-                        <div className="text-xs text-gray-500">{label}</div>
-                        <div className="text-sm font-semibold text-[#1D9E75]">{formatEuro(Math.round(val))}</div>
+                <label className={LABEL}>Surface (m²)</label>
+                <input type="number" value={form.surface}
+                  onChange={e => updateField("surface", e.target.value)}
+                  placeholder="45" className={INPUT} style={INPUT_STYLE} />
+              </div>
+
+              {/* Fourchette loyers */}
+              {showFourchette && (
+                <div className="rounded-md p-3" style={{ background: "#F5F0E8", border: "0.5px solid rgba(26,22,18,0.08)" }}>
+                  <p className={LABEL} style={{ marginBottom: 8 }}>Fourchette de loyer estimée</p>
+                  <div className="flex gap-2">
+                    {[
+                      { label: "Bas", val: loyerBas },
+                      { label: "Médian", val: loyerMoyen },
+                      { label: "Haut", val: loyerHaut },
+                    ].map(({ label, val }) => (
+                      <button key={label}
+                        onClick={() => {
+                          updateField("loyer", Math.round(val).toString());
+                          setLoyerSlider(Math.round(val));
+                        }}
+                        className="flex-1 rounded py-2 text-center transition-opacity hover:opacity-80"
+                        style={{ background: "#EDE7DC", border: "0.5px solid rgba(26,22,18,0.08)" }}>
+                        <div className="text-[10px] uppercase tracking-[0.1em]"
+                          style={{ color: "rgba(26,22,18,0.4)" }}>{label}</div>
+                        <div className="text-sm font-medium" style={{ color: "#C95B2A" }}>
+                          {formatEuro(Math.round(val))}
+                        </div>
                       </button>
                     ))}
                   </div>
-                )}
-                <input
-                  type="number"
-                  value={form.loyer}
-                  onChange={e => { updateField("loyer", e.target.value); setLoyerSlider(parseFloat(e.target.value) || 0); }}
-                  placeholder="Ex: 1200"
-                  className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#1D9E75] focus:border-transparent"
-                />
+                </div>
+              )}
+
+              {/* Message Seloger si ville non couverte */}
+              {!villeData && villeSearch.length >= 2 && !showDropdown && (
+                <div className="rounded-md p-3 text-[12px]"
+                  style={{ background: "#F5F0E8", border: "0.5px solid rgba(26,22,18,0.08)", color: "rgba(26,22,18,0.55)" }}>
+                  Ville non couverte par les données officielles.{" "}
+                  <a href="https://www.seloger.com" target="_blank" rel="noopener noreferrer"
+                    className="underline" style={{ color: "#C95B2A" }}>
+                    Consultez Seloger.com
+                  </a>{" "}
+                  — section Location, filtrez par surface et nombre de pièces similaires pour estimer le loyer de marché.
+                </div>
+              )}
+
+              {/* Loyer mensuel */}
+              <div>
+                <label className={LABEL}>Loyer mensuel (€)</label>
+                <input type="number" value={form.loyer}
+                  onChange={e => {
+                    updateField("loyer", e.target.value);
+                    setLoyerSlider(parseFloat(e.target.value) || 0);
+                  }}
+                  placeholder="Ex : 1 200" className={INPUT} style={INPUT_STYLE} />
               </div>
 
+              {/* TMI */}
               <div>
-                <label className="block text-sm font-medium text-gray-600 mb-2">Tranche marginale d&apos;imposition</label>
-                <div className="flex rounded-xl overflow-hidden border border-gray-200">
+                <label className={LABEL}>Tranche marginale d&apos;imposition (TMI)</label>
+                <div className="flex rounded-md overflow-hidden" style={{ border: "0.5px solid rgba(26,22,18,0.12)" }}>
                   {([0, 11, 30, 41, 45] as TMI[]).map(t => (
-                    <button
-                      key={t}
-                      onClick={() => updateField("tmi", t)}
-                      className={`flex-1 py-2.5 text-xs font-medium transition-colors ${form.tmi === t ? "bg-[#1B2B4B] text-white" : "text-gray-500 hover:bg-gray-50"}`}
-                    >
+                    <button key={t} onClick={() => updateField("tmi", t)}
+                      className="flex-1 py-2.5 text-xs font-medium transition-colors"
+                      style={{
+                        background: form.tmi === t ? "#1A1612" : "#F5F0E8",
+                        color: form.tmi === t ? "#F5F0E8" : "rgba(26,22,18,0.55)",
+                      }}>
                       {t}%
                     </button>
                   ))}
@@ -411,181 +474,242 @@ export default function Simulateur() {
               </div>
             </div>
           </div>
-
-          {/* Results */}
-          <div className="lg:col-span-3 space-y-5">
-            {!resultats ? (
-              <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-12 text-center">
-                <div className="text-5xl mb-4">🏠</div>
-                <p className="text-gray-500 text-lg font-medium mb-2">Renseignez votre bien pour voir les résultats</p>
-                <p className="text-gray-400 text-sm">Prix d&apos;achat + loyer mensuel requis</p>
-              </div>
-            ) : (
-              <>
-                {/* Verdict */}
-                {verdict && (
-                  <div className={`rounded-2xl p-4 flex items-center gap-3 ${verdict.color}`}>
-                    <span className="text-2xl font-bold">{verdict.icon}</span>
-                    <div>
-                      <div className="font-bold text-lg">{verdict.label}</div>
-                      <div className="text-sm opacity-90">
-                        Rendement net {formatPct(resultats.rendementNet)} · Cash-flow {formatEuro(resultats.cashflowReelMensuel)}/mois
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-                {/* KPIs */}
-                <div className="grid grid-cols-2 gap-4">
-                  {[
-                    { label: "Rendement brut", val: formatPct(resultats.rendementBrut), sub: "loyers / investissement total", icon: "📈" },
-                    { label: "Rendement net", val: formatPct(resultats.rendementNet), sub: "après charges, avant impôt", icon: "💰" },
-                    { label: "Impôt annuel (réel)", val: formatEuro(resultats.impotReel), sub: `TMI ${form.tmi}% + PS 17,2%`, icon: "🧾" },
-                    { label: "Cash-flow mensuel", val: formatEuro(resultats.cashflowReelMensuel), sub: "net après tout (réel)", icon: resultats.cashflowReelMensuel >= 0 ? "✅" : "⚠️" },
-                  ].map(({ label, val, sub, icon }) => (
-                    <div key={label} className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
-                      <div className="text-2xl mb-2">{icon}</div>
-                      <div className="text-xs text-gray-400 font-medium uppercase tracking-wide mb-1">{label}</div>
-                      <div className={`text-2xl font-bold mb-1 ${label === "Cash-flow mensuel" ? (resultats.cashflowReelMensuel >= 0 ? "text-[#1D9E75]" : "text-red-500") : "text-[#1B2B4B]"}`}>{val}</div>
-                      <div className="text-xs text-gray-400">{sub}</div>
-                    </div>
-                  ))}
-                </div>
-
-                {/* Loyer slider */}
-                <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
-                  <div className="flex justify-between items-center mb-3">
-                    <span className="text-sm font-semibold text-[#1B2B4B]">Ajuster le loyer en temps réel</span>
-                    <span className="text-lg font-bold text-[#1D9E75]">{formatEuro(loyerEffectif)}/mois</span>
-                  </div>
-                  <input
-                    type="range"
-                    min={Math.max(100, Math.round(loyerBas * 0.7))}
-                    max={Math.round(loyerHaut * 1.5)}
-                    step={25}
-                    value={loyerSlider || parseFloat(form.loyer) || loyerMoyen}
-                    onChange={e => setLoyerSlider(parseFloat(e.target.value))}
-                    className="w-full accent-[#1D9E75]"
-                  />
-                  <div className="flex justify-between text-xs text-gray-400 mt-1">
-                    <span>Bas marché</span>
-                    <span>Haut marché</span>
-                  </div>
-                </div>
-
-                {/* Comparaison Réel vs Micro-BIC */}
-                <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
-                  <h3 className="font-semibold text-[#1B2B4B] mb-4">Comparaison des régimes fiscaux</h3>
-                  <div className="grid grid-cols-2 gap-4">
-                    {[
-                      {
-                        regime: "Régime réel simplifié",
-                        badge: "Recommandé LMNP",
-                        badgeColor: "bg-[#1D9E75]/10 text-[#1D9E75]",
-                        loyers: resultats.loyerAnnuel,
-                        charges: resultats.chargesDeductibles,
-                        amort: resultats.amortTotal,
-                        base: resultats.baseImposableReel,
-                        impot: resultats.impotReel,
-                        cf: resultats.cashflowReelMensuel,
-                        highlight: true,
-                      },
-                      {
-                        regime: "Micro-BIC 2025",
-                        badge: "Abattement 30%",
-                        badgeColor: "bg-gray-100 text-gray-500",
-                        loyers: resultats.loyerAnnuel,
-                        charges: null,
-                        amort: null,
-                        base: resultats.baseBIC,
-                        impot: resultats.impotBIC,
-                        cf: resultats.cashflowBICMensuel,
-                        highlight: false,
-                      },
-                    ].map(r => (
-                      <div key={r.regime} className={`rounded-xl p-4 border ${r.highlight ? "border-[#1D9E75]/30 bg-[#1D9E75]/5" : "border-gray-100"}`}>
-                        <div className="mb-3">
-                          <div className="text-sm font-semibold text-[#1B2B4B] mb-1">{r.regime}</div>
-                          <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${r.badgeColor}`}>{r.badge}</span>
-                        </div>
-                        <div className="space-y-2 text-xs">
-                          <div className="flex justify-between"><span className="text-gray-500">Loyers</span><span className="font-medium">{formatEuro(r.loyers)}</span></div>
-                          {r.charges !== null && <div className="flex justify-between"><span className="text-gray-500">Charges déductibles</span><span className="font-medium text-red-400">-{formatEuro(r.charges)}</span></div>}
-                          {r.amort !== null && <div className="flex justify-between"><span className="text-gray-500">Amortissements</span><span className="font-medium text-red-400">-{formatEuro(r.amort)}</span></div>}
-                          <div className="flex justify-between border-t pt-2"><span className="text-gray-500">Base imposable</span><span className="font-semibold">{formatEuro(r.base)}</span></div>
-                          <div className="flex justify-between"><span className="text-gray-500">Impôt estimé</span><span className="font-medium text-red-400">{formatEuro(r.impot)}</span></div>
-                          <div className={`flex justify-between border-t pt-2 ${r.cf >= 0 ? "text-[#1D9E75]" : "text-red-500"}`}>
-                            <span className="font-semibold">Cash-flow/mois</span>
-                            <span className="font-bold text-sm">{formatEuro(r.cf)}</span>
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                  <p className="text-xs text-gray-400 mt-3">* Micro-BIC 2025 : abattement ramené à 30% (vs 50% avant). Le régime réel est presque toujours plus avantageux.</p>
-                </div>
-
-                {/* Amortissement expandable */}
-                <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
-                  <button
-                    onClick={() => setShowAmort(!showAmort)}
-                    className="w-full flex justify-between items-center p-5 text-left hover:bg-gray-50 transition-colors"
-                  >
-                    <span className="font-semibold text-[#1B2B4B]">Détail de l&apos;amortissement LMNP</span>
-                    <span className="text-gray-400 text-xl">{showAmort ? "▲" : "▼"}</span>
-                  </button>
-                  {showAmort && (
-                    <div className="px-5 pb-5 space-y-3 border-t border-gray-100 pt-4">
-                      <div className="grid grid-cols-3 gap-3">
-                        <div className="bg-slate-50 rounded-xl p-3 text-center">
-                          <div className="text-xs text-gray-500 mb-1">Amort. bâti</div>
-                          <div className="font-bold text-[#1B2B4B]">{formatEuro(resultats.amortBien)}/an</div>
-                          <div className="text-xs text-gray-400">85% prix · 30 ans</div>
-                        </div>
-                        <div className="bg-slate-50 rounded-xl p-3 text-center">
-                          <div className="text-xs text-gray-500 mb-1">Amort. mobilier</div>
-                          <div className="font-bold text-[#1B2B4B]">{formatEuro(resultats.amortMobilier)}/an</div>
-                          <div className="text-xs text-gray-400">15% prix · 7 ans</div>
-                        </div>
-                        <div className="bg-[#1D9E75]/10 rounded-xl p-3 text-center">
-                          <div className="text-xs text-[#1D9E75] mb-1">Total amort.</div>
-                          <div className="font-bold text-[#1D9E75]">{formatEuro(resultats.amortTotal)}/an</div>
-                          <div className="text-xs text-[#1D9E75]/70">Déductible</div>
-                        </div>
-                      </div>
-                      <div className="bg-amber-50 rounded-xl p-3">
-                        <div className="text-xs font-semibold text-amber-800 mb-1">⏳ Durée estimée sans impôt</div>
-                        <div className="text-amber-700 text-sm">{anneesZeroImpot}</div>
-                        <div className="text-xs text-amber-600 mt-1">Tant que les amortissements + charges couvrent vos loyers</div>
-                      </div>
-                    </div>
-                  )}
-                </div>
-
-                {/* Loyer cible */}
-                <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
-                  <h3 className="font-semibold text-[#1B2B4B] mb-4">Loyer cible par rendement brut</h3>
-                  <div className="flex gap-2 mb-4 flex-wrap">
-                    {[4, 5, 6, 7, 8].map(p => (
-                      <button
-                        key={p}
-                        onClick={() => setRendementTab(p)}
-                        className={`px-4 py-2 rounded-xl text-sm font-medium transition-colors ${rendementTab === p ? "bg-[#1B2B4B] text-white" : "bg-gray-100 text-gray-600 hover:bg-gray-200"}`}
-                      >
-                        {p}%
-                      </button>
-                    ))}
-                  </div>
-                  <div className="bg-[#1B2B4B] rounded-xl p-4 text-center">
-                    <div className="text-white/60 text-sm mb-1">Loyer mensuel nécessaire pour {rendementTab}% brut</div>
-                    <div className="text-3xl font-bold text-white">{formatEuro(loyerPourRendement(rendementTab))}<span className="text-lg font-normal text-white/70">/mois</span></div>
-                    <div className="text-white/50 text-xs mt-1">sur {formatEuro(resultats.investTotal)} investis</div>
-                  </div>
-                </div>
-              </>
-            )}
-          </div>
         </div>
+
+        {/* ─── RESULTS ─── */}
+        {!resultats ? (
+          <div className="rounded-xl p-12 text-center" style={cardStyle}>
+            <p className="text-lg font-light" style={{ color: "rgba(26,22,18,0.45)" }}>
+              Renseignez le prix d&apos;achat et le loyer mensuel pour voir les résultats
+            </p>
+          </div>
+        ) : (
+          <div className="space-y-5">
+            {/* Verdict */}
+            {verdict && (
+              <div className="rounded-xl p-4 flex items-center gap-3"
+                style={{ background: verdict.bg, color: "#F5F0E8" }}>
+                <span className="text-2xl font-bold">{verdict.icon}</span>
+                <div>
+                  <div className="font-medium text-lg">{verdict.label}</div>
+                  <div className="text-sm" style={{ opacity: 0.85 }}>
+                    Rendement net {formatPct(resultats.rendementNet)} · Cash-flow {formatEuro(resultats.cashflowReelMensuel)}/mois (régime réel)
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* 4 KPIs */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              {[
+                { label: "Rendement brut", val: formatPct(resultats.rendementBrut), sub: "loyers / investissement" },
+                { label: "Rendement net", val: formatPct(resultats.rendementNet), sub: "après charges" },
+                { label: "Impôt annuel (réel)", val: formatEuro(resultats.impotReel), sub: `TMI ${form.tmi}% + PS 17,2%` },
+                {
+                  label: "Cash-flow mensuel",
+                  val: formatEuro(resultats.cashflowReelMensuel),
+                  sub: "net régime réel",
+                  positive: resultats.cashflowReelMensuel >= 0,
+                },
+              ].map(({ label, val, sub, positive }) => (
+                <div key={label} className="rounded-xl p-4" style={cardStyle}>
+                  <div className={LABEL}>{label}</div>
+                  <div className="text-2xl font-light mt-1" style={{
+                    color: positive !== undefined
+                      ? (positive ? "#1A7A52" : "#B03A2A")
+                      : "#1A1612",
+                    letterSpacing: "-0.02em",
+                  }}>{val}</div>
+                  <div className="text-[11px] mt-1" style={{ color: "rgba(26,22,18,0.40)" }}>{sub}</div>
+                </div>
+              ))}
+            </div>
+
+            {/* Loyer slider */}
+            <div className="rounded-xl p-5" style={cardStyle}>
+              <div className="flex justify-between items-center mb-3">
+                <span className="text-sm font-medium" style={{ color: "#1A1612" }}>
+                  Ajuster le loyer
+                </span>
+                <span className="text-lg font-medium" style={{ color: "#C95B2A" }}>
+                  {formatEuro(loyerEffectif)}/mois
+                </span>
+              </div>
+              <input type="range"
+                min={sliderMin} max={sliderMax} step={25}
+                value={loyerSlider || parseFloat(form.loyer) || 500}
+                onChange={e => setLoyerSlider(parseFloat(e.target.value))}
+                className="w-full"
+              />
+              <div className="flex justify-between text-[11px] mt-1"
+                style={{ color: "rgba(26,22,18,0.40)" }}>
+                <span>Bas marché</span>
+                <span>Haut marché</span>
+              </div>
+            </div>
+
+            {/* Comparaison régimes */}
+            <div className="rounded-xl p-5" style={cardStyle}>
+              <h3 className="font-medium text-[#1A1612] mb-4">Comparaison des régimes fiscaux</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {[
+                  {
+                    regime: "Régime réel simplifié",
+                    badge: "Recommandé",
+                    loyers: resultats.loyerAnnuel,
+                    charges: resultats.chargesDeductibles,
+                    amort: resultats.amortTotal,
+                    base: resultats.baseImposableReel,
+                    impot: resultats.impotReel,
+                    cf: resultats.cashflowReelMensuel,
+                    highlight: true,
+                  },
+                  {
+                    regime: "Micro-BIC 2025",
+                    badge: "Abattement 30%",
+                    loyers: resultats.loyerAnnuel,
+                    charges: null,
+                    amort: null,
+                    base: resultats.baseBIC,
+                    impot: resultats.impotBIC,
+                    cf: resultats.cashflowBICMensuel,
+                    highlight: false,
+                  },
+                ].map(r => (
+                  <div key={r.regime} className="rounded-lg p-4"
+                    style={{
+                      background: r.highlight ? "rgba(201,91,42,0.06)" : "#F5F0E8",
+                      border: r.highlight ? "0.5px solid rgba(201,91,42,0.2)" : "0.5px solid rgba(26,22,18,0.08)",
+                    }}>
+                    <div className="flex items-center justify-between mb-3">
+                      <div className="text-sm font-medium" style={{ color: "#1A1612" }}>{r.regime}</div>
+                      <span className="text-[10px] uppercase tracking-[0.1em] px-2 py-0.5 rounded"
+                        style={{
+                          background: r.highlight ? "#C95B2A" : "rgba(26,22,18,0.08)",
+                          color: r.highlight ? "#F5F0E8" : "rgba(26,22,18,0.5)",
+                        }}>
+                        {r.badge}
+                      </span>
+                    </div>
+                    <div className="space-y-1.5 text-xs">
+                      <div className="flex justify-between">
+                        <span style={{ color: "rgba(26,22,18,0.5)" }}>Loyers annuels</span>
+                        <span className="font-medium">{formatEuro(r.loyers)}</span>
+                      </div>
+                      {r.charges !== null && (
+                        <div className="flex justify-between">
+                          <span style={{ color: "rgba(26,22,18,0.5)" }}>Charges déductibles</span>
+                          <span style={{ color: "#B03A2A" }}>−{formatEuro(r.charges)}</span>
+                        </div>
+                      )}
+                      {r.amort !== null && (
+                        <div className="flex justify-between">
+                          <span style={{ color: "rgba(26,22,18,0.5)" }}>Amortissements</span>
+                          <span style={{ color: "#B03A2A" }}>−{formatEuro(r.amort)}</span>
+                        </div>
+                      )}
+                      <div className="flex justify-between pt-1.5" style={{ borderTop: "0.5px solid rgba(26,22,18,0.08)" }}>
+                        <span style={{ color: "rgba(26,22,18,0.5)" }}>Base imposable</span>
+                        <span className="font-medium">{formatEuro(r.base)}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span style={{ color: "rgba(26,22,18,0.5)" }}>Impôt estimé</span>
+                        <span style={{ color: "#B03A2A" }}>{formatEuro(r.impot)}</span>
+                      </div>
+                      <div className="flex justify-between pt-1.5 font-medium" style={{ borderTop: "0.5px solid rgba(26,22,18,0.08)" }}>
+                        <span>Cash-flow mensuel</span>
+                        <span style={{ color: r.cf >= 0 ? "#1A7A52" : "#B03A2A" }}>{formatEuro(r.cf)}</span>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Recommandation */}
+              <div className="mt-4 p-4 rounded-lg text-[13px]"
+                style={{ background: "#F5F0E8", border: "0.5px solid rgba(26,22,18,0.08)", color: "rgba(26,22,18,0.65)", lineHeight: 1.6 }}>
+                Nous conseillons le Régime Réel au Régime Micro-BIC, qui permet un amortissement partiel du bien, des charges déductibles, et donc un résultat au bilan comptable nul qui réduit la base imposable.{" "}
+                <Link href="/comment-ca-marche"
+                  className="inline-flex items-center gap-1 font-medium underline"
+                  style={{ color: "#C95B2A" }}>
+                  En savoir plus → Grandes Lignes du LMNP
+                </Link>
+              </div>
+              <p className="text-[11px] mt-3" style={{ color: "rgba(26,22,18,0.35)" }}>
+                * Micro-BIC 2025 : abattement ramené à 30% (vs 50% avant la réforme).
+              </p>
+            </div>
+
+            {/* Amortissement */}
+            <div className="rounded-xl overflow-hidden" style={cardStyle}>
+              <button onClick={() => setShowAmort(!showAmort)}
+                className="w-full flex justify-between items-center p-5 text-left"
+                style={{ color: "#1A1612" }}>
+                <span className="font-medium text-sm">Détail de l&apos;amortissement LMNP</span>
+                <span style={{ color: "rgba(26,22,18,0.4)", fontSize: 12 }}>{showAmort ? "▲" : "▼"}</span>
+              </button>
+              {showAmort && (
+                <div className="px-5 pb-5 space-y-3" style={{ borderTop: "0.5px solid rgba(26,22,18,0.08)" }}>
+                  <div className="grid grid-cols-3 gap-3 pt-4">
+                    {[
+                      { label: "Bâti", val: resultats.amortBien, sub: "85% prix · 30 ans" },
+                      { label: "Mobilier", val: resultats.amortMobilier, sub: "15% prix · 7 ans" },
+                      { label: "Total", val: resultats.amortTotal, sub: "Déductible/an", accent: true },
+                    ].map(({ label, val, sub, accent }) => (
+                      <div key={label} className="rounded-lg p-3 text-center"
+                        style={{ background: accent ? "rgba(201,91,42,0.08)" : "#F5F0E8" }}>
+                        <div className="text-[10px] uppercase tracking-[0.1em] mb-1"
+                          style={{ color: accent ? "#C95B2A" : "rgba(26,22,18,0.4)" }}>{label}</div>
+                        <div className="font-medium text-sm"
+                          style={{ color: accent ? "#C95B2A" : "#1A1612" }}>{formatEuro(val)}/an</div>
+                        <div className="text-[10px] mt-0.5" style={{ color: "rgba(26,22,18,0.35)" }}>{sub}</div>
+                      </div>
+                    ))}
+                  </div>
+                  <div className="rounded-lg p-3 text-[12px]"
+                    style={{ background: "rgba(201,91,42,0.05)", border: "0.5px solid rgba(201,91,42,0.1)" }}>
+                    <div className="font-medium mb-0.5" style={{ color: "#C95B2A" }}>
+                      Durée estimée sans impôt
+                    </div>
+                    <div style={{ color: "rgba(26,22,18,0.65)" }}>{anneesZeroImpot}</div>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Loyer cible */}
+            <div className="rounded-xl p-5" style={cardStyle}>
+              <h3 className="font-medium text-[#1A1612] mb-4 text-sm">Loyer cible par rendement brut</h3>
+              <div className="flex gap-2 mb-4 flex-wrap">
+                {[4, 5, 6, 7, 8].map(p => (
+                  <button key={p} onClick={() => setRendementTab(p)}
+                    className="px-4 py-1.5 rounded text-sm font-medium transition-colors"
+                    style={{
+                      background: rendementTab === p ? "#1A1612" : "#F5F0E8",
+                      color: rendementTab === p ? "#F5F0E8" : "rgba(26,22,18,0.55)",
+                      border: "0.5px solid rgba(26,22,18,0.12)",
+                    }}>
+                    {p}%
+                  </button>
+                ))}
+              </div>
+              <div className="rounded-lg p-4 text-center"
+                style={{ background: "#1A1612" }}>
+                <div className="text-[11px] uppercase tracking-[0.1em] mb-2"
+                  style={{ color: "rgba(245,240,232,0.5)" }}>
+                  Loyer mensuel pour {rendementTab}% brut
+                </div>
+                <div className="text-3xl font-light" style={{ color: "#F5F0E8", letterSpacing: "-0.025em" }}>
+                  {formatEuro(loyerPourRendement(rendementTab))}
+                  <span className="text-base font-normal" style={{ color: "rgba(245,240,232,0.5)" }}>/mois</span>
+                </div>
+                <div className="text-[11px] mt-1" style={{ color: "rgba(245,240,232,0.35)" }}>
+                  sur {formatEuro(resultats.investTotal)} investis
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </section>
   );
