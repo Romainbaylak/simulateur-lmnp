@@ -7,3 +7,12 @@
 * {
   font-family: 'Inter', sans-serif;
 }
+
+body {
+  background-color: #F5F0E8;
+  color: #1A1612;
+}
+
+input[type="range"] {
+  accent-color: #C95B2A;
+}

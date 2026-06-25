@@ -1,63 +1,86 @@
+import Logo from "@/components/Logo";
 import Link from "next/link";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Tarifs – LMNPSimulator Gratuit & Premium",
+  title: "Tarifs – toutlmnp Gratuit & Premium",
   description: "Simulez votre LMNP gratuitement. Passez Premium pour des simulations illimitées, l'export PDF et le tableau d'amortissement complet.",
 };
 
 export default function TarifsPage() {
   return (
-    <main className="min-h-screen bg-white">
-      <header className="bg-[#1B2B4B] py-16 px-4 text-center">
-        <div className="max-w-4xl mx-auto">
-          <Link href="/" className="text-[#1D9E75] text-sm hover:underline mb-4 inline-block">← Retour à l&apos;accueil</Link>
-          <h1 className="text-4xl font-bold text-white mb-4">Tarifs simples et transparents</h1>
-          <p className="text-white/60">Commencez gratuitement. Passez Premium quand vous en avez besoin.</p>
+    <main className="min-h-screen" style={{ backgroundColor: "#F5F0E8" }}>
+      <header style={{ backgroundColor: "#1A1612" }} className="sticky top-0 z-50">
+        <div className="max-w-6xl mx-auto px-4 h-16 flex items-center justify-between">
+          <Link href="/"><Logo /></Link>
+          <nav className="hidden md:flex items-center gap-6 text-sm" style={{ color: "rgba(245,240,232,0.55)" }}>
+            <Link href="/comment-ca-marche" className="hover:text-[#F5F0E8] transition-colors">Grandes Lignes du LMNP</Link>
+            <Link href="/blog" className="hover:text-[#F5F0E8] transition-colors">Blog</Link>
+            <Link href="/tarifs" style={{ color: "#C95B2A" }}>Tarifs</Link>
+          </nav>
+          <a href="/#simulateur" className="text-sm font-medium px-4 py-2 transition-opacity hover:opacity-[0.88]"
+            style={{ backgroundColor: "#C95B2A", color: "#F5F0E8", borderRadius: 6 }}>
+            Simuler
+          </a>
         </div>
       </header>
 
+      <div style={{ backgroundColor: "#1A1612" }} className="py-16 px-4 text-center">
+        <div className="max-w-4xl mx-auto">
+          <Link href="/" className="text-sm hover:underline mb-4 inline-block" style={{ color: "#C95B2A" }}>← Accueil</Link>
+          <h1 className="font-light mb-3" style={{ fontSize: "2.5rem", color: "#F5F0E8", letterSpacing: "-0.025em" }}>
+            Tarifs simples et transparents
+          </h1>
+          <p style={{ color: "rgba(245,240,232,0.5)" }}>Commencez gratuitement. Passez Premium quand vous en avez besoin.</p>
+        </div>
+      </div>
+
       <div className="max-w-4xl mx-auto px-4 py-16">
-        <div className="grid md:grid-cols-2 gap-8">
+        <div className="grid md:grid-cols-2 gap-6">
           {/* Gratuit */}
-          <div className="border border-gray-200 rounded-2xl p-8">
+          <div className="rounded-xl p-8" style={{ background: "#EDE7DC", border: "0.5px solid rgba(26,22,18,0.08)" }}>
             <div className="mb-6">
-              <h2 className="text-2xl font-bold text-[#1B2B4B] mb-2">Gratuit</h2>
-              <div className="text-4xl font-extrabold text-[#1B2B4B] mb-1">0€</div>
-              <div className="text-gray-400 text-sm">Pour toujours</div>
+              <h2 className="font-light text-2xl text-[#1A1612] mb-2" style={{ letterSpacing: "-0.02em" }}>Gratuit</h2>
+              <div className="text-4xl font-light text-[#1A1612] mb-1" style={{ letterSpacing: "-0.03em" }}>0 €</div>
+              <div className="text-sm" style={{ color: "rgba(26,22,18,0.4)" }}>Pour toujours</div>
             </div>
             <ul className="space-y-3 mb-8">
               {[
                 "2 simulations par jour",
                 "Tous les calculs LMNP",
                 "Comparaison réel vs micro-BIC",
-                "Fourchette de loyers par ville",
+                "Fourchette de loyers officiels",
                 "Curseur loyer interactif",
                 "Verdict coloré instantané",
               ].map(f => (
-                <li key={f} className="flex items-center gap-3 text-sm text-gray-600">
-                  <span className="w-5 h-5 bg-gray-100 rounded-full flex items-center justify-center text-xs">✓</span>
+                <li key={f} className="flex items-center gap-3 text-sm" style={{ color: "rgba(26,22,18,0.7)" }}>
+                  <span className="w-4 h-4 rounded-full flex items-center justify-center text-[10px] flex-shrink-0"
+                    style={{ background: "rgba(26,22,18,0.08)", color: "rgba(26,22,18,0.5)" }}>✓</span>
                   {f}
                 </li>
               ))}
             </ul>
-            <Link href="/#simulateur" className="block w-full text-center border border-[#1B2B4B] text-[#1B2B4B] font-semibold py-3 rounded-xl hover:bg-gray-50 transition-colors">
+            <Link href="/#simulateur"
+              className="block w-full text-center py-3 rounded font-medium transition-opacity hover:opacity-[0.88]"
+              style={{ background: "#F5F0E8", color: "#1A1612", border: "0.5px solid rgba(26,22,18,0.2)", borderRadius: 6 }}>
               Commencer gratuitement
             </Link>
           </div>
 
           {/* Premium */}
-          <div className="border-2 border-[#1D9E75] rounded-2xl p-8 relative">
-            <div className="absolute -top-3 left-1/2 -translate-x-1/2">
-              <span className="bg-[#1D9E75] text-white text-xs font-bold px-4 py-1 rounded-full">POPULAIRE</span>
+          <div className="rounded-xl p-8 relative"
+            style={{ background: "rgba(201,91,42,0.06)", border: "1px solid rgba(201,91,42,0.25)" }}>
+            <div className="absolute -top-3 left-6">
+              <span className="text-[10px] uppercase tracking-[0.12em] font-medium px-3 py-1 rounded"
+                style={{ background: "#C95B2A", color: "#F5F0E8" }}>Populaire</span>
             </div>
             <div className="mb-6">
-              <h2 className="text-2xl font-bold text-[#1B2B4B] mb-2">Premium</h2>
+              <h2 className="font-light text-2xl text-[#1A1612] mb-2" style={{ letterSpacing: "-0.02em" }}>Premium</h2>
               <div className="flex items-baseline gap-1 mb-1">
-                <span className="text-4xl font-extrabold text-[#1D9E75]">9€</span>
-                <span className="text-gray-400">/mois</span>
+                <span className="text-4xl font-light" style={{ color: "#C95B2A", letterSpacing: "-0.03em" }}>9 €</span>
+                <span style={{ color: "rgba(26,22,18,0.4)", fontSize: 14 }}>/mois</span>
               </div>
-              <div className="text-gray-400 text-sm">Résiliable à tout moment</div>
+              <div className="text-sm" style={{ color: "rgba(26,22,18,0.4)" }}>Résiliable à tout moment</div>
             </div>
             <ul className="space-y-3 mb-8">
               {[
@@ -68,26 +91,37 @@ export default function TarifsPage() {
                 "Historique de vos simulations",
                 "Support prioritaire",
               ].map(f => (
-                <li key={f} className="flex items-center gap-3 text-sm text-gray-700">
-                  <span className="w-5 h-5 bg-[#1D9E75]/10 rounded-full flex items-center justify-center text-xs text-[#1D9E75]">✓</span>
+                <li key={f} className="flex items-center gap-3 text-sm" style={{ color: "rgba(26,22,18,0.7)" }}>
+                  <span className="w-4 h-4 rounded-full flex items-center justify-center text-[10px] flex-shrink-0"
+                    style={{ background: "rgba(201,91,42,0.15)", color: "#C95B2A" }}>✓</span>
                   {f}
                 </li>
               ))}
             </ul>
-            <button className="block w-full text-center bg-[#1D9E75] text-white font-semibold py-3 rounded-xl hover:bg-[#178a64] transition-colors">
+            <button className="block w-full text-center py-3 rounded font-medium transition-opacity hover:opacity-[0.88]"
+              style={{ backgroundColor: "#C95B2A", color: "#F5F0E8", borderRadius: 6 }}>
               Bientôt disponible
             </button>
-            <p className="text-xs text-gray-400 text-center mt-3">Paiement sécurisé via Stripe · Sans engagement</p>
+            <p className="text-xs text-center mt-3" style={{ color: "rgba(26,22,18,0.35)" }}>
+              Paiement sécurisé via Stripe · Sans engagement
+            </p>
           </div>
         </div>
 
-        <div className="mt-16 text-center">
-          <h3 className="text-xl font-bold text-[#1B2B4B] mb-4">Des questions ?</h3>
-          <p className="text-gray-500 text-sm">
-            Le simulateur est et restera gratuit pour les cas d&apos;usage essentiels. Le plan Premium est pour les investisseurs qui analysent plusieurs biens régulièrement.
+        <div className="mt-14 text-center">
+          <p className="text-sm" style={{ color: "rgba(26,22,18,0.5)", lineHeight: 1.75 }}>
+            Le simulateur est et restera gratuit pour les cas d&apos;usage essentiels.<br />
+            Le plan Premium est pour les investisseurs qui analysent plusieurs biens régulièrement.
           </p>
         </div>
       </div>
+
+      <footer style={{ borderTop: "0.5px solid rgba(26,22,18,0.08)" }} className="py-10 px-4">
+        <div className="max-w-6xl mx-auto flex justify-between items-center">
+          <Link href="/"><Logo /></Link>
+          <p className="text-xs" style={{ color: "rgba(26,22,18,0.35)" }}>© 2026 toutlmnp</p>
+        </div>
+      </footer>
     </main>
   );
 }
