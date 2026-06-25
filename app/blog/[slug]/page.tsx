@@ -96,8 +96,8 @@ export default async function ArticlePage({ params }: { params: Promise<{ slug: 
 
   return (
     <main className="min-h-screen" style={{ backgroundColor: "#F5F0E8" }}>
-      <header style={{ backgroundColor: "#5C2516" }} className="sticky top-0 z-50">
-        <div className="max-w-6xl mx-auto px-4 h-16 flex items-center justify-between">
+      <header style={{ backgroundColor: "#4E1F12" }} className="sticky top-0 z-50">
+        <div className="max-w-6xl mx-auto px-4 h-12 flex items-center justify-between">
           <Link href="/"><Logo variant="light" /></Link>
           <a href="/#simulateur" className="text-sm font-medium px-4 py-2 transition-opacity hover:opacity-[0.88]"
             style={{ backgroundColor: "#C95B2A", color: "#F5F0E8", borderRadius: 6 }}>
@@ -106,7 +106,7 @@ export default async function ArticlePage({ params }: { params: Promise<{ slug: 
         </div>
       </header>
 
-      <div style={{ backgroundColor: "#5C2516" }} className="py-12 px-4">
+      <div style={{ backgroundColor: "#4E1F12" }} className="py-8 px-4">
         <div className="max-w-3xl mx-auto">
           <Link href="/blog" className="inline-flex items-center gap-2 text-sm font-medium px-4 py-2 rounded-md mb-4 transition-opacity hover:opacity-80" style={{ background: "rgba(201,91,42,0.25)", color: "#F5F0E8", border: "1px solid rgba(201,91,42,0.4)" }}>
             ← Retour au blog

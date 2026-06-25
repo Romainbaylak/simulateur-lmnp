@@ -34,11 +34,11 @@ const articles = [
 export default function BlogPage() {
   return (
     <main className="min-h-screen" style={{ backgroundColor: "#F5F0E8" }}>
-      <header style={{ backgroundColor: "#5C2516" }} className="sticky top-0 z-50">
-        <div className="max-w-6xl mx-auto px-4 h-16 flex items-center justify-between">
+      <header style={{ backgroundColor: "#4E1F12" }} className="sticky top-0 z-50">
+        <div className="max-w-6xl mx-auto px-4 h-12 flex items-center justify-between">
           <Link href="/"><Logo variant="light" /></Link>
           <nav className="hidden md:flex items-center gap-6 text-sm" style={{ color: "rgba(245,240,232,0.55)" }}>
-            <Link href="/comment-ca-marche" className="hover:text-[#F5F0E8] transition-colors">Grandes Lignes du LMNP</Link>
+            <Link href="/comment-ca-marche" className="hover:text-[#F5F0E8] transition-colors">LMNP</Link>
             <Link href="/blog" style={{ color: "#C95B2A" }}>Blog</Link>
             <Link href="/tarifs" className="hover:text-[#F5F0E8] transition-colors">Tarifs</Link>
           </nav>
@@ -49,9 +49,9 @@ export default function BlogPage() {
         </div>
       </header>
 
-      <div style={{ backgroundColor: "#5C2516" }} className="py-16 px-4">
+      <div style={{ backgroundColor: "#4E1F12" }} className="py-10 px-4">
         <div className="max-w-4xl mx-auto">
-          <Link href="/" className="inline-flex items-center gap-2 text-sm font-medium px-4 py-2 rounded-md mb-6 transition-opacity hover:opacity-80" style={{ background: "rgba(201,91,42,0.25)", color: "#F5F0E8", border: "1px solid rgba(201,91,42,0.4)" }}>← Retour à l&apos;accueil</Link>
+          <Link href="/#simulateur" className="inline-flex items-center gap-2 text-sm font-medium px-4 py-2 rounded-md mb-6 transition-opacity hover:opacity-80" style={{ background: "rgba(201,91,42,0.25)", color: "#F5F0E8", border: "1px solid rgba(201,91,42,0.4)" }}>← Retour à la simulation</Link>
           <h1 className="font-light mb-3" style={{ fontSize: "2.5rem", color: "#F5F0E8", letterSpacing: "-0.025em" }}>
             Blog LMNP
           </h1>
