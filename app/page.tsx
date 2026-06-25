@@ -9,14 +9,12 @@ export default function Home() {
       <header style={{ backgroundColor: "#4E1F12", borderBottom: "0.5px solid rgba(245,240,232,0.08)" }}
         className="sticky top-0 z-50">
         <div className="max-w-6xl mx-auto px-4 h-12 flex items-center justify-between">
-          <Link href="/">
-            <Logo variant="light" />
-          </Link>
+          <Link href="/"><Logo compact /></Link>
           <nav className="hidden md:flex items-center gap-6 text-sm" style={{ color: "rgba(245,240,232,0.55)" }}>
             <Link href="/comment-ca-marche" className="hover:text-[#F5F0E8] transition-colors">
               LMNP
             </Link>
-            <Link href="/blog" className="hover:text-[#F5F0E8] transition-colors">Blog</Link>
+            <Link href="/blog" className="hover:text-[#F5F0E8] transition-colors">Articles</Link>
             <Link href="/tarifs" className="hover:text-[#F5F0E8] transition-colors">Tarifs</Link>
           </nav>
           <a href="#simulateur"
@@ -57,7 +55,7 @@ export default function Home() {
             <Link href="/comment-ca-marche" className="hover:text-[#1A1612] transition-colors">
               LMNP
             </Link>
-            <Link href="/blog" className="hover:text-[#1A1612] transition-colors">Blog</Link>
+            <Link href="/blog" className="hover:text-[#1A1612] transition-colors">Articles</Link>
             <Link href="/tarifs" className="hover:text-[#1A1612] transition-colors">Tarifs</Link>
           </nav>
           <p className="text-xs" style={{ color: "rgba(26,22,18,0.35)" }}>
