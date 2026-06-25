@@ -6,11 +6,11 @@ export default function Home() {
   return (
     <main className="min-h-screen" style={{ backgroundColor: "#F5F0E8" }}>
       {/* ─── Header ─── */}
-      <header style={{ backgroundColor: "#1A1612", borderBottom: "0.5px solid rgba(245,240,232,0.08)" }}
+      <header style={{ backgroundColor: "#5C2516", borderBottom: "0.5px solid rgba(245,240,232,0.08)" }}
         className="sticky top-0 z-50">
         <div className="max-w-6xl mx-auto px-4 h-16 flex items-center justify-between">
           <Link href="/">
-            <Logo />
+            <Logo variant="light" />
           </Link>
           <nav className="hidden md:flex items-center gap-6 text-sm" style={{ color: "rgba(245,240,232,0.55)" }}>
             <Link href="/comment-ca-marche" className="hover:text-[#F5F0E8] transition-colors">
@@ -28,17 +28,16 @@ export default function Home() {
       </header>
 
       {/* ─── Hero ─── */}
-      <section style={{ backgroundColor: "#1A1612", color: "#F5F0E8" }}
-        className="pt-20 pb-24 px-4">
+      <section style={{ backgroundColor: "#5C2516", color: "#F5F0E8" }} className="pt-20 pb-24 px-4">
         <div className="max-w-3xl mx-auto text-center">
-          <h1 className="font-light mb-5" style={{ fontSize: "clamp(2rem,5vw,3.5rem)", letterSpacing: "-0.025em", lineHeight: 1.1 }}>
-            Votre investissement LMNP<br />
+          <h1 className="mb-5" style={{ fontSize: "clamp(2rem,5vw,3.5rem)", letterSpacing: "-0.025em", lineHeight: 1.1, fontWeight: 400 }}>
+            Votre invest LMNP<br />
             <span style={{ color: "#C95B2A" }}>Rentable ?</span>
           </h1>
           <p className="text-lg mb-10" style={{ color: "rgba(245,240,232,0.55)", maxWidth: 480, margin: "0 auto 2.5rem" }}>
             Calculez votre rentabilité, cash-flow et amortissement.
           </p>
-          <div className="flex items-center justify-center gap-8 text-sm" style={{ color: "rgba(245,240,232,0.45)" }}>
+          <div className="flex flex-wrap items-center justify-center gap-6 text-sm" style={{ color: "#C95B2A" }}>
             <span>✓ Gratuit</span>
             <span>✓ Sans inscription</span>
             <span>✓ Résultats instantanés</span>
