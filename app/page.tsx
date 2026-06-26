@@ -9,8 +9,8 @@ export default function Home() {
       <header style={{ backgroundColor: "#4E1F12", borderBottom: "0.5px solid rgba(245,240,232,0.08)" }}
         className="sticky top-0 z-50">
         <div className="max-w-6xl mx-auto px-4 h-12 flex items-center justify-between">
-          <Link href="/"><Logo compact /></Link>
-          <nav className="hidden md:flex items-center gap-6 text-sm" style={{ color: "rgba(245,240,232,0.55)" }}>
+          <Link href="/"><Logo variant="light" /></Link>
+          <nav className="hidden md:flex items-center gap-6 text-base font-semibold" style={{ color: "rgba(245,240,232,0.55)" }}>
             <Link href="/comment-ca-marche" className="hover:text-[#F5F0E8] transition-colors">
               LMNP
             </Link>
@@ -26,21 +26,18 @@ export default function Home() {
       </header>
 
       {/* ─── Hero ─── */}
-      <section style={{ backgroundColor: "#4E1F12", color: "#F5F0E8" }} className="pt-20 pb-24 px-4">
+      <section style={{ backgroundColor: "#4E1F12", color: "#F5F0E8" }} className="pt-16 pb-20 px-4">
         <div className="max-w-3xl mx-auto text-center">
           <h1 className="mb-5" style={{ fontSize: "clamp(2rem,5vw,3.5rem)", letterSpacing: "-0.025em", lineHeight: 1.1, fontWeight: 400 }}>
             Votre invest LMNP<br />
             <span style={{ color: "#C95B2A" }}>Rentable ?</span>
           </h1>
-          <p className="text-lg mb-10" style={{ color: "rgba(245,240,232,0.55)", maxWidth: 480, margin: "0 auto 2.5rem" }}>
-            Calculez votre rentabilité, cash-flow et amortissement.
+          <p className="text-xl mb-4" style={{ color: "rgba(245,240,232,0.75)", maxWidth: 560, margin: "0 auto 1rem" }}>
+            Calculez en un click votre rentabilité, cash-flow et amortissement.
           </p>
-          <div className="flex flex-wrap items-center justify-center gap-6 text-sm" style={{ color: "#C95B2A" }}>
-            <span>✓ Gratuit</span>
-            <span>✓ Sans inscription</span>
-            <span>✓ Résultats instantanés</span>
-            <span>✓ À jour 2026</span>
-          </div>
+          <p className="text-sm" style={{ color: "#C95B2A" }}>
+            ✓ Gratuit&nbsp;&nbsp;✓ Sans inscription&nbsp;&nbsp;✓ Résultats instantanés&nbsp;&nbsp;✓ À jour 2026
+          </p>
         </div>
       </section>
 
