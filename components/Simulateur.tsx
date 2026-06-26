@@ -119,6 +119,16 @@ export default function Simulateur() {
   const [loyerSlider, setLoyerSlider] = useState<number>(0);
   const [showAmort, setShowAmort] = useState(false);
   const [rendementTab, setRendementTab] = useState<number>(5);
+  const [amortPct, setAmortPct] = useState(80);
+  const [amortMode, setAmortMode] = useState<"ensemble" | "composant">("ensemble");
+  const [amortDureeEnsemble, setAmortDureeEnsemble] = useState(20);
+  const [composants, setComposants] = useState([
+    { label: "Bâti / Gros œuvre", pct: 50, duree: 20 },
+    { label: "Toiture", pct: 15, duree: 20 },
+    { label: "Aménagement intérieur", pct: 15, duree: 12 },
+    { label: "Électricité", pct: 10, duree: 10 },
+    { label: "Étanchéité", pct: 10, duree: 20 },
+  ]);
   const [resultats, setResultats] = useState<Resultats | null>(null);
   const [showResults, setShowResults] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -186,7 +196,10 @@ export default function Simulateur() {
     const chargesAnnuelles = taxeFonciere + chargesCopro;
     const loyerAnnuel = loyerMensuel * 12;
 
-    const amortBien = (prix * 0.80) / 20;
+    const valeurAmortissable = prix * (amortPct / 100);
+    const amortBien = amortMode === "ensemble"
+      ? valeurAmortissable / amortDureeEnsemble
+      : composants.reduce((sum, c) => sum + (valeurAmortissable * c.pct / 100) / c.duree, 0);
     const amortMobilier = mobilier / 7;
     const amortTravaux = travaux / 15;
     const amortNotaire = notaire / 20;
@@ -214,7 +227,7 @@ export default function Simulateur() {
       amortAReporter, cashflowReelMensuel, baseBIC, impotBIC, cashflowBICMensuel,
       rendementBrut, rendementNet,
     });
-  }, [form, loyerSlider]);
+  }, [form, loyerSlider, amortPct, amortMode, amortDureeEnsemble, composants]);
 
   useEffect(() => {
     const l = parseFloat(form.loyer) || 0;
@@ -705,10 +718,12 @@ export default function Simulateur() {
                     <span style={{ color: "rgba(26,22,18,0.4)", fontSize: 12 }}>{showAmort ? "▲" : "▼"}</span>
                   </button>
                   {showAmort && (
-                    <div className="px-5 pb-5 space-y-3" style={{ borderTop: "0.5px solid rgba(26,22,18,0.08)" }}>
+                    <div className="px-5 pb-5 space-y-4" style={{ borderTop: "0.5px solid rgba(26,22,18,0.08)" }}>
+
+                      {/* Récap cards */}
                       <div className="grid grid-cols-2 md:grid-cols-5 gap-3 pt-4">
                         {[
-                          { label: "Bâti", val: resultats.amortBien, sub: "80% prix · 20 ans" },
+                          { label: "Bâti", val: resultats.amortBien, sub: amortMode === "ensemble" ? `${amortPct}% prix · ${amortDureeEnsemble} ans` : `${amortPct}% · composants` },
                           { label: "Mobilier", val: resultats.amortMobilier, sub: "mobilier · 7 ans" },
                           { label: "Travaux", val: resultats.amortTravaux, sub: "travaux · 15 ans" },
                           { label: "Notaire", val: resultats.amortNotaire, sub: "notaire · 20 ans" },
@@ -724,10 +739,162 @@ export default function Simulateur() {
                           </div>
                         ))}
                       </div>
+
                       <div className="rounded-lg p-3 text-[12px]"
                         style={{ background: "rgba(201,91,42,0.05)", border: "0.5px solid rgba(201,91,42,0.1)" }}>
                         <div className="font-medium mb-0.5" style={{ color: "#C95B2A" }}>Durée estimée sans impôt</div>
                         <div style={{ color: "rgba(26,22,18,0.65)" }}>{anneesZeroImpot}</div>
+                      </div>
+
+                      {/* OBJECTIF */}
+                      <div className="rounded-lg p-4" style={{ background: "rgba(201,91,42,0.08)", border: "1px solid rgba(201,91,42,0.22)" }}>
+                        <div className="font-semibold text-sm mb-2" style={{ color: "#C95B2A" }}>OBJECTIF : Payer 0 € d&apos;impôt</div>
+                        <p className="text-[13px]" style={{ color: "rgba(26,22,18,0.7)", lineHeight: 1.7 }}>
+                          L&apos;objectif est clair ici : ajuste ton amortissement pour obtenir chaque année un bilan comptable neutre grâce à un amortissement supérieur ou égal à ton résultat. Une base imposable nulle = 0 € d&apos;impôt.
+                        </p>
+                        <p className="text-[13px] mt-2" style={{ color: "rgba(26,22,18,0.7)", lineHeight: 1.7 }}>
+                          Joue avec les durées d&apos;amortissement, quitte à les raccourcir. Il vaut mieux avoir un excédent d&apos;amortissement au début car il est toujours reportable à N+1.
+                        </p>
+                      </div>
+
+                      {/* Builder bien immobilier */}
+                      <div className="space-y-3">
+                        <div className="text-[11px] font-semibold uppercase tracking-[0.12em]" style={{ color: "#1A1612" }}>Bien immobilier</div>
+
+                        {/* Ligne : valeur bien / % amortissable / valeur amortissable */}
+                        <div className="grid grid-cols-3 gap-3">
+                          <div className="rounded-lg p-3" style={{ background: "#F5F0E8" }}>
+                            <div className={LABEL}>Valeur du bien</div>
+                            <div className="font-medium text-sm" style={{ color: "#1A1612" }}>{formatEuro(parseFloat(form.prix) || 0)}</div>
+                          </div>
+                          <div className="rounded-lg p-3" style={{ background: "#F5F0E8" }}>
+                            <div className={LABEL}>% amortissable</div>
+                            <div className="flex items-center gap-1.5">
+                              <input type="number" min={0} max={100} value={amortPct}
+                                onChange={e => setAmortPct(Math.min(100, Math.max(0, parseInt(e.target.value) || 0)))}
+                                className="w-14 px-2 py-1.5 text-sm rounded-md text-[#1A1612] focus:outline-none focus:ring-1 focus:ring-[#C95B2A]"
+                                style={INPUT_STYLE} />
+                              <span className="text-sm" style={{ color: "rgba(26,22,18,0.5)" }}>%</span>
+                            </div>
+                          </div>
+                          <div className="rounded-lg p-3" style={{ background: "rgba(201,91,42,0.06)", border: "0.5px solid rgba(201,91,42,0.15)" }}>
+                            <div className={LABEL}>Valeur amortissable</div>
+                            <div className="font-medium text-sm" style={{ color: "#C95B2A" }}>
+                              {formatEuro((parseFloat(form.prix) || 0) * amortPct / 100)}
+                            </div>
+                            <div className="text-[10px] mt-1" style={{ color: "rgba(26,22,18,0.4)" }}>
+                              Terrain (non amortissable) : {formatEuro((parseFloat(form.prix) || 0) * (1 - amortPct / 100))}
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Toggle mode */}
+                        <div className="flex rounded-md overflow-hidden" style={{ border: "0.5px solid rgba(26,22,18,0.12)", width: "fit-content" }}>
+                          {(["ensemble", "composant"] as const).map(mode => (
+                            <button key={mode} onClick={() => setAmortMode(mode)}
+                              className="px-4 py-2 text-sm font-medium transition-colors"
+                              style={{
+                                background: amortMode === mode ? "#1A1612" : "#F5F0E8",
+                                color: amortMode === mode ? "#F5F0E8" : "rgba(26,22,18,0.55)",
+                              }}>
+                              {mode === "ensemble" ? "Amortir dans son ensemble" : "Amortir par composant"}
+                            </button>
+                          ))}
+                        </div>
+
+                        {/* Mode : dans son ensemble */}
+                        {amortMode === "ensemble" && (() => {
+                          const prix = parseFloat(form.prix) || 0;
+                          const valAmort = prix * amortPct / 100;
+                          return (
+                            <div className="grid grid-cols-3 gap-3">
+                              <div className="rounded-lg p-3" style={{ background: "#F5F0E8" }}>
+                                <div className={LABEL}>Valeur amortissable</div>
+                                <div className="text-sm font-medium" style={{ color: "#1A1612" }}>{formatEuro(valAmort)}</div>
+                              </div>
+                              <div className="rounded-lg p-3" style={{ background: "#F5F0E8" }}>
+                                <div className={LABEL}>Durée (années)</div>
+                                <input type="number" min={1} max={50} value={amortDureeEnsemble}
+                                  onChange={e => setAmortDureeEnsemble(Math.max(1, parseInt(e.target.value) || 1))}
+                                  className="w-16 px-2 py-1.5 text-sm rounded-md text-[#1A1612] focus:outline-none focus:ring-1 focus:ring-[#C95B2A]"
+                                  style={INPUT_STYLE} />
+                              </div>
+                              <div className="rounded-lg p-3" style={{ background: "rgba(201,91,42,0.08)" }}>
+                                <div className={LABEL}>Amort. annuel</div>
+                                <div className="text-sm font-medium" style={{ color: "#C95B2A" }}>
+                                  {formatEuro(amortDureeEnsemble > 0 ? valAmort / amortDureeEnsemble : 0)}/an
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        })()}
+
+                        {/* Mode : par composant */}
+                        {amortMode === "composant" && (() => {
+                          const prix = parseFloat(form.prix) || 0;
+                          const valAmort = prix * amortPct / 100;
+                          const totalPct = composants.reduce((s, c) => s + c.pct, 0);
+                          return (
+                            <div className="space-y-2">
+                              <div className="text-[11px]" style={{ color: "rgba(26,22,18,0.5)" }}>
+                                Valeur amortissable : <span className="font-medium" style={{ color: "#1A1612" }}>{formatEuro(valAmort)}</span>
+                              </div>
+                              {/* Header */}
+                              <div className="grid gap-2 text-[10px] uppercase tracking-wider px-2" style={{ gridTemplateColumns: "2fr 1.4fr 0.8fr 0.9fr", color: "rgba(26,22,18,0.4)" }}>
+                                <span>Composant</span>
+                                <span>% · Valeur</span>
+                                <span>Durée (ans)</span>
+                                <span>Amort./an</span>
+                              </div>
+                              {composants.map((c, i) => {
+                                const val = valAmort * c.pct / 100;
+                                return (
+                                  <div key={c.label} className="grid gap-2 items-center rounded-lg px-2 py-2.5"
+                                    style={{ gridTemplateColumns: "2fr 1.4fr 0.8fr 0.9fr", background: "#F5F0E8" }}>
+                                    <span className="text-xs font-medium" style={{ color: "#1A1612" }}>{c.label}</span>
+                                    <div className="flex items-center gap-1">
+                                      <input type="number" min={0} max={100} value={c.pct}
+                                        onChange={e => {
+                                          const v = Math.min(100, Math.max(0, parseInt(e.target.value) || 0));
+                                          setComposants(prev => prev.map((x, j) => j === i ? { ...x, pct: v } : x));
+                                        }}
+                                        className="w-10 px-1 py-1 text-xs rounded text-center focus:outline-none focus:ring-1 focus:ring-[#C95B2A]"
+                                        style={INPUT_STYLE} />
+                                      <span className="text-[10px]" style={{ color: "rgba(26,22,18,0.4)" }}>% · {formatEuro(val)}</span>
+                                    </div>
+                                    <input type="number" min={1} max={50} value={c.duree}
+                                      onChange={e => {
+                                        const v = Math.max(1, parseInt(e.target.value) || 1);
+                                        setComposants(prev => prev.map((x, j) => j === i ? { ...x, duree: v } : x));
+                                      }}
+                                      className="w-12 px-1 py-1 text-xs rounded text-center focus:outline-none focus:ring-1 focus:ring-[#C95B2A]"
+                                      style={INPUT_STYLE} />
+                                    <span className="text-xs font-medium" style={{ color: "#C95B2A" }}>
+                                      {formatEuro(c.duree > 0 ? val / c.duree : 0)}
+                                    </span>
+                                  </div>
+                                );
+                              })}
+                              {/* Total */}
+                              <div className="grid gap-2 items-center rounded-lg px-2 py-2.5 font-medium"
+                                style={{ gridTemplateColumns: "2fr 1.4fr 0.8fr 0.9fr", background: "rgba(201,91,42,0.08)" }}>
+                                <span className="text-xs">Total</span>
+                                <span className="text-xs" style={{ color: totalPct === 100 ? "#1A7A52" : "#B03A2A" }}>
+                                  {totalPct}%{totalPct !== 100 && " ⚠"}
+                                </span>
+                                <span />
+                                <span className="text-xs" style={{ color: "#C95B2A" }}>
+                                  {formatEuro(composants.reduce((s, c) => s + (valAmort * c.pct / 100) / (c.duree || 1), 0))}/an
+                                </span>
+                              </div>
+                              {totalPct !== 100 && (
+                                <p className="text-[11px]" style={{ color: "#B03A2A" }}>
+                                  Les % doivent totaliser 100 % pour couvrir toute la valeur amortissable.
+                                </p>
+                              )}
+                            </div>
+                          );
+                        })()}
                       </div>
                     </div>
                   )}
