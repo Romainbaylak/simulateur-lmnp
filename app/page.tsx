@@ -26,13 +26,13 @@ export default function Home() {
       </header>
 
       {/* ─── Hero ─── */}
-      <section style={{ backgroundColor: "#4E1F12", color: "#F5F0E8" }} className="pt-16 pb-20 px-4">
+      <section style={{ backgroundColor: "#4E1F12", color: "#F5F0E8" }} className="pt-10 pb-14 px-4">
         <div className="max-w-3xl mx-auto text-center">
-          <h1 className="mb-5" style={{ fontSize: "clamp(2rem,5vw,3.5rem)", letterSpacing: "-0.025em", lineHeight: 1.1, fontWeight: 400 }}>
+          <h1 className="mb-4" style={{ fontSize: "clamp(2rem,5vw,3.5rem)", letterSpacing: "-0.025em", lineHeight: 1.1, fontWeight: 400 }}>
             Votre invest LMNP<br />
             <span style={{ color: "#C95B2A" }}>Rentable ?</span>
           </h1>
-          <p className="text-xl mb-4" style={{ color: "rgba(245,240,232,0.75)", maxWidth: 560, margin: "0 auto 1rem" }}>
+          <p className="text-xl mb-3 whitespace-nowrap" style={{ color: "rgba(245,240,232,0.75)" }}>
             Calculez en un click votre rentabilité, cash-flow et amortissement.
           </p>
           <p className="text-sm" style={{ color: "#C95B2A" }}>
