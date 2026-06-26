@@ -14,6 +14,7 @@ interface FormState {
   villeLabel: string;
   prix: string;
   travaux: string;
+  mobilier: string;
   notaire: string;
   chargesCopro: string;
   apport: string;
@@ -29,16 +30,20 @@ interface Resultats {
   montantCredit: number;
   mensualite: number;
   creditAnnuel: number;
-  interetsAnnuels: number;
+  interetsAnnee1: number;
   chargesAnnuelles: number;
   loyerAnnuel: number;
   amortBien: number;
   amortMobilier: number;
+  amortTravaux: number;
+  amortNotaire: number;
   amortTotal: number;
   chargesDeductibles: number;
+  resultatAvantAmort: number;
   baseImposableReel: number;
   impotReel: number;
   impotReelMensuel: number;
+  amortAReporter: number;
   cashflowReelMensuel: number;
   baseBIC: number;
   impotBIC: number;
@@ -63,6 +68,21 @@ function calcMensualite(capital: number, tauxAnnuel: number, dureeAns: number): 
   return capital * (r * Math.pow(1 + r, n)) / (Math.pow(1 + r, n) - 1);
 }
 
+function calcInteretsAnnee1(capital: number, tauxAnnuel: number, dureeAns: number): number {
+  if (capital <= 0 || tauxAnnuel <= 0) return 0;
+  const r = tauxAnnuel / 12;
+  const n = dureeAns * 12;
+  const M = capital * r * Math.pow(1 + r, n) / (Math.pow(1 + r, n) - 1);
+  let totalInterets = 0;
+  let capitalRestant = capital;
+  for (let k = 1; k <= 12; k++) {
+    const interetMois = capitalRestant * r;
+    totalInterets += interetMois;
+    capitalRestant -= (M - interetMois);
+  }
+  return totalInterets;
+}
+
 function stripLeadingZeros(val: string): string {
   if (!val) return val;
   const n = parseFloat(val);
@@ -85,6 +105,7 @@ export default function Simulateur() {
     travaux: "0",
     notaire: "",
     chargesCopro: "",
+    mobilier: "0",
     apport: "0",
     duree: 20,
     taux: "3.5",
@@ -156,22 +177,27 @@ export default function Simulateur() {
 
     if (prix <= 0 || loyerMensuel <= 0) { setResultats(null); return; }
 
+    const mobilier = parseFloat(form.mobilier) || 0;
     const investTotal = prix + travaux + notaire;
     const montantCredit = Math.max(0, investTotal - apport);
     const mensualite = calcMensualite(montantCredit, taux, form.duree);
     const creditAnnuel = mensualite * 12;
-    const interetsAnnuels = montantCredit * taux;
+    const interetsAnnee1 = calcInteretsAnnee1(montantCredit, taux, form.duree);
     const chargesAnnuelles = taxeFonciere + chargesCopro;
     const loyerAnnuel = loyerMensuel * 12;
 
-    const amortBien = (prix * 0.85) / 30;
-    const amortMobilier = (prix * 0.15) / 7;
-    const amortTotal = amortBien + amortMobilier;
+    const amortBien = (prix * 0.80) / 25;
+    const amortMobilier = mobilier / 7;
+    const amortTravaux = travaux / 15;
+    const amortNotaire = notaire / 25;
+    const amortTotal = amortBien + amortMobilier + amortTravaux + amortNotaire;
 
-    const chargesDeductibles = chargesAnnuelles + interetsAnnuels;
-    const baseImposableReel = Math.max(0, loyerAnnuel - chargesDeductibles - amortTotal);
+    const chargesDeductibles = chargesAnnuelles + interetsAnnee1;
+    const resultatAvantAmort = loyerAnnuel - chargesDeductibles;
+    const baseImposableReel = Math.max(0, resultatAvantAmort - amortTotal);
     const impotReel = baseImposableReel * (form.tmi / 100 + 0.172);
     const impotReelMensuel = impotReel / 12;
+    const amortAReporter = Math.max(0, amortTotal - Math.max(0, resultatAvantAmort));
     const cashflowReelMensuel = (loyerAnnuel - creditAnnuel - chargesAnnuelles - impotReel) / 12;
 
     const baseBIC = loyerAnnuel * 0.70;
@@ -182,10 +208,10 @@ export default function Simulateur() {
     const rendementNet = ((loyerAnnuel - chargesAnnuelles) / investTotal) * 100;
 
     setResultats({
-      investTotal, montantCredit, mensualite, creditAnnuel, interetsAnnuels,
-      chargesAnnuelles, loyerAnnuel, amortBien, amortMobilier, amortTotal,
-      chargesDeductibles, baseImposableReel, impotReel, impotReelMensuel,
-      cashflowReelMensuel, baseBIC, impotBIC, cashflowBICMensuel,
+      investTotal, montantCredit, mensualite, creditAnnuel, interetsAnnee1,
+      chargesAnnuelles, loyerAnnuel, amortBien, amortMobilier, amortTravaux, amortNotaire, amortTotal,
+      chargesDeductibles, resultatAvantAmort, baseImposableReel, impotReel, impotReelMensuel,
+      amortAReporter, cashflowReelMensuel, baseBIC, impotBIC, cashflowBICMensuel,
       rendementBrut, rendementNet,
     });
   }, [form, loyerSlider]);
@@ -276,6 +302,13 @@ export default function Simulateur() {
               </div>
 
               <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className={LABEL}>Mobilier (€)</label>
+                  <input type="number" value={form.mobilier}
+                    onChange={e => updateField("mobilier", e.target.value)}
+                    onBlur={() => handleBlur("mobilier")}
+                    placeholder="0" className={INPUT} style={INPUT_STYLE} />
+                </div>
                 <div>
                   <label className={LABEL}>Frais de notaire (auto)</label>
                   <input type="number" value={form.notaire}
@@ -431,7 +464,6 @@ export default function Simulateur() {
               {form.villeKey && !villeData && (
                 <div className="rounded-md p-3 text-[12px]"
                   style={{ background: "#F5F0E8", border: "0.5px solid rgba(26,22,18,0.08)", color: "rgba(26,22,18,0.55)" }}>
-                  Ville hors base officielle.{" "}
                   <a href="https://www.seloger.com" target="_blank" rel="noopener noreferrer"
                     className="underline" style={{ color: "#C95B2A" }}>
                     Consultez Seloger.com
@@ -559,6 +591,7 @@ export default function Simulateur() {
                         regime: "Régime réel simplifié",
                         badge: "Recommandé",
                         loyers: resultats.loyerAnnuel,
+                        creditAnnuel: resultats.creditAnnuel,
                         charges: resultats.chargesDeductibles,
                         amort: resultats.amortTotal,
                         base: resultats.baseImposableReel,
@@ -570,6 +603,7 @@ export default function Simulateur() {
                         regime: "Micro-BIC 2025",
                         badge: "Abattement 30%",
                         loyers: resultats.loyerAnnuel,
+                        creditAnnuel: resultats.creditAnnuel,
                         charges: null,
                         amort: null,
                         base: resultats.baseBIC,
@@ -598,15 +632,33 @@ export default function Simulateur() {
                             <span style={{ color: "rgba(26,22,18,0.5)" }}>Loyers annuels</span>
                             <span className="font-medium">{formatEuro(r.loyers)}</span>
                           </div>
+                          <div className="flex justify-between">
+                            <span style={{ color: "rgba(26,22,18,0.5)" }}>Emprunt</span>
+                            <span style={{ color: "#B03A2A" }}>−{formatEuro(r.creditAnnuel)}</span>
+                          </div>
+                          {r.highlight && (
+                            <div className="flex justify-between pl-3" style={{ color: "rgba(26,22,18,0.45)" }}>
+                              <span>Dont frais d&apos;emprunt</span>
+                              <span>{formatEuro(resultats.interetsAnnee1)}</span>
+                            </div>
+                          )}
                           {r.charges !== null && (
                             <div className="flex justify-between">
                               <span style={{ color: "rgba(26,22,18,0.5)" }}>Charges déductibles</span>
                               <span style={{ color: "#B03A2A" }}>−{formatEuro(r.charges)}</span>
                             </div>
                           )}
+                          {r.highlight && (
+                            <div className="flex justify-between pt-1.5" style={{ borderTop: "0.5px solid rgba(26,22,18,0.08)" }}>
+                              <span style={{ color: "rgba(26,22,18,0.5)" }}>Résultat avant amortissement</span>
+                              <span className="font-medium" style={{ color: resultats.resultatAvantAmort >= 0 ? "#1A1612" : "#B03A2A" }}>
+                                {formatEuro(resultats.resultatAvantAmort)}
+                              </span>
+                            </div>
+                          )}
                           {r.amort !== null && (
                             <div className="flex justify-between">
-                              <span style={{ color: "rgba(26,22,18,0.5)" }}>Amortissements</span>
+                              <span style={{ color: "rgba(26,22,18,0.5)" }}>Amortissements (Bien, travaux, mobilier, frais de notaire)</span>
                               <span style={{ color: "#B03A2A" }}>−{formatEuro(r.amort)}</span>
                             </div>
                           )}
@@ -618,6 +670,12 @@ export default function Simulateur() {
                             <span style={{ color: "rgba(26,22,18,0.5)" }}>Impôt estimé</span>
                             <span style={{ color: "#B03A2A" }}>{formatEuro(r.impot)}</span>
                           </div>
+                          {r.highlight && (
+                            <div className="flex justify-between">
+                              <span style={{ color: "rgba(26,22,18,0.5)" }}>Amortissement à reporter N+1</span>
+                              <span style={{ color: "#B08A2A" }}>{formatEuro(resultats.amortAReporter)}</span>
+                            </div>
+                          )}
                           <div className="flex justify-between pt-1.5 font-medium" style={{ borderTop: "0.5px solid rgba(26,22,18,0.08)" }}>
                             <span>Cash-flow mensuel</span>
                             <span style={{ color: r.cf >= 0 ? "#1A7A52" : "#B03A2A" }}>{formatEuro(r.cf)}</span>
@@ -648,10 +706,12 @@ export default function Simulateur() {
                   </button>
                   {showAmort && (
                     <div className="px-5 pb-5 space-y-3" style={{ borderTop: "0.5px solid rgba(26,22,18,0.08)" }}>
-                      <div className="grid grid-cols-3 gap-3 pt-4">
+                      <div className="grid grid-cols-2 md:grid-cols-5 gap-3 pt-4">
                         {[
-                          { label: "Bâti", val: resultats.amortBien, sub: "85% prix · 30 ans" },
-                          { label: "Mobilier", val: resultats.amortMobilier, sub: "15% prix · 7 ans" },
+                          { label: "Bâti", val: resultats.amortBien, sub: "80% prix · 25 ans" },
+                          { label: "Mobilier", val: resultats.amortMobilier, sub: "mobilier · 7 ans" },
+                          { label: "Travaux", val: resultats.amortTravaux, sub: "travaux · 15 ans" },
+                          { label: "Notaire", val: resultats.amortNotaire, sub: "notaire · 25 ans" },
                           { label: "Total", val: resultats.amortTotal, sub: "Déductible/an", accent: true },
                         ].map(({ label, val, sub, accent }) => (
                           <div key={label} className="rounded-lg p-3 text-center"

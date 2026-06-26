@@ -13,8 +13,8 @@ export default function GrandesLignesPage() {
       {/* Header */}
       <header style={{ backgroundColor: "#4E1F12" }} className="sticky top-0 z-50">
         <div className="max-w-6xl mx-auto px-4 h-12 flex items-center justify-between">
-          <Link href="/"><Logo compact /></Link>
-          <nav className="hidden md:flex items-center gap-6 text-sm" style={{ color: "rgba(245,240,232,0.55)" }}>
+          <Link href="/"><Logo variant="light" /></Link>
+          <nav className="hidden md:flex items-center gap-6 text-base font-semibold" style={{ color: "rgba(245,240,232,0.55)" }}>
             <Link href="/comment-ca-marche" style={{ color: "#C95B2A" }}>LMNP</Link>
             <Link href="/blog" className="hover:text-[#F5F0E8] transition-colors">Articles</Link>
             <Link href="/tarifs" className="hover:text-[#F5F0E8] transition-colors">Tarifs</Link>
