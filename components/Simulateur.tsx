@@ -186,10 +186,10 @@ export default function Simulateur() {
     const chargesAnnuelles = taxeFonciere + chargesCopro;
     const loyerAnnuel = loyerMensuel * 12;
 
-    const amortBien = (prix * 0.80) / 25;
+    const amortBien = (prix * 0.80) / 20;
     const amortMobilier = mobilier / 7;
     const amortTravaux = travaux / 15;
-    const amortNotaire = notaire / 25;
+    const amortNotaire = notaire / 20;
     const amortTotal = amortBien + amortMobilier + amortTravaux + amortNotaire;
 
     const chargesDeductibles = chargesAnnuelles + interetsAnnee1;
@@ -708,10 +708,10 @@ export default function Simulateur() {
                     <div className="px-5 pb-5 space-y-3" style={{ borderTop: "0.5px solid rgba(26,22,18,0.08)" }}>
                       <div className="grid grid-cols-2 md:grid-cols-5 gap-3 pt-4">
                         {[
-                          { label: "Bâti", val: resultats.amortBien, sub: "80% prix · 25 ans" },
+                          { label: "Bâti", val: resultats.amortBien, sub: "80% prix · 20 ans" },
                           { label: "Mobilier", val: resultats.amortMobilier, sub: "mobilier · 7 ans" },
                           { label: "Travaux", val: resultats.amortTravaux, sub: "travaux · 15 ans" },
-                          { label: "Notaire", val: resultats.amortNotaire, sub: "notaire · 25 ans" },
+                          { label: "Notaire", val: resultats.amortNotaire, sub: "notaire · 20 ans" },
                           { label: "Total", val: resultats.amortTotal, sub: "Déductible/an", accent: true },
                         ].map(({ label, val, sub, accent }) => (
                           <div key={label} className="rounded-lg p-3 text-center"
