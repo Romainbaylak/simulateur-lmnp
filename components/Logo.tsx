@@ -20,7 +20,7 @@ export default function Logo({ variant = "dark", compact = false }: LogoProps) {
   }
 
   const toutColor  = variant === "light" ? "#F5F0E8" : "#1A1612";
-  const divColor   = variant === "light" ? "rgba(245,240,232,0.2)" : "rgba(26,22,18,0.15)";
+  const divColor   = variant === "light" ? "rgba(245,240,232,0.45)" : "rgba(26,22,18,0.25)";
   const labelColor = variant === "light" ? "rgba(245,240,232,0.45)" : "rgba(26,22,18,0.4)";
 
   return (

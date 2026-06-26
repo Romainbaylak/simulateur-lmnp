@@ -96,8 +96,8 @@ export default async function ArticlePage({ params }: { params: Promise<{ slug: 
 
   return (
     <main className="min-h-screen" style={{ backgroundColor: "#F5F0E8" }}>
-      <header style={{ backgroundColor: "#4E1F12" }} className="sticky top-0 z-50">
-        <div className="max-w-6xl mx-auto px-4 h-12 flex items-center justify-between">
+      <header style={{ backgroundColor: "#4E1F12", borderBottom: "2px solid rgba(245,240,232,0.18)" }} className="sticky top-0 z-50">
+        <div className="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between">
           <Link href="/"><Logo variant="light" /></Link>
           <a href="/#simulateur" className="text-sm font-medium px-4 py-2 transition-opacity hover:opacity-[0.88]"
             style={{ backgroundColor: "#C95B2A", color: "#F5F0E8", borderRadius: 6 }}>
