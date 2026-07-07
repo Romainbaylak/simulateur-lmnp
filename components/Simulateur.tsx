@@ -1009,37 +1009,24 @@ th.col-an,td.col-an{width:26px}
                 <div className="rounded-xl overflow-hidden" style={cardStyle}>
                   <button onClick={() => setShowAmort(!showAmort)}
                     className="w-full flex justify-between items-center p-5 text-left transition-all hover:opacity-95"
-                    style={{
-                      background: showAmort
-                        ? "transparent"
-                        : "linear-gradient(90deg, #4E1F12 0%, rgba(201,91,42,0.85) 100%)",
-                    }}>
+                    style={{ background: "linear-gradient(90deg, #4E1F12 0%, rgba(201,91,42,0.85) 100%)" }}>
                     <div className="flex items-center gap-3">
                       <div className="w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0 text-lg"
-                        style={{
-                          background: showAmort ? "rgba(201,91,42,0.12)" : "rgba(245,240,232,0.18)",
-                          color: showAmort ? "#C95B2A" : "#F5F0E8",
-                        }}>⚙</div>
+                        style={{ background: "rgba(245,240,232,0.18)", color: "#F5F0E8" }}>⚙</div>
                       <div>
                         <div className="font-bold text-base"
-                          style={{ color: showAmort ? "#1A1612" : "#F5F0E8", letterSpacing: "-0.01em" }}>Amortissement LMNP</div>
-                        {!showAmort && (
-                          <div className="text-[13px] mt-0.5 font-medium" style={{ color: "rgba(245,240,232,0.75)" }}>
-                            Configurez vos durées · Optimisez votre impôt
-                          </div>
-                        )}
+                          style={{ color: "#F5F0E8", letterSpacing: "-0.01em" }}>Amortissement LMNP</div>
+                        <div className="text-[13px] mt-0.5 font-medium" style={{ color: "rgba(245,240,232,0.75)" }}>
+                          Configurez vos durées · Optimisez votre impôt
+                        </div>
                       </div>
                     </div>
                     <div className="flex items-center gap-3">
-                      <span className="text-sm font-bold uppercase tracking-[0.08em] px-5 py-2.5 rounded-lg hidden sm:inline-block"
-                        style={{
-                          background: showAmort ? "rgba(201,91,42,0.12)" : "#C95B2A",
-                          color: showAmort ? "#C95B2A" : "#1A1612",
-                          letterSpacing: "0.06em",
-                        }}>
+                      <span className="text-sm font-medium px-4 py-2 rounded-lg hidden sm:inline-block"
+                        style={{ background: "#EDE7DC", color: "#C95B2A" }}>
                         {showAmort ? "Réduire" : "Configurer →"}
                       </span>
-                      <span style={{ color: showAmort ? "#C95B2A" : "#F5F0E8", fontSize: 14, fontWeight: 700 }}>{showAmort ? "▲" : "▼"}</span>
+                      <span style={{ color: "#F5F0E8", fontSize: 14, fontWeight: 700 }}>{showAmort ? "▲" : "▼"}</span>
                     </div>
                   </button>
                   {showAmort && (
