@@ -90,6 +90,66 @@ function stripLeadingZeros(val: string): string {
   return n.toString();
 }
 
+function computeResultats(
+  form: FormState,
+  loyerMensuel: number,
+  amortPct: number,
+  amortMode: "ensemble" | "composant",
+  amortDureeEnsemble: number,
+  composants: { label: string; pct: number; duree: number }[]
+): Resultats | null {
+  const prix = parseFloat(form.prix) || 0;
+  const travaux = parseFloat(form.travaux) || 0;
+  const notaire = parseFloat(form.notaire) || 0;
+  const chargesCopro = parseFloat(form.chargesCopro) || 0;
+  const apport = parseFloat(form.apport) || 0;
+  const taux = parseFloat(form.taux) / 100 || 0;
+  const taxeFonciere = parseFloat(form.taxeFonciere) || 0;
+
+  if (prix <= 0 || loyerMensuel <= 0) return null;
+
+  const mobilier = parseFloat(form.mobilier) || 0;
+  const investTotal = prix + travaux + notaire;
+  const montantCredit = Math.max(0, investTotal - apport);
+  const mensualite = calcMensualite(montantCredit, taux, form.duree);
+  const creditAnnuel = mensualite * 12;
+  const interetsAnnee1 = calcInteretsAnnee1(montantCredit, taux, form.duree);
+  const chargesAnnuelles = taxeFonciere + chargesCopro;
+  const loyerAnnuel = loyerMensuel * 12;
+
+  const valeurAmortissable = prix * (amortPct / 100);
+  const amortBien = amortMode === "ensemble"
+    ? valeurAmortissable / amortDureeEnsemble
+    : composants.reduce((sum, c) => sum + (valeurAmortissable * c.pct / 100) / c.duree, 0);
+  const amortMobilier = mobilier / 7;
+  const amortTravaux = travaux / 15;
+  const amortNotaire = notaire / 20;
+  const amortTotal = amortBien + amortMobilier + amortTravaux + amortNotaire;
+
+  const chargesDeductibles = chargesAnnuelles + interetsAnnee1;
+  const resultatAvantAmort = loyerAnnuel - chargesDeductibles;
+  const baseImposableReel = Math.max(0, resultatAvantAmort - amortTotal);
+  const impotReel = baseImposableReel * (form.tmi / 100 + 0.186);
+  const impotReelMensuel = impotReel / 12;
+  const amortAReporter = Math.max(0, amortTotal - Math.max(0, resultatAvantAmort));
+  const cashflowReelMensuel = (loyerAnnuel - creditAnnuel - chargesAnnuelles - impotReel) / 12;
+
+  const baseBIC = loyerAnnuel * 0.70;
+  const impotBIC = baseBIC * (form.tmi / 100 + 0.186);
+  const cashflowBICMensuel = (loyerAnnuel - creditAnnuel - chargesAnnuelles - impotBIC) / 12;
+
+  const rendementBrut = (loyerAnnuel / investTotal) * 100;
+  const rendementNet = ((loyerAnnuel - chargesAnnuelles) / investTotal) * 100;
+
+  return {
+    investTotal, montantCredit, mensualite, creditAnnuel, interetsAnnee1,
+    chargesAnnuelles, loyerAnnuel, amortBien, amortMobilier, amortTravaux, amortNotaire, amortTotal,
+    chargesDeductibles, resultatAvantAmort, baseImposableReel, impotReel, impotReelMensuel,
+    amortAReporter, cashflowReelMensuel, baseBIC, impotBIC, cashflowBICMensuel,
+    rendementBrut, rendementNet,
+  };
+}
+
 const INPUT = "w-full px-3 py-2.5 text-sm rounded-md text-[#1A1612] placeholder-[rgba(26,22,18,0.35)] focus:outline-none focus:ring-1 focus:ring-[#C95B2A]";
 const INPUT_STYLE = { background: "#F5F0E8", border: "0.5px solid rgba(26,22,18,0.12)" };
 const LABEL = "block text-[11px] font-medium uppercase tracking-[0.14em] text-[rgba(26,22,18,0.45)] mb-1.5";
@@ -175,70 +235,27 @@ export default function Simulateur() {
   }, [form.prix, form.type]);
 
   useEffect(() => {
-    const prix = parseFloat(form.prix) || 0;
-    const travaux = parseFloat(form.travaux) || 0;
-    const notaire = parseFloat(form.notaire) || 0;
-    const chargesCopro = parseFloat(form.chargesCopro) || 0;
-    const apport = parseFloat(form.apport) || 0;
-    const taux = parseFloat(form.taux) / 100 || 0;
-    const loyerMensuel = loyerSlider > 0 ? loyerSlider : (parseFloat(form.loyer) || 0);
-    const taxeFonciere = parseFloat(form.taxeFonciere) || 0;
-
-    if (prix <= 0 || loyerMensuel <= 0) { setResultats(null); return; }
-
-    const mobilier = parseFloat(form.mobilier) || 0;
-    const investTotal = prix + travaux + notaire;
-    const montantCredit = Math.max(0, investTotal - apport);
-    const mensualite = calcMensualite(montantCredit, taux, form.duree);
-    const creditAnnuel = mensualite * 12;
-    const interetsAnnee1 = calcInteretsAnnee1(montantCredit, taux, form.duree);
-    const chargesAnnuelles = taxeFonciere + chargesCopro;
-    const loyerAnnuel = loyerMensuel * 12;
-
-    const valeurAmortissable = prix * (amortPct / 100);
-    const amortBien = amortMode === "ensemble"
-      ? valeurAmortissable / amortDureeEnsemble
-      : composants.reduce((sum, c) => sum + (valeurAmortissable * c.pct / 100) / c.duree, 0);
-    const amortMobilier = mobilier / 7;
-    const amortTravaux = travaux / 15;
-    const amortNotaire = notaire / 20;
-    const amortTotal = amortBien + amortMobilier + amortTravaux + amortNotaire;
-
-    const chargesDeductibles = chargesAnnuelles + interetsAnnee1;
-    const resultatAvantAmort = loyerAnnuel - chargesDeductibles;
-    const baseImposableReel = Math.max(0, resultatAvantAmort - amortTotal);
-    const impotReel = baseImposableReel * (form.tmi / 100 + 0.186);
-    const impotReelMensuel = impotReel / 12;
-    const amortAReporter = Math.max(0, amortTotal - Math.max(0, resultatAvantAmort));
-    const cashflowReelMensuel = (loyerAnnuel - creditAnnuel - chargesAnnuelles - impotReel) / 12;
-
-    const baseBIC = loyerAnnuel * 0.70;
-    const impotBIC = baseBIC * (form.tmi / 100 + 0.186);
-    const cashflowBICMensuel = (loyerAnnuel - creditAnnuel - chargesAnnuelles - impotBIC) / 12;
-
-    const rendementBrut = (loyerAnnuel / investTotal) * 100;
-    const rendementNet = ((loyerAnnuel - chargesAnnuelles) / investTotal) * 100;
-
-    setResultats({
-      investTotal, montantCredit, mensualite, creditAnnuel, interetsAnnee1,
-      chargesAnnuelles, loyerAnnuel, amortBien, amortMobilier, amortTravaux, amortNotaire, amortTotal,
-      chargesDeductibles, resultatAvantAmort, baseImposableReel, impotReel, impotReelMensuel,
-      amortAReporter, cashflowReelMensuel, baseBIC, impotBIC, cashflowBICMensuel,
-      rendementBrut, rendementNet,
-    });
-  }, [form, loyerSlider, amortPct, amortMode, amortDureeEnsemble, composants]);
-
-  useEffect(() => {
     const l = parseFloat(form.loyer) || 0;
     if (l > 0 && loyerSlider === 0) setLoyerSlider(l);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [form.loyer]);
 
   const handleSimuler = () => {
+    const loyerMensuel = loyerSlider > 0 ? loyerSlider : parseFloat(form.loyer) || 0;
+    const r = computeResultats(form, loyerMensuel, amortPct, amortMode, amortDureeEnsemble, composants);
+    setResultats(r);
+    if (loyerMensuel > 0) setLoyerSlider(loyerMensuel);
     setShowResults(true);
     setTimeout(() => {
       resultsRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
     }, 50);
+  };
+
+  const handleAjuster = () => {
+    const loyerMensuel = loyerSlider > 0 ? loyerSlider : parseFloat(form.loyer) || 0;
+    const r = computeResultats(form, loyerMensuel, amortPct, amortMode, amortDureeEnsemble, composants);
+    setResultats(r);
+    resultsRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
   };
 
   const verdict = resultats
@@ -249,15 +266,20 @@ export default function Simulateur() {
       : { label: "Rentabilité faible", bg: "#B03A2A", icon: "✗" }
     : null;
 
-  const anneesZeroImpot = resultats
-    ? resultats.baseImposableReel === 0
-      ? "Toute la durée du crédit"
-      : `Dès l'année 1 — impôt estimé : ${formatEuro(resultats.impotReel)} (base imposable : ${formatEuro(resultats.baseImposableReel)})`
-    : "-";
-
   const loyerEffectif = loyerSlider > 0 ? loyerSlider : parseFloat(form.loyer) || 0;
   const sliderMin = Math.max(100, Math.floor(loyerBas * 0.7 / 25) * 25);
   const sliderMax = loyerHaut > 0 ? Math.round(loyerHaut * 1.5) : Math.round((parseFloat(form.loyer) || 500) * 2);
+
+  // Inline amort display values (always reflect current state, not frozen resultats)
+  const prixDisplay = parseFloat(form.prix) || 0;
+  const valAmortDisplay = prixDisplay * amortPct / 100;
+  const amortBienDisplay = amortMode === "ensemble"
+    ? (amortDureeEnsemble > 0 ? valAmortDisplay / amortDureeEnsemble : 0)
+    : composants.reduce((sum, c) => sum + (valAmortDisplay * c.pct / 100) / (c.duree || 1), 0);
+  const amortMobilierDisplay = (parseFloat(form.mobilier) || 0) / 7;
+  const amortTravauxDisplay = (parseFloat(form.travaux) || 0) / 15;
+  const amortNotaireDisplay = (parseFloat(form.notaire) || 0) / 20;
+  const amortTotalDisplay = amortBienDisplay + amortMobilierDisplay + amortTravauxDisplay + amortNotaireDisplay;
 
   const handleGeneratePDF = () => {
     if (!resultats) return;
@@ -278,7 +300,6 @@ export default function Simulateur() {
       ? montantCredit * r * Math.pow(1 + r, n) / (Math.pow(1 + r, n) - 1)
       : (duree > 0 ? montantCredit / n : 0);
 
-    // Compute max amortissement duration for table length
     const amortBienMaxDuree = amortMode === "ensemble"
       ? amortDureeEnsemble
       : Math.max(...composants.map(c => c.duree));
@@ -383,7 +404,6 @@ export default function Simulateur() {
       ? `En Micro-BIC 2025, votre base imposable serait de <strong>${fEur(baseBIC)}</strong> par an (70 % des loyers bruts de ${fEur(loyerAnnuel)}/an, en cas de loyer constant), générant un impôt estimé de <strong>${fEur(impotBIC)}</strong> par an (TMI ${tmi} % + prélèvements sociaux 18,6 %).`
       : `En Micro-BIC 2025, votre base imposable serait de <strong>${fEur(baseBIC)}</strong> par an (70 % des loyers bruts de ${fEur(loyerAnnuel)}/an, en cas de loyer constant). Renseignez votre TMI pour calculer l'impôt correspondant.`;
 
-    // Annexe amortissement — sub-tables per category
     const modeDesc = amortMode === "ensemble"
       ? `Amortissement global — ${amortPct} % de ${fEur(prix)} sur ${amortDureeEnsemble} ans`
       : `Amortissement par composant — ${amortPct} % de ${fEur(prix)} : ${composants.map(c => `${c.label} ${c.pct} %/${c.duree} ans`).join(", ")}`;
@@ -869,6 +889,10 @@ th.col-an,td.col-an{width:26px}
                           const v = parseFloat(e.target.value) || 0;
                           setLoyerSlider(v);
                           updateField("loyer", e.target.value);
+                          if (showResults) {
+                            const r = computeResultats(form, v, amortPct, amortMode, amortDureeEnsemble, composants);
+                            setResultats(r);
+                          }
                         }}
                         className="w-24 text-right text-xl font-semibold rounded-md px-2 py-1 focus:outline-none [appearance:none] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none [-moz-appearance:textfield]"
                         style={{ color: "#1A1612", background: "#C95B2A", border: "none" }}
@@ -883,6 +907,10 @@ th.col-an,td.col-an{width:26px}
                       const v = parseFloat(e.target.value);
                       setLoyerSlider(v);
                       updateField("loyer", v.toString());
+                      if (showResults) {
+                        const r = computeResultats(form, v, amortPct, amortMode, amortDureeEnsemble, composants);
+                        setResultats(r);
+                      }
                     }}
                     className="w-full" />
                   <div className="flex justify-between text-[11px] mt-1" style={{ color: "rgba(26,22,18,0.40)" }}>
@@ -1043,18 +1071,21 @@ th.col-an,td.col-an{width:26px}
                         </p>
                       </div>
 
-                      {/* Toggle mode — marron + texte orange */}
-                      <div className="flex rounded-md overflow-hidden" style={{ border: "0.5px solid #4E1F12", width: "fit-content" }}>
-                        {(["ensemble", "composant"] as const).map(mode => (
-                          <button key={mode} onClick={() => setAmortMode(mode)}
-                            className="px-5 py-2.5 text-sm font-semibold transition-colors"
-                            style={{
-                              background: amortMode === mode ? "#4E1F12" : "#EDE7DC",
-                              color: amortMode === mode ? "#C95B2A" : "rgba(26,22,18,0.5)",
-                            }}>
-                            {mode === "ensemble" ? "Amortissement Global" : "Amortissement par composant"}
-                          </button>
-                        ))}
+                      {/* Toggle mode — centré avec label */}
+                      <div className="flex flex-col items-center gap-2">
+                        <div className="text-[11px] font-semibold uppercase tracking-[0.14em]" style={{ color: "rgba(26,22,18,0.5)" }}>Choisir :</div>
+                        <div className="flex rounded-md overflow-hidden" style={{ border: "0.5px solid #4E1F12" }}>
+                          {(["ensemble", "composant"] as const).map(mode => (
+                            <button key={mode} onClick={() => setAmortMode(mode)}
+                              className="px-5 py-2.5 text-sm font-semibold transition-colors"
+                              style={{
+                                background: amortMode === mode ? "#4E1F12" : "#EDE7DC",
+                                color: amortMode === mode ? "#C95B2A" : "rgba(26,22,18,0.5)",
+                              }}>
+                              {mode === "ensemble" ? "Amortissement Global" : "Amortissement par composant"}
+                            </button>
+                          ))}
+                        </div>
                       </div>
 
                       {/* Bien immobilier — commun aux deux modes */}
@@ -1116,7 +1147,6 @@ th.col-an,td.col-an{width:26px}
                               const totalPct = composants.reduce((s, c) => s + c.pct, 0);
                               return (
                                 <div className="rounded-lg overflow-hidden" style={{ border: "1px solid rgba(78,31,18,0.2)" }}>
-                                  {/* Header table */}
                                   <div className="grid gap-x-3 px-3 py-2 text-[10px] font-semibold uppercase tracking-wider"
                                     style={{ gridTemplateColumns: "2fr 1fr 0.7fr 1fr", background: "#4E1F12", color: "rgba(245,240,232,0.7)" }}>
                                     <span>Composant</span>
@@ -1156,7 +1186,6 @@ th.col-an,td.col-an{width:26px}
                                       </div>
                                     );
                                   })}
-                                  {/* Total row */}
                                   <div className="grid gap-x-3 items-center px-3 py-2.5 font-bold"
                                     style={{ gridTemplateColumns: "2fr 1fr 0.7fr 1fr", background: "#4E1F12" }}>
                                     <span className="text-xs" style={{ color: "#F5F0E8" }}>Total</span>
@@ -1180,14 +1209,14 @@ th.col-an,td.col-an{width:26px}
                         );
                       })()}
 
-                      {/* Récap cards — à la fin */}
+                      {/* Récap cards */}
                       <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
                         {[
-                          { label: "Bien", val: resultats.amortBien, sub: amortMode === "ensemble" ? `${amortPct}% prix · ${amortDureeEnsemble} ans` : `${amortPct}% · composants` },
-                          { label: "Mobilier", val: resultats.amortMobilier, sub: "mobilier · 7 ans" },
-                          { label: "Travaux", val: resultats.amortTravaux, sub: "travaux · 15 ans" },
-                          { label: "Notaire", val: resultats.amortNotaire, sub: "notaire · 20 ans" },
-                          { label: "Total", val: resultats.amortTotal, sub: "Déductible/an", accent: true },
+                          { label: "Bien", val: amortBienDisplay, sub: amortMode === "ensemble" ? `${amortPct}% prix · ${amortDureeEnsemble} ans` : `${amortPct}% · composants` },
+                          { label: "Mobilier", val: amortMobilierDisplay, sub: "mobilier · 7 ans" },
+                          { label: "Travaux", val: amortTravauxDisplay, sub: "travaux · 15 ans" },
+                          { label: "Notaire", val: amortNotaireDisplay, sub: "notaire · 20 ans" },
+                          { label: "Total", val: amortTotalDisplay, sub: "Déductible/an", accent: true },
                         ].map(({ label, val, sub, accent }) => (
                           <div key={label} className="rounded-lg p-3 text-center"
                             style={{ background: accent ? "rgba(201,91,42,0.1)" : "#F5F0E8", border: accent ? "1px solid rgba(201,91,42,0.25)" : "0.5px solid rgba(26,22,18,0.08)" }}>
@@ -1200,18 +1229,17 @@ th.col-an,td.col-an{width:26px}
                         ))}
                       </div>
 
-                      <div className="rounded-lg p-3 text-[12px]"
-                        style={{ background: "rgba(201,91,42,0.05)", border: "0.5px solid rgba(201,91,42,0.15)" }}>
-                        <div className="font-medium mb-0.5" style={{ color: "#C95B2A" }}>Durée estimée sans impôt à loyer stable :</div>
-                        <div style={{ color: "rgba(26,22,18,0.65)" }}>{anneesZeroImpot}</div>
-                      </div>
-
-                      {/* Bouton PDF */}
-                      <div className="flex justify-center">
+                      {/* Boutons PDF + Ajuster */}
+                      <div className="flex flex-wrap justify-center gap-4">
                         <button onClick={handleGeneratePDF}
-                          className="py-3 rounded-lg text-sm font-semibold transition-opacity hover:opacity-[0.88]"
-                          style={{ background: "#4E1F12", color: "#C95B2A", border: "1px solid rgba(201,91,42,0.3)", width: "33%" }}>
+                          className="px-10 py-4 text-base font-medium transition-opacity hover:opacity-[0.88] rounded-lg"
+                          style={{ background: "#4E1F12", color: "#C95B2A", border: "1px solid rgba(201,91,42,0.3)", letterSpacing: "0.02em" }}>
                           Générer l&apos;amortissement PDF
+                        </button>
+                        <button onClick={handleAjuster}
+                          className="px-10 py-4 text-base font-medium transition-opacity hover:opacity-[0.88] rounded-lg"
+                          style={{ backgroundColor: "#C95B2A", color: "#F5F0E8", letterSpacing: "0.02em" }}>
+                          Ajuster Simulation →
                         </button>
                       </div>
                     </div>
