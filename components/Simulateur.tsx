@@ -118,7 +118,6 @@ export default function Simulateur() {
   const [showDropdown, setShowDropdown] = useState(false);
   const [loyerSlider, setLoyerSlider] = useState<number>(0);
   const [showAmort, setShowAmort] = useState(false);
-  const [rendementTab, setRendementTab] = useState<number>(5);
   const [amortPct, setAmortPct] = useState(80);
   const [amortMode, setAmortMode] = useState<"ensemble" | "composant">("ensemble");
   const [amortDureeEnsemble, setAmortDureeEnsemble] = useState(20);
@@ -250,9 +249,6 @@ export default function Simulateur() {
       : { label: "Rentabilité faible", bg: "#B03A2A", icon: "✗" }
     : null;
 
-  const loyerPourRendement = (pct: number) =>
-    resultats ? Math.round((pct / 100 * resultats.investTotal) / 12) : 0;
-
   const anneesZeroImpot = resultats
     ? resultats.baseImposableReel === 0
       ? "Toute la durée du crédit"
@@ -262,6 +258,176 @@ export default function Simulateur() {
   const loyerEffectif = loyerSlider > 0 ? loyerSlider : parseFloat(form.loyer) || 0;
   const sliderMin = Math.max(100, Math.round(loyerBas * 0.7));
   const sliderMax = loyerHaut > 0 ? Math.round(loyerHaut * 1.5) : Math.round((parseFloat(form.loyer) || 500) * 2);
+
+  const handleGeneratePDF = () => {
+    if (!resultats) return;
+    const prix = parseFloat(form.prix) || 0;
+    const travaux = parseFloat(form.travaux) || 0;
+    const notaire = parseFloat(form.notaire) || 0;
+    const mobilier = parseFloat(form.mobilier) || 0;
+    const taux = parseFloat(form.taux) / 100 || 0;
+    const duree = form.duree;
+    const tmi = form.tmi;
+    const loyerAnnuel = resultats.loyerAnnuel;
+    const chargesAnnuelles = resultats.chargesAnnuelles;
+    const montantCredit = resultats.montantCredit;
+    const r = taux / 12;
+    const n = duree * 12;
+    const M = montantCredit > 0 && taux > 0
+      ? montantCredit * r * Math.pow(1 + r, n) / (Math.pow(1 + r, n) - 1)
+      : (duree > 0 ? montantCredit / n : 0);
+    const totalYears = duree + 5;
+    const valeurAmortissable = prix * amortPct / 100;
+    const fEur = (v: number) => new Intl.NumberFormat("fr-FR", { style: "currency", currency: "EUR", maximumFractionDigits: 0 }).format(v);
+
+    interface PdfRow {
+      year: number; capitalDebut: number; creditAnnuel: number; interetsAnnee: number;
+      amortTotalA: number; reportNplus1: number; resultatAvantAmort: number;
+      chargesDeductibles: number; baseImposable: number; impot: number; cashflow: number;
+    }
+    const rows: PdfRow[] = [];
+    let capitalRestant = montantCredit;
+    let reportN = 0;
+
+    for (let year = 1; year <= totalYears; year++) {
+      const capitalDebut = Math.max(0, capitalRestant);
+      let interetsAnnee = 0;
+      let creditAnnuel = 0;
+      if (year <= duree && montantCredit > 0 && taux > 0) {
+        for (let m = 0; m < 12; m++) {
+          const im = capitalRestant * r;
+          interetsAnnee += im;
+          capitalRestant -= (M - im);
+        }
+        capitalRestant = Math.max(0, capitalRestant);
+        creditAnnuel = M * 12;
+      } else if (year <= duree && montantCredit > 0) {
+        creditAnnuel = montantCredit / n * 12;
+      }
+
+      let amortBienA = 0;
+      if (amortMode === "ensemble") {
+        if (year <= amortDureeEnsemble) amortBienA = valeurAmortissable / amortDureeEnsemble;
+      } else {
+        for (const c of composants) {
+          if (year <= c.duree) amortBienA += (valeurAmortissable * c.pct / 100) / c.duree;
+        }
+      }
+      const amortMobilierA = year <= 7 ? mobilier / 7 : 0;
+      const amortTravauxA = year <= 15 ? travaux / 15 : 0;
+      const amortNotaireA = year <= 20 ? notaire / 20 : 0;
+      const amortTotalA = amortBienA + amortMobilierA + amortTravauxA + amortNotaireA;
+      const chargesDeductibles = chargesAnnuelles + interetsAnnee;
+      const resultatAvantAmort = loyerAnnuel - chargesDeductibles;
+      const amortDisponible = amortTotalA + reportN;
+      const baseImposable = Math.max(0, resultatAvantAmort - amortDisponible);
+      const newReport = Math.max(0, amortDisponible - Math.max(0, resultatAvantAmort));
+      const impot = baseImposable * (tmi / 100 + 0.172);
+      const cashflow = (loyerAnnuel - creditAnnuel - chargesAnnuelles - impot) / 12;
+      rows.push({ year, capitalDebut, creditAnnuel, interetsAnnee, amortTotalA, reportNplus1: newReport, resultatAvantAmort, chargesDeductibles, baseImposable, impot, cashflow });
+      reportN = newReport;
+    }
+
+    const zerosYears = rows.filter(ro => ro.baseImposable === 0).length;
+    const firstTaxRow = rows.find(ro => ro.baseImposable > 0);
+    const baseBIC = loyerAnnuel * 0.70;
+
+    const tableRows = rows.map(ro => `
+      <tr class="${ro.year === duree + 1 ? "credit-end" : ""}">
+        <td>${ro.year}</td>
+        <td>${ro.year <= duree ? fEur(ro.capitalDebut) : "—"}</td>
+        <td>${ro.year <= duree ? fEur(ro.creditAnnuel) : "—"}</td>
+        <td>${ro.year <= duree ? fEur(ro.interetsAnnee) : "—"}</td>
+        <td>${fEur(chargesAnnuelles)}</td>
+        <td>${fEur(ro.amortTotalA)}${ro.reportNplus1 > 0 ? `<br/><small style="color:#B08A2A">Report N+1: ${fEur(ro.reportNplus1)}</small>` : ""}</td>
+        <td>${fEur(ro.resultatAvantAmort)}</td>
+        <td style="color:${ro.baseImposable === 0 ? "#1A7A52" : "#B03A2A"};font-weight:600">${fEur(ro.baseImposable)}</td>
+        <td style="color:${ro.impot === 0 ? "#1A7A52" : "#B03A2A"};font-weight:600">${fEur(ro.impot)}</td>
+        <td style="color:${ro.cashflow >= 0 ? "#1A7A52" : "#B03A2A"}">${fEur(ro.cashflow)}/mois</td>
+      </tr>`).join("");
+
+    const modeDesc = amortMode === "ensemble"
+      ? `Amortissement global — ${amortPct}% de ${fEur(prix)} sur ${amortDureeEnsemble} ans`
+      : `Amortissement par composant — ${amortPct}% de ${fEur(prix)} : ${composants.map(c => `${c.label} ${c.pct}%/${c.duree}ans`).join(", ")}`;
+
+    const conclusionText = zerosYears >= totalYears
+      ? `Sur toute la période analysée (${totalYears} ans), la base imposable reste à 0 € grâce à l'amortissement. Vous payez 0 € d'impôt sur vos revenus locatifs.`
+      : zerosYears > 0
+      ? `Vous payez 0 € d'impôt pendant <strong>${zerosYears} an${zerosYears > 1 ? "s" : ""}</strong>.${firstTaxRow ? ` À partir de l'année ${firstTaxRow.year}, vous commencez à payer ${fEur(firstTaxRow.impot)}/an (base imposable : ${fEur(firstTaxRow.baseImposable)}).` : ""}`
+      : `Dès la 1ère année, une base imposable de ${fEur(rows[0]?.baseImposable ?? 0)} génère ${fEur(rows[0]?.impot ?? 0)} d'impôt. Raccourcissez les durées d'amortissement ou augmentez le mobilier pour réduire ce montant.`;
+
+    const microbicNote = tmi > 0
+      ? `Avec votre TMI de ${tmi}%, votre impôt annuel en Micro-BIC serait de <strong>${fEur(baseBIC * (tmi / 100 + 0.172))}</strong> (base ${fEur(baseBIC)} × ${tmi + 17.2}%).`
+      : `Vous n'avez pas renseigné de TMI. Votre base imposable en Micro-BIC serait de <strong>${fEur(baseBIC)}</strong>/an (70% des loyers).`;
+
+    const html = `<!DOCTYPE html><html lang="fr"><head><meta charset="UTF-8">
+<title>Tableau d'amortissement LMNP – toutlmnp</title>
+<style>
+body{font-family:'Helvetica Neue',Arial,sans-serif;color:#1A1612;background:#F5F0E8;margin:0;padding:20px;font-size:11px}
+header{background:#4E1F12;color:#F5F0E8;padding:14px 20px;border-radius:8px;margin-bottom:20px;display:flex;align-items:center;gap:8px}
+.lt{font-weight:300;font-size:20px;color:#F5F0E8}.ll{font-weight:700;font-size:20px;color:#C95B2A}
+.ls{font-size:8px;letter-spacing:.12em;color:rgba(245,240,232,.5);text-transform:uppercase;margin-top:2px}
+h2{font-size:13px;font-weight:700;color:#4E1F12;border-bottom:2px solid #C95B2A;padding-bottom:5px;margin:18px 0 8px}
+table{width:100%;border-collapse:collapse;font-size:10px}
+th{background:#4E1F12;color:#F5F0E8;padding:5px 6px;text-align:right;font-weight:500;white-space:nowrap}
+th:first-child{text-align:left}
+td{padding:4px 6px;text-align:right;border-bottom:.5px solid rgba(26,22,18,.07)}
+td:first-child{text-align:left;font-weight:600}
+tr:nth-child(even){background:rgba(201,91,42,.04)}
+tr.credit-end td{border-top:2px solid rgba(201,91,42,.35)}
+.kv{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px}
+.kvi{background:#EDE7DC;border-radius:5px;padding:6px 10px;min-width:90px}
+.kvl{font-size:8px;text-transform:uppercase;letter-spacing:.1em;color:rgba(26,22,18,.4)}
+.kvv{font-size:12px;font-weight:600;color:#1A1612}
+.orange{color:#C95B2A}
+.note{background:rgba(201,91,42,.08);border:1px solid rgba(201,91,42,.2);border-radius:6px;padding:10px 14px;line-height:1.65;color:rgba(26,22,18,.7);margin-top:10px}
+.conclusion{background:#4E1F12;color:#F5F0E8;border-radius:8px;padding:12px 16px;margin-top:14px;line-height:1.7}
+@media print{body{padding:0}header{border-radius:0}}
+</style></head><body>
+<header>
+  <div><div style="display:flex"><span class="lt">tout</span><span class="ll">lmnp</span></div><div class="ls">Simulateur de rentabilité</div></div>
+  <div style="margin-left:auto;font-size:10px;opacity:.6">Généré le ${new Date().toLocaleDateString("fr-FR")}</div>
+</header>
+<h2>Récapitulatif</h2>
+<div class="kv">
+  <div class="kvi"><div class="kvl">Prix d'achat</div><div class="kvv">${fEur(prix)}</div></div>
+  <div class="kvi"><div class="kvl">Travaux</div><div class="kvv">${fEur(travaux)}</div></div>
+  <div class="kvi"><div class="kvl">Mobilier</div><div class="kvv">${fEur(mobilier)}</div></div>
+  <div class="kvi"><div class="kvl">Frais de notaire</div><div class="kvv">${fEur(notaire)}</div></div>
+  <div class="kvi"><div class="kvl">Apport</div><div class="kvv">${fEur(parseFloat(form.apport) || 0)}</div></div>
+  <div class="kvi"><div class="kvl">Crédit</div><div class="kvv">${fEur(montantCredit)}</div></div>
+  <div class="kvi"><div class="kvl">Durée crédit</div><div class="kvv">${duree} ans</div></div>
+  <div class="kvi"><div class="kvl">Taux</div><div class="kvv">${form.taux}%</div></div>
+  <div class="kvi"><div class="kvl">Loyer mensuel</div><div class="kvv orange">${fEur(loyerAnnuel / 12)}/mois</div></div>
+  <div class="kvi"><div class="kvl">Charges annuelles</div><div class="kvv">${fEur(chargesAnnuelles)}</div></div>
+  <div class="kvi"><div class="kvl">TMI</div><div class="kvv">${tmi}%</div></div>
+  ${form.villeLabel ? `<div class="kvi"><div class="kvl">Ville</div><div class="kvv">${form.villeLabel}</div></div>` : ""}
+</div>
+<h2>Comparaison régimes fiscaux (année 1)</h2>
+<table><thead><tr><th>Indicateur</th><th>Régime réel</th><th>Micro-BIC 2025</th></tr></thead><tbody>
+<tr><td>Loyers annuels</td><td>${fEur(loyerAnnuel)}</td><td>${fEur(loyerAnnuel)}</td></tr>
+<tr><td>Charges déductibles</td><td>${fEur(rows[0]?.chargesDeductibles ?? 0)}</td><td>Abattement 30%</td></tr>
+<tr><td>Amortissements</td><td>${fEur(rows[0]?.amortTotalA ?? 0)}</td><td>—</td></tr>
+<tr><td>Base imposable</td><td style="font-weight:600;color:${(rows[0]?.baseImposable ?? 0) === 0 ? "#1A7A52" : "#B03A2A"}">${fEur(rows[0]?.baseImposable ?? 0)}</td><td>${fEur(baseBIC)}</td></tr>
+<tr><td>Impôt estimé</td><td style="font-weight:600">${fEur(rows[0]?.impot ?? 0)}</td><td>${fEur(baseBIC * (tmi / 100 + 0.172))}</td></tr>
+<tr><td>Cash-flow mensuel</td><td style="color:${(rows[0]?.cashflow ?? 0) >= 0 ? "#1A7A52" : "#B03A2A"};font-weight:600">${fEur(rows[0]?.cashflow ?? 0)}/mois</td><td style="color:${resultats.cashflowBICMensuel >= 0 ? "#1A7A52" : "#B03A2A"}">${fEur(resultats.cashflowBICMensuel)}/mois</td></tr>
+</tbody></table>
+<h2>Choix d'amortissement</h2>
+<div class="note">${modeDesc}</div>
+<h2>Tableau annuel — Régime réel (${duree} ans de crédit + 5 ans)</h2>
+<p style="font-size:10px;color:rgba(26,22,18,.5);margin-bottom:6px">Projection en régime réel simplifié avec loyers et charges constants. L'amortissement évolue chaque année selon les durées choisies. La ligne marquée indique la fin du crédit.</p>
+<table><thead><tr>
+  <th>An</th><th>Capital restant</th><th>Annuités</th><th>dont intérêts</th>
+  <th>Charges</th><th>Amortissement</th><th>Résultat av. amort.</th>
+  <th>Base imposable</th><th>Impôt</th><th>Cash-flow/mois</th>
+</tr></thead><tbody>${tableRows}</tbody></table>
+<div class="conclusion">✓ ${conclusionText}</div>
+<div class="note" style="margin-top:12px"><strong>Micro-BIC 2025 :</strong> ${microbicNote}</div>
+</body></html>`;
+
+    const win = window.open("", "_blank");
+    if (win) { win.document.write(html); win.document.close(); setTimeout(() => win.print(), 600); }
+  };
 
   const cardStyle = { background: "#EDE7DC", border: "0.5px solid rgba(26,22,18,0.08)" };
   const sectionStyle = { background: "#EDE7DC", border: "0.5px solid rgba(26,22,18,0.08)" };
@@ -582,12 +748,29 @@ export default function Simulateur() {
                 <div className="rounded-xl p-5" style={cardStyle}>
                   <div className="flex justify-between items-center mb-3">
                     <span className="text-sm font-medium" style={{ color: "#1A1612" }}>Ajuster le loyer</span>
-                    <span className="text-lg font-medium" style={{ color: "#C95B2A" }}>{formatEuro(loyerEffectif)}/mois</span>
+                    <div className="flex items-center gap-1.5">
+                      <input
+                        type="number"
+                        value={loyerEffectif || ""}
+                        onChange={e => {
+                          const v = parseFloat(e.target.value) || 0;
+                          setLoyerSlider(v);
+                          updateField("loyer", e.target.value);
+                        }}
+                        className="w-24 text-right text-xl font-semibold rounded-md px-2 py-1 focus:outline-none focus:ring-1 focus:ring-[#C95B2A]"
+                        style={{ color: "#C95B2A", background: "transparent", border: "1px solid rgba(201,91,42,0.3)" }}
+                      />
+                      <span className="text-base font-medium" style={{ color: "#C95B2A" }}>/mois</span>
+                    </div>
                   </div>
                   <input type="range"
                     min={sliderMin} max={sliderMax} step={25}
                     value={loyerSlider || parseFloat(form.loyer) || 500}
-                    onChange={e => setLoyerSlider(parseFloat(e.target.value))}
+                    onChange={e => {
+                      const v = parseFloat(e.target.value);
+                      setLoyerSlider(v);
+                      updateField("loyer", v.toString());
+                    }}
                     className="w-full" />
                   <div className="flex justify-between text-[11px] mt-1" style={{ color: "rgba(26,22,18,0.40)" }}>
                     <span>Bas marché</span>
@@ -720,35 +903,9 @@ export default function Simulateur() {
                   {showAmort && (
                     <div className="px-5 pb-5 space-y-4" style={{ borderTop: "0.5px solid rgba(26,22,18,0.08)" }}>
 
-                      {/* Récap cards */}
-                      <div className="grid grid-cols-2 md:grid-cols-5 gap-3 pt-4">
-                        {[
-                          { label: "Bâti", val: resultats.amortBien, sub: amortMode === "ensemble" ? `${amortPct}% prix · ${amortDureeEnsemble} ans` : `${amortPct}% · composants` },
-                          { label: "Mobilier", val: resultats.amortMobilier, sub: "mobilier · 7 ans" },
-                          { label: "Travaux", val: resultats.amortTravaux, sub: "travaux · 15 ans" },
-                          { label: "Notaire", val: resultats.amortNotaire, sub: "notaire · 20 ans" },
-                          { label: "Total", val: resultats.amortTotal, sub: "Déductible/an", accent: true },
-                        ].map(({ label, val, sub, accent }) => (
-                          <div key={label} className="rounded-lg p-3 text-center"
-                            style={{ background: accent ? "rgba(201,91,42,0.08)" : "#F5F0E8" }}>
-                            <div className="text-[10px] uppercase tracking-[0.1em] mb-1"
-                              style={{ color: accent ? "#C95B2A" : "rgba(26,22,18,0.4)" }}>{label}</div>
-                            <div className="font-medium text-sm"
-                              style={{ color: accent ? "#C95B2A" : "#1A1612" }}>{formatEuro(val)}/an</div>
-                            <div className="text-[10px] mt-0.5" style={{ color: "rgba(26,22,18,0.35)" }}>{sub}</div>
-                          </div>
-                        ))}
-                      </div>
-
-                      <div className="rounded-lg p-3 text-[12px]"
-                        style={{ background: "rgba(201,91,42,0.05)", border: "0.5px solid rgba(201,91,42,0.1)" }}>
-                        <div className="font-medium mb-0.5" style={{ color: "#C95B2A" }}>Durée estimée sans impôt</div>
-                        <div style={{ color: "rgba(26,22,18,0.65)" }}>{anneesZeroImpot}</div>
-                      </div>
-
                       {/* OBJECTIF */}
-                      <div className="rounded-lg p-4" style={{ background: "rgba(201,91,42,0.08)", border: "1px solid rgba(201,91,42,0.22)" }}>
-                        <div className="font-semibold text-sm mb-2" style={{ color: "#C95B2A" }}>OBJECTIF : Payer 0 € d&apos;impôt</div>
+                      <div className="rounded-lg p-4 mt-4" style={{ background: "rgba(201,91,42,0.08)", border: "1px solid rgba(201,91,42,0.25)" }}>
+                        <div className="font-bold text-sm mb-2 uppercase tracking-wide" style={{ color: "#C95B2A" }}>OBJECTIF : Payer 0 € d&apos;impôt</div>
                         <p className="text-[13px]" style={{ color: "rgba(26,22,18,0.7)", lineHeight: 1.7 }}>
                           L&apos;objectif est clair ici : ajuste ton amortissement pour obtenir chaque année un bilan comptable neutre grâce à un amortissement supérieur ou égal à ton résultat. Une base imposable nulle = 0 € d&apos;impôt.
                         </p>
@@ -757,179 +914,179 @@ export default function Simulateur() {
                         </p>
                       </div>
 
-                      {/* Builder bien immobilier */}
-                      <div className="space-y-3">
-                        <div className="text-[11px] font-semibold uppercase tracking-[0.12em]" style={{ color: "#1A1612" }}>Bien immobilier</div>
+                      {/* Toggle mode — marron + texte orange */}
+                      <div className="flex rounded-md overflow-hidden" style={{ border: "0.5px solid #4E1F12", width: "fit-content" }}>
+                        {(["ensemble", "composant"] as const).map(mode => (
+                          <button key={mode} onClick={() => setAmortMode(mode)}
+                            className="px-5 py-2.5 text-sm font-semibold transition-colors"
+                            style={{
+                              background: amortMode === mode ? "#4E1F12" : "#EDE7DC",
+                              color: amortMode === mode ? "#C95B2A" : "rgba(26,22,18,0.5)",
+                            }}>
+                            {mode === "ensemble" ? "Amortissement Global" : "Amortissement par composant"}
+                          </button>
+                        ))}
+                      </div>
 
-                        {/* Ligne : valeur bien / % amortissable / valeur amortissable */}
-                        <div className="grid grid-cols-3 gap-3">
-                          <div className="rounded-lg p-3" style={{ background: "#F5F0E8" }}>
-                            <div className={LABEL}>Valeur du bien</div>
-                            <div className="font-medium text-sm" style={{ color: "#1A1612" }}>{formatEuro(parseFloat(form.prix) || 0)}</div>
-                          </div>
-                          <div className="rounded-lg p-3" style={{ background: "#F5F0E8" }}>
-                            <div className={LABEL}>% amortissable</div>
-                            <div className="flex items-center gap-1.5">
-                              <input type="number" min={0} max={100} value={amortPct}
-                                onChange={e => setAmortPct(Math.min(100, Math.max(0, parseInt(e.target.value) || 0)))}
-                                className="w-14 px-2 py-1.5 text-sm rounded-md text-[#1A1612] focus:outline-none focus:ring-1 focus:ring-[#C95B2A]"
-                                style={INPUT_STYLE} />
-                              <span className="text-sm" style={{ color: "rgba(26,22,18,0.5)" }}>%</span>
-                            </div>
-                          </div>
-                          <div className="rounded-lg p-3" style={{ background: "rgba(201,91,42,0.06)", border: "0.5px solid rgba(201,91,42,0.15)" }}>
-                            <div className={LABEL}>Valeur amortissable</div>
-                            <div className="font-medium text-sm" style={{ color: "#C95B2A" }}>
-                              {formatEuro((parseFloat(form.prix) || 0) * amortPct / 100)}
-                            </div>
-                            <div className="text-[10px] mt-1" style={{ color: "rgba(26,22,18,0.4)" }}>
-                              Terrain (non amortissable) : {formatEuro((parseFloat(form.prix) || 0) * (1 - amortPct / 100))}
-                            </div>
-                          </div>
-                        </div>
-
-                        {/* Toggle mode */}
-                        <div className="flex rounded-md overflow-hidden" style={{ border: "0.5px solid rgba(26,22,18,0.12)", width: "fit-content" }}>
-                          {(["ensemble", "composant"] as const).map(mode => (
-                            <button key={mode} onClick={() => setAmortMode(mode)}
-                              className="px-4 py-2 text-sm font-medium transition-colors"
-                              style={{
-                                background: amortMode === mode ? "#1A1612" : "#F5F0E8",
-                                color: amortMode === mode ? "#F5F0E8" : "rgba(26,22,18,0.55)",
-                              }}>
-                              {mode === "ensemble" ? "Amortir dans son ensemble" : "Amortir par composant"}
-                            </button>
-                          ))}
-                        </div>
-
-                        {/* Mode : dans son ensemble */}
-                        {amortMode === "ensemble" && (() => {
-                          const prix = parseFloat(form.prix) || 0;
-                          const valAmort = prix * amortPct / 100;
-                          return (
+                      {/* Bien immobilier — commun aux deux modes */}
+                      {(() => {
+                        const prixVal = parseFloat(form.prix) || 0;
+                        const valAmort = prixVal * amortPct / 100;
+                        return (
+                          <div className="space-y-3">
+                            <div className="text-[11px] font-semibold uppercase tracking-[0.12em]" style={{ color: "#1A1612" }}>Bien immobilier</div>
                             <div className="grid grid-cols-3 gap-3">
                               <div className="rounded-lg p-3" style={{ background: "#F5F0E8" }}>
-                                <div className={LABEL}>Valeur amortissable</div>
-                                <div className="text-sm font-medium" style={{ color: "#1A1612" }}>{formatEuro(valAmort)}</div>
+                                <div className={LABEL}>Valeur du bien</div>
+                                <div className="font-semibold text-sm" style={{ color: "#1A1612" }}>{formatEuro(prixVal)}</div>
                               </div>
                               <div className="rounded-lg p-3" style={{ background: "#F5F0E8" }}>
-                                <div className={LABEL}>Durée (années)</div>
-                                <input type="number" min={1} max={50} value={amortDureeEnsemble}
-                                  onChange={e => setAmortDureeEnsemble(Math.max(1, parseInt(e.target.value) || 1))}
-                                  className="w-16 px-2 py-1.5 text-sm rounded-md text-[#1A1612] focus:outline-none focus:ring-1 focus:ring-[#C95B2A]"
-                                  style={INPUT_STYLE} />
+                                <div className={LABEL}>% amortissable</div>
+                                <div className="flex items-center gap-1.5">
+                                  <input type="number" min={0} max={100} value={amortPct}
+                                    onChange={e => setAmortPct(Math.min(100, Math.max(0, parseInt(e.target.value) || 0)))}
+                                    className="w-14 px-2 py-1.5 text-sm rounded-md text-[#1A1612] focus:outline-none focus:ring-1 focus:ring-[#C95B2A]"
+                                    style={INPUT_STYLE} />
+                                  <span className="text-sm" style={{ color: "rgba(26,22,18,0.5)" }}>%</span>
+                                </div>
                               </div>
-                              <div className="rounded-lg p-3" style={{ background: "rgba(201,91,42,0.08)" }}>
-                                <div className={LABEL}>Amort. annuel</div>
-                                <div className="text-sm font-medium" style={{ color: "#C95B2A" }}>
-                                  {formatEuro(amortDureeEnsemble > 0 ? valAmort / amortDureeEnsemble : 0)}/an
+                              <div className="rounded-lg p-3" style={{ background: "rgba(201,91,42,0.06)", border: "0.5px solid rgba(201,91,42,0.2)" }}>
+                                <div className={LABEL}>Valeur amortissable</div>
+                                <div className="font-bold text-sm" style={{ color: "#C95B2A" }}>{formatEuro(valAmort)}</div>
+                                <div className="text-[10px] mt-1" style={{ color: "rgba(26,22,18,0.4)" }}>
+                                  Terrain (non amortissable) : {formatEuro(prixVal * (1 - amortPct / 100))}
                                 </div>
                               </div>
                             </div>
-                          );
-                        })()}
 
-                        {/* Mode : par composant */}
-                        {amortMode === "composant" && (() => {
-                          const prix = parseFloat(form.prix) || 0;
-                          const valAmort = prix * amortPct / 100;
-                          const totalPct = composants.reduce((s, c) => s + c.pct, 0);
-                          return (
-                            <div className="space-y-2">
-                              <div className="text-[11px]" style={{ color: "rgba(26,22,18,0.5)" }}>
-                                Valeur amortissable : <span className="font-medium" style={{ color: "#1A1612" }}>{formatEuro(valAmort)}</span>
+                            {/* Mode Global */}
+                            {amortMode === "ensemble" && (
+                              <div className="grid grid-cols-3 gap-3">
+                                <div className="rounded-lg p-3" style={{ background: "#F5F0E8" }}>
+                                  <div className={LABEL}>Valeur amortissable</div>
+                                  <div className="text-sm font-semibold" style={{ color: "#1A1612" }}>{formatEuro(valAmort)}</div>
+                                </div>
+                                <div className="rounded-lg p-3" style={{ background: "#F5F0E8" }}>
+                                  <div className={LABEL}>Durée (années)</div>
+                                  <input type="number" min={1} max={50} value={amortDureeEnsemble}
+                                    onChange={e => setAmortDureeEnsemble(Math.max(1, parseInt(e.target.value) || 1))}
+                                    className="w-16 px-2 py-1.5 text-sm rounded-md text-[#1A1612] focus:outline-none focus:ring-1 focus:ring-[#C95B2A]"
+                                    style={INPUT_STYLE} />
+                                </div>
+                                <div className="rounded-lg p-3" style={{ background: "rgba(201,91,42,0.08)", border: "0.5px solid rgba(201,91,42,0.2)" }}>
+                                  <div className={LABEL}>Amort. 1ère Année</div>
+                                  <div className="text-sm font-bold" style={{ color: "#C95B2A" }}>
+                                    {formatEuro(amortDureeEnsemble > 0 ? valAmort / amortDureeEnsemble : 0)}/an
+                                  </div>
+                                </div>
                               </div>
-                              {/* Header */}
-                              <div className="grid gap-2 text-[10px] uppercase tracking-wider px-2" style={{ gridTemplateColumns: "2fr 1.4fr 0.8fr 0.9fr", color: "rgba(26,22,18,0.4)" }}>
-                                <span>Composant</span>
-                                <span>% · Valeur</span>
-                                <span>Durée (ans)</span>
-                                <span>Amort./an</span>
-                              </div>
-                              {composants.map((c, i) => {
-                                const val = valAmort * c.pct / 100;
-                                return (
-                                  <div key={c.label} className="grid gap-2 items-center rounded-lg px-2 py-2.5"
-                                    style={{ gridTemplateColumns: "2fr 1.4fr 0.8fr 0.9fr", background: "#F5F0E8" }}>
-                                    <span className="text-xs font-medium" style={{ color: "#1A1612" }}>{c.label}</span>
-                                    <div className="flex items-center gap-1">
-                                      <input type="number" min={0} max={100} value={c.pct}
-                                        onChange={e => {
-                                          const v = Math.min(100, Math.max(0, parseInt(e.target.value) || 0));
-                                          setComposants(prev => prev.map((x, j) => j === i ? { ...x, pct: v } : x));
-                                        }}
-                                        className="w-10 px-1 py-1 text-xs rounded text-center focus:outline-none focus:ring-1 focus:ring-[#C95B2A]"
-                                        style={INPUT_STYLE} />
-                                      <span className="text-[10px]" style={{ color: "rgba(26,22,18,0.4)" }}>% · {formatEuro(val)}</span>
-                                    </div>
-                                    <input type="number" min={1} max={50} value={c.duree}
-                                      onChange={e => {
-                                        const v = Math.max(1, parseInt(e.target.value) || 1);
-                                        setComposants(prev => prev.map((x, j) => j === i ? { ...x, duree: v } : x));
-                                      }}
-                                      className="w-12 px-1 py-1 text-xs rounded text-center focus:outline-none focus:ring-1 focus:ring-[#C95B2A]"
-                                      style={INPUT_STYLE} />
-                                    <span className="text-xs font-medium" style={{ color: "#C95B2A" }}>
-                                      {formatEuro(c.duree > 0 ? val / c.duree : 0)}
+                            )}
+
+                            {/* Mode Par composant */}
+                            {amortMode === "composant" && (() => {
+                              const totalPct = composants.reduce((s, c) => s + c.pct, 0);
+                              return (
+                                <div className="rounded-lg overflow-hidden" style={{ border: "1px solid rgba(78,31,18,0.2)" }}>
+                                  {/* Header table */}
+                                  <div className="grid gap-x-3 px-3 py-2 text-[10px] font-semibold uppercase tracking-wider"
+                                    style={{ gridTemplateColumns: "2fr 1fr 0.7fr 1fr", background: "#4E1F12", color: "rgba(245,240,232,0.7)" }}>
+                                    <span>Composant</span>
+                                    <span>% · Valeur €</span>
+                                    <span>Durée</span>
+                                    <span style={{ color: "#C95B2A" }}>Amort 1ère Année</span>
+                                  </div>
+                                  {composants.map((c, i) => {
+                                    const val = valAmort * c.pct / 100;
+                                    return (
+                                      <div key={c.label} className="grid gap-x-3 items-center px-3 py-2.5"
+                                        style={{ gridTemplateColumns: "2fr 1fr 0.7fr 1fr", background: i % 2 === 0 ? "#F5F0E8" : "#EDE7DC", borderBottom: "0.5px solid rgba(26,22,18,0.06)" }}>
+                                        <span className="text-xs font-semibold" style={{ color: "#1A1612" }}>{c.label}</span>
+                                        <div className="flex items-center gap-1">
+                                          <input type="number" min={0} max={100} value={c.pct}
+                                            onChange={e => {
+                                              const v = Math.min(100, Math.max(0, parseInt(e.target.value) || 0));
+                                              setComposants(prev => prev.map((x, j) => j === i ? { ...x, pct: v } : x));
+                                            }}
+                                            className="w-9 px-1 py-1 text-xs rounded text-center focus:outline-none focus:ring-1 focus:ring-[#C95B2A]"
+                                            style={INPUT_STYLE} />
+                                          <span className="text-xs font-medium" style={{ color: "#C95B2A" }}>{formatEuro(val)}</span>
+                                        </div>
+                                        <div className="flex items-center gap-1">
+                                          <input type="number" min={1} max={50} value={c.duree}
+                                            onChange={e => {
+                                              const v = Math.max(1, parseInt(e.target.value) || 1);
+                                              setComposants(prev => prev.map((x, j) => j === i ? { ...x, duree: v } : x));
+                                            }}
+                                            className="w-10 px-1 py-1 text-xs rounded text-center focus:outline-none focus:ring-1 focus:ring-[#C95B2A]"
+                                            style={INPUT_STYLE} />
+                                          <span className="text-[10px]" style={{ color: "rgba(26,22,18,0.4)" }}>ans</span>
+                                        </div>
+                                        <span className="text-sm font-bold" style={{ color: "#C95B2A" }}>
+                                          {formatEuro(c.duree > 0 ? val / c.duree : 0)}
+                                        </span>
+                                      </div>
+                                    );
+                                  })}
+                                  {/* Total row */}
+                                  <div className="grid gap-x-3 items-center px-3 py-2.5 font-bold"
+                                    style={{ gridTemplateColumns: "2fr 1fr 0.7fr 1fr", background: "#4E1F12" }}>
+                                    <span className="text-xs" style={{ color: "#F5F0E8" }}>Total</span>
+                                    <span className="text-xs" style={{ color: totalPct === 100 ? "#6FCF97" : "#EB5757" }}>
+                                      {totalPct}%{totalPct !== 100 && " ⚠"}
+                                    </span>
+                                    <span />
+                                    <span className="text-sm" style={{ color: "#C95B2A" }}>
+                                      {formatEuro(composants.reduce((s, c) => s + (valAmort * c.pct / 100) / (c.duree || 1), 0))}/an
                                     </span>
                                   </div>
-                                );
-                              })}
-                              {/* Total */}
-                              <div className="grid gap-2 items-center rounded-lg px-2 py-2.5 font-medium"
-                                style={{ gridTemplateColumns: "2fr 1.4fr 0.8fr 0.9fr", background: "rgba(201,91,42,0.08)" }}>
-                                <span className="text-xs">Total</span>
-                                <span className="text-xs" style={{ color: totalPct === 100 ? "#1A7A52" : "#B03A2A" }}>
-                                  {totalPct}%{totalPct !== 100 && " ⚠"}
-                                </span>
-                                <span />
-                                <span className="text-xs" style={{ color: "#C95B2A" }}>
-                                  {formatEuro(composants.reduce((s, c) => s + (valAmort * c.pct / 100) / (c.duree || 1), 0))}/an
-                                </span>
-                              </div>
-                              {totalPct !== 100 && (
-                                <p className="text-[11px]" style={{ color: "#B03A2A" }}>
-                                  Les % doivent totaliser 100 % pour couvrir toute la valeur amortissable.
-                                </p>
-                              )}
-                            </div>
-                          );
-                        })()}
+                                  {totalPct !== 100 && (
+                                    <p className="px-3 py-1.5 text-[11px]" style={{ color: "#B03A2A", background: "rgba(176,58,42,0.05)" }}>
+                                      Les % doivent totaliser 100 % pour couvrir toute la valeur amortissable.
+                                    </p>
+                                  )}
+                                </div>
+                              );
+                            })()}
+                          </div>
+                        );
+                      })()}
+
+                      {/* Récap cards — à la fin */}
+                      <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+                        {[
+                          { label: "Bien", val: resultats.amortBien, sub: amortMode === "ensemble" ? `${amortPct}% prix · ${amortDureeEnsemble} ans` : `${amortPct}% · composants` },
+                          { label: "Mobilier", val: resultats.amortMobilier, sub: "mobilier · 7 ans" },
+                          { label: "Travaux", val: resultats.amortTravaux, sub: "travaux · 15 ans" },
+                          { label: "Notaire", val: resultats.amortNotaire, sub: "notaire · 20 ans" },
+                          { label: "Total", val: resultats.amortTotal, sub: "Déductible/an", accent: true },
+                        ].map(({ label, val, sub, accent }) => (
+                          <div key={label} className="rounded-lg p-3 text-center"
+                            style={{ background: accent ? "rgba(201,91,42,0.1)" : "#F5F0E8", border: accent ? "1px solid rgba(201,91,42,0.25)" : "0.5px solid rgba(26,22,18,0.08)" }}>
+                            <div className="text-[10px] uppercase tracking-[0.1em] mb-1"
+                              style={{ color: accent ? "#C95B2A" : "rgba(26,22,18,0.4)" }}>{label}</div>
+                            <div className="font-bold text-sm"
+                              style={{ color: accent ? "#C95B2A" : "#1A1612" }}>{formatEuro(val)}/an</div>
+                            <div className="text-[10px] mt-0.5" style={{ color: "rgba(26,22,18,0.35)" }}>{sub}</div>
+                          </div>
+                        ))}
                       </div>
+
+                      <div className="rounded-lg p-3 text-[12px]"
+                        style={{ background: "rgba(201,91,42,0.05)", border: "0.5px solid rgba(201,91,42,0.15)" }}>
+                        <div className="font-medium mb-0.5" style={{ color: "#C95B2A" }}>Durée estimée sans impôt à loyer stable :</div>
+                        <div style={{ color: "rgba(26,22,18,0.65)" }}>{anneesZeroImpot}</div>
+                      </div>
+
+                      {/* Bouton PDF */}
+                      <button onClick={handleGeneratePDF}
+                        className="w-full py-3 rounded-lg text-sm font-semibold flex items-center justify-center gap-2 transition-opacity hover:opacity-[0.88]"
+                        style={{ background: "#4E1F12", color: "#C95B2A", border: "1px solid rgba(201,91,42,0.3)" }}>
+                        <span>📄</span> Générer l&apos;amortissement PDF
+                      </button>
                     </div>
                   )}
                 </div>
 
-                {/* Loyer cible */}
-                <div className="rounded-xl p-5" style={cardStyle}>
-                  <h3 className="font-medium text-[#1A1612] mb-4 text-sm">Loyer cible par rendement brut</h3>
-                  <div className="flex gap-2 mb-4 flex-wrap">
-                    {[4, 5, 6, 7, 8].map(p => (
-                      <button key={p} onClick={() => setRendementTab(p)}
-                        className="px-4 py-1.5 rounded text-sm font-medium transition-colors"
-                        style={{
-                          background: rendementTab === p ? "#1A1612" : "#F5F0E8",
-                          color: rendementTab === p ? "#F5F0E8" : "rgba(26,22,18,0.55)",
-                          border: "0.5px solid rgba(26,22,18,0.12)",
-                        }}>
-                        {p}%
-                      </button>
-                    ))}
-                  </div>
-                  <div className="rounded-lg p-4 text-center" style={{ background: "#1A1612" }}>
-                    <div className="text-[11px] uppercase tracking-[0.1em] mb-2"
-                      style={{ color: "rgba(245,240,232,0.5)" }}>
-                      Loyer mensuel pour {rendementTab}% brut
-                    </div>
-                    <div className="text-3xl font-light" style={{ color: "#F5F0E8", letterSpacing: "-0.025em" }}>
-                      {formatEuro(loyerPourRendement(rendementTab))}
-                      <span className="text-base font-normal" style={{ color: "rgba(245,240,232,0.5)" }}>/mois</span>
-                    </div>
-                    <div className="text-[11px] mt-1" style={{ color: "rgba(245,240,232,0.35)" }}>
-                      sur {formatEuro(resultats.investTotal)} investis
-                    </div>
-                  </div>
-                </div>
               </div>
             )
           )}
