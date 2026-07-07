@@ -32,7 +32,7 @@ export default function Home() {
             Votre invest LMNP<br />
             <span style={{ color: "#C95B2A" }}>Rentable ?</span>
           </h1>
-          <p className="text-xl mb-3 whitespace-nowrap" style={{ color: "rgba(245,240,232,0.75)" }}>
+          <p className="text-xl mb-3 md:whitespace-nowrap" style={{ color: "rgba(245,240,232,0.75)" }}>
             Calculez en un click votre rentabilité, cash-flow et amortissement.
           </p>
           <p className="text-sm" style={{ color: "#C95B2A" }}>
