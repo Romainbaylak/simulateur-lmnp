@@ -1015,30 +1015,31 @@ th.col-an,td.col-an{width:26px}
                         : "linear-gradient(90deg, #4E1F12 0%, rgba(201,91,42,0.85) 100%)",
                     }}>
                     <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 text-base"
+                      <div className="w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0 text-lg"
                         style={{
                           background: showAmort ? "rgba(201,91,42,0.12)" : "rgba(245,240,232,0.18)",
                           color: showAmort ? "#C95B2A" : "#F5F0E8",
                         }}>⚙</div>
                       <div>
-                        <div className="font-semibold text-sm"
-                          style={{ color: showAmort ? "#1A1612" : "#F5F0E8" }}>Amortissement LMNP</div>
+                        <div className="font-bold text-base"
+                          style={{ color: showAmort ? "#1A1612" : "#F5F0E8", letterSpacing: "-0.01em" }}>Amortissement LMNP</div>
                         {!showAmort && (
-                          <div className="text-[11px] mt-0.5" style={{ color: "rgba(245,240,232,0.65)" }}>
+                          <div className="text-[13px] mt-0.5 font-medium" style={{ color: "rgba(245,240,232,0.75)" }}>
                             Configurez vos durées · Optimisez votre impôt
                           </div>
                         )}
                       </div>
                     </div>
-                    <div className="flex items-center gap-2">
-                      <span className="text-[10px] uppercase tracking-[0.1em] px-2.5 py-1 rounded hidden sm:inline-block"
+                    <div className="flex items-center gap-3">
+                      <span className="text-sm font-bold uppercase tracking-[0.08em] px-5 py-2.5 rounded-lg hidden sm:inline-block"
                         style={{
-                          background: showAmort ? "rgba(201,91,42,0.1)" : "rgba(245,240,232,0.18)",
-                          color: showAmort ? "#C95B2A" : "#F5F0E8",
+                          background: showAmort ? "rgba(201,91,42,0.12)" : "#C95B2A",
+                          color: showAmort ? "#C95B2A" : "#1A1612",
+                          letterSpacing: "0.06em",
                         }}>
                         {showAmort ? "Réduire" : "Configurer →"}
                       </span>
-                      <span style={{ color: showAmort ? "#C95B2A" : "#F5F0E8", fontSize: 12 }}>{showAmort ? "▲" : "▼"}</span>
+                      <span style={{ color: showAmort ? "#C95B2A" : "#F5F0E8", fontSize: 14, fontWeight: 700 }}>{showAmort ? "▲" : "▼"}</span>
                     </div>
                   </button>
                   {showAmort && (
