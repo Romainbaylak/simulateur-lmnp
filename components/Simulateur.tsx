@@ -207,13 +207,13 @@ export default function Simulateur() {
     const chargesDeductibles = chargesAnnuelles + interetsAnnee1;
     const resultatAvantAmort = loyerAnnuel - chargesDeductibles;
     const baseImposableReel = Math.max(0, resultatAvantAmort - amortTotal);
-    const impotReel = baseImposableReel * (form.tmi / 100 + 0.172);
+    const impotReel = baseImposableReel * (form.tmi / 100 + 0.186);
     const impotReelMensuel = impotReel / 12;
     const amortAReporter = Math.max(0, amortTotal - Math.max(0, resultatAvantAmort));
     const cashflowReelMensuel = (loyerAnnuel - creditAnnuel - chargesAnnuelles - impotReel) / 12;
 
     const baseBIC = loyerAnnuel * 0.70;
-    const impotBIC = baseBIC * (form.tmi / 100 + 0.172);
+    const impotBIC = baseBIC * (form.tmi / 100 + 0.186);
     const cashflowBICMensuel = (loyerAnnuel - creditAnnuel - chargesAnnuelles - impotBIC) / 12;
 
     const rendementBrut = (loyerAnnuel / investTotal) * 100;
@@ -337,7 +337,7 @@ export default function Simulateur() {
       const amortDisponible = amortTotalA + reportEntrant;
       const baseImposable = Math.max(0, resultatAvantAmort - amortDisponible);
       const newReport = Math.max(0, amortDisponible - Math.max(0, resultatAvantAmort));
-      const impot = baseImposable * (tmi / 100 + 0.172);
+      const impot = baseImposable * (tmi / 100 + 0.186);
       const cashflow = (loyerAnnuel - creditAnnuelR - chargesAnnuelles - impot) / 12;
       rows.push({
         year, capitalDebut, creditAnnuelR, interetsAnnee, amortTotalA, amortDisponible,
@@ -351,15 +351,13 @@ export default function Simulateur() {
     const zerosYears = rows.filter(ro => ro.baseImposable === 0).length;
     const firstTaxRow = rows.find(ro => ro.baseImposable > 0);
     const baseBIC = loyerAnnuel * 0.70;
-    const impotBIC = baseBIC * (tmi / 100 + 0.172);
+    const impotBIC = baseBIC * (tmi / 100 + 0.186);
 
     const tableRows = rows.map(ro => {
-      const reportTag = ro.reportEntrant > 0 || ro.reportNplus1 > 0
-        ? ` <span style="font-size:10px;color:rgba(26,22,18,0.45);white-space:nowrap">(${[
-            ro.reportEntrant > 0 ? `<span style="color:#B08A2A">+${fEur(ro.reportEntrant)} N-1</span>` : "",
-            ro.reportNplus1 > 0 ? `→ N+1 : ${fEur(ro.reportNplus1)}` : "",
-          ].filter(Boolean).join(" · ")})</span>`
-        : "";
+      const reportLines = [
+        ro.reportEntrant > 0 ? `<div style="font-size:10px;color:#B08A2A;margin-top:2px">+${fEur(ro.reportEntrant)} report N-1</div>` : "",
+        ro.reportNplus1 > 0 ? `<div style="font-size:10px;color:rgba(26,22,18,0.4);margin-top:1px">→ N+1 : ${fEur(ro.reportNplus1)}</div>` : "",
+      ].join("");
       return `
       <tr class="${ro.year === duree + 1 ? "credit-end" : ""}">
         <td class="col-an">${ro.year}</td>
@@ -368,7 +366,7 @@ export default function Simulateur() {
         <td class="cc-last">${ro.year <= duree ? fEur(ro.interetsAnnee) : "—"}</td>
         <td>${fEur(chargesAnnuelles)}</td>
         <td>${fEur(ro.resultatAvantAmort)}</td>
-        <td style="font-weight:600;white-space:nowrap">${fEur(ro.amortDisponible)}${reportTag}</td>
+        <td style="font-weight:600">${fEur(ro.amortDisponible)}${reportLines}</td>
         <td style="color:${ro.baseImposable === 0 ? "#1A7A52" : "#B03A2A"};font-weight:600">${fEur(ro.baseImposable)}</td>
         <td style="color:${ro.impot === 0 ? "#1A7A52" : "#B03A2A"};font-weight:600">${fEur(ro.impot)}</td>
         <td style="color:${ro.cashflow >= 0 ? "#1A7A52" : "#B03A2A"}">${fEur(ro.cashflow)}/mois</td>
@@ -382,29 +380,52 @@ export default function Simulateur() {
       : `Dès la 1ère année, la base imposable s'établit à ${fEur(rows[0]?.baseImposable ?? 0)}, générant un impôt de ${fEur(rows[0]?.impot ?? 0)}/an. L'amortissement reste partiellement utilisé — envisagez d'allonger les durées ou d'augmenter la part mobilier.`;
 
     const microbicNote = tmi > 0
-      ? `En Micro-BIC 2025, votre base imposable serait de <strong>${fEur(baseBIC)}</strong> par an (70 % des loyers bruts de ${fEur(loyerAnnuel)}/an, en cas de loyer constant), générant un impôt estimé de <strong>${fEur(impotBIC)}</strong> par an (TMI ${tmi} % + prélèvements sociaux 17,2 %).`
+      ? `En Micro-BIC 2025, votre base imposable serait de <strong>${fEur(baseBIC)}</strong> par an (70 % des loyers bruts de ${fEur(loyerAnnuel)}/an, en cas de loyer constant), générant un impôt estimé de <strong>${fEur(impotBIC)}</strong> par an (TMI ${tmi} % + prélèvements sociaux 18,6 %).`
       : `En Micro-BIC 2025, votre base imposable serait de <strong>${fEur(baseBIC)}</strong> par an (70 % des loyers bruts de ${fEur(loyerAnnuel)}/an, en cas de loyer constant). Renseignez votre TMI pour calculer l'impôt correspondant.`;
 
-    // Annexe amortissement
+    // Annexe amortissement — sub-tables per category
     const modeDesc = amortMode === "ensemble"
       ? `Amortissement global — ${amortPct} % de ${fEur(prix)} sur ${amortDureeEnsemble} ans`
       : `Amortissement par composant — ${amortPct} % de ${fEur(prix)} : ${composants.map(c => `${c.label} ${c.pct} %/${c.duree} ans`).join(", ")}`;
-    const annexeHeaderCols = amortMode === "ensemble"
-      ? `<th>An</th><th>Bien (global)</th><th>Mobilier</th><th>Travaux</th><th>Notaire</th><th>Total</th>`
-      : `<th>An</th>${composants.map(c => `<th>${c.label}</th>`).join("")}<th>Mobilier</th><th>Travaux</th><th>Notaire</th><th>Total</th>`;
-    const annexeRows = rows.map(ro => {
-      const mainCols = amortMode === "ensemble"
-        ? `<td>${fEur(ro.amortBienA)}</td>`
-        : ro.amortParComposant.map(v => `<td>${fEur(v)}</td>`).join("");
-      return `<tr class="${ro.year === duree + 1 ? "credit-end" : ""}">
-        <td class="col-an">${ro.year}</td>
-        ${mainCols}
-        <td>${fEur(ro.amortMobilierA)}</td>
-        <td>${fEur(ro.amortTravauxA)}</td>
-        <td>${fEur(ro.amortNotaireA)}</td>
-        <td style="font-weight:700;color:#C95B2A">${fEur(ro.amortTotalA)}</td>
-      </tr>`;
-    }).join("");
+
+    const makeSubTable = (label: string, initial: number, dureeComp: number, labelHtml?: string) => {
+      if (initial <= 0) return "";
+      const annuel = initial / dureeComp;
+      const rowsHtml = Array.from({ length: dureeComp }, (_, i) => {
+        const year = i + 1;
+        const reste = Math.max(0, initial - year * annuel);
+        return `<tr>
+          <td class="col-an">${year}</td>
+          <td>${fEur(annuel)}</td>
+          <td style="color:${reste === 0 ? "#1A7A52" : "inherit"}">${fEur(reste)}</td>
+        </tr>`;
+      }).join("");
+      const displayLabel = labelHtml ?? label;
+      return `
+      <div class="annexe-block">
+        <div class="annexe-block-title">${displayLabel}</div>
+        <div class="annexe-block-meta">Valeur initiale : <strong>${fEur(initial)}</strong> · Durée : <strong>${dureeComp} ans</strong> · Amort. annuel : <strong>${fEur(annuel)}</strong></div>
+        <table class="annexe-table">
+          <thead><tr><th class="col-an">An</th><th>Amort. annuel</th><th>Reste à amortir</th></tr></thead>
+          <tbody>${rowsHtml}</tbody>
+        </table>
+      </div>`;
+    };
+
+    const labelWithBreak = (lbl: string) => lbl.replace("Aménagement intérieur", "Aménagement<br>intérieur").replace("Aménagement Intérieur", "Aménagement<br>Intérieur");
+
+    let annexeBlocks = "";
+    if (amortMode === "ensemble") {
+      annexeBlocks += makeSubTable("Bien immobilier (global)", valeurAmortissable, amortDureeEnsemble);
+    } else {
+      for (const c of composants) {
+        const val = valeurAmortissable * c.pct / 100;
+        annexeBlocks += makeSubTable(c.label, val, c.duree, labelWithBreak(c.label));
+      }
+    }
+    if (mobilier > 0) annexeBlocks += makeSubTable("Mobilier", mobilier, 7);
+    if (travaux > 0) annexeBlocks += makeSubTable("Travaux", travaux, 15);
+    if (notaire > 0) annexeBlocks += makeSubTable("Frais de notaire", notaire, 20);
 
     const html = `<!DOCTYPE html><html lang="fr"><head><meta charset="UTF-8">
 <title>Tableau d'amortissement LMNP – toutlmnp</title>
@@ -439,13 +460,16 @@ th.col-an,td.col-an{width:26px}
 .conclusion{background:#4E1F12;color:#F5F0E8;border-radius:8px;padding:12px 16px;margin-top:14px;line-height:1.7}
 .fiscal-note{background:#EDE7DC;border-radius:6px;padding:12px 16px;line-height:1.85;color:rgba(26,22,18,.65);margin-top:10px;font-size:12px}
 .fiscal-note p{margin:0 0 6px}
-.annexe-table{border-collapse:collapse;font-size:13px;width:auto}
-.annexe-table th{background:#4E1F12;color:#F5F0E8;padding:7px 14px;text-align:right;font-weight:500;white-space:nowrap}
-.annexe-table th:first-child{text-align:left}
+.annexe-block{border:1.5px solid rgba(78,31,18,0.2);border-radius:7px;overflow:hidden;margin-bottom:14px;display:inline-block;min-width:320px;max-width:100%}
+.annexe-block-title{background:#4E1F12;color:#C95B2A;font-size:12px;font-weight:700;padding:7px 12px;letter-spacing:.02em}
+.annexe-block-meta{background:#EDE7DC;font-size:11px;padding:5px 12px;color:rgba(26,22,18,.65)}
+.annexe-table{border-collapse:collapse;font-size:13px;width:100%}
+.annexe-table th{background:#3a1509;color:#F5F0E8;padding:6px 14px;text-align:right;font-weight:500;white-space:nowrap}
+.annexe-table th:first-child,th.col-an{text-align:left}
 .annexe-table td{padding:6px 14px;text-align:right;border-bottom:.5px solid rgba(26,22,18,.07);vertical-align:middle}
 .annexe-table td:first-child{text-align:left;font-weight:600}
 .annexe-table tr:nth-child(even){background:rgba(201,91,42,.04)}
-.annexe-table tr.credit-end td{border-top:2px solid rgba(201,91,42,.35)}
+.annexe-wrapper{display:flex;flex-wrap:wrap;gap:14px}
 @media print{body{padding:0}header{border-radius:0}}
 </style></head><body>
 <header>
@@ -494,8 +518,8 @@ th.col-an,td.col-an{width:26px}
 <div class="fiscal-note">
   <p><strong>Comment est calculé votre impôt ?</strong></p>
   <p><strong>TMI</strong> (Tranche Marginale d'Imposition) : taux appliqué à votre dernière tranche de revenus, ici <strong>${tmi} %</strong>.</p>
-  <p><strong>PS</strong> (Prélèvements Sociaux) : <strong>17,2 %</strong>, systématiquement prélevés sur les revenus du patrimoine immobilier.</p>
-  <p>Impôt total = base imposable × (TMI + PS) = base × <strong>${(tmi + 17.2).toFixed(1)} %</strong>.</p>
+  <p><strong>PS</strong> (Prélèvements Sociaux) : <strong>18,6 %</strong> depuis la loi de financement de la sécurité sociale 2026 (contre 17,2 % auparavant), prélevés sur les revenus du patrimoine. Le LMNP paie uniquement ces prélèvements sans ouvrir de droits sociaux.</p>
+  <p>Impôt total = base imposable × (TMI + PS) = base × <strong>${(tmi + 18.6).toFixed(1)} %</strong>.</p>
 </div>
 
 <h2>Tableau annuel — Régime réel (${totalYears} ans)</h2>
@@ -509,9 +533,9 @@ th.col-an,td.col-an{width:26px}
 <div class="conclusion">✓ ${conclusionText}</div>
 <div class="note" style="margin-top:12px"><strong>Micro-BIC 2025 :</strong> ${microbicNote}</div>
 
-<h2 style="margin-top:24px">Annexe — Détail de l'amortissement (${totalYears} ans)</h2>
-<div class="note" style="margin-bottom:10px">${modeDesc}</div>
-<table class="annexe-table"><thead><tr>${annexeHeaderCols}</tr></thead><tbody>${annexeRows}</tbody></table>
+<h2 style="margin-top:24px">Annexe — Détail de l'amortissement par catégorie</h2>
+<div class="note" style="margin-bottom:12px">${modeDesc}</div>
+<div class="annexe-wrapper">${annexeBlocks}</div>
 </body></html>`;
 
     const win = window.open("", "_blank");
@@ -811,7 +835,7 @@ th.col-an,td.col-an{width:26px}
                   {[
                     { label: "Rendement brut", val: formatPct(resultats.rendementBrut), sub: "loyers / investissement" },
                     { label: "Rendement net", val: formatPct(resultats.rendementNet), sub: "après charges" },
-                    { label: "Impôt estimé annuel", val: formatEuro(resultats.impotReel), sub: `TMI ${form.tmi}% + PS 17,2%` },
+                    { label: "Impôt estimé annuel", val: formatEuro(resultats.impotReel), sub: `TMI ${form.tmi}% + PS 18,6% (LFSS 2026)` },
                     { label: "Impôt estimé mensuel", val: formatEuro(resultats.impotReelMensuel), sub: "annuel ÷ 12" },
                     {
                       label: "Cash-flow mensuel",
