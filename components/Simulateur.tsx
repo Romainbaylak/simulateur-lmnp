@@ -256,7 +256,7 @@ export default function Simulateur() {
     : "-";
 
   const loyerEffectif = loyerSlider > 0 ? loyerSlider : parseFloat(form.loyer) || 0;
-  const sliderMin = Math.max(100, Math.round(loyerBas * 0.7));
+  const sliderMin = Math.max(100, Math.floor(loyerBas * 0.7 / 25) * 25);
   const sliderMax = loyerHaut > 0 ? Math.round(loyerHaut * 1.5) : Math.round((parseFloat(form.loyer) || 500) * 2);
 
   const handleGeneratePDF = () => {
