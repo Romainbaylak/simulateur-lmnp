@@ -353,7 +353,14 @@ export default function Simulateur() {
     const baseBIC = loyerAnnuel * 0.70;
     const impotBIC = baseBIC * (tmi / 100 + 0.172);
 
-    const tableRows = rows.map(ro => `
+    const tableRows = rows.map(ro => {
+      const reportTag = ro.reportEntrant > 0 || ro.reportNplus1 > 0
+        ? ` <span style="font-size:10px;color:rgba(26,22,18,0.45);white-space:nowrap">(${[
+            ro.reportEntrant > 0 ? `<span style="color:#B08A2A">+${fEur(ro.reportEntrant)} N-1</span>` : "",
+            ro.reportNplus1 > 0 ? `→ N+1 : ${fEur(ro.reportNplus1)}` : "",
+          ].filter(Boolean).join(" · ")})</span>`
+        : "";
+      return `
       <tr class="${ro.year === duree + 1 ? "credit-end" : ""}">
         <td class="col-an">${ro.year}</td>
         <td class="cc">${ro.year <= duree ? fEur(ro.capitalDebut) : "—"}</td>
@@ -361,11 +368,12 @@ export default function Simulateur() {
         <td class="cc-last">${ro.year <= duree ? fEur(ro.interetsAnnee) : "—"}</td>
         <td>${fEur(chargesAnnuelles)}</td>
         <td>${fEur(ro.resultatAvantAmort)}</td>
-        <td style="font-weight:600">${fEur(ro.amortDisponible)}${ro.reportEntrant > 0 ? `<br/><small style="color:#B08A2A">dont report N-1 : ${fEur(ro.reportEntrant)}</small>` : ""}${ro.reportNplus1 > 0 ? `<br/><small style="color:rgba(26,22,18,0.4)">→ report N+1 : ${fEur(ro.reportNplus1)}</small>` : ""}</td>
+        <td style="font-weight:600;white-space:nowrap">${fEur(ro.amortDisponible)}${reportTag}</td>
         <td style="color:${ro.baseImposable === 0 ? "#1A7A52" : "#B03A2A"};font-weight:600">${fEur(ro.baseImposable)}</td>
         <td style="color:${ro.impot === 0 ? "#1A7A52" : "#B03A2A"};font-weight:600">${fEur(ro.impot)}</td>
         <td style="color:${ro.cashflow >= 0 ? "#1A7A52" : "#B03A2A"}">${fEur(ro.cashflow)}/mois</td>
-      </tr>`).join("");
+      </tr>`;
+    }).join("");
 
     const conclusionText = zerosYears >= totalYears
       ? `Sur toute la période analysée (${totalYears} ans), la base imposable reste à 0 € grâce à l'amortissement. Vous ne payez aucun impôt sur vos revenus locatifs pendant cette période.`
@@ -378,6 +386,9 @@ export default function Simulateur() {
       : `En Micro-BIC 2025, votre base imposable serait de <strong>${fEur(baseBIC)}</strong> par an (70 % des loyers bruts de ${fEur(loyerAnnuel)}/an, en cas de loyer constant). Renseignez votre TMI pour calculer l'impôt correspondant.`;
 
     // Annexe amortissement
+    const modeDesc = amortMode === "ensemble"
+      ? `Amortissement global — ${amortPct} % de ${fEur(prix)} sur ${amortDureeEnsemble} ans`
+      : `Amortissement par composant — ${amortPct} % de ${fEur(prix)} : ${composants.map(c => `${c.label} ${c.pct} %/${c.duree} ans`).join(", ")}`;
     const annexeHeaderCols = amortMode === "ensemble"
       ? `<th>An</th><th>Bien (global)</th><th>Mobilier</th><th>Travaux</th><th>Notaire</th><th>Total</th>`
       : `<th>An</th>${composants.map(c => `<th>${c.label}</th>`).join("")}<th>Mobilier</th><th>Travaux</th><th>Notaire</th><th>Total</th>`;
@@ -395,10 +406,6 @@ export default function Simulateur() {
       </tr>`;
     }).join("");
 
-    const modeDesc = amortMode === "ensemble"
-      ? `Amortissement global — ${amortPct} % de ${fEur(prix)} sur ${amortDureeEnsemble} ans`
-      : `Amortissement par composant — ${amortPct} % de ${fEur(prix)} : ${composants.map(c => `${c.label} ${c.pct} %/${c.duree} ans`).join(", ")}`;
-
     const html = `<!DOCTYPE html><html lang="fr"><head><meta charset="UTF-8">
 <title>Tableau d'amortissement LMNP – toutlmnp</title>
 <style>
@@ -407,10 +414,10 @@ header{background:#4E1F12;color:#F5F0E8;padding:14px 20px;border-radius:8px;marg
 .lt{font-weight:300;font-size:20px;color:#F5F0E8}.ll{font-weight:700;font-size:20px;color:#C95B2A}
 .ls{font-size:8px;letter-spacing:.12em;color:rgba(245,240,232,.5);text-transform:uppercase;margin-top:2px}
 h2{font-size:13px;font-weight:700;color:#4E1F12;border-bottom:2px solid #C95B2A;padding-bottom:5px;margin:18px 0 8px}
-table{width:100%;border-collapse:collapse;font-size:11px}
-th{background:#4E1F12;color:#F5F0E8;padding:6px 6px;text-align:right;font-weight:500;white-space:nowrap}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th{background:#4E1F12;color:#F5F0E8;padding:7px 8px;text-align:right;font-weight:500;white-space:nowrap}
 th:first-child,th.col-an{text-align:left}
-td{padding:5px 6px;text-align:right;border-bottom:.5px solid rgba(26,22,18,.07)}
+td{padding:7px 8px;text-align:right;border-bottom:.5px solid rgba(26,22,18,.07);vertical-align:middle}
 td:first-child,td.col-an{text-align:left;font-weight:600}
 tr:nth-child(even){background:rgba(201,91,42,.04)}
 tr.credit-end td{border-top:2px solid rgba(201,91,42,.35)}
@@ -419,8 +426,7 @@ th.cc:first-of-type{border-left:2px solid #C95B2A}
 th.cc-last{border-right:2px solid #C95B2A}
 td.cc{background:rgba(78,31,18,0.04);border-left:2px solid rgba(201,91,42,.25)}
 td.cc-last{background:rgba(78,31,18,0.04);border-right:2px solid rgba(201,91,42,.25)}
-th.col-an{width:28px}
-td.col-an{width:28px}
+th.col-an,td.col-an{width:26px}
 .recap{display:flex;gap:0;margin-bottom:10px}
 .recap-col{flex:1;padding:10px 12px;border-radius:6px;margin-right:8px}
 .recap-col:last-child{margin-right:0}
@@ -431,7 +437,15 @@ td.col-an{width:28px}
 .orange{color:#C95B2A}
 .note{background:rgba(201,91,42,.08);border:1px solid rgba(201,91,42,.2);border-radius:6px;padding:10px 14px;line-height:1.7;color:rgba(26,22,18,.7);margin-top:10px}
 .conclusion{background:#4E1F12;color:#F5F0E8;border-radius:8px;padding:12px 16px;margin-top:14px;line-height:1.7}
-.fiscal-note{background:#EDE7DC;border-radius:6px;padding:10px 14px;line-height:1.7;color:rgba(26,22,18,.65);margin-top:10px;font-size:10px}
+.fiscal-note{background:#EDE7DC;border-radius:6px;padding:12px 16px;line-height:1.85;color:rgba(26,22,18,.65);margin-top:10px;font-size:12px}
+.fiscal-note p{margin:0 0 6px}
+.annexe-table{border-collapse:collapse;font-size:13px;width:auto}
+.annexe-table th{background:#4E1F12;color:#F5F0E8;padding:7px 14px;text-align:right;font-weight:500;white-space:nowrap}
+.annexe-table th:first-child{text-align:left}
+.annexe-table td{padding:6px 14px;text-align:right;border-bottom:.5px solid rgba(26,22,18,.07);vertical-align:middle}
+.annexe-table td:first-child{text-align:left;font-weight:600}
+.annexe-table tr:nth-child(even){background:rgba(201,91,42,.04)}
+.annexe-table tr.credit-end td{border-top:2px solid rgba(201,91,42,.35)}
 @media print{body{padding:0}header{border-radius:0}}
 </style></head><body>
 <header>
@@ -478,17 +492,14 @@ td.col-an{width:28px}
 </tbody></table>
 
 <div class="fiscal-note">
-  <strong>Comment est calculé votre impôt ?</strong> &nbsp;
-  <strong>TMI</strong> (Tranche Marginale d'Imposition) : taux appliqué à votre dernière tranche de revenus, ici ${tmi} %. &nbsp;
-  <strong>PS</strong> (Prélèvements Sociaux) : 17,2 %, systématiquement prélevés sur les revenus du patrimoine immobilier. &nbsp;
-  Impôt total = base imposable × (TMI + PS) = base × ${(tmi + 17.2).toFixed(1)} %.
+  <p><strong>Comment est calculé votre impôt ?</strong></p>
+  <p><strong>TMI</strong> (Tranche Marginale d'Imposition) : taux appliqué à votre dernière tranche de revenus, ici <strong>${tmi} %</strong>.</p>
+  <p><strong>PS</strong> (Prélèvements Sociaux) : <strong>17,2 %</strong>, systématiquement prélevés sur les revenus du patrimoine immobilier.</p>
+  <p>Impôt total = base imposable × (TMI + PS) = base × <strong>${(tmi + 17.2).toFixed(1)} %</strong>.</p>
 </div>
 
-<h2>Choix d'amortissement</h2>
-<div class="note">${modeDesc}</div>
-
 <h2>Tableau annuel — Régime réel (${totalYears} ans)</h2>
-<p style="font-size:10px;color:rgba(26,22,18,.5);margin-bottom:6px">Projection en régime réel simplifié avec loyers et charges constants. L'amortissement évolue chaque année. La ligne marquée indique la fin du crédit.</p>
+<p style="font-size:11px;color:rgba(26,22,18,.5);margin-bottom:6px">Projection en régime réel simplifié avec loyers et charges constants. L'amortissement évolue chaque année. La ligne marquée indique la fin du crédit.</p>
 <table><thead><tr>
   <th class="col-an">An</th>
   <th class="cc">Capital restant</th><th class="cc">Annuités</th><th class="cc-last">dont intérêts</th>
@@ -499,7 +510,8 @@ td.col-an{width:28px}
 <div class="note" style="margin-top:12px"><strong>Micro-BIC 2025 :</strong> ${microbicNote}</div>
 
 <h2 style="margin-top:24px">Annexe — Détail de l'amortissement (${totalYears} ans)</h2>
-<table><thead><tr>${annexeHeaderCols}</tr></thead><tbody>${annexeRows}</tbody></table>
+<div class="note" style="margin-bottom:10px">${modeDesc}</div>
+<table class="annexe-table"><thead><tr>${annexeHeaderCols}</tr></thead><tbody>${annexeRows}</tbody></table>
 </body></html>`;
 
     const win = window.open("", "_blank");
@@ -960,7 +972,7 @@ td.col-an{width:28px}
 
                   <div className="mt-4 p-4 rounded-lg text-[13px]"
                     style={{ background: "#F5F0E8", border: "0.5px solid rgba(26,22,18,0.08)", color: "rgba(26,22,18,0.65)", lineHeight: 1.6 }}>
-                    Nous conseillons le Régime Réel au Régime Micro-BIC, qui permet un amortissement partiel du bien, des charges déductibles, et donc un résultat au bilan comptable nul qui réduit la base imposable.{" "}
+                    Si vous avez un emprunt et des charges, nous conseillons le Régime Réel au Régime Micro-BIC, qui permet un amortissement partiel du bien, des charges déductibles, et donc un résultat au bilan comptable nul qui réduit la base imposable.{" "}
                     <Link href="/comment-ca-marche"
                       className="inline-flex items-center gap-1 font-medium underline"
                       style={{ color: "#C95B2A" }}>
@@ -972,15 +984,23 @@ td.col-an{width:28px}
                 {/* Amortissement */}
                 <div className="rounded-xl overflow-hidden" style={cardStyle}>
                   <button onClick={() => setShowAmort(!showAmort)}
-                    className="w-full flex justify-between items-center p-5 text-left transition-opacity hover:opacity-90"
-                    style={{ background: showAmort ? "transparent" : "linear-gradient(90deg, rgba(78,31,18,0.04) 0%, rgba(201,91,42,0.07) 100%)" }}>
+                    className="w-full flex justify-between items-center p-5 text-left transition-all hover:opacity-95"
+                    style={{
+                      background: showAmort
+                        ? "transparent"
+                        : "linear-gradient(90deg, #4E1F12 0%, rgba(201,91,42,0.85) 100%)",
+                    }}>
                     <div className="flex items-center gap-3">
                       <div className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 text-base"
-                        style={{ background: "rgba(201,91,42,0.12)", color: "#C95B2A" }}>⚙</div>
+                        style={{
+                          background: showAmort ? "rgba(201,91,42,0.12)" : "rgba(245,240,232,0.18)",
+                          color: showAmort ? "#C95B2A" : "#F5F0E8",
+                        }}>⚙</div>
                       <div>
-                        <div className="font-semibold text-sm" style={{ color: "#1A1612" }}>Amortissement LMNP</div>
+                        <div className="font-semibold text-sm"
+                          style={{ color: showAmort ? "#1A1612" : "#F5F0E8" }}>Amortissement LMNP</div>
                         {!showAmort && (
-                          <div className="text-[11px] mt-0.5" style={{ color: "rgba(26,22,18,0.5)" }}>
+                          <div className="text-[11px] mt-0.5" style={{ color: "rgba(245,240,232,0.65)" }}>
                             Configurez vos durées · Optimisez votre impôt
                           </div>
                         )}
@@ -988,10 +1008,13 @@ td.col-an{width:28px}
                     </div>
                     <div className="flex items-center gap-2">
                       <span className="text-[10px] uppercase tracking-[0.1em] px-2.5 py-1 rounded hidden sm:inline-block"
-                        style={{ background: "rgba(201,91,42,0.1)", color: "#C95B2A" }}>
-                        {showAmort ? "Réduire" : "Configurer"}
+                        style={{
+                          background: showAmort ? "rgba(201,91,42,0.1)" : "rgba(245,240,232,0.18)",
+                          color: showAmort ? "#C95B2A" : "#F5F0E8",
+                        }}>
+                        {showAmort ? "Réduire" : "Configurer →"}
                       </span>
-                      <span style={{ color: "#C95B2A", fontSize: 12 }}>{showAmort ? "▲" : "▼"}</span>
+                      <span style={{ color: showAmort ? "#C95B2A" : "#F5F0E8", fontSize: 12 }}>{showAmort ? "▲" : "▼"}</span>
                     </div>
                   </button>
                   {showAmort && (
