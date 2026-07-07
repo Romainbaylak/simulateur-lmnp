@@ -290,8 +290,9 @@ export default function Simulateur() {
 
     interface PdfRow {
       year: number; capitalDebut: number; creditAnnuelR: number; interetsAnnee: number;
-      amortTotalA: number; reportNplus1: number; resultatAvantAmort: number;
-      chargesDeductibles: number; baseImposable: number; impot: number; cashflow: number;
+      amortTotalA: number; amortDisponible: number; reportEntrant: number; reportNplus1: number;
+      resultatAvantAmort: number; chargesDeductibles: number; baseImposable: number;
+      impot: number; cashflow: number;
       amortBienA: number; amortMobilierA: number; amortTravauxA: number; amortNotaireA: number;
       amortParComposant: number[];
     }
@@ -332,13 +333,15 @@ export default function Simulateur() {
       const amortTotalA = amortBienA + amortMobilierA + amortTravauxA + amortNotaireA;
       const chargesDeductibles = chargesAnnuelles + interetsAnnee;
       const resultatAvantAmort = loyerAnnuel - chargesDeductibles;
-      const amortDisponible = amortTotalA + reportN;
+      const reportEntrant = reportN;
+      const amortDisponible = amortTotalA + reportEntrant;
       const baseImposable = Math.max(0, resultatAvantAmort - amortDisponible);
       const newReport = Math.max(0, amortDisponible - Math.max(0, resultatAvantAmort));
       const impot = baseImposable * (tmi / 100 + 0.172);
       const cashflow = (loyerAnnuel - creditAnnuelR - chargesAnnuelles - impot) / 12;
       rows.push({
-        year, capitalDebut, creditAnnuelR, interetsAnnee, amortTotalA, reportNplus1: newReport,
+        year, capitalDebut, creditAnnuelR, interetsAnnee, amortTotalA, amortDisponible,
+        reportEntrant, reportNplus1: newReport,
         resultatAvantAmort, chargesDeductibles, baseImposable, impot, cashflow,
         amortBienA, amortMobilierA, amortTravauxA, amortNotaireA, amortParComposant,
       });
@@ -358,7 +361,7 @@ export default function Simulateur() {
         <td class="cc-last">${ro.year <= duree ? fEur(ro.interetsAnnee) : "—"}</td>
         <td>${fEur(chargesAnnuelles)}</td>
         <td>${fEur(ro.resultatAvantAmort)}</td>
-        <td>${fEur(ro.amortTotalA)}${ro.reportNplus1 > 0 ? `<br/><small style="color:#B08A2A">Report N+1: ${fEur(ro.reportNplus1)}</small>` : ""}</td>
+        <td style="font-weight:600">${fEur(ro.amortDisponible)}${ro.reportEntrant > 0 ? `<br/><small style="color:#B08A2A">dont report N-1 : ${fEur(ro.reportEntrant)}</small>` : ""}${ro.reportNplus1 > 0 ? `<br/><small style="color:rgba(26,22,18,0.4)">→ report N+1 : ${fEur(ro.reportNplus1)}</small>` : ""}</td>
         <td style="color:${ro.baseImposable === 0 ? "#1A7A52" : "#B03A2A"};font-weight:600">${fEur(ro.baseImposable)}</td>
         <td style="color:${ro.impot === 0 ? "#1A7A52" : "#B03A2A"};font-weight:600">${fEur(ro.impot)}</td>
         <td style="color:${ro.cashflow >= 0 ? "#1A7A52" : "#B03A2A"}">${fEur(ro.cashflow)}/mois</td>
