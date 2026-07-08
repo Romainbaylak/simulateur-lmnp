@@ -178,14 +178,14 @@ export default function Simulateur() {
   const [showDropdown, setShowDropdown] = useState(false);
   const [loyerSlider, setLoyerSlider] = useState<number>(0);
   const [showAmort, setShowAmort] = useState(false);
-  const [amortPct, setAmortPct] = useState(80);
+  const [amortPct, setAmortPct] = useState(85);
   const [amortMode, setAmortMode] = useState<"ensemble" | "composant">("ensemble");
-  const [amortDureeEnsemble, setAmortDureeEnsemble] = useState(20);
+  const [amortDureeEnsemble, setAmortDureeEnsemble] = useState(25);
   const [composants, setComposants] = useState([
-    { label: "Bâti / Gros œuvre", pct: 50, duree: 20 },
-    { label: "Toiture", pct: 15, duree: 20 },
-    { label: "Aménagement intérieur", pct: 15, duree: 12 },
-    { label: "Électricité", pct: 10, duree: 10 },
+    { label: "Bâti / Gros œuvre", pct: 45, duree: 40 },
+    { label: "Toiture", pct: 15, duree: 25 },
+    { label: "Aménagement intérieur", pct: 20, duree: 15 },
+    { label: "Électricité", pct: 10, duree: 20 },
     { label: "Étanchéité", pct: 10, duree: 20 },
   ]);
   const [resultats, setResultats] = useState<Resultats | null>(null);
@@ -1105,7 +1105,12 @@ ${annexeTable}
                                 width: 200,
                                 textAlign: "center",
                               }}>
-                              {mode === "ensemble" ? "Amortissement Global" : "Amortissement par composant"}
+                              {mode === "ensemble" ? (
+                                <span className="flex flex-col items-center leading-tight">
+                                  <span>Amortissement Global</span>
+                                  <span className="text-[10px] font-normal mt-0.5" style={{ color: amortMode === "ensemble" ? "rgba(245,240,232,0.55)" : "rgba(26,22,18,0.35)" }}>Applicable aux petits biens</span>
+                                </span>
+                              ) : "Amortissement par composant"}
                             </button>
                           ))}
                         </div>
