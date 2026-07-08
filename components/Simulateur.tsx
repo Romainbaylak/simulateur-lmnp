@@ -375,10 +375,9 @@ export default function Simulateur() {
     const impotBIC = baseBIC * (tmi / 100 + 0.186);
 
     const tableRows = rows.map(ro => {
-      const reportLines = [
-        ro.reportEntrant > 0 ? `<div style="font-size:10px;color:#B08A2A;margin-top:2px">+${fEur(ro.reportEntrant)} report N-1</div>` : "",
-        ro.reportNplus1 > 0 ? `<div style="font-size:10px;color:rgba(26,22,18,0.4);margin-top:1px">→ N+1 : ${fEur(ro.reportNplus1)}</div>` : "",
-      ].join("");
+      const reportLines = ro.reportNplus1 > 0
+        ? `<div style="font-size:9px;color:#B08A2A;margin-top:2px">→ N+1 : ${fEur(ro.reportNplus1)}</div>`
+        : "";
       return `
       <tr class="${ro.year === duree + 1 ? "credit-end" : ""}">
         <td class="col-an">${ro.year}</td>
@@ -394,38 +393,57 @@ export default function Simulateur() {
       </tr>`;
     }).join("");
 
-    // Annexe unifiée — une seule table toutes catégories sur même ligne
+    // Annexe — table unifiée avec sous-colonnes Amort + Reste par catégorie
     const annexeCols: { label: string; annuel: number; duree: number; initial: number }[] = [];
     if (amortMode === "ensemble") {
       if (valeurAmortissable > 0) annexeCols.push({ label: "Bien immobilier", annuel: valeurAmortissable / amortDureeEnsemble, duree: amortDureeEnsemble, initial: valeurAmortissable });
     } else {
       for (const c of composants) {
         const val = valeurAmortissable * c.pct / 100;
-        if (val > 0) annexeCols.push({ label: c.label.replace("Aménagement intérieur", "Amén. intérieur"), annuel: val / c.duree, duree: c.duree, initial: val });
+        if (val > 0) annexeCols.push({ label: c.label.replace("Aménagement intérieur", "Amén.<br>intérieur"), annuel: val / c.duree, duree: c.duree, initial: val });
       }
     }
     if (mobilier > 0) annexeCols.push({ label: "Mobilier", annuel: mobilier / 7, duree: 7, initial: mobilier });
     if (travaux > 0) annexeCols.push({ label: "Travaux", annuel: travaux / 15, duree: 15, initial: travaux });
     if (notaire > 0) annexeCols.push({ label: "Frais notaire", annuel: notaire / 20, duree: 20, initial: notaire });
     const annexeMaxDuree = annexeCols.length > 0 ? Math.max(...annexeCols.map(c => c.duree)) : 0;
-    const annexeFontSize = annexeCols.length > 5 ? 9 : annexeCols.length > 4 ? 10 : 11;
-    const annexeHeaderCells = annexeCols.map(c => `<th style="font-size:${annexeFontSize}px">${c.label}<br><span style="font-weight:400;opacity:.7">${fEur(c.initial)}</span></th>`).join("");
+    // 2 sous-colonnes par catégorie + colonne An + colonne Cumul
+    const totalSubCols = annexeCols.length * 2 + 2;
+    const afs = totalSubCols > 16 ? 7 : totalSubCols > 12 ? 8 : totalSubCols > 8 ? 9 : 10;
+    const headerRow1 = annexeCols.map(c =>
+      `<th colspan="2" style="text-align:center;font-size:${afs}px;border-right:1px solid rgba(255,255,255,0.15);padding:5px 4px;vertical-align:top">
+        <div style="font-weight:700">${c.label}</div>
+        <div style="font-weight:400;opacity:.75;font-size:${Math.max(6, afs - 1)}px;margin-top:3px;line-height:1.55;white-space:nowrap">
+          Valeur initiale : ${fEur(c.initial)}<br>Durée : ${c.duree} ans<br>Amort. annuel : ${fEur(c.annuel)}
+        </div>
+      </th>`).join("");
+    const headerRow2 = annexeCols.map(() =>
+      `<th style="font-size:${afs}px;background:#3a1509;padding:4px 5px">Amort.</th>
+       <th style="font-size:${afs}px;background:#3a1509;padding:4px 5px;border-right:1px solid rgba(255,255,255,0.12)">Reste</th>`).join("");
     const annexeBodyRows = Array.from({ length: annexeMaxDuree }, (_, i) => {
       const year = i + 1;
       let cumul = 0;
       const cells = annexeCols.map(c => {
-        if (year <= c.duree) { cumul += c.annuel; return `<td style="font-size:${annexeFontSize}px">${fEur(c.annuel)}</td>`; }
-        return `<td></td>`;
+        if (year <= c.duree) {
+          const reste = Math.max(0, c.initial - year * c.annuel);
+          cumul += c.annuel;
+          return `<td style="font-size:${afs}px;padding:4px 5px">${fEur(c.annuel)}</td>
+                  <td style="font-size:${afs}px;padding:4px 5px;color:${reste <= 0.01 ? "#1A7A52" : "rgba(26,22,18,0.55)"};border-right:1px solid rgba(26,22,18,0.07)">${fEur(reste)}</td>`;
+        }
+        return `<td></td><td style="border-right:1px solid rgba(26,22,18,0.07)"></td>`;
       }).join("");
-      return `<tr><td class="col-an" style="font-size:${annexeFontSize}px">${year}</td>${cells}<td style="font-weight:700;color:#C95B2A;font-size:${annexeFontSize}px">${fEur(cumul)}</td></tr>`;
+      return `<tr><td class="col-an" style="font-size:${afs}px;padding:4px 4px;width:18px">${year}</td>${cells}<td style="font-weight:700;color:#C95B2A;font-size:${afs}px;padding:4px 5px">${fEur(cumul)}</td></tr>`;
     }).join("");
     const annexeTable = annexeCols.length > 0 ? `
-      <table style="width:100%;border-collapse:collapse;font-size:${annexeFontSize}px">
-        <thead><tr>
-          <th class="col-an" style="font-size:${annexeFontSize}px">An</th>
-          ${annexeHeaderCells}
-          <th style="background:#C95B2A;color:#1A1612;font-size:${annexeFontSize}px">Cumul/an</th>
-        </tr></thead>
+      <table style="width:100%;border-collapse:collapse">
+        <thead>
+          <tr>
+            <th rowspan="2" style="font-size:${afs}px;width:18px;padding:4px" class="col-an">An</th>
+            ${headerRow1}
+            <th rowspan="2" style="background:#C95B2A;color:#1A1612;font-size:${afs}px;padding:5px 4px;text-align:center">Cumul<br>/an</th>
+          </tr>
+          <tr>${headerRow2}</tr>
+        </thead>
         <tbody>${annexeBodyRows}</tbody>
       </table>` : "";
 
@@ -439,16 +457,15 @@ export default function Simulateur() {
       ? `En Micro-BIC 2025, votre base imposable serait de <strong>${fEur(baseBIC)}</strong> par an (70 % des loyers bruts de ${fEur(loyerAnnuel)}/an, en cas de loyer constant), générant un impôt estimé de <strong>${fEur(impotBIC)}</strong> par an (TMI ${tmi} % + prélèvements sociaux 18,6 %).`
       : `En Micro-BIC 2025, votre base imposable serait de <strong>${fEur(baseBIC)}</strong> par an (70 % des loyers bruts de ${fEur(loyerAnnuel)}/an, en cas de loyer constant). Renseignez votre TMI pour calculer l'impôt correspondant.`;
 
-    const modeDesc = amortMode === "ensemble"
-      ? `Amortissement global — ${amortPct} % de ${fEur(prix)} sur ${amortDureeEnsemble} ans`
-      : `Amortissement par composant — ${amortPct} % de ${fEur(prix)} : ${composants.map(c => `${c.label} ${c.pct} %/${c.duree} ans`).join(", ")}`;
-
     const html = `<!DOCTYPE html><html lang="fr"><head><meta charset="UTF-8">
 <title>Analyse de Rentabilité LMNP – toutlmnp</title>
 <style>
-@page{size:A4;margin:0}
+@page{size:A4;margin:10mm 12mm}
 *{box-sizing:border-box}
-body{font-family:'Helvetica Neue',Arial,sans-serif;color:#1A1612;background:#F5F0E8;margin:0;padding:16mm 14mm;font-size:12px;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+html{background:#6B6B6B;min-height:100%}
+body{font-family:'Helvetica Neue',Arial,sans-serif;color:#1A1612;background:#F5F0E8;
+  width:794px;min-height:1123px;margin:24px auto;padding:18mm 16mm;font-size:12px;
+  box-shadow:0 6px 32px rgba(0,0,0,0.45);-webkit-print-color-adjust:exact;print-color-adjust:exact}
 header{background:#4E1F12;color:#F5F0E8;padding:12px 18px;border-radius:6px;margin-bottom:6px;display:flex;align-items:center;gap:8px}
 .lt{font-weight:300;font-size:19px;color:#F5F0E8}.ll{font-weight:700;font-size:19px;color:#C95B2A}
 .ls{font-size:8px;letter-spacing:.12em;color:rgba(245,240,232,.5);text-transform:uppercase;margin-top:2px}
@@ -468,7 +485,7 @@ th.cc:first-of-type{border-left:2px solid #C95B2A}
 th.cc-last{border-right:2px solid #C95B2A}
 td.cc{background:rgba(78,31,18,0.04);border-left:2px solid rgba(201,91,42,.25)}
 td.cc-last{background:rgba(78,31,18,0.04);border-right:2px solid rgba(201,91,42,.25)}
-th.col-an,td.col-an{width:22px}
+th.col-an,td.col-an{width:18px}
 .recap{display:flex;gap:0;margin-bottom:10px}
 .recap-col{flex:1;padding:9px 11px;border-radius:5px;margin-right:7px}
 .recap-col:last-child{margin-right:0}
@@ -481,11 +498,11 @@ th.col-an,td.col-an{width:22px}
 .conclusion{background:#4E1F12;color:#F5F0E8;border-radius:6px;padding:11px 15px;margin-top:12px;line-height:1.7}
 .fiscal-note{background:#EDE7DC;border-radius:5px;padding:11px 15px;line-height:1.8;color:rgba(26,22,18,.65);margin-top:10px;font-size:11px}
 .fiscal-note p{margin:0 0 5px}
-.page-break{page-break-before:always;padding-top:16mm}
+.page-break{page-break-before:always}
 @media print{
-  -webkit-print-color-adjust:exact;
-  print-color-adjust:exact;
-  body{padding:16mm 14mm}
+  html{background:none;padding:0}
+  body{width:100%;margin:0;padding:0;box-shadow:none;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .page-break{page-break-before:always}
   header{border-radius:0}
 }
 </style></head><body>
@@ -556,9 +573,10 @@ th.col-an,td.col-an{width:22px}
 <div class="note" style="margin-top:12px"><strong>Micro-BIC 2025 :</strong> ${microbicNote}</div>
 </div>
 
-<h2 style="margin-top:20px">Annexe — Amortissement par catégorie</h2>
-<div class="note" style="margin-bottom:10px;font-size:11px">${modeDesc}</div>
+<div class="page-break">
+<h2>Annexe — Amortissement par catégorie</h2>
 ${annexeTable}
+</div>
 </body></html>`;
 
     const win = window.open("", "_blank");
