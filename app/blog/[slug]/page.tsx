@@ -183,8 +183,8 @@ export default async function ArticlePage({ params }: { params: Promise<{ slug: 
             style={{ background: "rgba(201,91,42,0.2)", color: "#C95B2A" }}>
             {article.tag}
           </span>
-          <h1 className="font-bold mb-3"
-            style={{ fontSize: "clamp(1.5rem,3vw,2.2rem)", color: "#C95B2A", letterSpacing: "-0.025em" }}>
+          <h1 className="font-light mb-3"
+            style={{ fontSize: "clamp(1.5rem,3vw,2.2rem)", color: "#F5F0E8", letterSpacing: "-0.025em" }}>
             {article.titre}
           </h1>
           <div className="text-sm" style={{ color: "rgba(245,240,232,0.4)" }}>{article.date}</div>
