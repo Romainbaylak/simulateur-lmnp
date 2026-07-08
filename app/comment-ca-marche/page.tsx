@@ -3,9 +3,18 @@ import Link from "next/link";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "LMNP – Guide complet 2026",
-  description: "Tout comprendre sur le statut LMNP : conditions, avantages fiscaux, amortissement, régime réel vs micro-BIC. Guide mis à jour 2026.",
+  title: "Tout savoir sur le LMNP – Guide complet 2026",
+  description: "Comprendre le statut LMNP : conditions, amortissement par composants, régime réel vs micro-BIC, calcul fiscal, revente. Guide mis à jour 2026.",
 };
+
+const SectionTitle = ({ children }: { children: React.ReactNode }) => (
+  <div className="flex items-center gap-3 mb-6">
+    <div className="w-1 h-8 rounded-full flex-shrink-0" style={{ background: "#C95B2A" }} />
+    <h2 className="font-light" style={{ fontSize: "1.6rem", letterSpacing: "-0.02em", color: "#1A1612" }}>
+      {children}
+    </h2>
+  </div>
+);
 
 export default function GrandesLignesPage() {
   return (
@@ -27,223 +36,245 @@ export default function GrandesLignesPage() {
       </header>
 
       {/* Hero */}
-      <div style={{ backgroundColor: "#4E1F12" }} className="py-10 px-4">
+      <div style={{ backgroundColor: "#4E1F12" }} className="py-12 px-4">
         <div className="max-w-4xl mx-auto">
           <Link href="/#simulateur"
             className="inline-flex items-center gap-2 text-sm font-medium px-4 py-2 rounded-md mb-6 transition-opacity hover:opacity-80"
             style={{ background: "rgba(201,91,42,0.25)", color: "#F5F0E8", border: "1px solid rgba(201,91,42,0.4)" }}>
             ← Retour à la simulation
           </Link>
-          <h1 className="font-bold mb-3"
+          <h1 className="font-bold mb-4"
             style={{ fontSize: "clamp(2rem,5vw,3.2rem)", color: "#C95B2A", letterSpacing: "-0.025em" }}>
-            LMNP : tout comprendre sur ce statut
+            Tout savoir sur le LMNP
           </h1>
+          <p style={{ color: "rgba(245,240,232,0.55)", fontSize: "1.05rem", lineHeight: 1.7 }}>
+            Conditions, amortissement, régimes fiscaux, revente — tout ce qu&apos;il faut savoir avant d&apos;investir en meublé.
+          </p>
         </div>
       </div>
 
       <div className="max-w-4xl mx-auto px-4 py-16 space-y-16">
 
-        {/* Qu'est-ce que le LMNP */}
+        {/* 1 — Qu'est-ce que le LMNP */}
         <section>
-          <div className="flex items-center gap-3 mb-6">
-            <div className="w-1 h-8 rounded-full flex-shrink-0" style={{ background: "#C95B2A" }} />
-            <h2 className="font-light" style={{ fontSize: "1.6rem", letterSpacing: "-0.02em", color: "#1A1612" }}>
-              Qu&apos;est-ce que le LMNP ?
-            </h2>
-          </div>
-          <p style={{ color: "rgba(26,22,18,0.7)", lineHeight: 1.75 }} className="mb-4">
-            Le statut de <strong style={{ color: "#1A1612", fontWeight: 500 }}>Loueur Meublé Non Professionnel (LMNP)</strong> permet à tout particulier de louer un bien immobilier équipé et de bénéficier d&apos;un régime fiscal avantageux.
-          </p>
-          <p style={{ color: "rgba(26,22,18,0.7)", lineHeight: 1.75 }}>
-            Pour être éligible, vos revenus locatifs doivent être{" "}
-            <strong style={{ color: "#1A1612", fontWeight: 500 }}>inférieurs à 23 000 €/an</strong>{" "}
-            OU représenter moins de 50 % de vos revenus globaux. Au-delà, vous passez LMP (Loueur Meublé Professionnel).
+          <SectionTitle>Qu&apos;est-ce que le LMNP ?</SectionTitle>
+          <p style={{ color: "rgba(26,22,18,0.72)", lineHeight: 1.8 }}>
+            Le statut de <strong style={{ color: "#1A1612" }}>Loueur Meublé Non Professionnel</strong> permet à un particulier de louer un logement meublé tout en bénéficiant d&apos;une fiscalité avantageuse. Deux conditions suffisent pour en bénéficier : vos revenus locatifs annuels ne dépassent pas <strong style={{ color: "#1A1612" }}>23 000 €</strong>, ou ils représentent moins de la moitié de vos revenus globaux. Si l&apos;une de ces deux conditions est remplie, vous êtes LMNP.
           </p>
         </section>
 
-        {/* Véhicules juridiques */}
+        {/* 2 — Micro-BIC ou réel */}
         <section>
-          <div className="flex items-center gap-3 mb-6">
-            <div className="w-1 h-8 rounded-full flex-shrink-0" style={{ background: "#C95B2A" }} />
-            <h2 className="font-light" style={{ fontSize: "1.6rem", letterSpacing: "-0.02em", color: "#1A1612" }}>
-              Sous quelle structure exercer le LMNP ?
-            </h2>
-          </div>
-          <p className="mb-5" style={{ color: "rgba(26,22,18,0.7)", lineHeight: 1.75 }}>
-            Le statut LMNP peut s&apos;exercer sous plusieurs formes juridiques, chacune avec ses propres implications fiscales et patrimoniales.
+          <SectionTitle>Micro-BIC ou régime réel : lequel choisir ?</SectionTitle>
+          <p className="mb-6" style={{ color: "rgba(26,22,18,0.72)", lineHeight: 1.8 }}>
+            En LMNP, deux régimes fiscaux coexistent.
           </p>
-          <div className="space-y-3">
-            {[
-              {
-                title: "En nom propre (direct)",
-                badge: "Le plus courant",
-                badgeAccent: true,
-                content: "La grande majorité des investisseurs LMNP louent directement en leur nom. Les revenus sont déclarés dans la catégorie BIC (Bénéfices Industriels et Commerciaux) sur votre déclaration personnelle. C'est la solution la plus simple : pas de constitution de société, pas de frais de gestion supplémentaires.",
-              },
-              {
-                title: "Entreprise Individuelle (EI)",
-                badge: "Depuis la réforme 2022",
-                badgeAccent: false,
-                content: "Depuis la loi du 14 février 2022, l'Entreprise Individuelle bénéficie d'une séparation automatique entre patrimoine personnel et patrimoine professionnel. Pour un LMNP, cela offre une protection supplémentaire sans changer la fiscalité : les revenus restent imposés à l'IR dans la catégorie BIC, avec possibilité d'opter pour le régime réel et ses amortissements.",
-              },
-              {
-                title: "SARL de famille",
-                badge: "Avantage IR + transmission",
-                badgeAccent: true,
-                content: "Réservée aux membres d'une même famille (ascendants, descendants, frères et sœurs, conjoints ou partenaires de PACS), la SARL de famille peut opter pour l'imposition à l'Impôt sur le Revenu (IR). Chaque associé est alors imposé sur sa quote-part des bénéfices, avec accès au régime réel et à l'amortissement LMNP. C'est un excellent outil pour détenir un bien à plusieurs et préparer la transmission.",
-              },
-              {
-                title: "SARL classique ou SAS",
-                badge: "Impôt sur les Sociétés",
-                badgeAccent: false,
-                content: "Une SARL ou SAS classique est soumise à l'Impôt sur les Sociétés (IS). Si l'amortissement reste déductible, la fiscalité est radicalement différente : les bénéfices sont d'abord imposés à l'IS (15 % jusqu'à 42 500 €, puis 25 %), puis les dividendes versés sont soumis à la flat tax (30 %). Cette structure est généralement déconseillée pour un LMNP individuel mais peut avoir un intérêt dans le cadre d'une stratégie patrimoniale complexe.",
-              },
-              {
-                title: "SCI (Société Civile Immobilière)",
-                badge: "Attention au meublé",
-                badgeAccent: false,
-                content: "La SCI est souvent envisagée pour la gestion et la transmission de patrimoine immobilier. Attention : dès lors qu'une SCI exerce une activité de location meublée de manière habituelle, elle bascule automatiquement à l'IS. Elle perd alors le régime IR et la transparence fiscale. La SCI reste donc inadaptée au LMNP sauf à rester à la marge du meublé.",
-              },
-            ].map(({ title, badge, badgeAccent, content }) => (
-              <div key={title} className="rounded-xl p-5"
-                style={{ background: "#EDE7DC", border: "0.5px solid rgba(26,22,18,0.08)" }}>
-                <div className="flex items-start justify-between gap-3 mb-2">
-                  <h3 className="font-medium text-sm" style={{ color: "#1A1612" }}>{title}</h3>
-                  <span className="text-[10px] uppercase tracking-[0.1em] font-medium px-2 py-0.5 rounded flex-shrink-0"
-                    style={{
-                      background: badgeAccent ? "#C95B2A" : "rgba(26,22,18,0.08)",
-                      color: badgeAccent ? "#F5F0E8" : "rgba(26,22,18,0.5)",
-                    }}>
-                    {badge}
-                  </span>
-                </div>
-                <p className="text-sm" style={{ color: "rgba(26,22,18,0.65)", lineHeight: 1.7 }}>{content}</p>
-              </div>
-            ))}
-          </div>
-          <div className="mt-4 p-4 rounded-lg text-[13px]"
-            style={{ background: "rgba(201,91,42,0.06)", border: "0.5px solid rgba(201,91,42,0.15)", color: "rgba(26,22,18,0.65)", lineHeight: 1.6 }}>
-            <strong style={{ color: "#1A1612" }}>En résumé :</strong> pour la grande majorité des investisseurs, la détention en nom propre ou via une SARL de famille (si investissement en famille) offre le meilleur équilibre entre simplicité, fiscalité avantageuse et flexibilité. Consultez un expert-comptable ou un notaire avant de choisir votre structure.
-          </div>
-        </section>
-
-        {/* Pourquoi le régime réel */}
-        <section>
-          <div className="flex items-center gap-3 mb-8">
-            <div className="w-1 h-8 rounded-full flex-shrink-0" style={{ background: "#C95B2A" }} />
-            <h2 className="font-light" style={{ fontSize: "1.6rem", letterSpacing: "-0.02em", color: "#1A1612" }}>
-              Pourquoi choisir le régime réel LMNP ?
-            </h2>
-          </div>
-          <p className="mb-6" style={{ color: "rgba(26,22,18,0.6)", lineHeight: 1.75 }}>
-            Depuis la réforme 2025, l&apos;avantage est encore plus marqué par rapport au micro-BIC (abattement ramené de 50 % à 30 %).
-          </p>
-          <div className="grid md:grid-cols-3 gap-5">
-            {[
-              {
-                title: "Amortissement déductible",
-                desc: "Déduisez chaque année l'usure de votre bien (bâti 30 ans, mobilier 7 ans). Résultat : souvent 0 € d'impôt pendant 10 à 15 ans.",
-                accent: true,
-              },
-              {
-                title: "Charges réelles déductibles",
-                desc: "Intérêts d'emprunt, taxe foncière, charges de copropriété, frais de gestion… tout se déduit des loyers perçus.",
-                accent: false,
-              },
-              {
-                title: "Micro-BIC 2025 : −30 % seulement",
-                desc: "Depuis janvier 2025, l'abattement micro-BIC est passé de 50 % à 30 %. Le régime réel devient incontournable pour les investisseurs avisés.",
-                accent: false,
-              },
-            ].map(({ title, desc, accent }) => (
-              <div key={title} className="rounded-xl p-5"
-                style={{
-                  background: accent ? "rgba(201,91,42,0.08)" : "#EDE7DC",
-                  border: accent ? "1px solid rgba(201,91,42,0.2)" : "0.5px solid rgba(26,22,18,0.08)",
-                }}>
-                <h3 className="font-medium mb-3 text-sm" style={{ color: accent ? "#C95B2A" : "#1A1612" }}>{title}</h3>
-                <p className="text-sm" style={{ color: "rgba(26,22,18,0.6)", lineHeight: 1.7 }}>{desc}</p>
-              </div>
-            ))}
-          </div>
-        </section>
-
-        {/* Les deux régimes */}
-        <section>
-          <div className="flex items-center gap-3 mb-6">
-            <div className="w-1 h-8 rounded-full flex-shrink-0" style={{ background: "#C95B2A" }} />
-            <h2 className="font-light" style={{ fontSize: "1.6rem", letterSpacing: "-0.02em", color: "#1A1612" }}>
-              Les deux régimes fiscaux
-            </h2>
-          </div>
           <div className="grid md:grid-cols-2 gap-5">
             <div className="rounded-xl p-6" style={{ background: "#EDE7DC", border: "0.5px solid rgba(26,22,18,0.08)" }}>
-              <h3 className="font-medium text-[#1A1612] text-lg mb-4">Micro-BIC</h3>
-              <ul className="space-y-2 text-sm" style={{ color: "rgba(26,22,18,0.65)" }}>
-                <li>✓ Simple : pas de comptabilité</li>
-                <li>✓ Abattement forfaitaire de 30 % (2025)</li>
-                <li style={{ color: "#B03A2A" }}>✗ Moins avantageux depuis la réforme 2025</li>
+              <h3 className="font-semibold text-base mb-3" style={{ color: "#1A1612" }}>Micro-BIC</h3>
+              <p className="text-sm mb-4" style={{ color: "rgba(26,22,18,0.65)", lineHeight: 1.75 }}>
+                Le régime par défaut. Il applique un abattement forfaitaire de <strong style={{ color: "#1A1612" }}>30 %</strong> sur vos loyers — vous êtes imposé sur 70 % de vos revenus locatifs, sans pouvoir déduire vos vraies charges. Simple, mais souvent moins avantageux.
+              </p>
+              <ul className="space-y-1.5 text-sm" style={{ color: "rgba(26,22,18,0.6)" }}>
+                <li>✓ Aucune comptabilité</li>
+                <li>✓ Abattement forfaitaire 30 %</li>
                 <li style={{ color: "#B03A2A" }}>✗ Pas d&apos;amortissement déductible</li>
                 <li style={{ color: "#B03A2A" }}>✗ Plafonné à 77 700 € de recettes</li>
               </ul>
             </div>
-            <div className="rounded-xl p-6"
-              style={{ background: "rgba(201,91,42,0.06)", border: "1px solid rgba(201,91,42,0.2)" }}>
-              <div className="flex justify-between items-start mb-4">
-                <h3 className="font-medium text-[#1A1612] text-lg">Régime réel simplifié</h3>
-                <span className="text-xs font-medium px-2 py-0.5 rounded"
+            <div className="rounded-xl p-6" style={{ background: "rgba(201,91,42,0.06)", border: "1px solid rgba(201,91,42,0.2)" }}>
+              <div className="flex items-center justify-between mb-3">
+                <h3 className="font-semibold text-base" style={{ color: "#1A1612" }}>Régime réel simplifié</h3>
+                <span className="text-[10px] uppercase tracking-[0.1em] font-medium px-2 py-0.5 rounded"
                   style={{ background: "#C95B2A", color: "#F5F0E8" }}>Recommandé</span>
               </div>
-              <ul className="space-y-2 text-sm" style={{ color: "rgba(26,22,18,0.65)" }}>
-                <li>✓ Déduction de toutes les charges réelles</li>
+              <p className="text-sm mb-4" style={{ color: "rgba(26,22,18,0.65)", lineHeight: 1.75 }}>
+                Le choix de la quasi-totalité des investisseurs actifs. Il permet de déduire toutes les charges réellement payées et, surtout, d&apos;amortir le bien. C&apos;est ce mécanisme qui fait du LMNP l&apos;un des statuts les plus efficaces fiscalement.
+              </p>
+              <ul className="space-y-1.5 text-sm" style={{ color: "rgba(26,22,18,0.6)" }}>
+                <li>✓ Toutes les charges déductibles</li>
                 <li>✓ <strong style={{ color: "#1A1612" }}>Amortissement du bien et du mobilier</strong></li>
-                <li>✓ Souvent 0 € d&apos;impôt pendant 10–15 ans</li>
-                <li style={{ color: "rgba(26,22,18,0.5)" }}>~ Nécessite un expert-comptable (~300–800 €/an)</li>
-                <li>✓ Aucun plafond de revenus</li>
+                <li>✓ Souvent 0 € d&apos;impôt pendant 15–20 ans</li>
+                <li style={{ color: "rgba(26,22,18,0.45)" }}>~ Expert-comptable recommandé (~300–800 €/an)</li>
               </ul>
             </div>
           </div>
         </section>
 
-        {/* Comment fonctionne l'amortissement */}
+        {/* 3 — L'amortissement */}
         <section>
-          <div className="flex items-center gap-3 mb-6">
-            <div className="w-1 h-8 rounded-full flex-shrink-0" style={{ background: "#C95B2A" }} />
-            <h2 className="font-light" style={{ fontSize: "1.6rem", letterSpacing: "-0.02em", color: "#1A1612" }}>
-              Comment fonctionne l&apos;amortissement ?
-            </h2>
-          </div>
-          <p className="mb-5" style={{ color: "rgba(26,22,18,0.7)", lineHeight: 1.75 }}>
-            En régime réel, le fisc reconnaît que votre bien se déprécie dans le temps. Il vous autorise à déduire cette dépréciation de vos revenus locatifs chaque année.
+          <SectionTitle>L&apos;amortissement : le cœur du dispositif</SectionTitle>
+          <p className="mb-5" style={{ color: "rgba(26,22,18,0.72)", lineHeight: 1.8 }}>
+            En LMNP au réel, vous pouvez comptabiliser chaque année la perte de valeur de votre bien et la déduire de vos revenus locatifs. C&apos;est ce qu&apos;on appelle l&apos;amortissement — et c&apos;est ce qui permet à la grande majorité des investisseurs de ne payer aucun impôt pendant <strong style={{ color: "#1A1612" }}>15 à 20 ans</strong>.
           </p>
+          <div className="space-y-3 mb-6">
+            {[
+              {
+                title: "Le bien immobilier",
+                desc: "Hors terrain, qui n'est jamais amortissable. Réparti par composants selon leur durée de vie — gros œuvre sur 75 ans, toiture sur 25 ans, aménagements intérieurs sur 12 ans, électricité sur 30 ans.",
+              },
+              {
+                title: "Le mobilier",
+                desc: "Amorti en moyenne sur 5 ans pour l'électroménager, 6 ans pour la literie, 10 ans pour les meubles.",
+              },
+              {
+                title: "Les travaux",
+                desc: "Selon leur nature, de 12 ans pour la peinture à 30 ans pour les gros travaux structurels.",
+              },
+            ].map(({ title, desc }) => (
+              <div key={title} className="flex gap-4 rounded-xl p-5" style={{ background: "#EDE7DC", border: "0.5px solid rgba(26,22,18,0.08)" }}>
+                <div className="w-1.5 h-1.5 rounded-full mt-2 flex-shrink-0" style={{ background: "#C95B2A" }} />
+                <div>
+                  <div className="font-medium text-sm mb-1" style={{ color: "#1A1612" }}>{title}</div>
+                  <p className="text-sm" style={{ color: "rgba(26,22,18,0.65)", lineHeight: 1.7 }}>{desc}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+          <div className="rounded-xl p-5" style={{ background: "rgba(201,91,42,0.07)", border: "1px solid rgba(201,91,42,0.18)" }}>
+            <div className="font-semibold text-sm mb-2" style={{ color: "#C95B2A" }}>Règle essentielle</div>
+            <p className="text-sm" style={{ color: "rgba(26,22,18,0.7)", lineHeight: 1.75 }}>
+              L&apos;amortissement ne peut pas créer de déficit. Il réduit le résultat imposable jusqu&apos;à zéro, mais jamais en dessous. L&apos;excédent non utilisé est <strong style={{ color: "#1A1612" }}>reporté sans limite de durée</strong> sur les années suivantes.
+            </p>
+          </div>
+        </section>
+
+        {/* 4 — Ce que vous pouvez déduire */}
+        <section>
+          <SectionTitle>Ce que vous pouvez déduire au réel</SectionTitle>
+          <p className="mb-5" style={{ color: "rgba(26,22,18,0.72)", lineHeight: 1.8 }}>
+            Au régime réel, toutes les charges liées à votre activité viennent réduire votre base imposable :
+          </p>
+          <div className="grid sm:grid-cols-2 gap-3">
+            {[
+              "Intérêts d'emprunt",
+              "Taxe foncière",
+              "Charges de copropriété",
+              "Frais de gestion et d'agence",
+              "Assurance propriétaire non-occupant (PNO)",
+              "Honoraires du comptable",
+              "Travaux d'entretien et de réparation",
+            ].map(item => (
+              <div key={item} className="flex items-center gap-3 rounded-lg px-4 py-3"
+                style={{ background: "#EDE7DC", border: "0.5px solid rgba(26,22,18,0.07)" }}>
+                <div className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ background: "#C95B2A" }} />
+                <span className="text-sm" style={{ color: "rgba(26,22,18,0.72)" }}>{item}</span>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        {/* 5 — Amortissement par composants */}
+        <section>
+          <SectionTitle>L&apos;amortissement par composants</SectionTitle>
+          <p className="mb-5" style={{ color: "rgba(26,22,18,0.72)", lineHeight: 1.8 }}>
+            Le bien immobilier ne s&apos;amortit pas d&apos;un seul bloc. L&apos;administration fiscale impose de le décomposer en éléments distincts, chacun ayant sa propre durée de vie. On répartit la valeur du bâti (hors terrain, jamais amortissable) entre plusieurs postes, puis on amortit chaque poste de façon linéaire sur sa durée propre. On additionne ensuite les montants pour obtenir la charge annuelle totale déductible.
+          </p>
+
+          {/* Tableau composants */}
+          <div className="rounded-xl overflow-hidden mb-6" style={{ border: "1px solid rgba(78,31,18,0.15)" }}>
+            <div className="px-5 py-3" style={{ background: "#4E1F12" }}>
+              <div className="font-semibold text-sm" style={{ color: "#C95B2A" }}>Durées d&apos;amortissement par composant</div>
+            </div>
+            <div>
+              {[
+                { composant: "Gros œuvre / Bâti", duree: "75 ans", note: "" },
+                { composant: "Toiture", duree: "25 ans", note: "" },
+                { composant: "Aménagements intérieurs", duree: "12 ans", note: "" },
+                { composant: "Installation électrique", duree: "30 ans", note: "" },
+                { composant: "Étanchéité", duree: "25 ans", note: "" },
+                { composant: "Terrain", duree: "Non amortissable", note: "jamais déductible" },
+              ].map(({ composant, duree, note }, i) => (
+                <div key={composant}
+                  className="flex items-center justify-between px-5 py-3.5"
+                  style={{
+                    background: i % 2 === 0 ? "#EDE7DC" : "#F5F0E8",
+                    borderBottom: i < 5 ? "0.5px solid rgba(26,22,18,0.06)" : "none",
+                  }}>
+                  <span className="text-sm font-medium" style={{ color: "#1A1612" }}>{composant}</span>
+                  <div className="text-right">
+                    <span className="text-sm font-semibold"
+                      style={{ color: duree === "Non amortissable" ? "#B03A2A" : "#C95B2A" }}>
+                      {duree}
+                    </span>
+                    {note && <div className="text-[10px] mt-0.5" style={{ color: "rgba(26,22,18,0.4)" }}>{note}</div>}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <p className="mb-4" style={{ color: "rgba(26,22,18,0.65)", lineHeight: 1.8, fontSize: "0.9rem" }}>
+            La ventilation exacte dépend des caractéristiques de votre bien. Un bien neuf n&apos;a pas le même profil qu&apos;un appartement haussmannien. C&apos;est pourquoi un <strong style={{ color: "#1A1612" }}>comptable spécialisé LMNP</strong> est vivement recommandé — il calibre ces pourcentages selon la réalité du bien et les fourchettes admises par l&apos;administration.
+          </p>
+          <div className="rounded-lg p-4 text-sm" style={{ background: "rgba(201,91,42,0.06)", border: "0.5px solid rgba(201,91,42,0.15)", color: "rgba(26,22,18,0.65)", lineHeight: 1.7 }}>
+            <strong style={{ color: "#1A1612" }}>Peut-on simplifier ?</strong> Oui. Une méthode globale qui amortit l&apos;ensemble du bâti sur 25 ou 30 ans sans découpage est tolérée, notamment pour les petits dossiers. C&apos;est plus simple comptablement, mais parfois moins avantageux.
+          </div>
+        </section>
+
+        {/* 6 — Le résultat fiscal */}
+        <section>
+          <SectionTitle>Le résultat fiscal : comment il se calcule</SectionTitle>
+          <p className="mb-5" style={{ color: "rgba(26,22,18,0.72)", lineHeight: 1.8 }}>
+            Le calcul suit toujours le même ordre :
+          </p>
+          <div className="rounded-xl overflow-hidden mb-5" style={{ border: "1px solid rgba(78,31,18,0.15)" }}>
+            <div className="px-5 py-2.5" style={{ background: "#4E1F12" }}>
+              <span className="text-xs font-medium uppercase tracking-wider" style={{ color: "rgba(245,240,232,0.5)" }}>Formule de calcul</span>
+            </div>
+            <div className="px-6 py-5 space-y-2" style={{ background: "#EDE7DC", fontFamily: "monospace" }}>
+              {[
+                { label: "Loyers perçus", op: null, color: "#1A1612" },
+                { label: "Charges déductibles (dont intérêts d'emprunt)", op: "−", color: "rgba(26,22,18,0.65)" },
+                { label: "Amortissements (dans la limite du résultat)", op: "−", color: "rgba(26,22,18,0.65)" },
+                { label: "Base imposable", op: "=", color: "#C95B2A", bold: true },
+                { label: "× (TMI + 18,6 % de prélèvements sociaux)", op: null, color: "rgba(26,22,18,0.55)", small: true },
+                { label: "Impôt dû", op: "=", color: "#4E1F12", bold: true },
+              ].map(({ label, op, color, bold, small }) => (
+                <div key={label} className="flex items-baseline gap-3">
+                  <span className="w-4 text-right flex-shrink-0 font-bold" style={{ color: "#C95B2A", fontSize: "1rem" }}>{op ?? ""}</span>
+                  <span style={{ color, fontWeight: bold ? 700 : 400, fontSize: small ? "0.8rem" : "0.9rem" }}>{label}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+          <div className="rounded-xl p-5" style={{ background: "rgba(201,91,42,0.07)", border: "1px solid rgba(201,91,42,0.18)" }}>
+            <p className="text-sm" style={{ color: "rgba(26,22,18,0.7)", lineHeight: 1.75 }}>
+              Grâce à l&apos;amortissement, la base imposable est souvent nulle. <strong style={{ color: "#1A1612" }}>L&apos;impôt également.</strong>
+            </p>
+          </div>
+        </section>
+
+        {/* 7 — À la revente */}
+        <section>
+          <SectionTitle>À la revente : attention à la réintégration</SectionTitle>
+          <p className="mb-5" style={{ color: "rgba(26,22,18,0.72)", lineHeight: 1.8 }}>
+            Depuis février 2025, les amortissements déduits pendant la détention sont réintégrés dans le calcul de la plus-value à la revente. Concrètement : plus vous avez amorti, plus la base imposable de votre plus-value augmente lors de la vente.
+          </p>
+          <div className="rounded-xl p-5 mb-5" style={{ background: "#EDE7DC", border: "0.5px solid rgba(26,22,18,0.08)" }}>
+            <div className="font-medium text-sm mb-3" style={{ color: "#1A1612" }}>Exemple concret</div>
+            <div className="space-y-2 text-sm" style={{ color: "rgba(26,22,18,0.65)", lineHeight: 1.7 }}>
+              <p>Bien acheté <strong style={{ color: "#1A1612" }}>200 000 €</strong>, revendu <strong style={{ color: "#1A1612" }}>250 000 €</strong> après 20 000 € d&apos;amortissements cumulés.</p>
+              <p>La plus-value imposable n&apos;est pas <strong>50 000 €</strong> mais <strong style={{ color: "#B03A2A" }}>70 000 €</strong>.</p>
+            </div>
+          </div>
+          <p className="mb-5" style={{ color: "rgba(26,22,18,0.65)", lineHeight: 1.8, fontSize: "0.9rem" }}>
+            Les abattements pour durée de détention s&apos;appliquent néanmoins : l&apos;exonération totale d&apos;impôt sur la plus-value intervient après <strong style={{ color: "#1A1612" }}>22 ans</strong> de détention, et après <strong style={{ color: "#1A1612" }}>30 ans</strong> pour les prélèvements sociaux. Conclusion : le LMNP reste très avantageux à long terme, à condition de conserver le bien suffisamment longtemps.
+          </p>
+          <Link href="/blog/revente-lmnp-plus-value"
+            className="inline-flex items-center gap-2 text-sm font-medium transition-opacity hover:opacity-80"
+            style={{ color: "#C95B2A" }}>
+            Lire l&apos;article complet sur la revente LMNP →
+          </Link>
+        </section>
+
+        {/* 8 — LMNP ou LMP */}
+        <section>
+          <SectionTitle>LMNP ou LMP ?</SectionTitle>
           <div className="rounded-xl p-6" style={{ background: "#EDE7DC", border: "0.5px solid rgba(26,22,18,0.08)" }}>
-            <div className="grid md:grid-cols-2 gap-6">
-              <div>
-                <div className="text-[11px] uppercase tracking-[0.14em] mb-2 font-medium" style={{ color: "#C95B2A" }}>
-                  Bâti (les murs)
-                </div>
-                <p className="text-sm" style={{ color: "rgba(26,22,18,0.7)", lineHeight: 1.7 }}>
-                  Base : 85 % du prix d&apos;achat (le terrain n&apos;est pas amortissable)<br />
-                  Durée : 30 ans<br />
-                  Amortissement annuel = prix × 85 % ÷ 30
-                </p>
-              </div>
-              <div>
-                <div className="text-[11px] uppercase tracking-[0.14em] mb-2 font-medium" style={{ color: "#C95B2A" }}>
-                  Mobilier
-                </div>
-                <p className="text-sm" style={{ color: "rgba(26,22,18,0.7)", lineHeight: 1.7 }}>
-                  Base : 15 % du prix d&apos;achat (estimation des meubles)<br />
-                  Durée : 7 ans<br />
-                  Amortissement annuel = prix × 15 % ÷ 7
-                </p>
-              </div>
-            </div>
-            <div className="mt-4 pt-4 p-3 rounded-lg" style={{ borderTop: "0.5px solid rgba(26,22,18,0.08)", background: "rgba(201,91,42,0.06)" }}>
-              <p className="text-sm" style={{ color: "rgba(26,22,18,0.7)", lineHeight: 1.7 }}>
-                <strong style={{ color: "#1A1612" }}>Exemple</strong> — Bien à 200 000 € : amortissement bâti 5 667 €/an + mobilier 4 286 €/an = <strong style={{ color: "#C95B2A" }}>9 952 €/an déductibles</strong>. Si vos loyers annuels sont 10 000 € et vos charges 3 000 €, la base imposable tombe à 0 € (avec report possible des amortissements non utilisés).
-              </p>
-            </div>
+            <p style={{ color: "rgba(26,22,18,0.72)", lineHeight: 1.8 }}>
+              Le basculement vers le statut de <strong style={{ color: "#1A1612" }}>Loueur Meublé Professionnel</strong> intervient lorsque deux conditions sont remplies simultanément : vos recettes locatives dépassent <strong style={{ color: "#1A1612" }}>23 000 € par an</strong> ET représentent plus de 50 % de vos revenus d&apos;activité. Le LMP ouvre des droits sociaux supplémentaires mais soumet à des cotisations plus élevées. Un sujet à part entière, traité dans un article dédié.
+            </p>
           </div>
         </section>
 
@@ -255,11 +286,11 @@ export default function GrandesLignesPage() {
           <p className="mb-6" style={{ color: "rgba(245,240,232,0.5)" }}>
             Notre simulateur est gratuit et donne des résultats instantanés.
           </p>
-          <Link href="/#simulateur"
+          <a href="/#simulateur"
             className="inline-block font-medium px-8 py-3 rounded transition-opacity hover:opacity-[0.88]"
             style={{ backgroundColor: "#C95B2A", color: "#F5F0E8", borderRadius: 6 }}>
             Lancer le simulateur →
-          </Link>
+          </a>
         </div>
       </div>
 

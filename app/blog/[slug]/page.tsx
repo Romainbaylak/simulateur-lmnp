@@ -83,6 +83,74 @@ Avec la réforme fiscale de janvier 2025, le choix entre les deux régimes est p
 
 Dès que vous avez un crédit immobilier et une TMI ≥ 11 %, le régime réel est quasiment toujours plus avantageux.`,
   },
+  "revente-lmnp-plus-value": {
+    titre: "Revente d'un bien LMNP : comment est calculée la plus-value ?",
+    date: "8 juillet 2026",
+    tag: "Fiscalité",
+    contenu: `## La revente LMNP : une fiscalité spécifique
+
+Lorsque vous revendez un bien loué en meublé non professionnel, la plus-value imposable n'est pas calculée comme pour une résidence principale. Le mécanisme de **réintégration des amortissements** change radicalement la donne.
+
+### Comment se calcule la plus-value taxable ?
+
+En LMNP régime réel, chaque année vous déduisez des amortissements de vos revenus locatifs. À la revente, ces amortissements viennent **s'ajouter à votre plus-value** imposable.
+
+La formule est la suivante :
+
+**Plus-value taxable = Prix de vente − (Prix d'achat − Amortissements déduits)**
+
+### Exemple concret
+
+Vous achetez un bien **200 000 €** et le revendez **250 000 €** après avoir déduit **20 000 €** d'amortissements cumulés sur 5 ans.
+
+- Prix de vente : 250 000 €
+- Base de calcul : 200 000 € − 20 000 € = 180 000 €
+- **Plus-value taxable : 70 000 €** (au lieu de 50 000 € sans réintégration)
+
+Les 20 000 € d'amortissements sont ainsi "repris" et viennent gonfler la plus-value.
+
+### Quel taux d'imposition ?
+
+La plus-value LMNP est soumise au régime des **plus-values immobilières des particuliers** :
+
+- **19 %** d'impôt sur le revenu
+- **17,2 %** de prélèvements sociaux (dont PS LFSS 2026 : 18,6 %)
+- **Total : 36,2 %** (voire 37,2 % avec surtaxe au-delà de 50 000 €)
+
+### Les abattements pour durée de détention
+
+La réintégration des amortissements ne bénéficie **pas** des abattements pour durée de détention. En revanche, la plus-value "pure" (hors amortissements) bénéficie des abattements habituels :
+
+- **Exonération IR** après 22 ans de détention
+- **Exonération PS** après 30 ans de détention
+
+En pratique, seule la partie "réintégration des amortissements" reste taxable à 36,2 % quelle que soit la durée de détention.
+
+### Est-ce vraiment pénalisant ?
+
+Non, si l'on raisonne en net. Les amortissements déduits chaque année ont **économisé de l'impôt au taux marginal** (souvent 30 à 41 %). À la revente, ils sont réintégrés à **19 %**. L'opération reste globalement avantageuse.
+
+### Exemple de bilan net
+
+Pour 20 000 € d'amortissements déduits à une TMI de 30 % :
+
+- **Économie réalisée** : 20 000 × 30 % = 6 000 €
+- **Impôt à la revente** : 20 000 × 19 % = 3 800 €
+- **Gain net** : 6 000 − 3 800 = **2 200 € de bénéfice fiscal net**
+
+L'amortissement LMNP reste donc un avantage fiscal même en tenant compte de la réintégration à la revente.
+
+### LMP vs LMNP : une différence majeure
+
+Si vous êtes Loueur en Meublé **Professionnel** (LMP), la plus-value de revente suit un régime différent (plus-values professionnelles), potentiellement plus favorable après 5 ans d'activité avec une exonération possible si les recettes sont inférieures à 90 000 €.
+
+### Ce qu'il faut retenir
+
+- La réintégration des amortissements est inévitable en LMNP réel
+- Elle ne remet pas en cause l'intérêt fiscal global du dispositif
+- La plus-value "pure" bénéficie des abattements classiques (22 et 30 ans)
+- Un bilan net reste favorable grâce à l'écart de taux (TMI déduction > 19 % réintégration)`,
+  },
 };
 
 export function generateStaticParams() {

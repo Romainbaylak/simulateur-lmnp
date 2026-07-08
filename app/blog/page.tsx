@@ -23,6 +23,13 @@ const articles = [
     tag: "Guide",
   },
   {
+    slug: "revente-lmnp-plus-value",
+    titre: "Revente d'un bien LMNP : comment est calculée la plus-value ?",
+    extrait: "Réintégration des amortissements, taux d'imposition à 36,2 %, abattements pour durée de détention : tout comprendre sur la fiscalité à la revente d'un bien meublé non professionnel.",
+    date: "8 juillet 2026",
+    tag: "Fiscalité",
+  },
+  {
     slug: "regime-reel-vs-micro-bic",
     titre: "Régime réel vs Micro-BIC : quel est le meilleur choix en 2026 ?",
     extrait: "Comparatif chiffré des deux régimes fiscaux LMNP avec des exemples concrets sur des biens de 150 000 € à 400 000 €.",
