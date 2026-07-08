@@ -8,10 +8,10 @@ export const metadata: Metadata = {
 };
 
 const SectionTitle = ({ num, children }: { num: number; children: React.ReactNode }) => (
-  <div className="flex items-center gap-3 mb-6">
-    <span className="text-sm font-semibold flex-shrink-0 w-6 text-right" style={{ color: "#C95B2A" }}>{num}.</span>
-    <div className="w-1 h-8 rounded-full flex-shrink-0" style={{ background: "#C95B2A" }} />
-    <h2 className="font-light" style={{ fontSize: "1.6rem", letterSpacing: "-0.02em", color: "#1A1612" }}>
+  <div className="flex items-center gap-4 mb-6">
+    <span className="font-light flex-shrink-0 leading-none" style={{ fontSize: "3rem", color: "#C95B2A", letterSpacing: "-0.04em", lineHeight: 1 }}>{num}</span>
+    <div className="w-0.5 self-stretch rounded-full flex-shrink-0" style={{ background: "rgba(201,91,42,0.3)" }} />
+    <h2 className="font-light" style={{ fontSize: "1.5rem", letterSpacing: "-0.02em", color: "#4E1F12" }}>
       {children}
     </h2>
   </div>
@@ -21,34 +21,40 @@ export default function GrandesLignesPage() {
   return (
     <main className="min-h-screen" style={{ backgroundColor: "#F5F0E8" }}>
       {/* Header */}
-      <header style={{ backgroundColor: "#4E1F12", borderBottom: "2px solid rgba(245,240,232,0.18)" }} className="sticky top-0 z-50">
+      <header style={{ backgroundColor: "#F5F0E8", borderBottom: "1px solid rgba(26,22,18,0.1)" }} className="sticky top-0 z-50">
         <div className="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between">
-          <Link href="/"><Logo variant="light" /></Link>
-          <nav className="hidden md:flex items-center gap-6 text-base font-normal" style={{ color: "#F5F0E8" }}>
+          <Link href="/"><Logo /></Link>
+          <nav className="hidden md:flex items-center gap-6 text-base font-normal" style={{ color: "rgba(26,22,18,0.55)" }}>
             <Link href="/comment-ca-marche" style={{ color: "#C95B2A" }}>LMNP</Link>
-            <Link href="/blog" className="hover:text-[#F5F0E8] transition-colors">Articles</Link>
-            <Link href="/tarifs" className="hover:text-[#F5F0E8] transition-colors">Tarifs</Link>
+            <Link href="/blog" className="hover:text-[#1A1612] transition-colors">Articles</Link>
+            <Link href="/tarifs" className="hover:text-[#1A1612] transition-colors">Tarifs</Link>
           </nav>
-          <a href="/#simulateur" className="text-sm font-medium px-4 py-2 transition-opacity hover:opacity-[0.88]"
-            style={{ backgroundColor: "#C95B2A", color: "#F5F0E8", borderRadius: 6 }}>
-            Simuler maintenant
-          </a>
+          <div className="flex items-center gap-2">
+            <Link href="/login" className="text-sm font-medium px-4 py-2 transition-opacity hover:opacity-80"
+              style={{ color: "#1A1612", border: "1px solid rgba(26,22,18,0.2)", borderRadius: 6 }}>
+              Log in
+            </Link>
+            <a href="/#simulateur" className="text-sm font-medium px-4 py-2 transition-opacity hover:opacity-[0.88]"
+              style={{ backgroundColor: "#C95B2A", color: "#F5F0E8", borderRadius: 6 }}>
+              Simuler maintenant
+            </a>
+          </div>
         </div>
       </header>
 
       {/* Hero */}
-      <div style={{ backgroundColor: "#4E1F12" }} className="py-12 px-4">
+      <div className="py-12 px-4" style={{ borderBottom: "1px solid rgba(26,22,18,0.07)" }}>
         <div className="max-w-4xl mx-auto">
           <Link href="/#simulateur"
             className="inline-flex items-center gap-2 text-sm font-medium px-4 py-2 rounded-md mb-6 transition-opacity hover:opacity-80"
-            style={{ background: "rgba(201,91,42,0.25)", color: "#F5F0E8", border: "1px solid rgba(201,91,42,0.4)" }}>
+            style={{ background: "rgba(201,91,42,0.08)", color: "#C95B2A", border: "1px solid rgba(201,91,42,0.2)" }}>
             ← Retour à la simulation
           </Link>
           <h1 className="font-light mb-4"
-            style={{ fontSize: "clamp(2rem,5vw,3.2rem)", color: "#F5F0E8", letterSpacing: "-0.025em" }}>
+            style={{ fontSize: "clamp(1.8rem,4vw,2.5rem)", color: "#4E1F12", letterSpacing: "-0.025em" }}>
             Tout savoir sur le LMNP
           </h1>
-          <p style={{ color: "rgba(245,240,232,0.55)", fontSize: "1.05rem", lineHeight: 1.7 }}>
+          <p style={{ color: "rgba(26,22,18,0.5)", fontSize: "1.05rem", lineHeight: 1.7 }}>
             Conditions, amortissement, régimes fiscaux, revente — tout ce qu&apos;il faut savoir avant d&apos;investir en meublé.
           </p>
         </div>

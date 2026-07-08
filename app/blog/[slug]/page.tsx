@@ -164,30 +164,37 @@ export default async function ArticlePage({ params }: { params: Promise<{ slug: 
 
   return (
     <main className="min-h-screen" style={{ backgroundColor: "#F5F0E8" }}>
-      <header style={{ backgroundColor: "#4E1F12", borderBottom: "2px solid rgba(245,240,232,0.18)" }} className="sticky top-0 z-50">
+      <header style={{ backgroundColor: "#F5F0E8", borderBottom: "1px solid rgba(26,22,18,0.1)" }} className="sticky top-0 z-50">
         <div className="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between">
-          <Link href="/"><Logo variant="light" /></Link>
-          <a href="/#simulateur" className="text-sm font-medium px-4 py-2 transition-opacity hover:opacity-[0.88]"
-            style={{ backgroundColor: "#C95B2A", color: "#F5F0E8", borderRadius: 6 }}>
-            Simuler maintenant
-          </a>
+          <Link href="/"><Logo /></Link>
+          <div className="flex items-center gap-2">
+            <Link href="/login" className="text-sm font-medium px-4 py-2 transition-opacity hover:opacity-80"
+              style={{ color: "#1A1612", border: "1px solid rgba(26,22,18,0.2)", borderRadius: 6 }}>
+              Log in
+            </Link>
+            <a href="/#simulateur" className="text-sm font-medium px-4 py-2 transition-opacity hover:opacity-[0.88]"
+              style={{ backgroundColor: "#C95B2A", color: "#F5F0E8", borderRadius: 6 }}>
+              Simuler maintenant
+            </a>
+          </div>
         </div>
       </header>
 
-      <div style={{ backgroundColor: "#4E1F12" }} className="py-8 px-4">
-        <div className="max-w-3xl mx-auto">
-          <Link href="/blog" className="inline-flex items-center gap-2 text-sm font-medium px-4 py-2 rounded-md mb-4 transition-opacity hover:opacity-80" style={{ background: "rgba(201,91,42,0.25)", color: "#F5F0E8", border: "1px solid rgba(201,91,42,0.4)" }}>
-            ← Retour au blog
-          </Link>
-          <span className="inline-block text-[10px] uppercase tracking-[0.12em] font-medium px-2.5 py-0.5 rounded mb-4"
-            style={{ background: "rgba(201,91,42,0.2)", color: "#C95B2A" }}>
+      <div className="py-8 px-4" style={{ borderBottom: "1px solid rgba(26,22,18,0.07)" }}>
+        <div className="max-w-3xl mx-auto relative">
+          <span className="absolute top-0 right-0 text-[10px] uppercase tracking-[0.12em] font-medium px-2.5 py-0.5 rounded"
+            style={{ background: "rgba(201,91,42,0.1)", color: "#C95B2A", border: "1px solid rgba(201,91,42,0.2)" }}>
             {article.tag}
           </span>
+          <Link href="/blog" className="inline-flex items-center gap-2 text-sm font-medium px-4 py-2 rounded-md mb-5 transition-opacity hover:opacity-80"
+            style={{ background: "rgba(201,91,42,0.08)", color: "#C95B2A", border: "1px solid rgba(201,91,42,0.2)" }}>
+            ← Retour au blog
+          </Link>
           <h1 className="font-light mb-3"
-            style={{ fontSize: "clamp(1.5rem,3vw,2.2rem)", color: "#F5F0E8", letterSpacing: "-0.025em" }}>
+            style={{ fontSize: "clamp(1.5rem,3vw,2.2rem)", color: "#4E1F12", letterSpacing: "-0.025em" }}>
             {article.titre}
           </h1>
-          <div className="text-sm" style={{ color: "rgba(245,240,232,0.4)" }}>{article.date}</div>
+          <div className="text-sm" style={{ color: "rgba(26,22,18,0.4)" }}>{article.date}</div>
         </div>
       </div>
 
