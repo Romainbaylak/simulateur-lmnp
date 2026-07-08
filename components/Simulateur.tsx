@@ -382,9 +382,9 @@ export default function Simulateur() {
       return `
       <tr class="${ro.year === duree + 1 ? "credit-end" : ""}">
         <td class="col-an">${ro.year}</td>
-        <td class="cc">${ro.year <= duree ? fEur(ro.capitalDebut) : "—"}</td>
-        <td class="cc">${ro.year <= duree ? fEur(ro.creditAnnuelR) : "—"}</td>
-        <td class="cc-last">${ro.year <= duree ? fEur(ro.interetsAnnee) : "—"}</td>
+        <td class="cc">${ro.year <= duree ? fEur(ro.capitalDebut) : ""}</td>
+        <td class="cc">${ro.year <= duree ? fEur(ro.creditAnnuelR) : ""}</td>
+        <td class="cc-last">${ro.year <= duree ? fEur(ro.interetsAnnee) : ""}</td>
         <td>${fEur(chargesAnnuelles)}</td>
         <td>${fEur(ro.resultatAvantAmort)}</td>
         <td style="font-weight:600">${fEur(ro.amortDisponible)}${reportLines}</td>
@@ -393,6 +393,41 @@ export default function Simulateur() {
         <td style="color:${ro.cashflow >= 0 ? "#1A7A52" : "#B03A2A"}">${fEur(ro.cashflow)}/mois</td>
       </tr>`;
     }).join("");
+
+    // Annexe unifiée — une seule table toutes catégories sur même ligne
+    const annexeCols: { label: string; annuel: number; duree: number; initial: number }[] = [];
+    if (amortMode === "ensemble") {
+      if (valeurAmortissable > 0) annexeCols.push({ label: "Bien immobilier", annuel: valeurAmortissable / amortDureeEnsemble, duree: amortDureeEnsemble, initial: valeurAmortissable });
+    } else {
+      for (const c of composants) {
+        const val = valeurAmortissable * c.pct / 100;
+        if (val > 0) annexeCols.push({ label: c.label.replace("Aménagement intérieur", "Amén. intérieur"), annuel: val / c.duree, duree: c.duree, initial: val });
+      }
+    }
+    if (mobilier > 0) annexeCols.push({ label: "Mobilier", annuel: mobilier / 7, duree: 7, initial: mobilier });
+    if (travaux > 0) annexeCols.push({ label: "Travaux", annuel: travaux / 15, duree: 15, initial: travaux });
+    if (notaire > 0) annexeCols.push({ label: "Frais notaire", annuel: notaire / 20, duree: 20, initial: notaire });
+    const annexeMaxDuree = annexeCols.length > 0 ? Math.max(...annexeCols.map(c => c.duree)) : 0;
+    const annexeFontSize = annexeCols.length > 5 ? 9 : annexeCols.length > 4 ? 10 : 11;
+    const annexeHeaderCells = annexeCols.map(c => `<th style="font-size:${annexeFontSize}px">${c.label}<br><span style="font-weight:400;opacity:.7">${fEur(c.initial)}</span></th>`).join("");
+    const annexeBodyRows = Array.from({ length: annexeMaxDuree }, (_, i) => {
+      const year = i + 1;
+      let cumul = 0;
+      const cells = annexeCols.map(c => {
+        if (year <= c.duree) { cumul += c.annuel; return `<td style="font-size:${annexeFontSize}px">${fEur(c.annuel)}</td>`; }
+        return `<td></td>`;
+      }).join("");
+      return `<tr><td class="col-an" style="font-size:${annexeFontSize}px">${year}</td>${cells}<td style="font-weight:700;color:#C95B2A;font-size:${annexeFontSize}px">${fEur(cumul)}</td></tr>`;
+    }).join("");
+    const annexeTable = annexeCols.length > 0 ? `
+      <table style="width:100%;border-collapse:collapse;font-size:${annexeFontSize}px">
+        <thead><tr>
+          <th class="col-an" style="font-size:${annexeFontSize}px">An</th>
+          ${annexeHeaderCells}
+          <th style="background:#C95B2A;color:#1A1612;font-size:${annexeFontSize}px">Cumul/an</th>
+        </tr></thead>
+        <tbody>${annexeBodyRows}</tbody>
+      </table>` : "";
 
     const conclusionText = zerosYears >= totalYears
       ? `Sur toute la période analysée (${totalYears} ans), la base imposable reste à 0 € grâce à l'amortissement. Vous ne payez aucun impôt sur vos revenus locatifs pendant cette période.`
@@ -408,57 +443,23 @@ export default function Simulateur() {
       ? `Amortissement global — ${amortPct} % de ${fEur(prix)} sur ${amortDureeEnsemble} ans`
       : `Amortissement par composant — ${amortPct} % de ${fEur(prix)} : ${composants.map(c => `${c.label} ${c.pct} %/${c.duree} ans`).join(", ")}`;
 
-    const makeSubTable = (label: string, initial: number, dureeComp: number, labelHtml?: string) => {
-      if (initial <= 0) return "";
-      const annuel = initial / dureeComp;
-      const rowsHtml = Array.from({ length: dureeComp }, (_, i) => {
-        const year = i + 1;
-        const reste = Math.max(0, initial - year * annuel);
-        return `<tr>
-          <td class="col-an">${year}</td>
-          <td>${fEur(annuel)}</td>
-          <td style="color:${reste === 0 ? "#1A7A52" : "inherit"}">${fEur(reste)}</td>
-        </tr>`;
-      }).join("");
-      const displayLabel = labelHtml ?? label;
-      return `
-      <div class="annexe-block">
-        <div class="annexe-block-title">${displayLabel}</div>
-        <div class="annexe-block-meta">Valeur initiale : <strong>${fEur(initial)}</strong> · Durée : <strong>${dureeComp} ans</strong> · Amort. annuel : <strong>${fEur(annuel)}</strong></div>
-        <table class="annexe-table">
-          <thead><tr><th class="col-an">An</th><th>Amort. annuel</th><th>Reste à amortir</th></tr></thead>
-          <tbody>${rowsHtml}</tbody>
-        </table>
-      </div>`;
-    };
-
-    const labelWithBreak = (lbl: string) => lbl.replace("Aménagement intérieur", "Aménagement<br>intérieur").replace("Aménagement Intérieur", "Aménagement<br>Intérieur");
-
-    let annexeBlocks = "";
-    if (amortMode === "ensemble") {
-      annexeBlocks += makeSubTable("Bien immobilier (global)", valeurAmortissable, amortDureeEnsemble);
-    } else {
-      for (const c of composants) {
-        const val = valeurAmortissable * c.pct / 100;
-        annexeBlocks += makeSubTable(c.label, val, c.duree, labelWithBreak(c.label));
-      }
-    }
-    if (mobilier > 0) annexeBlocks += makeSubTable("Mobilier", mobilier, 7);
-    if (travaux > 0) annexeBlocks += makeSubTable("Travaux", travaux, 15);
-    if (notaire > 0) annexeBlocks += makeSubTable("Frais de notaire", notaire, 20);
-
     const html = `<!DOCTYPE html><html lang="fr"><head><meta charset="UTF-8">
-<title>Tableau d'amortissement LMNP – toutlmnp</title>
+<title>Analyse de Rentabilité LMNP – toutlmnp</title>
 <style>
-body{font-family:'Helvetica Neue',Arial,sans-serif;color:#1A1612;background:#F5F0E8;margin:0;padding:20px;font-size:12px}
-header{background:#4E1F12;color:#F5F0E8;padding:14px 20px;border-radius:8px;margin-bottom:20px;display:flex;align-items:center;gap:8px}
-.lt{font-weight:300;font-size:20px;color:#F5F0E8}.ll{font-weight:700;font-size:20px;color:#C95B2A}
+@page{size:A4;margin:0}
+*{box-sizing:border-box}
+body{font-family:'Helvetica Neue',Arial,sans-serif;color:#1A1612;background:#F5F0E8;margin:0;padding:16mm 14mm;font-size:12px;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+header{background:#4E1F12;color:#F5F0E8;padding:12px 18px;border-radius:6px;margin-bottom:6px;display:flex;align-items:center;gap:8px}
+.lt{font-weight:300;font-size:19px;color:#F5F0E8}.ll{font-weight:700;font-size:19px;color:#C95B2A}
 .ls{font-size:8px;letter-spacing:.12em;color:rgba(245,240,232,.5);text-transform:uppercase;margin-top:2px}
-h2{font-size:13px;font-weight:700;color:#4E1F12;border-bottom:2px solid #C95B2A;padding-bottom:5px;margin:18px 0 8px}
-table{width:100%;border-collapse:collapse;font-size:13px}
-th{background:#4E1F12;color:#F5F0E8;padding:7px 8px;text-align:right;font-weight:500;white-space:nowrap}
+.main-title{text-align:center;margin:18px 0 22px}
+.main-title h1{font-size:20px;font-weight:700;color:#4E1F12;letter-spacing:-.02em;margin:0 0 4px}
+.main-title .sub{font-size:10px;text-transform:uppercase;letter-spacing:.12em;color:rgba(26,22,18,.4)}
+h2{font-size:12px;font-weight:700;color:#4E1F12;border-bottom:2px solid #C95B2A;padding-bottom:4px;margin:20px 0 8px}
+table{width:100%;border-collapse:collapse;font-size:11px}
+th{background:#4E1F12;color:#F5F0E8;padding:6px 7px;text-align:right;font-weight:500;white-space:nowrap}
 th:first-child,th.col-an{text-align:left}
-td{padding:7px 8px;text-align:right;border-bottom:.5px solid rgba(26,22,18,.07);vertical-align:middle}
+td{padding:6px 7px;text-align:right;border-bottom:.5px solid rgba(26,22,18,.07);vertical-align:middle}
 td:first-child,td.col-an{text-align:left;font-weight:600}
 tr:nth-child(even){background:rgba(201,91,42,.04)}
 tr.credit-end td{border-top:2px solid rgba(201,91,42,.35)}
@@ -467,35 +468,35 @@ th.cc:first-of-type{border-left:2px solid #C95B2A}
 th.cc-last{border-right:2px solid #C95B2A}
 td.cc{background:rgba(78,31,18,0.04);border-left:2px solid rgba(201,91,42,.25)}
 td.cc-last{background:rgba(78,31,18,0.04);border-right:2px solid rgba(201,91,42,.25)}
-th.col-an,td.col-an{width:26px}
+th.col-an,td.col-an{width:22px}
 .recap{display:flex;gap:0;margin-bottom:10px}
-.recap-col{flex:1;padding:10px 12px;border-radius:6px;margin-right:8px}
+.recap-col{flex:1;padding:9px 11px;border-radius:5px;margin-right:7px}
 .recap-col:last-child{margin-right:0}
-.recap-prestep{background:#EDE7DC;margin-bottom:8px;border-radius:6px;padding:8px 12px;display:flex;gap:12px;flex-wrap:wrap}
+.recap-prestep{background:#EDE7DC;margin-bottom:7px;border-radius:5px;padding:7px 11px;display:flex;gap:10px;flex-wrap:wrap}
 .kvi{flex:1;min-width:70px}
 .kvl{font-size:8px;text-transform:uppercase;letter-spacing:.1em;color:rgba(26,22,18,.45)}
-.kvv{font-size:12px;font-weight:600;color:#1A1612}
+.kvv{font-size:11px;font-weight:600;color:#1A1612}
 .orange{color:#C95B2A}
-.note{background:rgba(201,91,42,.08);border:1px solid rgba(201,91,42,.2);border-radius:6px;padding:10px 14px;line-height:1.7;color:rgba(26,22,18,.7);margin-top:10px}
-.conclusion{background:#4E1F12;color:#F5F0E8;border-radius:8px;padding:12px 16px;margin-top:14px;line-height:1.7}
-.fiscal-note{background:#EDE7DC;border-radius:6px;padding:12px 16px;line-height:1.85;color:rgba(26,22,18,.65);margin-top:10px;font-size:12px}
-.fiscal-note p{margin:0 0 6px}
-.annexe-block{border:1.5px solid rgba(78,31,18,0.2);border-radius:7px;overflow:hidden;margin-bottom:14px;display:inline-block;min-width:320px;max-width:100%}
-.annexe-block-title{background:#4E1F12;color:#C95B2A;font-size:12px;font-weight:700;padding:7px 12px;letter-spacing:.02em}
-.annexe-block-meta{background:#EDE7DC;font-size:11px;padding:5px 12px;color:rgba(26,22,18,.65)}
-.annexe-table{border-collapse:collapse;font-size:13px;width:100%}
-.annexe-table th{background:#3a1509;color:#F5F0E8;padding:6px 14px;text-align:right;font-weight:500;white-space:nowrap}
-.annexe-table th:first-child,th.col-an{text-align:left}
-.annexe-table td{padding:6px 14px;text-align:right;border-bottom:.5px solid rgba(26,22,18,.07);vertical-align:middle}
-.annexe-table td:first-child{text-align:left;font-weight:600}
-.annexe-table tr:nth-child(even){background:rgba(201,91,42,.04)}
-.annexe-wrapper{display:flex;flex-wrap:wrap;gap:14px}
-@media print{body{padding:0}header{border-radius:0}}
+.note{background:rgba(201,91,42,.08);border:1px solid rgba(201,91,42,.2);border-radius:5px;padding:9px 13px;line-height:1.6;color:rgba(26,22,18,.7);margin-top:10px}
+.conclusion{background:#4E1F12;color:#F5F0E8;border-radius:6px;padding:11px 15px;margin-top:12px;line-height:1.7}
+.fiscal-note{background:#EDE7DC;border-radius:5px;padding:11px 15px;line-height:1.8;color:rgba(26,22,18,.65);margin-top:10px;font-size:11px}
+.fiscal-note p{margin:0 0 5px}
+.page-break{page-break-before:always;padding-top:16mm}
+@media print{
+  -webkit-print-color-adjust:exact;
+  print-color-adjust:exact;
+  body{padding:16mm 14mm}
+  header{border-radius:0}
+}
 </style></head><body>
 <header>
   <div><div style="display:flex"><span class="lt">tout</span><span class="ll">lmnp</span></div><div class="ls">Simulateur de rentabilité</div></div>
-  <div style="margin-left:auto;font-size:10px;opacity:.6">Généré le ${new Date().toLocaleDateString("fr-FR")}</div>
+  <div style="margin-left:auto;font-size:10px;opacity:.6">${new Date().toLocaleDateString("fr-FR")}</div>
 </header>
+<div class="main-title">
+  <h1>Analyse de Rentabilité</h1>
+  <div class="sub">LMNP — Régime réel simplifié</div>
+</div>
 
 <h2>Récapitulatif</h2>
 <div class="recap-prestep">
@@ -542,8 +543,9 @@ th.col-an,td.col-an{width:26px}
   <p>Impôt total = base imposable × (TMI + PS) = base × <strong>${(tmi + 18.6).toFixed(1)} %</strong>.</p>
 </div>
 
-<h2>Tableau annuel — Régime réel (${totalYears} ans)</h2>
-<p style="font-size:11px;color:rgba(26,22,18,.5);margin-bottom:6px">Projection en régime réel simplifié avec loyers et charges constants. L'amortissement évolue chaque année. La ligne marquée indique la fin du crédit.</p>
+<div class="page-break">
+<h2>Tableau récapitulatif (${totalYears} ans)</h2>
+<p style="font-size:10px;color:rgba(26,22,18,.5);margin-bottom:6px">Projection en régime réel simplifié avec loyers et charges constants. L'amortissement évolue chaque année. La ligne marquée indique la fin du crédit.</p>
 <table><thead><tr>
   <th class="col-an">An</th>
   <th class="cc">Capital restant</th><th class="cc">Annuités</th><th class="cc-last">dont intérêts</th>
@@ -552,10 +554,11 @@ th.col-an,td.col-an{width:26px}
 </tr></thead><tbody>${tableRows}</tbody></table>
 <div class="conclusion">✓ ${conclusionText}</div>
 <div class="note" style="margin-top:12px"><strong>Micro-BIC 2025 :</strong> ${microbicNote}</div>
+</div>
 
-<h2 style="margin-top:24px">Annexe — Détail de l'amortissement par catégorie</h2>
-<div class="note" style="margin-bottom:12px">${modeDesc}</div>
-<div class="annexe-wrapper">${annexeBlocks}</div>
+<h2 style="margin-top:20px">Annexe — Amortissement par catégorie</h2>
+<div class="note" style="margin-bottom:10px;font-size:11px">${modeDesc}</div>
+${annexeTable}
 </body></html>`;
 
     const win = window.open("", "_blank");
@@ -835,7 +838,7 @@ th.col-an,td.col-an{width:26px}
                 </p>
               </div>
             ) : (
-              <div className="space-y-5">
+              <><div className="space-y-5">
                 {/* Verdict */}
                 {verdict && (
                   <div className="rounded-xl p-4 flex items-center gap-3"
@@ -1074,13 +1077,15 @@ th.col-an,td.col-an{width:26px}
                       {/* Toggle mode — centré avec label */}
                       <div className="flex flex-col items-center gap-2">
                         <div className="text-[11px] font-semibold uppercase tracking-[0.14em]" style={{ color: "rgba(26,22,18,0.5)" }}>Choisir :</div>
-                        <div className="flex rounded-md overflow-hidden" style={{ border: "0.5px solid #4E1F12" }}>
+                        <div className="flex rounded-md overflow-hidden" style={{ border: "0.5px solid #4E1F12", width: "fit-content" }}>
                           {(["ensemble", "composant"] as const).map(mode => (
                             <button key={mode} onClick={() => setAmortMode(mode)}
-                              className="px-5 py-2.5 text-sm font-semibold transition-colors"
+                              className="py-2.5 text-sm font-semibold transition-colors"
                               style={{
                                 background: amortMode === mode ? "#4E1F12" : "#EDE7DC",
                                 color: amortMode === mode ? "#C95B2A" : "rgba(26,22,18,0.5)",
+                                width: 200,
+                                textAlign: "center",
                               }}>
                               {mode === "ensemble" ? "Amortissement Global" : "Amortissement par composant"}
                             </button>
@@ -1229,13 +1234,8 @@ th.col-an,td.col-an{width:26px}
                         ))}
                       </div>
 
-                      {/* Boutons PDF + Ajuster */}
-                      <div className="flex flex-wrap justify-center gap-4">
-                        <button onClick={handleGeneratePDF}
-                          className="px-10 py-4 text-base font-medium transition-opacity hover:opacity-[0.88] rounded-lg"
-                          style={{ background: "#4E1F12", color: "#C95B2A", border: "1px solid rgba(201,91,42,0.3)", letterSpacing: "0.02em" }}>
-                          Générer l&apos;amortissement PDF
-                        </button>
+                      {/* Bouton Ajuster centré */}
+                      <div className="flex justify-center">
                         <button onClick={handleAjuster}
                           className="px-10 py-4 text-base font-medium transition-opacity hover:opacity-[0.88] rounded-lg"
                           style={{ backgroundColor: "#C95B2A", color: "#F5F0E8", letterSpacing: "0.02em" }}>
@@ -1247,6 +1247,16 @@ th.col-an,td.col-an{width:26px}
                 </div>
 
               </div>
+
+              {/* ─── BOUTON PDF — toujours visible en bas des résultats ─── */}
+              <div className="flex justify-center mt-6">
+                <button onClick={handleGeneratePDF}
+                  className="px-10 py-4 text-base font-medium transition-opacity hover:opacity-[0.88] rounded-lg"
+                  style={{ background: "#4E1F12", color: "#C95B2A", border: "1px solid rgba(201,91,42,0.3)", letterSpacing: "0.02em" }}>
+                  Générer compte rendu PDF
+                </button>
+              </div>
+              </>
             )
           )}
         </div>
