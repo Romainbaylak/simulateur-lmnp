@@ -43,7 +43,13 @@ export default function BlogPage() {
     <main className="min-h-screen" style={{ backgroundColor: "#F5F0E8" }}>
       <header style={{ backgroundColor: "#4E1F12", borderBottom: "2px solid rgba(245,240,232,0.18)" }} className="sticky top-0 z-50">
         <div className="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between">
-          <Link href="/"><Logo variant="light" /></Link>
+          <div className="flex items-center gap-5">
+            <Link href="/"><Logo variant="light" /></Link>
+            <div className="hidden md:block pl-5" style={{ borderLeft: "1px solid rgba(245,240,232,0.15)" }}>
+              <div className="text-base font-light leading-tight" style={{ color: "#F5F0E8" }}>Articles</div>
+              <div className="text-[11px] leading-tight mt-0.5" style={{ color: "rgba(245,240,232,0.45)" }}>Guides, actualités fiscales et conseils</div>
+            </div>
+          </div>
           <nav className="hidden md:flex items-center gap-6 text-base font-normal" style={{ color: "#F5F0E8" }}>
             <Link href="/comment-ca-marche" className="hover:text-[#F5F0E8] transition-colors">LMNP</Link>
             <Link href="/blog" style={{ color: "#C95B2A" }}>Articles</Link>
@@ -56,19 +62,7 @@ export default function BlogPage() {
         </div>
       </header>
 
-      <div style={{ backgroundColor: "#4E1F12" }} className="py-10 px-4">
-        <div className="max-w-4xl mx-auto">
-          <Link href="/#simulateur" className="inline-flex items-center gap-2 text-sm font-medium px-4 py-2 rounded-md mb-6 transition-opacity hover:opacity-80" style={{ background: "rgba(201,91,42,0.25)", color: "#F5F0E8", border: "1px solid rgba(201,91,42,0.4)" }}>← Retour à la simulation</Link>
-          <h1 className="font-bold mb-3" style={{ fontSize: "2.5rem", color: "#C95B2A", letterSpacing: "-0.025em" }}>
-            Articles
-          </h1>
-          <p style={{ color: "rgba(245,240,232,0.5)" }}>
-            Guides, actualités fiscales et conseils pour optimiser votre investissement locatif meublé.
-          </p>
-        </div>
-      </div>
-
-      <div className="max-w-4xl mx-auto px-4 py-16">
+      <div className="max-w-4xl mx-auto px-4 py-12">
         <div className="grid gap-4">
           {articles.map(a => (
             <Link key={a.slug} href={`/blog/${a.slug}`}

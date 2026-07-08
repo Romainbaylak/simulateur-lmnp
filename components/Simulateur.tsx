@@ -177,6 +177,7 @@ export default function Simulateur() {
   const [villeSearch, setVilleSearch] = useState("");
   const [showDropdown, setShowDropdown] = useState(false);
   const [loyerSlider, setLoyerSlider] = useState<number>(0);
+  const [sliderMax, setSliderMax] = useState(10000);
   const [showAmort, setShowAmort] = useState(false);
   const [amortPct, setAmortPct] = useState(85);
   const [amortMode, setAmortMode] = useState<"ensemble" | "composant">("ensemble");
@@ -244,7 +245,10 @@ export default function Simulateur() {
     const loyerMensuel = loyerSlider > 0 ? loyerSlider : parseFloat(form.loyer) || 0;
     const r = computeResultats(form, loyerMensuel, amortPct, amortMode, amortDureeEnsemble, composants);
     setResultats(r);
-    if (loyerMensuel > 0) setLoyerSlider(loyerMensuel);
+    if (loyerMensuel > 0) {
+      setLoyerSlider(loyerMensuel);
+      setSliderMax(Math.max(loyerMensuel * 2, 200));
+    }
     setShowResults(true);
     setTimeout(() => {
       resultsRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
@@ -255,6 +259,7 @@ export default function Simulateur() {
     const loyerMensuel = loyerSlider > 0 ? loyerSlider : parseFloat(form.loyer) || 0;
     const r = computeResultats(form, loyerMensuel, amortPct, amortMode, amortDureeEnsemble, composants);
     setResultats(r);
+    if (loyerMensuel > 0) setSliderMax(Math.max(loyerMensuel * 2, 200));
     resultsRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
   };
 
@@ -268,7 +273,6 @@ export default function Simulateur() {
 
   const loyerEffectif = loyerSlider > 0 ? loyerSlider : parseFloat(form.loyer) || 0;
   const sliderMin = 40;
-  const sliderMax = 10000;
 
   // Inline amort display values (always reflect current state, not frozen resultats)
   const prixDisplay = parseFloat(form.prix) || 0;
@@ -530,7 +534,7 @@ th.col-an,td.col-an{width:18px}
   </div>
   <div class="recap-col" style="background:rgba(201,91,42,0.09);border:1px solid rgba(201,91,42,0.2)">
     <div class="kvl" style="margin-bottom:6px;font-weight:700;color:#C95B2A">Revenus</div>
-    <div class="kvi" style="margin-bottom:6px"><div class="kvl">Loyer mensuel</div><div class="kvv orange">${fEur(loyerAnnuel / 12)}/mois</div></div>
+    <div class="kvi" style="margin-bottom:6px"><div class="kvl">Loyer mensuel CC</div><div class="kvv orange">${fEur(loyerAnnuel / 12)}/mois</div></div>
     <div class="kvi" style="margin-bottom:6px"><div class="kvl">Loyer annuel</div><div class="kvv orange">${fEur(loyerAnnuel)}/an</div></div>
     <div class="kvi"><div class="kvl">Charges annuelles</div><div class="kvv">${fEur(chargesAnnuelles)}</div></div>
   </div>
@@ -807,7 +811,7 @@ ${annexeTable}
 
               {/* Loyer mensuel */}
               <div>
-                <label className={LABEL}>Loyer mensuel (€)</label>
+                <label className={LABEL}>Loyer mensuel (€) <span style={{ fontWeight: 400, fontSize: "0.75rem", color: "rgba(26,22,18,0.45)" }}>— charges comprises</span></label>
                 <input type="number" value={form.loyer}
                   onChange={e => {
                     updateField("loyer", e.target.value);

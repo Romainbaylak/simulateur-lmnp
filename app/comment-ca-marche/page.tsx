@@ -7,8 +7,9 @@ export const metadata: Metadata = {
   description: "Comprendre le statut LMNP : conditions, amortissement par composants, régime réel vs micro-BIC, calcul fiscal, revente. Guide mis à jour 2026.",
 };
 
-const SectionTitle = ({ children }: { children: React.ReactNode }) => (
+const SectionTitle = ({ num, children }: { num: number; children: React.ReactNode }) => (
   <div className="flex items-center gap-3 mb-6">
+    <span className="text-sm font-semibold flex-shrink-0 w-6 text-right" style={{ color: "#C95B2A" }}>{num}.</span>
     <div className="w-1 h-8 rounded-full flex-shrink-0" style={{ background: "#C95B2A" }} />
     <h2 className="font-light" style={{ fontSize: "1.6rem", letterSpacing: "-0.02em", color: "#1A1612" }}>
       {children}
@@ -43,8 +44,8 @@ export default function GrandesLignesPage() {
             style={{ background: "rgba(201,91,42,0.25)", color: "#F5F0E8", border: "1px solid rgba(201,91,42,0.4)" }}>
             ← Retour à la simulation
           </Link>
-          <h1 className="font-bold mb-4"
-            style={{ fontSize: "clamp(2rem,5vw,3.2rem)", color: "#C95B2A", letterSpacing: "-0.025em" }}>
+          <h1 className="font-light mb-4"
+            style={{ fontSize: "clamp(2rem,5vw,3.2rem)", color: "#F5F0E8", letterSpacing: "-0.025em" }}>
             Tout savoir sur le LMNP
           </h1>
           <p style={{ color: "rgba(245,240,232,0.55)", fontSize: "1.05rem", lineHeight: 1.7 }}>
@@ -57,7 +58,7 @@ export default function GrandesLignesPage() {
 
         {/* 1 — Qu'est-ce que le LMNP */}
         <section>
-          <SectionTitle>Qu&apos;est-ce que le LMNP ?</SectionTitle>
+          <SectionTitle num={1}>Qu&apos;est-ce que le LMNP ?</SectionTitle>
           <p style={{ color: "rgba(26,22,18,0.72)", lineHeight: 1.8 }}>
             Le statut de <strong style={{ color: "#1A1612" }}>Loueur Meublé Non Professionnel</strong> permet à un particulier de louer un logement meublé tout en bénéficiant d&apos;une fiscalité avantageuse. Deux conditions suffisent pour en bénéficier : vos revenus locatifs annuels ne dépassent pas <strong style={{ color: "#1A1612" }}>23 000 €</strong>, ou ils représentent moins de la moitié de vos revenus globaux. Si l&apos;une de ces deux conditions est remplie, vous êtes LMNP.
           </p>
@@ -65,7 +66,7 @@ export default function GrandesLignesPage() {
 
         {/* 2 — Micro-BIC ou réel */}
         <section>
-          <SectionTitle>Micro-BIC ou régime réel : lequel choisir ?</SectionTitle>
+          <SectionTitle num={2}>Micro-BIC ou régime réel : lequel choisir ?</SectionTitle>
           <p className="mb-6" style={{ color: "rgba(26,22,18,0.72)", lineHeight: 1.8 }}>
             En LMNP, deux régimes fiscaux coexistent.
           </p>
@@ -103,7 +104,7 @@ export default function GrandesLignesPage() {
 
         {/* 3 — L'amortissement */}
         <section>
-          <SectionTitle>L&apos;amortissement : le cœur du dispositif</SectionTitle>
+          <SectionTitle num={3}>L&apos;amortissement : le cœur du dispositif</SectionTitle>
           <p className="mb-5" style={{ color: "rgba(26,22,18,0.72)", lineHeight: 1.8 }}>
             En LMNP au réel, vous pouvez comptabiliser chaque année la perte de valeur de votre bien et la déduire de vos revenus locatifs. C&apos;est ce qu&apos;on appelle l&apos;amortissement — et c&apos;est ce qui permet à la grande majorité des investisseurs de ne payer aucun impôt pendant <strong style={{ color: "#1A1612" }}>15 à 20 ans</strong>.
           </p>
@@ -141,7 +142,7 @@ export default function GrandesLignesPage() {
 
         {/* 4 — Ce que vous pouvez déduire */}
         <section>
-          <SectionTitle>Ce que vous pouvez déduire au réel</SectionTitle>
+          <SectionTitle num={4}>Ce que vous pouvez déduire au réel</SectionTitle>
           <p className="mb-5" style={{ color: "rgba(26,22,18,0.72)", lineHeight: 1.8 }}>
             Au régime réel, toutes les charges liées à votre activité viennent réduire votre base imposable :
           </p>
@@ -166,7 +167,7 @@ export default function GrandesLignesPage() {
 
         {/* 5 — Amortissement par composants */}
         <section>
-          <SectionTitle>L&apos;amortissement par composants</SectionTitle>
+          <SectionTitle num={5}>L&apos;amortissement par composants</SectionTitle>
           <p className="mb-5" style={{ color: "rgba(26,22,18,0.72)", lineHeight: 1.8 }}>
             Le bien immobilier ne s&apos;amortit pas d&apos;un seul bloc. L&apos;administration fiscale impose de le décomposer en éléments distincts, chacun ayant sa propre durée de vie. On répartit la valeur du bâti (hors terrain, jamais amortissable) entre plusieurs postes, puis on amortit chaque poste de façon linéaire sur sa durée propre. On additionne ensuite les montants pour obtenir la charge annuelle totale déductible.
           </p>
@@ -214,7 +215,7 @@ export default function GrandesLignesPage() {
 
         {/* 6 — Le résultat fiscal */}
         <section>
-          <SectionTitle>Le résultat fiscal : comment il se calcule</SectionTitle>
+          <SectionTitle num={6}>Le résultat fiscal : comment il se calcule</SectionTitle>
           <p className="mb-5" style={{ color: "rgba(26,22,18,0.72)", lineHeight: 1.8 }}>
             Le calcul suit toujours le même ordre :
           </p>
@@ -247,7 +248,7 @@ export default function GrandesLignesPage() {
 
         {/* 7 — À la revente */}
         <section>
-          <SectionTitle>À la revente : attention à la réintégration</SectionTitle>
+          <SectionTitle num={7}>À la revente : attention à la réintégration</SectionTitle>
           <p className="mb-5" style={{ color: "rgba(26,22,18,0.72)", lineHeight: 1.8 }}>
             Depuis février 2025, les amortissements déduits pendant la détention sont réintégrés dans le calcul de la plus-value à la revente. Concrètement : plus vous avez amorti, plus la base imposable de votre plus-value augmente lors de la vente.
           </p>
@@ -270,7 +271,7 @@ export default function GrandesLignesPage() {
 
         {/* 8 — LMNP ou LMP */}
         <section>
-          <SectionTitle>LMNP ou LMP ?</SectionTitle>
+          <SectionTitle num={8}>LMNP ou LMP ?</SectionTitle>
           <div className="rounded-xl p-6" style={{ background: "#EDE7DC", border: "0.5px solid rgba(26,22,18,0.08)" }}>
             <p style={{ color: "rgba(26,22,18,0.72)", lineHeight: 1.8 }}>
               Le basculement vers le statut de <strong style={{ color: "#1A1612" }}>Loueur Meublé Professionnel</strong> intervient lorsque deux conditions sont remplies simultanément : vos recettes locatives dépassent <strong style={{ color: "#1A1612" }}>23 000 € par an</strong> ET représentent plus de 50 % de vos revenus d&apos;activité. Le LMP ouvre des droits sociaux supplémentaires mais soumet à des cotisations plus élevées. Un sujet à part entière, traité dans un article dédié.
