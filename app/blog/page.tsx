@@ -41,24 +41,30 @@ const articles = [
 export default function BlogPage() {
   return (
     <main className="min-h-screen" style={{ backgroundColor: "#F5F0E8" }}>
-      <header style={{ backgroundColor: "#4E1F12", borderBottom: "2px solid rgba(245,240,232,0.18)" }} className="sticky top-0 z-50">
+      <header style={{ backgroundColor: "#F5F0E8", borderBottom: "1px solid rgba(26,22,18,0.1)" }} className="sticky top-0 z-50">
         <div className="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between">
           <div className="flex items-center gap-5">
-            <Link href="/"><Logo variant="light" /></Link>
-            <div className="hidden md:block pl-5" style={{ borderLeft: "1px solid rgba(245,240,232,0.15)" }}>
-              <div className="text-base font-light leading-tight" style={{ color: "#F5F0E8" }}>Articles</div>
-              <div className="text-[11px] leading-tight mt-0.5" style={{ color: "rgba(245,240,232,0.45)" }}>Guides, actualités fiscales et conseils</div>
+            <Link href="/"><Logo /></Link>
+            <div className="hidden md:block pl-5" style={{ borderLeft: "1px solid rgba(26,22,18,0.12)" }}>
+              <div className="text-base font-light leading-tight" style={{ color: "#4E1F12" }}>Articles</div>
+              <div className="text-[11px] leading-tight mt-0.5" style={{ color: "rgba(26,22,18,0.4)" }}>Guides, actualités fiscales et conseils</div>
             </div>
           </div>
-          <nav className="hidden md:flex items-center gap-6 text-base font-normal" style={{ color: "#F5F0E8" }}>
-            <Link href="/comment-ca-marche" className="hover:text-[#F5F0E8] transition-colors">LMNP</Link>
+          <nav className="hidden md:flex items-center gap-6 text-base font-normal" style={{ color: "rgba(26,22,18,0.55)" }}>
+            <Link href="/comment-ca-marche" className="hover:text-[#1A1612] transition-colors">LMNP</Link>
             <Link href="/blog" style={{ color: "#C95B2A" }}>Articles</Link>
-            <Link href="/tarifs" className="hover:text-[#F5F0E8] transition-colors">Tarifs</Link>
+            <Link href="/tarifs" className="hover:text-[#1A1612] transition-colors">Tarifs</Link>
           </nav>
-          <a href="/#simulateur" className="text-sm font-medium px-4 py-2 transition-opacity hover:opacity-[0.88]"
-            style={{ backgroundColor: "#C95B2A", color: "#F5F0E8", borderRadius: 6 }}>
-            Simuler maintenant
-          </a>
+          <div className="flex items-center gap-2">
+            <Link href="/login" className="text-sm font-medium px-4 py-2 transition-opacity hover:opacity-80"
+              style={{ color: "#1A1612", border: "1px solid rgba(26,22,18,0.2)", borderRadius: 6 }}>
+              Log in
+            </Link>
+            <a href="/#simulateur" className="text-sm font-medium px-4 py-2 transition-opacity hover:opacity-[0.88]"
+              style={{ backgroundColor: "#C95B2A", color: "#F5F0E8", borderRadius: 6 }}>
+              Simuler maintenant
+            </a>
+          </div>
         </div>
       </header>
 

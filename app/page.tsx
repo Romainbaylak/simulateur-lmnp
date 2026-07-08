@@ -17,11 +17,17 @@ export default function Home() {
             <Link href="/blog" className="hover:text-[#F5F0E8] transition-colors">Articles</Link>
             <Link href="/tarifs" className="hover:text-[#F5F0E8] transition-colors">Tarifs</Link>
           </nav>
-          <a href="#simulateur"
-            className="text-sm font-medium px-4 py-2 rounded transition-opacity hover:opacity-[0.88]"
-            style={{ backgroundColor: "#C95B2A", color: "#F5F0E8", borderRadius: 6 }}>
-            Simuler maintenant
-          </a>
+          <div className="flex items-center gap-2">
+            <Link href="/login" className="text-sm font-medium px-4 py-2 transition-opacity hover:opacity-80"
+              style={{ color: "#F5F0E8", border: "1px solid rgba(245,240,232,0.3)", borderRadius: 6 }}>
+              Log in
+            </Link>
+            <a href="#simulateur"
+              className="text-sm font-medium px-4 py-2 rounded transition-opacity hover:opacity-[0.88]"
+              style={{ backgroundColor: "#C95B2A", color: "#F5F0E8", borderRadius: 6 }}>
+              Simuler maintenant
+            </a>
+          </div>
         </div>
       </header>
 
