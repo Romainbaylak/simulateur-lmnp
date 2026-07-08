@@ -267,8 +267,8 @@ export default function Simulateur() {
     : null;
 
   const loyerEffectif = loyerSlider > 0 ? loyerSlider : parseFloat(form.loyer) || 0;
-  const sliderMin = Math.max(100, Math.floor(loyerBas * 0.7 / 25) * 25);
-  const sliderMax = loyerHaut > 0 ? Math.round(loyerHaut * 1.5) : Math.round((parseFloat(form.loyer) || 500) * 2);
+  const sliderMin = 40;
+  const sliderMax = 10000;
 
   // Inline amort display values (always reflect current state, not frozen resultats)
   const prixDisplay = parseFloat(form.prix) || 0;
@@ -922,7 +922,7 @@ ${annexeTable}
                     </div>
                   </div>
                   <input type="range"
-                    min={sliderMin} max={sliderMax} step={25}
+                    min={sliderMin} max={sliderMax} step={5}
                     value={loyerSlider || parseFloat(form.loyer) || 500}
                     onChange={e => {
                       const v = parseFloat(e.target.value);
