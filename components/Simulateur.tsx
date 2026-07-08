@@ -916,7 +916,7 @@ ${annexeTable}
                           }
                         }}
                         className="w-24 text-right text-xl font-semibold rounded-md px-2 py-1 focus:outline-none [appearance:none] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none [-moz-appearance:textfield]"
-                        style={{ color: "#1A1612", background: "#C95B2A", border: "none" }}
+                        style={{ color: "#F5F0E8", background: "#C95B2A", border: "none" }}
                       />
                       <span className="text-base font-medium" style={{ color: "#C95B2A" }}>/mois</span>
                     </div>
