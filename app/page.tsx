@@ -1,6 +1,7 @@
 import Simulateur from "@/components/Simulateur";
 import Logo from "@/components/Logo";
 import Link from "next/link";
+import HeaderAuth from "@/components/HeaderAuth";
 
 export default function Home() {
   return (
@@ -18,10 +19,7 @@ export default function Home() {
             <Link href="/tarifs" className="hover:text-[#F5F0E8] transition-colors">Tarifs</Link>
           </nav>
           <div className="flex items-center gap-2">
-            <Link href="/login" className="text-sm font-medium px-4 py-2 transition-opacity hover:opacity-80"
-              style={{ color: "#F5F0E8", border: "1px solid rgba(245,240,232,0.3)", borderRadius: 6 }}>
-              Log in
-            </Link>
+            <HeaderAuth dark={true} />
             <a href="#simulateur"
               className="text-sm font-medium px-4 py-2 rounded transition-opacity hover:opacity-[0.88]"
               style={{ backgroundColor: "#C95B2A", color: "#F5F0E8", borderRadius: 6 }}>

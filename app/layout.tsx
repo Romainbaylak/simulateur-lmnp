@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import { ClerkProvider } from "@clerk/nextjs";
 
 export const metadata: Metadata = {
   title: "toutlmnp – Simulateur de rentabilité LMNP",
@@ -10,10 +11,12 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="fr">
-      <body className="antialiased" style={{ backgroundColor: "#F5F0E8", color: "#1A1612" }}>
-        {children}
-      </body>
-    </html>
+    <ClerkProvider>
+      <html lang="fr">
+        <body className="antialiased" style={{ backgroundColor: "#F5F0E8", color: "#1A1612" }}>
+          {children}
+        </body>
+      </html>
+    </ClerkProvider>
   );
 }
