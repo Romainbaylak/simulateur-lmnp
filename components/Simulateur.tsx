@@ -499,9 +499,9 @@ export default function Simulateur() {
     let saisonniereSummaryHtml = "";
     if (isSaisonnier && resultatsTriple) {
       const scenarios = [
-        { label: "Basse saison", r: resultatsTriple.bas, taux: tauxOccBas },
-        { label: "Occupation moyenne", r: resultatsTriple.moyen, taux: tauxOccMoyen },
-        { label: "Haute saison", r: resultatsTriple.haut, taux: tauxOccHaut },
+        { label: "Estimation basse", r: resultatsTriple.bas, taux: tauxOccBas },
+        { label: "Estimation moyenne", r: resultatsTriple.moyen, taux: tauxOccMoyen },
+        { label: "Estimation haute", r: resultatsTriple.haut, taux: tauxOccHaut },
       ];
       const makeScenarioCol = (label: string, r: Resultats | null, taux: string, nuits: number) => {
         if (!r) return `<div style="flex:1"></div>`;
@@ -939,13 +939,18 @@ ${annexeTable}
                         { label: "Basse", val: tauxOccBas, set: setTauxOccBas, placeholder: "20" },
                         { label: "Moyenne", val: tauxOccMoyen, set: setTauxOccMoyen, placeholder: "35" },
                         { label: "Haute", val: tauxOccHaut, set: setTauxOccHaut, placeholder: "45" },
-                      ].map(({ label, val, set, placeholder }) => (
-                        <div key={label}>
-                          <div className="text-[10px] text-center mb-1" style={{ color: "rgba(26,22,18,0.45)" }}>{label}</div>
-                          <input type="number" value={val} onChange={e => set(e.target.value)}
-                            placeholder={placeholder} className={INPUT} style={{ ...INPUT_STYLE, textAlign: "center" }} />
-                        </div>
-                      ))}
+                      ].map(({ label, val, set, placeholder }) => {
+                        const taux = parseFloat(val) || parseFloat(placeholder) || 0;
+                        const nuits = Math.round(taux / 100 * 365);
+                        return (
+                          <div key={label}>
+                            <div className="text-[10px] text-center mb-1" style={{ color: "rgba(26,22,18,0.45)" }}>{label}</div>
+                            <input type="number" value={val} onChange={e => set(e.target.value)}
+                              placeholder={placeholder} className={INPUT} style={{ ...INPUT_STYLE, textAlign: "center" }} />
+                            <div className="text-[10px] text-center mt-1" style={{ color: "rgba(26,22,18,0.35)" }}>{nuits} nuits/an</div>
+                          </div>
+                        );
+                      })}
                     </div>
                     <p className="text-[11px] mt-2" style={{ color: "rgba(26,22,18,0.45)", lineHeight: 1.5 }}>
                       Les calculs de rentabilité approfondis sont effectués avec l&apos;estimation <strong>Moyenne</strong>.
@@ -1117,9 +1122,9 @@ ${annexeTable}
 
                   {isSaisonnier && resultatsTriple ? (() => {
                     const scenarios = [
-                      { label: "Basse", r: resultatsTriple.bas, accent: "rgba(176,58,42,0.06)", border: "rgba(176,58,42,0.2)", tagBg: "rgba(176,58,42,0.1)", tagColor: "#B03A2A" },
-                      { label: "Moyenne", r: resultatsTriple.moyen, accent: "rgba(201,91,42,0.06)", border: "rgba(201,91,42,0.2)", tagBg: "#C95B2A", tagColor: "#F5F0E8" },
-                      { label: "Haute", r: resultatsTriple.haut, accent: "rgba(26,122,82,0.06)", border: "rgba(26,122,82,0.2)", tagBg: "rgba(26,122,82,0.1)", tagColor: "#1A7A52" },
+                      { label: "Estimation basse", r: resultatsTriple.bas, accent: "rgba(176,58,42,0.05)", border: "rgba(176,58,42,0.25)", tagBg: "rgba(176,58,42,0.1)", tagColor: "#B03A2A" },
+                      { label: "Estimation moyenne", r: resultatsTriple.moyen, accent: "rgba(201,91,42,0.05)", border: "rgba(201,91,42,0.35)", tagBg: "rgba(201,91,42,0.12)", tagColor: "#C95B2A" },
+                      { label: "Estimation haute", r: resultatsTriple.haut, accent: "rgba(26,122,82,0.05)", border: "rgba(26,122,82,0.25)", tagBg: "rgba(26,122,82,0.1)", tagColor: "#1A7A52" },
                     ];
                     const RegimeRow = ({ sc, isReel }: { sc: typeof scenarios[0]; isReel: boolean }) => {
                       const r = sc.r;
@@ -1134,11 +1139,7 @@ ${annexeTable}
                         </div>
                       );
                       return (
-                        <div className="rounded-lg p-3" style={{ background: sc.accent, border: `0.5px solid ${sc.border}` }}>
-                          <div className="text-center mb-3 pb-2" style={{ borderBottom: `1px solid ${sc.border}` }}>
-                            <div className="text-[11px] font-bold uppercase tracking-[0.12em]" style={{ color: sc.tagColor }}>{sc.label}</div>
-                            <div className="text-base font-semibold mt-0.5" style={{ color: sc.tagColor }}>{formatEuro(r.loyerAnnuel)}/an</div>
-                          </div>
+                        <div>
                           <div className="space-y-1.5">
                             <Row label="Revenus annuels" val={formatEuro(r.loyerAnnuel)} bold />
                             <Row label="Emprunt" val={`−${formatEuro(r.creditAnnuel)}`} color="#B03A2A" />
@@ -1158,21 +1159,24 @@ ${annexeTable}
                       );
                     };
                     return (
-                      <div className="space-y-5">
-                        {[
-                          { title: "Régime réel simplifié", badge: "Recommandé", isReel: true },
-                          { title: "Micro-BIC 2025", badge: "Abattement 30%", isReel: false },
-                        ].map(({ title, badge, isReel }) => (
-                          <div key={title}>
-                            <div className="flex items-center justify-center gap-2 mb-3">
-                              <span className="text-sm font-semibold" style={{ color: "#1A1612" }}>{title}</span>
-                              <span className="text-[10px] uppercase tracking-[0.1em] px-2 py-0.5 rounded"
-                                style={{ background: isReel ? "#C95B2A" : "rgba(26,22,18,0.08)", color: isReel ? "#F5F0E8" : "rgba(26,22,18,0.5)" }}>
-                                {badge}
-                              </span>
+                      <div className="grid grid-cols-3 gap-3">
+                        {scenarios.map(sc => (
+                          <div key={sc.label} className="rounded-xl overflow-hidden flex flex-col"
+                            style={{ border: `1.5px solid ${sc.border}`, background: sc.accent }}>
+                            {/* Column header */}
+                            <div className="px-3 py-3 text-center" style={{ borderBottom: `1px solid ${sc.border}` }}>
+                              <div className="text-[11px] font-bold uppercase tracking-[0.12em]" style={{ color: sc.tagColor }}>{sc.label}</div>
+                              {sc.r && <div className="text-base font-semibold mt-0.5" style={{ color: sc.tagColor }}>{formatEuro(sc.r.loyerAnnuel)}/an</div>}
                             </div>
-                            <div className="grid grid-cols-3 gap-3">
-                              {scenarios.map(sc => <RegimeRow key={sc.label} sc={sc} isReel={isReel} />)}
+                            {/* Réel block */}
+                            <div className="px-3 pt-2 pb-3" style={{ borderBottom: `1px solid ${sc.border}` }}>
+                              <div className="text-[10px] font-semibold uppercase tracking-[0.1em] mb-2" style={{ color: "#4E1F12" }}>Régime réel <span className="px-1.5 py-0.5 rounded text-[9px]" style={{ background: "#C95B2A", color: "#F5F0E8" }}>Recommandé</span></div>
+                              <RegimeRow sc={sc} isReel={true} />
+                            </div>
+                            {/* BIC block */}
+                            <div className="px-3 pt-2 pb-3">
+                              <div className="text-[10px] font-semibold uppercase tracking-[0.1em] mb-2" style={{ color: "rgba(26,22,18,0.5)" }}>Micro-BIC 2025 <span className="px-1.5 py-0.5 rounded text-[9px]" style={{ background: "rgba(26,22,18,0.08)", color: "rgba(26,22,18,0.5)" }}>Abatt. 30%</span></div>
+                              <RegimeRow sc={sc} isReel={false} />
                             </div>
                           </div>
                         ))}
