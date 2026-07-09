@@ -180,9 +180,9 @@ export default function Simulateur() {
   const [sliderMax, setSliderMax] = useState(10000);
   const [isSaisonnier, setIsSaisonnier] = useState(false);
   const [prixNuitee, setPrixNuitee] = useState("");
-  const [tauxOccBas, setTauxOccBas] = useState("");
-  const [tauxOccMoyen, setTauxOccMoyen] = useState("");
-  const [tauxOccHaut, setTauxOccHaut] = useState("");
+  const [tauxOccBas, setTauxOccBas] = useState("20");
+  const [tauxOccMoyen, setTauxOccMoyen] = useState("35");
+  const [tauxOccHaut, setTauxOccHaut] = useState("45");
   const [resultatsTriple, setResultatsTriple] = useState<{
     bas: Resultats | null; moyen: Resultats | null; haut: Resultats | null;
   } | null>(null);
@@ -503,45 +503,51 @@ export default function Simulateur() {
         { label: "Occupation moyenne", r: resultatsTriple.moyen, taux: tauxOccMoyen },
         { label: "Haute saison", r: resultatsTriple.haut, taux: tauxOccHaut },
       ];
-      const makeScenarioTable = (label: string, r: Resultats | null, taux: string, regime: "reel" | "bic") => {
-        if (!r) return "";
+      const makeScenarioCol = (label: string, r: Resultats | null, taux: string, nuits: number) => {
+        if (!r) return `<div style="flex:1"></div>`;
         const lr = r.loyerAnnuel;
         const bic = lr * 0.70;
         const impBic = bic * (form.tmi / 100 + 0.186);
-        if (regime === "reel") {
-          return `<div style="flex:1;min-width:180px">
-            <div style="font-size:9px;font-weight:700;color:#4E1F12;border-bottom:1.5px solid #4E1F12;padding-bottom:3px;margin-bottom:5px">Réel — ${label}<br><span style="font-weight:400;opacity:.6">${taux}% occupation · ${fEur(lr/12)}/mois</span></div>
-            <table style="width:100%;font-size:9px;border-collapse:collapse">
-              <tr><td style="padding:2px 3px;color:rgba(26,22,18,.55)">Loyer annuel</td><td style="padding:2px 3px;text-align:right;font-weight:600">${fEur(lr)}</td></tr>
-              <tr><td style="padding:2px 3px;color:rgba(26,22,18,.55)">Base imposable</td><td style="padding:2px 3px;text-align:right;font-weight:600;color:${r.baseImposableReel===0?"#1A7A52":"#B03A2A"}">${fEur(r.baseImposableReel)}</td></tr>
-              <tr><td style="padding:2px 3px;color:rgba(26,22,18,.55)">Impôt</td><td style="padding:2px 3px;text-align:right;font-weight:600">${fEur(r.impotReel)}</td></tr>
-              <tr><td style="padding:2px 3px;color:rgba(26,22,18,.55)">Cash-flow</td><td style="padding:2px 3px;text-align:right;font-weight:600;color:${r.cashflowReelMensuel>=0?"#1A7A52":"#B03A2A"}">${fEur(r.cashflowReelMensuel)}/mois</td></tr>
-            </table></div>`;
-        } else {
-          return `<div style="flex:1;min-width:180px">
-            <div style="font-size:9px;font-weight:700;color:#26527A;border-bottom:1.5px solid #26527A;padding-bottom:3px;margin-bottom:5px">Micro-BIC — ${label}<br><span style="font-weight:400;opacity:.6">${taux}% occupation · ${fEur(lr/12)}/mois</span></div>
-            <table style="width:100%;font-size:9px;border-collapse:collapse">
-              <tr><td style="padding:2px 3px;color:rgba(26,22,18,.55)">Loyer annuel</td><td style="padding:2px 3px;text-align:right;font-weight:600">${fEur(lr)}</td></tr>
-              <tr><td style="padding:2px 3px;color:rgba(26,22,18,.55)">Base imposable (70%)</td><td style="padding:2px 3px;text-align:right;font-weight:600">${fEur(bic)}</td></tr>
-              <tr><td style="padding:2px 3px;color:rgba(26,22,18,.55)">Impôt</td><td style="padding:2px 3px;text-align:right;font-weight:600">${fEur(impBic)}</td></tr>
-              <tr><td style="padding:2px 3px;color:rgba(26,22,18,.55)">Cash-flow</td><td style="padding:2px 3px;text-align:right;font-weight:600;color:${r.cashflowBICMensuel>=0?"#1A7A52":"#B03A2A"}">${fEur(r.cashflowBICMensuel)}/mois</td></tr>
-            </table></div>`;
-        }
+        const cfBic = r.cashflowBICMensuel;
+        const cfReel = r.cashflowReelMensuel;
+        const row = (lbl: string, val: string, color?: string, bold?: boolean, sep?: boolean) =>
+          `<tr><td style="padding:4px 6px;font-size:10px;color:rgba(26,22,18,.55);${sep?"border-top:1px solid rgba(26,22,18,.12);padding-top:6px":""}">${lbl}</td><td style="padding:4px 6px;font-size:10px;text-align:right;${bold?"font-weight:700;":""} ${color?`color:${color};`:""}${sep?"border-top:1px solid rgba(26,22,18,.12);padding-top:6px":""}">${val}</td></tr>`;
+        return `<div style="flex:1;min-width:0;border-radius:8px;overflow:hidden;border:1px solid rgba(26,22,18,.12)">
+          <div style="text-align:center;padding:10px 8px 8px;background:#4E1F12;color:#F5F0E8">
+            <div style="font-size:11px;font-weight:700;letter-spacing:.05em;text-transform:uppercase">${label}</div>
+            <div style="font-size:9px;opacity:.65;margin-top:2px">${taux}% · ${nuits} nuits/an</div>
+            <div style="font-size:16px;font-weight:300;color:#C95B2A;margin-top:4px;letter-spacing:-.02em">${fEur(lr/12)}/mois</div>
+            <div style="font-size:9px;opacity:.55;margin-top:1px">${fEur(lr)}/an</div>
+          </div>
+          <div style="background:#EDE7DC;padding:6px 0 2px">
+            <div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#4E1F12;padding:4px 6px 2px">Régime Réel</div>
+            <table style="width:100%;border-collapse:collapse">
+              ${row("Revenus annuels", fEur(lr), undefined, true)}
+              ${row("Emprunt", `−${fEur(r.creditAnnuel)}`, "#B03A2A")}
+              ${row("Charges", `−${fEur(r.chargesAnnuelles)}`, "#B03A2A")}
+              ${row("Amortissements", `−${fEur(r.amortTotal)}`, "#B03A2A")}
+              ${row("Base imposable", fEur(r.baseImposableReel), r.baseImposableReel===0?"#1A7A52":"#1A1612", true, true)}
+              ${row("Impôt estimé", fEur(r.impotReel), "#B03A2A")}
+              ${row("Cash-flow/mois", `${fEur(cfReel)}/mois`, cfReel>=0?"#1A7A52":"#B03A2A", true, true)}
+            </table>
+          </div>
+          <div style="background:#F5F0E8;padding:6px 0 6px;border-top:2px solid rgba(26,82,122,.15)">
+            <div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#26527A;padding:4px 6px 2px">Micro-BIC 2025</div>
+            <table style="width:100%;border-collapse:collapse">
+              ${row("Revenus annuels", fEur(lr), undefined, true)}
+              ${row("Abattement 30%", `−${fEur(lr*.30)}`, "#B03A2A")}
+              ${row("Base imposable", fEur(bic), "#1A1612", true, true)}
+              ${row("Impôt estimé", fEur(impBic), "#B03A2A")}
+              ${row("Cash-flow/mois", `${fEur(cfBic)}/mois`, cfBic>=0?"#1A7A52":"#B03A2A", true, true)}
+            </table>
+          </div>
+        </div>`;
       };
       saisonniereSummaryHtml = `
 <h2>Location Saisonnière — Comparaison des 3 scénarios (année 1)</h2>
-<p style="font-size:10px;color:rgba(26,22,18,.5);margin-bottom:8px">Prix par nuitée : <strong>${fEur(parseFloat(prixNuitee)||0)}</strong>. Le tableau détaillé ci-dessous utilise l'estimation moyenne.</p>
-<div style="margin-bottom:6px">
-  <div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#4E1F12;margin-bottom:6px">Régime Réel Simplifié</div>
-  <div style="display:flex;gap:8px;flex-wrap:wrap">
-    ${scenarios.map(s => makeScenarioTable(s.label, s.r, s.taux, "reel")).join("")}
-  </div>
-</div>
-<div style="margin-top:10px">
-  <div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#26527A;margin-bottom:6px">Micro-BIC 2025</div>
-  <div style="display:flex;gap:8px;flex-wrap:wrap">
-    ${scenarios.map(s => makeScenarioTable(s.label, s.r, s.taux, "bic")).join("")}
-  </div>
+<p style="font-size:10px;color:rgba(26,22,18,.5);margin-bottom:12px">Prix par nuitée : <strong>${fEur(parseFloat(prixNuitee)||0)}</strong>. Le tableau de projection détaillé ci-dessous utilise l'estimation <strong>Moyenne</strong>.</p>
+<div style="display:flex;gap:12px;align-items:stretch">
+  ${scenarios.map(s => makeScenarioCol(s.label, s.r, s.taux, Math.round(parseFloat(s.taux)/100*365))).join("")}
 </div>`;
     }
 
@@ -567,7 +573,7 @@ th:first-child,th.col-an{text-align:left}
 td{padding:6px 7px;text-align:right;border-bottom:.5px solid rgba(26,22,18,.07);vertical-align:middle}
 td:first-child,td.col-an{text-align:left;font-weight:600}
 tr:nth-child(even){background:rgba(201,91,42,.04)}
-tr.credit-end td{border-top:2px solid rgba(201,91,42,.35)}
+tr.credit-end td{}
 th.cc,th.cc-last{background:#3a1509;border-top:2px solid #C95B2A}
 th.cc:first-of-type{border-left:2px solid #C95B2A}
 th.cc-last{border-right:2px solid #C95B2A}
@@ -632,7 +638,7 @@ th.col-an,td.col-an{width:18px}
 </div>
 
 ${saisonniereSummaryHtml}
-<h2>Comparaison régimes fiscaux (année 1)</h2>
+${!isSaisonnier ? `<h2>Comparaison régimes fiscaux (année 1)</h2>
 <table><thead><tr><th>Indicateur</th><th>Régime réel simplifié</th><th>Micro-BIC 2025</th></tr></thead><tbody>
 <tr><td>Loyers annuels</td><td>${fEur(loyerAnnuel)}</td><td>${fEur(loyerAnnuel)}</td></tr>
 <tr><td>Charges déductibles</td><td>${fEur(rows[0]?.chargesDeductibles ?? 0)}</td><td>Abattement 30 %</td></tr>
@@ -640,7 +646,7 @@ ${saisonniereSummaryHtml}
 <tr><td>Base imposable</td><td style="font-weight:600;color:${(rows[0]?.baseImposable ?? 0) === 0 ? "#1A7A52" : "#B03A2A"}">${fEur(rows[0]?.baseImposable ?? 0)}</td><td>${fEur(baseBIC)}</td></tr>
 <tr><td>Impôt estimé</td><td style="font-weight:600">${fEur(rows[0]?.impot ?? 0)}</td><td>${fEur(impotBIC)}</td></tr>
 <tr><td>Cash-flow mensuel</td><td style="color:${(rows[0]?.cashflow ?? 0) >= 0 ? "#1A7A52" : "#B03A2A"};font-weight:600">${fEur(rows[0]?.cashflow ?? 0)}/mois</td><td style="color:${resultats.cashflowBICMensuel >= 0 ? "#1A7A52" : "#B03A2A"}">${fEur(resultats.cashflowBICMensuel)}/mois</td></tr>
-</tbody></table>
+</tbody></table>` : ""}
 
 <div class="fiscal-note">
   <p><strong>Comment est calculé votre impôt ?</strong></p>
@@ -930,9 +936,9 @@ ${annexeTable}
                     <label className={LABEL}>Taux d&apos;occupation estimé (%)</label>
                     <div className="grid grid-cols-3 gap-2">
                       {[
-                        { label: "Basse", val: tauxOccBas, set: setTauxOccBas, placeholder: "40" },
-                        { label: "Moyenne", val: tauxOccMoyen, set: setTauxOccMoyen, placeholder: "60" },
-                        { label: "Haute", val: tauxOccHaut, set: setTauxOccHaut, placeholder: "80" },
+                        { label: "Basse", val: tauxOccBas, set: setTauxOccBas, placeholder: "20" },
+                        { label: "Moyenne", val: tauxOccMoyen, set: setTauxOccMoyen, placeholder: "35" },
+                        { label: "Haute", val: tauxOccHaut, set: setTauxOccHaut, placeholder: "45" },
                       ].map(({ label, val, set, placeholder }) => (
                         <div key={label}>
                           <div className="text-[10px] text-center mb-1" style={{ color: "rgba(26,22,18,0.45)" }}>{label}</div>
@@ -1055,7 +1061,7 @@ ${annexeTable}
                           <div key={label} className="rounded-lg p-3 text-center" style={{ background: accent }}>
                             <div className="text-[10px] uppercase tracking-[0.12em] font-medium mb-1" style={{ color }}>{label}</div>
                             <div className="text-lg font-light" style={{ color, letterSpacing: "-0.02em" }}>{formatEuro(loyer)}/mois</div>
-                            <div className="text-[11px] mt-0.5" style={{ color: "rgba(26,22,18,0.45)" }}>{taux}% d&apos;occupation</div>
+                            <div className="text-[11px] mt-0.5" style={{ color: "rgba(26,22,18,0.45)" }}>{taux}% d&apos;occupation · <strong>{Math.round(taux / 100 * 365)} nuits/an</strong></div>
                             <div className="text-[11px]" style={{ color: "rgba(26,22,18,0.45)" }}>{formatEuro(loyer * 12)}/an</div>
                           </div>
                         );
@@ -1121,38 +1127,51 @@ ${annexeTable}
                       const cf = isReel ? r.cashflowReelMensuel : r.cashflowBICMensuel;
                       const base = isReel ? r.baseImposableReel : r.baseBIC;
                       const impot = isReel ? r.impotReel : r.impotBIC;
+                      const Row = ({ label, val, color, bold, separator }: { label: string; val: string; color?: string; bold?: boolean; separator?: boolean }) => (
+                        <div className="flex justify-between" style={{ paddingTop: separator ? 6 : 0, marginTop: separator ? 4 : 0, borderTop: separator ? "0.5px solid rgba(26,22,18,0.1)" : "none" }}>
+                          <span style={{ color: "rgba(26,22,18,0.5)", fontSize: 11 }}>{label}</span>
+                          <span style={{ color: color ?? "#1A1612", fontWeight: bold ? 600 : 400, fontSize: 11 }}>{val}</span>
+                        </div>
+                      );
                       return (
                         <div className="rounded-lg p-3" style={{ background: sc.accent, border: `0.5px solid ${sc.border}` }}>
-                          <div className="flex items-center justify-between mb-2">
-                            <div className="text-[10px] font-medium uppercase tracking-[0.1em]" style={{ color: sc.tagColor }}>{sc.label}</div>
-                            <span className="text-[10px] px-1.5 py-0.5 rounded" style={{ background: sc.tagBg, color: sc.tagColor }}>{formatEuro(r.loyerAnnuel)}/an</span>
+                          <div className="text-center mb-3 pb-2" style={{ borderBottom: `1px solid ${sc.border}` }}>
+                            <div className="text-[11px] font-bold uppercase tracking-[0.12em]" style={{ color: sc.tagColor }}>{sc.label}</div>
+                            <div className="text-base font-semibold mt-0.5" style={{ color: sc.tagColor }}>{formatEuro(r.loyerAnnuel)}/an</div>
                           </div>
-                          <div className="space-y-1 text-xs">
-                            <div className="flex justify-between"><span style={{ color: "rgba(26,22,18,0.5)" }}>Base imposable</span><span className="font-medium">{formatEuro(base)}</span></div>
-                            <div className="flex justify-between"><span style={{ color: "rgba(26,22,18,0.5)" }}>Impôt estimé</span><span style={{ color: "#B03A2A" }}>{formatEuro(impot)}</span></div>
-                            <div className="flex justify-between font-medium pt-1" style={{ borderTop: "0.5px solid rgba(26,22,18,0.08)" }}>
-                              <span>Cash-flow/mois</span>
-                              <span style={{ color: cf >= 0 ? "#1A7A52" : "#B03A2A" }}>{formatEuro(cf)}</span>
-                            </div>
+                          <div className="space-y-1.5">
+                            <Row label="Revenus annuels" val={formatEuro(r.loyerAnnuel)} bold />
+                            <Row label="Emprunt" val={`−${formatEuro(r.creditAnnuel)}`} color="#B03A2A" />
+                            {isReel ? (
+                              <>
+                                <Row label="Charges" val={`−${formatEuro(r.chargesDeductibles - r.interetsAnnee1)}`} color="#B03A2A" />
+                                <Row label="Amortissements" val={`−${formatEuro(r.amortTotal)}`} color="#B03A2A" />
+                              </>
+                            ) : (
+                              <Row label="Abattement 30%" val={`−${formatEuro(r.loyerAnnuel * 0.30)}`} color="#B03A2A" />
+                            )}
+                            <Row label="Base imposable" val={formatEuro(base)} color={base === 0 ? "#1A7A52" : "#1A1612"} bold separator />
+                            <Row label="Impôt estimé" val={formatEuro(impot)} color="#B03A2A" />
+                            <Row label="Cash-flow/mois" val={formatEuro(cf)} color={cf >= 0 ? "#1A7A52" : "#B03A2A"} bold separator />
                           </div>
                         </div>
                       );
                     };
                     return (
-                      <div className="space-y-4">
+                      <div className="space-y-5">
                         {[
                           { title: "Régime réel simplifié", badge: "Recommandé", isReel: true },
                           { title: "Micro-BIC 2025", badge: "Abattement 30%", isReel: false },
                         ].map(({ title, badge, isReel }) => (
                           <div key={title}>
-                            <div className="flex items-center gap-2 mb-2">
-                              <span className="text-sm font-medium" style={{ color: "#1A1612" }}>{title}</span>
+                            <div className="flex items-center justify-center gap-2 mb-3">
+                              <span className="text-sm font-semibold" style={{ color: "#1A1612" }}>{title}</span>
                               <span className="text-[10px] uppercase tracking-[0.1em] px-2 py-0.5 rounded"
                                 style={{ background: isReel ? "#C95B2A" : "rgba(26,22,18,0.08)", color: isReel ? "#F5F0E8" : "rgba(26,22,18,0.5)" }}>
                                 {badge}
                               </span>
                             </div>
-                            <div className="grid grid-cols-3 gap-2">
+                            <div className="grid grid-cols-3 gap-3">
                               {scenarios.map(sc => <RegimeRow key={sc.label} sc={sc} isReel={isReel} />)}
                             </div>
                           </div>
@@ -1259,12 +1278,18 @@ ${annexeTable}
 
                       {/* OBJECTIF */}
                       <div className="rounded-lg p-4 mt-4" style={{ background: "rgba(201,91,42,0.08)", border: "1px solid rgba(201,91,42,0.25)" }}>
-                        <div className="font-bold text-sm mb-2 uppercase tracking-wide" style={{ color: "#C95B2A" }}>OBJECTIF : Payer 0 € d&apos;impôt</div>
+                        <div className="font-bold text-sm mb-2 uppercase tracking-wide" style={{ color: "#C95B2A" }}>Objectif : Diminuer la base imposable à moyen / long terme pour diminuer l&apos;impôt</div>
                         <p className="text-[13px]" style={{ color: "rgba(26,22,18,0.7)", lineHeight: 1.7 }}>
-                          L&apos;objectif est clair ici : ajuste ton amortissement pour obtenir chaque année un bilan comptable neutre grâce à un amortissement supérieur ou égal à ton résultat. Une base imposable nulle = 0 € d&apos;impôt.
+                          Ajuste tes durées d&apos;amortissement pour réduire au maximum ta base imposable chaque année. Un amortissement supérieur ou égal à ton résultat avant amortissement = base imposable nulle = impôt minimal.
                         </p>
                         <p className="text-[13px] mt-2" style={{ color: "rgba(26,22,18,0.7)", lineHeight: 1.7 }}>
                           Joue avec les durées d&apos;amortissement, quitte à les raccourcir. Il vaut mieux avoir un excédent d&apos;amortissement au début car il est toujours reportable à N+1.
+                        </p>
+                        <p className="text-[12px] mt-3" style={{ color: "rgba(26,22,18,0.45)", lineHeight: 1.65 }}>
+                          Les amortissements déduits pendant la détention sont réintégrés dans le calcul de la plus-value à la revente. Des abattements pour durée de détention s&apos;appliquent néanmoins.{" "}
+                          <Link href="/blog/revente-lmnp-plus-value" className="underline font-medium" style={{ color: "#C95B2A" }}>
+                            En savoir plus →
+                          </Link>
                         </p>
                       </div>
 
@@ -1364,7 +1389,7 @@ ${annexeTable}
                                       <div key={c.label} className="grid gap-x-3 items-center px-3 py-2.5"
                                         style={{ gridTemplateColumns: "2fr 1fr 0.7fr 1fr", background: i % 2 === 0 ? "#F5F0E8" : "#EDE7DC", borderBottom: "0.5px solid rgba(26,22,18,0.06)" }}>
                                         <span className="text-xs font-semibold" style={{ color: "#1A1612" }}>{c.label}</span>
-                                        <div className="flex items-center gap-1">
+                                        <div className="flex items-center gap-1 flex-wrap">
                                           <input type="number" min={0} max={100} value={c.pct}
                                             onChange={e => {
                                               const v = Math.min(100, Math.max(0, parseInt(e.target.value) || 0));
@@ -1372,7 +1397,8 @@ ${annexeTable}
                                             }}
                                             className="w-12 px-2 py-1 text-xs rounded text-center focus:outline-none focus:ring-1 focus:ring-[#C95B2A] [appearance:none] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none [-moz-appearance:textfield]"
                                             style={INPUT_STYLE} />
-                                          <span className="text-xs font-medium" style={{ color: "#C95B2A" }}>{formatEuro(val)}</span>
+                                          <span className="text-xs" style={{ color: "rgba(26,22,18,0.5)" }}>%</span>
+                                          <span className="text-[10px]" style={{ color: "#C95B2A" }}>({formatEuro(val)})</span>
                                         </div>
                                         <div className="flex items-center gap-1">
                                           <input type="number" min={1} max={50} value={c.duree}
