@@ -60,6 +60,7 @@ export default function Home() {
             </Link>
             <Link href="/blog" className="hover:text-[#1A1612] transition-colors">Articles</Link>
             <Link href="/tarifs" className="hover:text-[#1A1612] transition-colors">Tarifs</Link>
+            <Link href="/contact" className="hover:text-[#1A1612] transition-colors">Contact</Link>
           </nav>
           <p className="text-xs" style={{ color: "rgba(26,22,18,0.35)" }}>
             © 2026 toutlmnp · Outil indicatif, non un conseil fiscal

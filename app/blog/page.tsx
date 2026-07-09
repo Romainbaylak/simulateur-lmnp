@@ -94,6 +94,12 @@ export default function BlogPage() {
       <footer style={{ borderTop: "0.5px solid rgba(26,22,18,0.08)" }} className="py-10 px-4">
         <div className="max-w-6xl mx-auto flex flex-col md:flex-row justify-between items-center gap-4">
           <Link href="/"><Logo /></Link>
+          <nav className="hidden md:flex items-center gap-6 text-xs" style={{ color: "rgba(26,22,18,0.4)" }}>
+            <Link href="/comment-ca-marche" className="hover:opacity-80">LMNP</Link>
+            <Link href="/blog" className="hover:opacity-80">Articles</Link>
+            <Link href="/tarifs" className="hover:opacity-80">Tarifs</Link>
+            <Link href="/contact" className="hover:opacity-80">Contact</Link>
+          </nav>
           <p className="text-xs" style={{ color: "rgba(26,22,18,0.35)" }}>© 2026 toutlmnp</p>
         </div>
       </footer>

@@ -178,6 +178,14 @@ export default function Simulateur() {
   const [showDropdown, setShowDropdown] = useState(false);
   const [loyerSlider, setLoyerSlider] = useState<number>(0);
   const [sliderMax, setSliderMax] = useState(10000);
+  const [isSaisonnier, setIsSaisonnier] = useState(false);
+  const [prixNuitee, setPrixNuitee] = useState("");
+  const [tauxOccBas, setTauxOccBas] = useState("");
+  const [tauxOccMoyen, setTauxOccMoyen] = useState("");
+  const [tauxOccHaut, setTauxOccHaut] = useState("");
+  const [resultatsTriple, setResultatsTriple] = useState<{
+    bas: Resultats | null; moyen: Resultats | null; haut: Resultats | null;
+  } | null>(null);
   const [showAmort, setShowAmort] = useState(false);
   const [amortPct, setAmortPct] = useState(85);
   const [amortMode, setAmortMode] = useState<"ensemble" | "composant">("ensemble");
@@ -241,25 +249,51 @@ export default function Simulateur() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [form.loyer]);
 
+  const loyerSaisonnier = (nuitee: number, taux: number) => nuitee * (taux / 100) * 365 / 12;
+
   const handleSimuler = () => {
-    const loyerMensuel = loyerSlider > 0 ? loyerSlider : parseFloat(form.loyer) || 0;
-    const r = computeResultats(form, loyerMensuel, amortPct, amortMode, amortDureeEnsemble, composants);
-    setResultats(r);
-    if (loyerMensuel > 0) {
-      setLoyerSlider(loyerMensuel);
-      setSliderMax(Math.max(loyerMensuel * 2, 200));
+    if (isSaisonnier) {
+      const nuitee = parseFloat(prixNuitee) || 0;
+      const lBas   = loyerSaisonnier(nuitee, parseFloat(tauxOccBas)   || 0);
+      const lMoyen = loyerSaisonnier(nuitee, parseFloat(tauxOccMoyen) || 0);
+      const lHaut  = loyerSaisonnier(nuitee, parseFloat(tauxOccHaut)  || 0);
+      const rBas   = computeResultats(form, lBas,   amortPct, amortMode, amortDureeEnsemble, composants);
+      const rMoyen = computeResultats(form, lMoyen, amortPct, amortMode, amortDureeEnsemble, composants);
+      const rHaut  = computeResultats(form, lHaut,  amortPct, amortMode, amortDureeEnsemble, composants);
+      setResultatsTriple({ bas: rBas, moyen: rMoyen, haut: rHaut });
+      setResultats(rMoyen);
+      setShowResults(true);
+      setTimeout(() => resultsRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }), 50);
+    } else {
+      const loyerMensuel = loyerSlider > 0 ? loyerSlider : parseFloat(form.loyer) || 0;
+      const r = computeResultats(form, loyerMensuel, amortPct, amortMode, amortDureeEnsemble, composants);
+      setResultats(r);
+      if (loyerMensuel > 0) {
+        setLoyerSlider(loyerMensuel);
+        setSliderMax(Math.max(loyerMensuel * 2, 200));
+      }
+      setShowResults(true);
+      setTimeout(() => resultsRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }), 50);
     }
-    setShowResults(true);
-    setTimeout(() => {
-      resultsRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
-    }, 50);
   };
 
   const handleAjuster = () => {
-    const loyerMensuel = loyerSlider > 0 ? loyerSlider : parseFloat(form.loyer) || 0;
-    const r = computeResultats(form, loyerMensuel, amortPct, amortMode, amortDureeEnsemble, composants);
-    setResultats(r);
-    if (loyerMensuel > 0) setSliderMax(Math.max(loyerMensuel * 2, 200));
+    if (isSaisonnier) {
+      const nuitee = parseFloat(prixNuitee) || 0;
+      const lBas   = loyerSaisonnier(nuitee, parseFloat(tauxOccBas)   || 0);
+      const lMoyen = loyerSaisonnier(nuitee, parseFloat(tauxOccMoyen) || 0);
+      const lHaut  = loyerSaisonnier(nuitee, parseFloat(tauxOccHaut)  || 0);
+      const rBas   = computeResultats(form, lBas,   amortPct, amortMode, amortDureeEnsemble, composants);
+      const rMoyen = computeResultats(form, lMoyen, amortPct, amortMode, amortDureeEnsemble, composants);
+      const rHaut  = computeResultats(form, lHaut,  amortPct, amortMode, amortDureeEnsemble, composants);
+      setResultatsTriple({ bas: rBas, moyen: rMoyen, haut: rHaut });
+      setResultats(rMoyen);
+    } else {
+      const loyerMensuel = loyerSlider > 0 ? loyerSlider : parseFloat(form.loyer) || 0;
+      const r = computeResultats(form, loyerMensuel, amortPct, amortMode, amortDureeEnsemble, composants);
+      setResultats(r);
+      if (loyerMensuel > 0) setSliderMax(Math.max(loyerMensuel * 2, 200));
+    }
     resultsRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
   };
 
@@ -461,6 +495,56 @@ export default function Simulateur() {
       ? `En Micro-BIC 2025, votre base imposable serait de <strong>${fEur(baseBIC)}</strong> par an (70 % des loyers bruts de ${fEur(loyerAnnuel)}/an, en cas de loyer constant), générant un impôt estimé de <strong>${fEur(impotBIC)}</strong> par an (TMI ${tmi} % + prélèvements sociaux 18,6 %).`
       : `En Micro-BIC 2025, votre base imposable serait de <strong>${fEur(baseBIC)}</strong> par an (70 % des loyers bruts de ${fEur(loyerAnnuel)}/an, en cas de loyer constant). Renseignez votre TMI pour calculer l'impôt correspondant.`;
 
+    // Saisonnière: 6-table comparison block
+    let saisonniereSummaryHtml = "";
+    if (isSaisonnier && resultatsTriple) {
+      const scenarios = [
+        { label: "Basse saison", r: resultatsTriple.bas, taux: tauxOccBas },
+        { label: "Occupation moyenne", r: resultatsTriple.moyen, taux: tauxOccMoyen },
+        { label: "Haute saison", r: resultatsTriple.haut, taux: tauxOccHaut },
+      ];
+      const makeScenarioTable = (label: string, r: Resultats | null, taux: string, regime: "reel" | "bic") => {
+        if (!r) return "";
+        const lr = r.loyerAnnuel;
+        const bic = lr * 0.70;
+        const impBic = bic * (form.tmi / 100 + 0.186);
+        if (regime === "reel") {
+          return `<div style="flex:1;min-width:180px">
+            <div style="font-size:9px;font-weight:700;color:#4E1F12;border-bottom:1.5px solid #4E1F12;padding-bottom:3px;margin-bottom:5px">Réel — ${label}<br><span style="font-weight:400;opacity:.6">${taux}% occupation · ${fEur(lr/12)}/mois</span></div>
+            <table style="width:100%;font-size:9px;border-collapse:collapse">
+              <tr><td style="padding:2px 3px;color:rgba(26,22,18,.55)">Loyer annuel</td><td style="padding:2px 3px;text-align:right;font-weight:600">${fEur(lr)}</td></tr>
+              <tr><td style="padding:2px 3px;color:rgba(26,22,18,.55)">Base imposable</td><td style="padding:2px 3px;text-align:right;font-weight:600;color:${r.baseImposableReel===0?"#1A7A52":"#B03A2A"}">${fEur(r.baseImposableReel)}</td></tr>
+              <tr><td style="padding:2px 3px;color:rgba(26,22,18,.55)">Impôt</td><td style="padding:2px 3px;text-align:right;font-weight:600">${fEur(r.impotReel)}</td></tr>
+              <tr><td style="padding:2px 3px;color:rgba(26,22,18,.55)">Cash-flow</td><td style="padding:2px 3px;text-align:right;font-weight:600;color:${r.cashflowReelMensuel>=0?"#1A7A52":"#B03A2A"}">${fEur(r.cashflowReelMensuel)}/mois</td></tr>
+            </table></div>`;
+        } else {
+          return `<div style="flex:1;min-width:180px">
+            <div style="font-size:9px;font-weight:700;color:#26527A;border-bottom:1.5px solid #26527A;padding-bottom:3px;margin-bottom:5px">Micro-BIC — ${label}<br><span style="font-weight:400;opacity:.6">${taux}% occupation · ${fEur(lr/12)}/mois</span></div>
+            <table style="width:100%;font-size:9px;border-collapse:collapse">
+              <tr><td style="padding:2px 3px;color:rgba(26,22,18,.55)">Loyer annuel</td><td style="padding:2px 3px;text-align:right;font-weight:600">${fEur(lr)}</td></tr>
+              <tr><td style="padding:2px 3px;color:rgba(26,22,18,.55)">Base imposable (70%)</td><td style="padding:2px 3px;text-align:right;font-weight:600">${fEur(bic)}</td></tr>
+              <tr><td style="padding:2px 3px;color:rgba(26,22,18,.55)">Impôt</td><td style="padding:2px 3px;text-align:right;font-weight:600">${fEur(impBic)}</td></tr>
+              <tr><td style="padding:2px 3px;color:rgba(26,22,18,.55)">Cash-flow</td><td style="padding:2px 3px;text-align:right;font-weight:600;color:${r.cashflowBICMensuel>=0?"#1A7A52":"#B03A2A"}">${fEur(r.cashflowBICMensuel)}/mois</td></tr>
+            </table></div>`;
+        }
+      };
+      saisonniereSummaryHtml = `
+<h2>Location Saisonnière — Comparaison des 3 scénarios (année 1)</h2>
+<p style="font-size:10px;color:rgba(26,22,18,.5);margin-bottom:8px">Prix par nuitée : <strong>${fEur(parseFloat(prixNuitee)||0)}</strong>. Le tableau détaillé ci-dessous utilise l'estimation moyenne.</p>
+<div style="margin-bottom:6px">
+  <div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#4E1F12;margin-bottom:6px">Régime Réel Simplifié</div>
+  <div style="display:flex;gap:8px;flex-wrap:wrap">
+    ${scenarios.map(s => makeScenarioTable(s.label, s.r, s.taux, "reel")).join("")}
+  </div>
+</div>
+<div style="margin-top:10px">
+  <div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#26527A;margin-bottom:6px">Micro-BIC 2025</div>
+  <div style="display:flex;gap:8px;flex-wrap:wrap">
+    ${scenarios.map(s => makeScenarioTable(s.label, s.r, s.taux, "bic")).join("")}
+  </div>
+</div>`;
+    }
+
     const html = `<!DOCTYPE html><html lang="fr"><head><meta charset="UTF-8">
 <title>Analyse de Rentabilité LMNP – toutlmnp</title>
 <style>
@@ -547,6 +631,7 @@ th.col-an,td.col-an{width:18px}
   </div>
 </div>
 
+${saisonniereSummaryHtml}
 <h2>Comparaison régimes fiscaux (année 1)</h2>
 <table><thead><tr><th>Indicateur</th><th>Régime réel simplifié</th><th>Micro-BIC 2025</th></tr></thead><tbody>
 <tr><td>Loyers annuels</td><td>${fEur(loyerAnnuel)}</td><td>${fEur(loyerAnnuel)}</td></tr>
@@ -565,7 +650,7 @@ th.col-an,td.col-an{width:18px}
 </div>
 
 <div class="page-break">
-<h2>Tableau récapitulatif (${totalYears} ans)</h2>
+<h2>Tableau récapitulatif (${totalYears} ans)${isSaisonnier ? " — Estimation moyenne des revenus" : ""}</h2>
 <p style="font-size:10px;color:rgba(26,22,18,.5);margin-bottom:6px">Projection en régime réel simplifié avec loyers et charges constants. L'amortissement évolue chaque année. La ligne marquée indique la fin du crédit.</p>
 <table><thead><tr>
   <th class="col-an">An</th>
@@ -597,20 +682,42 @@ ${annexeTable}
         {/* ─── FORM ─── */}
         <div className="rounded-xl p-6 md:p-8 mb-6" style={sectionStyle}>
 
-          {/* Type de bien */}
-          <div className="mb-6">
-            <div className={LABEL}>Type de bien</div>
-            <div className="flex rounded-md overflow-hidden" style={{ border: "0.5px solid rgba(26,22,18,0.12)", width: "fit-content" }}>
-              {(["ap", "ma"] as TypeBien[]).map(t => (
-                <button key={t} onClick={() => updateField("type", t)}
-                  className="px-5 py-2.5 text-sm font-medium transition-colors"
+          {/* Type de bien + Location Saisonnière */}
+          <div className="mb-6 flex items-end justify-between gap-4 flex-wrap">
+            <div>
+              <div className={LABEL}>Type de bien</div>
+              <div className="flex rounded-md overflow-hidden" style={{ border: "0.5px solid rgba(26,22,18,0.12)", width: "fit-content" }}>
+                {(["ap", "ma"] as TypeBien[]).map(t => (
+                  <button key={t} onClick={() => updateField("type", t)}
+                    className="px-5 py-2.5 text-sm font-medium transition-colors"
+                    style={{
+                      background: form.type === t ? "#1A1612" : "#F5F0E8",
+                      color: form.type === t ? "#F5F0E8" : "rgba(26,22,18,0.55)",
+                    }}>
+                    {t === "ap" ? "Appartement" : "Maison"}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div>
+              <div className={LABEL}>Mode de location</div>
+              <button
+                onClick={() => { setIsSaisonnier(!isSaisonnier); setResultatsTriple(null); }}
+                className="flex items-center gap-2.5 px-4 py-2.5 rounded-md text-sm font-medium transition-all"
+                style={{
+                  background: isSaisonnier ? "rgba(26,82,122,0.1)" : "#F5F0E8",
+                  border: isSaisonnier ? "1.5px solid #26527A" : "0.5px solid rgba(26,22,18,0.18)",
+                  color: isSaisonnier ? "#26527A" : "rgba(26,22,18,0.55)",
+                }}>
+                <span className="w-4 h-4 rounded flex items-center justify-center flex-shrink-0"
                   style={{
-                    background: form.type === t ? "#1A1612" : "#F5F0E8",
-                    color: form.type === t ? "#F5F0E8" : "rgba(26,22,18,0.55)",
+                    background: isSaisonnier ? "#26527A" : "transparent",
+                    border: isSaisonnier ? "none" : "1.5px solid rgba(26,22,18,0.3)",
                   }}>
-                  {t === "ap" ? "Appartement" : "Maison"}
-                </button>
-              ))}
+                  {isSaisonnier && <span className="text-white text-[10px] leading-none font-bold">✓</span>}
+                </span>
+                Location Saisonnière
+              </button>
             </div>
           </div>
 
@@ -809,17 +916,48 @@ ${annexeTable}
                 </div>
               )}
 
-              {/* Loyer mensuel */}
-              <div>
-                <label className={LABEL}>Loyer mensuel (€) <span style={{ fontWeight: 400, fontSize: "0.75rem", color: "rgba(26,22,18,0.45)" }}>— charges comprises</span></label>
-                <input type="number" value={form.loyer}
-                  onChange={e => {
-                    updateField("loyer", e.target.value);
-                    setLoyerSlider(parseFloat(e.target.value) || 0);
-                  }}
-                  onBlur={() => handleBlur("loyer")}
-                  placeholder="Ex : 1 200" className={INPUT} style={INPUT_STYLE} />
-              </div>
+              {/* Loyer mensuel ou Saisonnier */}
+              {isSaisonnier ? (
+                <div className="space-y-3 rounded-xl p-4" style={{ background: "rgba(38,82,122,0.05)", border: "1px solid rgba(38,82,122,0.2)" }}>
+                  <div className="text-[11px] font-medium uppercase tracking-[0.14em]" style={{ color: "#26527A" }}>Location Saisonnière</div>
+                  <div>
+                    <label className={LABEL}>Prix moyen par nuitée (€)</label>
+                    <input type="number" value={prixNuitee}
+                      onChange={e => setPrixNuitee(e.target.value)}
+                      placeholder="Ex : 80" className={INPUT} style={INPUT_STYLE} />
+                  </div>
+                  <div>
+                    <label className={LABEL}>Taux d&apos;occupation estimé (%)</label>
+                    <div className="grid grid-cols-3 gap-2">
+                      {[
+                        { label: "Basse", val: tauxOccBas, set: setTauxOccBas, placeholder: "40" },
+                        { label: "Moyenne", val: tauxOccMoyen, set: setTauxOccMoyen, placeholder: "60" },
+                        { label: "Haute", val: tauxOccHaut, set: setTauxOccHaut, placeholder: "80" },
+                      ].map(({ label, val, set, placeholder }) => (
+                        <div key={label}>
+                          <div className="text-[10px] text-center mb-1" style={{ color: "rgba(26,22,18,0.45)" }}>{label}</div>
+                          <input type="number" value={val} onChange={e => set(e.target.value)}
+                            placeholder={placeholder} className={INPUT} style={{ ...INPUT_STYLE, textAlign: "center" }} />
+                        </div>
+                      ))}
+                    </div>
+                    <p className="text-[11px] mt-2" style={{ color: "rgba(26,22,18,0.45)", lineHeight: 1.5 }}>
+                      Les calculs de rentabilité approfondis sont effectués avec l&apos;estimation <strong>Moyenne</strong>.
+                    </p>
+                  </div>
+                </div>
+              ) : (
+                <div>
+                  <label className={LABEL}>Loyer mensuel (€) <span style={{ fontWeight: 400, fontSize: "0.75rem", color: "rgba(26,22,18,0.45)" }}>— charges comprises</span></label>
+                  <input type="number" value={form.loyer}
+                    onChange={e => {
+                      updateField("loyer", e.target.value);
+                      setLoyerSlider(parseFloat(e.target.value) || 0);
+                    }}
+                    onBlur={() => handleBlur("loyer")}
+                    placeholder="Ex : 1 200" className={INPUT} style={INPUT_STYLE} />
+                </div>
+              )}
 
               {/* TMI */}
               <div>
@@ -902,150 +1040,184 @@ ${annexeTable}
                   ))}
                 </div>
 
-                {/* Loyer slider */}
-                <div className="rounded-xl p-5" style={cardStyle}>
-                  <div className="flex justify-between items-center mb-3">
-                    <span className="text-sm font-medium" style={{ color: "#1A1612" }}>Ajuster le loyer</span>
-                    <div className="flex items-center gap-1.5">
-                      <input
-                        type="number"
-                        value={loyerEffectif || ""}
-                        onChange={e => {
-                          const v = parseFloat(e.target.value) || 0;
-                          setLoyerSlider(v);
-                          updateField("loyer", e.target.value);
-                          if (showResults) {
-                            const r = computeResultats(form, v, amortPct, amortMode, amortDureeEnsemble, composants);
-                            setResultats(r);
-                          }
-                        }}
-                        className="w-24 text-right text-xl font-semibold rounded-md px-2 py-1 focus:outline-none [appearance:none] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none [-moz-appearance:textfield]"
-                        style={{ color: "#F5F0E8", background: "#C95B2A", border: "none" }}
-                      />
-                      <span className="text-base font-medium" style={{ color: "#C95B2A" }}>/mois</span>
+                {/* Loyer slider ou estimations saisonnières */}
+                {isSaisonnier && resultatsTriple ? (
+                  <div className="rounded-xl p-5" style={cardStyle}>
+                    <div className="text-sm font-medium mb-4" style={{ color: "#1A1612" }}>Revenus locatifs selon les estimations</div>
+                    <div className="grid grid-cols-3 gap-3">
+                      {([
+                        { label: "Basse", taux: parseFloat(tauxOccBas) || 0, accent: "rgba(176,58,42,0.12)", color: "#B03A2A" },
+                        { label: "Moyenne", taux: parseFloat(tauxOccMoyen) || 0, accent: "rgba(201,91,42,0.12)", color: "#C95B2A" },
+                        { label: "Haute", taux: parseFloat(tauxOccHaut) || 0, accent: "rgba(26,122,82,0.12)", color: "#1A7A52" },
+                      ] as const).map(({ label, taux, accent, color }) => {
+                        const loyer = loyerSaisonnier(parseFloat(prixNuitee) || 0, taux);
+                        return (
+                          <div key={label} className="rounded-lg p-3 text-center" style={{ background: accent }}>
+                            <div className="text-[10px] uppercase tracking-[0.12em] font-medium mb-1" style={{ color }}>{label}</div>
+                            <div className="text-lg font-light" style={{ color, letterSpacing: "-0.02em" }}>{formatEuro(loyer)}/mois</div>
+                            <div className="text-[11px] mt-0.5" style={{ color: "rgba(26,22,18,0.45)" }}>{taux}% d&apos;occupation</div>
+                            <div className="text-[11px]" style={{ color: "rgba(26,22,18,0.45)" }}>{formatEuro(loyer * 12)}/an</div>
+                          </div>
+                        );
+                      })}
                     </div>
                   </div>
-                  <input type="range"
-                    min={sliderMin} max={sliderMax} step={5}
-                    value={loyerSlider || parseFloat(form.loyer) || 500}
-                    onChange={e => {
-                      const v = parseFloat(e.target.value);
-                      setLoyerSlider(v);
-                      updateField("loyer", v.toString());
-                      if (showResults) {
-                        const r = computeResultats(form, v, amortPct, amortMode, amortDureeEnsemble, composants);
-                        setResultats(r);
-                      }
-                    }}
-                    className="w-full" />
-                  <div className="flex justify-between text-[11px] mt-1" style={{ color: "rgba(26,22,18,0.40)" }}>
-                    <span>Bas marché</span>
-                    <span>Haut marché</span>
+                ) : !isSaisonnier ? (
+                  <div className="rounded-xl p-5" style={cardStyle}>
+                    <div className="flex justify-between items-center mb-3">
+                      <span className="text-sm font-medium" style={{ color: "#1A1612" }}>Ajuster le loyer</span>
+                      <div className="flex items-center gap-1.5">
+                        <input
+                          type="number"
+                          value={loyerEffectif || ""}
+                          onChange={e => {
+                            const v = parseFloat(e.target.value) || 0;
+                            setLoyerSlider(v);
+                            updateField("loyer", e.target.value);
+                            if (showResults) {
+                              const r = computeResultats(form, v, amortPct, amortMode, amortDureeEnsemble, composants);
+                              setResultats(r);
+                            }
+                          }}
+                          className="w-24 text-right text-xl font-semibold rounded-md px-2 py-1 focus:outline-none [appearance:none] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none [-moz-appearance:textfield]"
+                          style={{ color: "#F5F0E8", background: "#C95B2A", border: "none" }}
+                        />
+                        <span className="text-base font-medium" style={{ color: "#C95B2A" }}>/mois</span>
+                      </div>
+                    </div>
+                    <input type="range"
+                      min={sliderMin} max={sliderMax} step={5}
+                      value={loyerSlider || parseFloat(form.loyer) || 500}
+                      onChange={e => {
+                        const v = parseFloat(e.target.value);
+                        setLoyerSlider(v);
+                        updateField("loyer", v.toString());
+                        if (showResults) {
+                          const r = computeResultats(form, v, amortPct, amortMode, amortDureeEnsemble, composants);
+                          setResultats(r);
+                        }
+                      }}
+                      className="w-full" />
+                    <div className="flex justify-between text-[11px] mt-1" style={{ color: "rgba(26,22,18,0.40)" }}>
+                      <span>Bas marché</span>
+                      <span>Haut marché</span>
+                    </div>
                   </div>
-                </div>
+                ) : null}
 
                 {/* Comparaison régimes */}
                 <div className="rounded-xl p-5" style={cardStyle}>
                   <h3 className="font-medium text-[#1A1612] mb-4">Comparaison des régimes fiscaux</h3>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {[
-                      {
-                        regime: "Régime réel simplifié",
-                        badge: "Recommandé",
-                        loyers: resultats.loyerAnnuel,
-                        creditAnnuel: resultats.creditAnnuel,
-                        charges: resultats.chargesDeductibles,
-                        amort: resultats.amortTotal,
-                        base: resultats.baseImposableReel,
-                        impot: resultats.impotReel,
-                        cf: resultats.cashflowReelMensuel,
-                        highlight: true,
-                      },
-                      {
-                        regime: "Micro-BIC 2025",
-                        badge: "Abattement 30%",
-                        loyers: resultats.loyerAnnuel,
-                        creditAnnuel: resultats.creditAnnuel,
-                        charges: null,
-                        amort: null,
-                        base: resultats.baseBIC,
-                        impot: resultats.impotBIC,
-                        cf: resultats.cashflowBICMensuel,
-                        highlight: false,
-                      },
-                    ].map(r => (
-                      <div key={r.regime} className="rounded-lg p-4"
-                        style={{
-                          background: r.highlight ? "rgba(201,91,42,0.06)" : "#F5F0E8",
-                          border: r.highlight ? "0.5px solid rgba(201,91,42,0.2)" : "0.5px solid rgba(26,22,18,0.08)",
-                        }}>
-                        <div className="flex items-center justify-between mb-3">
-                          <div className="text-sm font-medium" style={{ color: "#1A1612" }}>{r.regime}</div>
-                          <span className="text-[10px] uppercase tracking-[0.1em] px-2 py-0.5 rounded"
-                            style={{
-                              background: r.highlight ? "#C95B2A" : "rgba(26,22,18,0.08)",
-                              color: r.highlight ? "#F5F0E8" : "rgba(26,22,18,0.5)",
-                            }}>
-                            {r.badge}
-                          </span>
+
+                  {isSaisonnier && resultatsTriple ? (() => {
+                    const scenarios = [
+                      { label: "Basse", r: resultatsTriple.bas, accent: "rgba(176,58,42,0.06)", border: "rgba(176,58,42,0.2)", tagBg: "rgba(176,58,42,0.1)", tagColor: "#B03A2A" },
+                      { label: "Moyenne", r: resultatsTriple.moyen, accent: "rgba(201,91,42,0.06)", border: "rgba(201,91,42,0.2)", tagBg: "#C95B2A", tagColor: "#F5F0E8" },
+                      { label: "Haute", r: resultatsTriple.haut, accent: "rgba(26,122,82,0.06)", border: "rgba(26,122,82,0.2)", tagBg: "rgba(26,122,82,0.1)", tagColor: "#1A7A52" },
+                    ];
+                    const RegimeRow = ({ sc, isReel }: { sc: typeof scenarios[0]; isReel: boolean }) => {
+                      const r = sc.r;
+                      if (!r) return <div className="rounded-lg p-3 text-center text-xs" style={{ background: sc.accent, border: `0.5px solid ${sc.border}`, color: "rgba(26,22,18,0.4)" }}>–</div>;
+                      const cf = isReel ? r.cashflowReelMensuel : r.cashflowBICMensuel;
+                      const base = isReel ? r.baseImposableReel : r.baseBIC;
+                      const impot = isReel ? r.impotReel : r.impotBIC;
+                      return (
+                        <div className="rounded-lg p-3" style={{ background: sc.accent, border: `0.5px solid ${sc.border}` }}>
+                          <div className="flex items-center justify-between mb-2">
+                            <div className="text-[10px] font-medium uppercase tracking-[0.1em]" style={{ color: sc.tagColor }}>{sc.label}</div>
+                            <span className="text-[10px] px-1.5 py-0.5 rounded" style={{ background: sc.tagBg, color: sc.tagColor }}>{formatEuro(r.loyerAnnuel)}/an</span>
+                          </div>
+                          <div className="space-y-1 text-xs">
+                            <div className="flex justify-between"><span style={{ color: "rgba(26,22,18,0.5)" }}>Base imposable</span><span className="font-medium">{formatEuro(base)}</span></div>
+                            <div className="flex justify-between"><span style={{ color: "rgba(26,22,18,0.5)" }}>Impôt estimé</span><span style={{ color: "#B03A2A" }}>{formatEuro(impot)}</span></div>
+                            <div className="flex justify-between font-medium pt-1" style={{ borderTop: "0.5px solid rgba(26,22,18,0.08)" }}>
+                              <span>Cash-flow/mois</span>
+                              <span style={{ color: cf >= 0 ? "#1A7A52" : "#B03A2A" }}>{formatEuro(cf)}</span>
+                            </div>
+                          </div>
                         </div>
-                        <div className="space-y-1.5 text-xs">
-                          <div className="flex justify-between">
-                            <span style={{ color: "rgba(26,22,18,0.5)" }}>Loyers annuels</span>
-                            <span className="font-medium">{formatEuro(r.loyers)}</span>
-                          </div>
-                          <div className="flex justify-between">
-                            <span style={{ color: "rgba(26,22,18,0.5)" }}>Emprunt</span>
-                            <span style={{ color: "#B03A2A" }}>−{formatEuro(r.creditAnnuel)}</span>
-                          </div>
-                          {r.highlight && (
-                            <div className="flex justify-between pl-3" style={{ color: "rgba(26,22,18,0.45)" }}>
-                              <span>Dont frais d&apos;emprunt</span>
-                              <span>{formatEuro(resultats.interetsAnnee1)}</span>
-                            </div>
-                          )}
-                          {r.charges !== null && (
-                            <div className="flex justify-between">
-                              <span style={{ color: "rgba(26,22,18,0.5)" }}>Charges déductibles</span>
-                              <span style={{ color: "#B03A2A" }}>−{formatEuro(r.charges)}</span>
-                            </div>
-                          )}
-                          {r.highlight && (
-                            <div className="flex justify-between pt-1.5" style={{ borderTop: "0.5px solid rgba(26,22,18,0.08)" }}>
-                              <span style={{ color: "rgba(26,22,18,0.5)" }}>Résultat avant amortissement</span>
-                              <span className="font-medium" style={{ color: resultats.resultatAvantAmort >= 0 ? "#1A1612" : "#B03A2A" }}>
-                                {formatEuro(resultats.resultatAvantAmort)}
+                      );
+                    };
+                    return (
+                      <div className="space-y-4">
+                        {[
+                          { title: "Régime réel simplifié", badge: "Recommandé", isReel: true },
+                          { title: "Micro-BIC 2025", badge: "Abattement 30%", isReel: false },
+                        ].map(({ title, badge, isReel }) => (
+                          <div key={title}>
+                            <div className="flex items-center gap-2 mb-2">
+                              <span className="text-sm font-medium" style={{ color: "#1A1612" }}>{title}</span>
+                              <span className="text-[10px] uppercase tracking-[0.1em] px-2 py-0.5 rounded"
+                                style={{ background: isReel ? "#C95B2A" : "rgba(26,22,18,0.08)", color: isReel ? "#F5F0E8" : "rgba(26,22,18,0.5)" }}>
+                                {badge}
                               </span>
                             </div>
-                          )}
-                          {r.amort !== null && (
-                            <div className="flex justify-between">
-                              <span style={{ color: "rgba(26,22,18,0.5)" }}>Amortissements (Bien, travaux, mobilier, frais de notaire)</span>
-                              <span style={{ color: "#B03A2A" }}>−{formatEuro(r.amort)}</span>
+                            <div className="grid grid-cols-3 gap-2">
+                              {scenarios.map(sc => <RegimeRow key={sc.label} sc={sc} isReel={isReel} />)}
                             </div>
-                          )}
-                          <div className="flex justify-between pt-1.5" style={{ borderTop: "0.5px solid rgba(26,22,18,0.08)" }}>
-                            <span style={{ color: "rgba(26,22,18,0.5)" }}>Base imposable</span>
-                            <span className="font-medium">{formatEuro(r.base)}</span>
                           </div>
-                          <div className="flex justify-between">
-                            <span style={{ color: "rgba(26,22,18,0.5)" }}>Impôt estimé</span>
-                            <span style={{ color: "#B03A2A" }}>{formatEuro(r.impot)}</span>
+                        ))}
+                      </div>
+                    );
+                  })() : (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {[
+                        {
+                          regime: "Régime réel simplifié",
+                          badge: "Recommandé",
+                          loyers: resultats.loyerAnnuel,
+                          creditAnnuel: resultats.creditAnnuel,
+                          charges: resultats.chargesDeductibles,
+                          amort: resultats.amortTotal,
+                          base: resultats.baseImposableReel,
+                          impot: resultats.impotReel,
+                          cf: resultats.cashflowReelMensuel,
+                          highlight: true,
+                        },
+                        {
+                          regime: "Micro-BIC 2025",
+                          badge: "Abattement 30%",
+                          loyers: resultats.loyerAnnuel,
+                          creditAnnuel: resultats.creditAnnuel,
+                          charges: null,
+                          amort: null,
+                          base: resultats.baseBIC,
+                          impot: resultats.impotBIC,
+                          cf: resultats.cashflowBICMensuel,
+                          highlight: false,
+                        },
+                      ].map(r => (
+                        <div key={r.regime} className="rounded-lg p-4"
+                          style={{
+                            background: r.highlight ? "rgba(201,91,42,0.06)" : "#F5F0E8",
+                            border: r.highlight ? "0.5px solid rgba(201,91,42,0.2)" : "0.5px solid rgba(26,22,18,0.08)",
+                          }}>
+                          <div className="flex items-center justify-between mb-3">
+                            <div className="text-sm font-medium" style={{ color: "#1A1612" }}>{r.regime}</div>
+                            <span className="text-[10px] uppercase tracking-[0.1em] px-2 py-0.5 rounded"
+                              style={{
+                                background: r.highlight ? "#C95B2A" : "rgba(26,22,18,0.08)",
+                                color: r.highlight ? "#F5F0E8" : "rgba(26,22,18,0.5)",
+                              }}>
+                              {r.badge}
+                            </span>
                           </div>
-                          {r.highlight && (
-                            <div className="flex justify-between">
-                              <span style={{ color: "rgba(26,22,18,0.5)" }}>Amortissement à reporter N+1</span>
-                              <span style={{ color: "#B08A2A" }}>{formatEuro(resultats.amortAReporter)}</span>
-                            </div>
-                          )}
-                          <div className="flex justify-between pt-1.5 font-medium" style={{ borderTop: "0.5px solid rgba(26,22,18,0.08)" }}>
-                            <span>Cash-flow mensuel</span>
-                            <span style={{ color: r.cf >= 0 ? "#1A7A52" : "#B03A2A" }}>{formatEuro(r.cf)}</span>
+                          <div className="space-y-1.5 text-xs">
+                            <div className="flex justify-between"><span style={{ color: "rgba(26,22,18,0.5)" }}>Loyers annuels</span><span className="font-medium">{formatEuro(r.loyers)}</span></div>
+                            <div className="flex justify-between"><span style={{ color: "rgba(26,22,18,0.5)" }}>Emprunt</span><span style={{ color: "#B03A2A" }}>−{formatEuro(r.creditAnnuel)}</span></div>
+                            {r.highlight && (<div className="flex justify-between pl-3" style={{ color: "rgba(26,22,18,0.45)" }}><span>Dont frais d&apos;emprunt</span><span>{formatEuro(resultats.interetsAnnee1)}</span></div>)}
+                            {r.charges !== null && (<div className="flex justify-between"><span style={{ color: "rgba(26,22,18,0.5)" }}>Charges déductibles</span><span style={{ color: "#B03A2A" }}>−{formatEuro(r.charges)}</span></div>)}
+                            {r.highlight && (<div className="flex justify-between pt-1.5" style={{ borderTop: "0.5px solid rgba(26,22,18,0.08)" }}><span style={{ color: "rgba(26,22,18,0.5)" }}>Résultat avant amortissement</span><span className="font-medium" style={{ color: resultats.resultatAvantAmort >= 0 ? "#1A1612" : "#B03A2A" }}>{formatEuro(resultats.resultatAvantAmort)}</span></div>)}
+                            {r.amort !== null && (<div className="flex justify-between"><span style={{ color: "rgba(26,22,18,0.5)" }}>Amortissements (Bien, travaux, mobilier, frais de notaire)</span><span style={{ color: "#B03A2A" }}>−{formatEuro(r.amort)}</span></div>)}
+                            <div className="flex justify-between pt-1.5" style={{ borderTop: "0.5px solid rgba(26,22,18,0.08)" }}><span style={{ color: "rgba(26,22,18,0.5)" }}>Base imposable</span><span className="font-medium">{formatEuro(r.base)}</span></div>
+                            <div className="flex justify-between"><span style={{ color: "rgba(26,22,18,0.5)" }}>Impôt estimé</span><span style={{ color: "#B03A2A" }}>{formatEuro(r.impot)}</span></div>
+                            {r.highlight && (<div className="flex justify-between"><span style={{ color: "rgba(26,22,18,0.5)" }}>Amortissement à reporter N+1</span><span style={{ color: "#B08A2A" }}>{formatEuro(resultats.amortAReporter)}</span></div>)}
+                            <div className="flex justify-between pt-1.5 font-medium" style={{ borderTop: "0.5px solid rgba(26,22,18,0.08)" }}><span>Cash-flow mensuel</span><span style={{ color: r.cf >= 0 ? "#1A7A52" : "#B03A2A" }}>{formatEuro(r.cf)}</span></div>
                           </div>
                         </div>
-                      </div>
-                    ))}
-                  </div>
+                      ))}
+                    </div>
+                  )}
 
                   <div className="mt-4 p-4 rounded-lg text-[13px]"
                     style={{ background: "#F5F0E8", border: "0.5px solid rgba(26,22,18,0.08)", color: "rgba(26,22,18,0.65)", lineHeight: 1.6 }}>
