@@ -1282,13 +1282,25 @@ ${annexeTable}
 
                       {/* OBJECTIF */}
                       <div className="rounded-lg p-4 mt-4" style={{ background: "rgba(201,91,42,0.08)", border: "1px solid rgba(201,91,42,0.25)" }}>
-                        <div className="font-bold text-sm mb-2 uppercase tracking-wide" style={{ color: "#C95B2A" }}>Objectif : Diminuer la base imposable à moyen / long terme pour diminuer l&apos;impôt</div>
-                        <p className="text-[13px]" style={{ color: "rgba(26,22,18,0.7)", lineHeight: 1.7 }}>
-                          Ajuste tes durées d&apos;amortissement pour réduire au maximum ta base imposable chaque année. Un amortissement supérieur ou égal à ton résultat avant amortissement = base imposable nulle = impôt minimal.
-                        </p>
-                        <p className="text-[13px] mt-2" style={{ color: "rgba(26,22,18,0.7)", lineHeight: 1.7 }}>
-                          Joue avec les durées d&apos;amortissement, quitte à les raccourcir. Il vaut mieux avoir un excédent d&apos;amortissement au début car il est toujours reportable à N+1.
-                        </p>
+                        {isSaisonnier ? (
+                          <>
+                            <div className="font-bold text-sm mb-2 uppercase tracking-wide" style={{ color: "#C95B2A" }}>
+                              Objectif : Diminuer la base imposable à moyen / long terme pour diminuer l&apos;impôt
+                            </div>
+                            <p className="text-[13px]" style={{ color: "#C95B2A", lineHeight: 1.7 }}>
+                              Ajuste tes durées d&apos;amortissement pour réduire au maximum ta base imposable chaque année.
+                            </p>
+                          </>
+                        ) : (
+                          <>
+                            <div className="font-bold text-sm mb-2 uppercase tracking-wide" style={{ color: "#C95B2A" }}>
+                              OBJECTIF : Payer 0 € d&apos;impôt
+                            </div>
+                            <p className="text-[13px]" style={{ color: "#C95B2A", lineHeight: 1.7 }}>
+                              L&apos;objectif est clair ici : joue avec les durées d&apos;amortissement, quitte à les raccourcir pour réduire la base imposable et diminuer l&apos;impôt.
+                            </p>
+                          </>
+                        )}
                         <p className="text-[12px] mt-3" style={{ color: "rgba(26,22,18,0.45)", lineHeight: 1.65 }}>
                           Les amortissements déduits pendant la détention sont réintégrés dans le calcul de la plus-value à la revente. Des abattements pour durée de détention s&apos;appliquent néanmoins.{" "}
                           <Link href="/blog/revente-lmnp-plus-value" className="underline font-medium" style={{ color: "#C95B2A" }}>
