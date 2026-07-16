@@ -6,6 +6,7 @@ import { loyersData, allVillesList } from "@/data/loyers";
 import PopupPaiementUnite from "./PopupPaiementUnite";
 import PopupAmortLimite from "./PopupAmortLimite";
 import PopupPDFStarter from "./PopupPDFStarter";
+import PopupSauvegarder from "./PopupSauvegarder";
 
 type TypeBien = "ap" | "ma";
 type TMI = 0 | 11 | 30 | 41 | 45;
@@ -206,6 +207,7 @@ export default function Simulateur() {
   const [showAmortLimite, setShowAmortLimite] = useState(false);
   const [showPDFStarter, setShowPDFStarter] = useState(false);
   const [pdfWeekCount, setPdfWeekCount] = useState(0);
+  const [showSauvegarder, setShowSauvegarder] = useState(false);
 
   // Helpers pour lire le plan et les compteurs localStorage
   const getPlan = () => (typeof window !== "undefined" ? localStorage.getItem("lmnp_plan") : null);
@@ -1476,6 +1478,7 @@ ${annexeTable}
                                             <input type="number" min={0} max={100} value={c.pct}
                                               onChange={e => {
                                                 const v = Math.min(100, Math.max(0, parseInt(e.target.value) || 0));
+                                                e.target.value = String(v);
                                                 setComposants(prev => prev.map((x, j) => j === i ? { ...x, pct: v } : x));
                                               }}
                                               className="w-12 px-2 py-1 text-xs rounded text-center focus:outline-none focus:ring-1 focus:ring-[#C95B2A] [appearance:none] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none [-moz-appearance:textfield]"
@@ -1487,6 +1490,7 @@ ${annexeTable}
                                             <input type="number" max={50} value={c.duree}
                                               onChange={e => {
                                                 const v = Math.max(1, parseInt(e.target.value) || 1);
+                                                e.target.value = String(v);
                                                 setComposants(prev => prev.map((x, j) => j === i ? { ...x, duree: v } : x));
                                               }}
                                               className="w-14 px-2 py-1 text-xs rounded text-center focus:outline-none focus:ring-1 focus:ring-[#C95B2A] [appearance:none] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none [-moz-appearance:textfield]"
@@ -1507,6 +1511,7 @@ ${annexeTable}
                                                 <input type="number" min={0} max={100} value={c.pct}
                                                   onChange={e => {
                                                     const v = Math.min(100, Math.max(0, parseInt(e.target.value) || 0));
+                                                    e.target.value = String(v);
                                                     setComposants(prev => prev.map((x, j) => j === i ? { ...x, pct: v } : x));
                                                   }}
                                                   className="w-16 px-3 py-2 text-sm rounded text-center focus:outline-none focus:ring-1 focus:ring-[#C95B2A] [appearance:none] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none [-moz-appearance:textfield]"
@@ -1521,6 +1526,7 @@ ${annexeTable}
                                                 <input type="number" max={50} value={c.duree}
                                                   onChange={e => {
                                                     const v = Math.max(1, parseInt(e.target.value) || 1);
+                                                    e.target.value = String(v);
                                                     setComposants(prev => prev.map((x, j) => j === i ? { ...x, duree: v } : x));
                                                   }}
                                                   className="w-16 px-3 py-2 text-sm rounded text-center focus:outline-none focus:ring-1 focus:ring-[#C95B2A] [appearance:none] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none [-moz-appearance:textfield]"
@@ -1597,8 +1603,8 @@ ${annexeTable}
 
               </div>
 
-              {/* ─── BOUTON PDF — toujours visible en bas des résultats ─── */}
-              <div className="flex justify-center mt-6">
+              {/* ─── BOUTONS PDF + SAUVEGARDER ─── */}
+              <div className="flex flex-wrap justify-center items-center gap-3 mt-6">
                 <button onClick={() => {
                   const plan = getPlan();
                   if (plan === "pro") { handleGeneratePDF(); return; }
@@ -1612,6 +1618,19 @@ ${annexeTable}
                   className="px-10 py-4 text-base font-medium transition-opacity hover:opacity-[0.88] rounded-lg"
                   style={{ background: "#4E1F12", color: "#C95B2A", border: "1px solid rgba(201,91,42,0.3)", letterSpacing: "0.02em" }}>
                   Générer compte rendu PDF
+                </button>
+                <button
+                  onClick={() => setShowSauvegarder(true)}
+                  className="flex items-center gap-2 px-6 py-4 text-base font-medium transition-opacity hover:opacity-[0.88] rounded-lg"
+                  style={{ background: "#EDE7DC", color: "#4E1F12", border: "1px solid rgba(78,31,18,0.2)" }}
+                  title="Sauvegarder la simulation"
+                >
+                  <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/>
+                    <polyline points="17 21 17 13 7 13 7 21"/>
+                    <polyline points="7 3 7 8 15 8"/>
+                  </svg>
+                  Sauvegarder
                 </button>
               </div>
               </>
@@ -1633,6 +1652,14 @@ ${annexeTable}
         />
       )}
       {showAmortLimite && <PopupAmortLimite onClose={() => setShowAmortLimite(false)} />}
+      {showSauvegarder && (
+        <PopupSauvegarder
+          isPro={getPlan() === "starter" || getPlan() === "pro"}
+          simulationData={{ form, amortPct, amortMode, amortDureeEnsemble, composants, savedAt: Date.now() }}
+          onClose={() => setShowSauvegarder(false)}
+          onSaved={() => setShowSauvegarder(false)}
+        />
+      )}
       {showPDFStarter && (
         <PopupPDFStarter
           weekCount={pdfWeekCount}
