@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import Link from "next/link";
 import { loyersData, allVillesList } from "@/data/loyers";
+import PopupPaiementUnite from "./PopupPaiementUnite";
 
 type TypeBien = "ap" | "ma";
 type TMI = 0 | 11 | 30 | 41 | 45;
@@ -199,6 +200,7 @@ export default function Simulateur() {
   ]);
   const [resultats, setResultats] = useState<Resultats | null>(null);
   const [showResults, setShowResults] = useState(false);
+  const [showPayPopup, setShowPayPopup] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const resultsRef = useRef<HTMLDivElement>(null);
 
@@ -1255,7 +1257,7 @@ ${annexeTable}
 
                 {/* Amortissement */}
                 <div className="rounded-xl overflow-hidden" style={cardStyle}>
-                  <button onClick={() => setShowAmort(!showAmort)}
+                  <button onClick={() => { if (!showAmort) { setShowPayPopup(true); } else { setShowAmort(false); } }}
                     className="w-full flex justify-between items-center p-5 text-left transition-all hover:opacity-95"
                     style={{ background: "linear-gradient(90deg, #4E1F12 0%, rgba(201,91,42,0.85) 100%)" }}>
                     <div className="flex items-center gap-3">
@@ -1541,7 +1543,7 @@ ${annexeTable}
 
               {/* ─── BOUTON PDF — toujours visible en bas des résultats ─── */}
               <div className="flex justify-center mt-6">
-                <button onClick={handleGeneratePDF}
+                <button onClick={() => setShowPayPopup(true)}
                   className="px-10 py-4 text-base font-medium transition-opacity hover:opacity-[0.88] rounded-lg"
                   style={{ background: "#4E1F12", color: "#C95B2A", border: "1px solid rgba(201,91,42,0.3)", letterSpacing: "0.02em" }}>
                   Générer compte rendu PDF
@@ -1552,6 +1554,7 @@ ${annexeTable}
           )}
         </div>
       </div>
+      {showPayPopup && <PopupPaiementUnite onClose={() => setShowPayPopup(false)} />}
     </section>
   );
 }
