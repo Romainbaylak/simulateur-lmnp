@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import { ClerkProvider } from "@clerk/nextjs";
+import { frFR } from "@clerk/localizations";
 
 // Clerk dashboard config (User & Authentication → Email, Phone, Username) :
 //   - Désactiver "Password"
@@ -17,6 +18,7 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <ClerkProvider
+      localization={frFR}
       signInUrl="/sign-in"
       signUpUrl="/sign-in"
       afterSignInUrl="/"
