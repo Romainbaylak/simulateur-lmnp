@@ -1,18 +1,24 @@
 "use client";
 import Link from "next/link";
 import { useStripeCheckout } from "@/lib/useStripeCheckout";
+import type { SimulationData } from "@/lib/computeResultats";
 
 const PRICE_RAPPORT = "price_1TtnAdRkmRCKEt1c3M6Nnvu1";
 
 interface Props {
   onClose: () => void;
+  simulationData?: SimulationData;
 }
 
-export default function PopupPaiementUnite({ onClose }: Props) {
+export default function PopupPaiementUnite({ onClose, simulationData }: Props) {
   const { redirectToCheckout, loading, error } = useStripeCheckout();
 
   const handlePay = () => {
-    redirectToCheckout({ priceId: PRICE_RAPPORT, mode: "payment" });
+    redirectToCheckout({
+      priceId: PRICE_RAPPORT,
+      mode: "payment",
+      simulationData,
+    });
   };
 
   return (
