@@ -13,6 +13,11 @@ export default function HeaderAuth({ dark = true }: { dark?: boolean }) {
   if (isSignedIn) {
     return (
       <div className="flex items-center gap-3">
+        <UserButton afterSignOutUrl="/" appearance={{
+          elements: {
+            avatarBox: "w-8 h-8",
+          },
+        }} />
         <Link href="/dashboard"
           className="text-sm font-medium px-4 py-2 transition-opacity hover:opacity-80"
           style={{
@@ -22,11 +27,6 @@ export default function HeaderAuth({ dark = true }: { dark?: boolean }) {
           }}>
           {user.firstName ?? "Mon compte"}
         </Link>
-        <UserButton afterSignOutUrl="/" appearance={{
-          elements: {
-            avatarBox: "w-8 h-8",
-          },
-        }} />
       </div>
     );
   }
