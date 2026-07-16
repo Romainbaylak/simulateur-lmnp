@@ -5,8 +5,8 @@ import HeaderAuth from "@/components/HeaderAuth";
 import MobileHeader from "@/components/MobileHeader";
 
 export const metadata: Metadata = {
-  title: "Tarifs – toutlmnp",
-  description: "Simulez votre LMNP gratuitement. Évoluez avec Starter ou Pro pour des simulations illimitées, l'export PDF et le tableau d'amortissement complet.",
+  title: "Abonnements – toutlmnp",
+  description: "Simulez votre LMNP gratuitement. Évoluez avec Investisseur ou Pro pour des simulations illimitées, l'export PDF et le tableau d'amortissement complet.",
 };
 
 export default function TarifsPage() {
@@ -36,7 +36,7 @@ export default function TarifsPage() {
           <Link href="/#simulateur" className="inline-flex items-center gap-2 text-sm font-medium px-4 py-2 rounded-md mb-6 transition-opacity hover:opacity-80"
             style={{ background: "rgba(201,91,42,0.08)", color: "#C95B2A", border: "1px solid rgba(201,91,42,0.2)" }}>← Retour à la simulation</Link>
           <h1 className="font-light mb-3" style={{ fontSize: "clamp(1.8rem,4vw,2.5rem)", color: "#4E1F12", letterSpacing: "-0.025em" }}>
-            Tarifs simples et transparents
+            Abonnements simples et transparents
           </h1>
           <p style={{ color: "rgba(26,22,18,0.45)" }}>Commencez gratuitement. Évoluez quand vous en avez besoin.</p>
         </div>
@@ -83,7 +83,7 @@ export default function TarifsPage() {
                 style={{ background: "#C95B2A", color: "#F5F0E8" }}>POPULAIRE</span>
             </div>
             <div className="mb-6">
-              <h2 className="font-light text-2xl text-[#1A1612] mb-2" style={{ letterSpacing: "-0.02em" }}>Starter</h2>
+              <h2 className="font-light text-2xl text-[#1A1612] mb-2" style={{ letterSpacing: "-0.02em" }}>Investisseur</h2>
               <div className="flex items-baseline gap-1 mb-1">
                 <span className="text-4xl font-light" style={{ color: "#C95B2A", letterSpacing: "-0.03em" }}>4,99 €</span>
                 <span style={{ color: "rgba(26,22,18,0.4)", fontSize: 14 }}>/mois</span>
@@ -128,7 +128,7 @@ export default function TarifsPage() {
             </div>
             <ul className="space-y-3 mb-8 flex-1">
               {[
-                "Tout le plan Starter inclus",
+                "Tout le plan Investisseur inclus",
                 "Tableau d'amortissement complet et illimité",
                 "Simulations et exports illimités",
                 "Export Word (modifiable)",
@@ -156,7 +156,7 @@ export default function TarifsPage() {
         <div className="mt-14 text-center">
           <p className="text-sm" style={{ color: "rgba(26,22,18,0.5)", lineHeight: 1.75 }}>
             Le simulateur est et restera gratuit pour les cas d&apos;usage essentiels.<br />
-            Les plans Starter et Pro sont pour les investisseurs qui analysent plusieurs biens régulièrement.
+            Les plans Investisseur et Pro sont pour les investisseurs qui analysent plusieurs biens régulièrement.
           </p>
         </div>
       </div>
