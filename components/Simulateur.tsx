@@ -4,6 +4,8 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import Link from "next/link";
 import { loyersData, allVillesList } from "@/data/loyers";
 import PopupPaiementUnite from "./PopupPaiementUnite";
+import PopupAmortLimite from "./PopupAmortLimite";
+import PopupPDFStarter from "./PopupPDFStarter";
 
 type TypeBien = "ap" | "ma";
 type TMI = 0 | 11 | 30 | 41 | 45;
@@ -201,6 +203,54 @@ export default function Simulateur() {
   const [resultats, setResultats] = useState<Resultats | null>(null);
   const [showResults, setShowResults] = useState(false);
   const [showPayPopup, setShowPayPopup] = useState(false);
+  const [showAmortLimite, setShowAmortLimite] = useState(false);
+  const [showPDFStarter, setShowPDFStarter] = useState(false);
+  const [pdfWeekCount, setPdfWeekCount] = useState(0);
+
+  // Helpers pour lire le plan et les compteurs localStorage
+  const getPlan = () => (typeof window !== "undefined" ? localStorage.getItem("lmnp_plan") : null);
+
+  const isAmortBlocked = (): boolean => {
+    if (typeof window === "undefined") return false;
+    const plan = getPlan();
+    if (plan === "starter" || plan === "pro") return false;
+    const last = localStorage.getItem("lmnp_amort_last_used");
+    const today = new Date().toISOString().slice(0, 10);
+    return last === today;
+  };
+
+  const markAmortUsed = () => {
+    if (typeof window === "undefined") return;
+    const plan = getPlan();
+    if (plan === "starter" || plan === "pro") return;
+    const today = new Date().toISOString().slice(0, 10);
+    localStorage.setItem("lmnp_amort_last_used", today);
+  };
+
+  const getPdfWeekCount = (): number => {
+    if (typeof window === "undefined") return 0;
+    const stored = localStorage.getItem("lmnp_pdf_week_count");
+    if (!stored) return 0;
+    try {
+      const { count, weekStart } = JSON.parse(stored);
+      const currentWeekStart = getWeekStart();
+      if (weekStart !== currentWeekStart) return 0;
+      return count ?? 0;
+    } catch { return 0; }
+  };
+
+  const incrementPdfWeekCount = () => {
+    if (typeof window === "undefined") return;
+    const count = getPdfWeekCount() + 1;
+    localStorage.setItem("lmnp_pdf_week_count", JSON.stringify({ count, weekStart: getWeekStart() }));
+  };
+
+  const getWeekStart = (): string => {
+    const d = new Date();
+    const day = d.getDay();
+    const diff = d.getDate() - day + (day === 0 ? -6 : 1);
+    return new Date(d.setDate(diff)).toISOString().slice(0, 10);
+  };
   const dropdownRef = useRef<HTMLDivElement>(null);
   const resultsRef = useRef<HTMLDivElement>(null);
 
@@ -1257,7 +1307,12 @@ ${annexeTable}
 
                 {/* Amortissement */}
                 <div className="rounded-xl overflow-hidden" style={cardStyle}>
-                  <button onClick={() => { if (!showAmort) { setShowPayPopup(true); } else { setShowAmort(false); } }}
+                  <button onClick={() => {
+                    if (showAmort) { setShowAmort(false); return; }
+                    if (isAmortBlocked()) { setShowAmortLimite(true); return; }
+                    markAmortUsed();
+                    setShowAmort(true);
+                  }}
                     className="w-full flex justify-between items-center p-5 text-left transition-all hover:opacity-95"
                     style={{ background: "linear-gradient(90deg, #4E1F12 0%, rgba(201,91,42,0.85) 100%)" }}>
                     <div className="flex items-center gap-3">
@@ -1543,7 +1598,16 @@ ${annexeTable}
 
               {/* ─── BOUTON PDF — toujours visible en bas des résultats ─── */}
               <div className="flex justify-center mt-6">
-                <button onClick={() => setShowPayPopup(true)}
+                <button onClick={() => {
+                  const plan = getPlan();
+                  if (plan === "pro") { handleGeneratePDF(); return; }
+                  if (plan === "starter") {
+                    setPdfWeekCount(getPdfWeekCount());
+                    setShowPDFStarter(true);
+                    return;
+                  }
+                  setShowPayPopup(true);
+                }}
                   className="px-10 py-4 text-base font-medium transition-opacity hover:opacity-[0.88] rounded-lg"
                   style={{ background: "#4E1F12", color: "#C95B2A", border: "1px solid rgba(201,91,42,0.3)", letterSpacing: "0.02em" }}>
                   Générer compte rendu PDF
@@ -1555,6 +1619,18 @@ ${annexeTable}
         </div>
       </div>
       {showPayPopup && <PopupPaiementUnite onClose={() => setShowPayPopup(false)} />}
+      {showAmortLimite && <PopupAmortLimite onClose={() => setShowAmortLimite(false)} />}
+      {showPDFStarter && (
+        <PopupPDFStarter
+          weekCount={pdfWeekCount}
+          onClose={() => setShowPDFStarter(false)}
+          onGenerate={() => {
+            incrementPdfWeekCount();
+            setShowPDFStarter(false);
+            handleGeneratePDF();
+          }}
+        />
+      )}
     </section>
   );
 }

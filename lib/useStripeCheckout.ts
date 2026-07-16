@@ -6,20 +6,21 @@ interface CheckoutOptions {
   priceId: string;
   mode: "payment" | "subscription";
   userId?: string;
+  plan?: string;
 }
 
 export function useStripeCheckout() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const redirectToCheckout = async ({ priceId, mode, userId }: CheckoutOptions) => {
+  const redirectToCheckout = async ({ priceId, mode, userId, plan }: CheckoutOptions) => {
     setLoading(true);
     setError(null);
     try {
       const res = await fetch("/api/stripe/checkout-session", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ priceId, mode, userId }),
+        body: JSON.stringify({ priceId, mode, userId, plan }),
       });
       const data = await res.json();
       if (!res.ok || !data.url) {
