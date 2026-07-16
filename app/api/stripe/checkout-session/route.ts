@@ -14,9 +14,12 @@ export async function POST(req: NextRequest) {
     }
 
     const origin = req.headers.get("origin") ?? "https://toutlmnp.fr";
-    const successUrl = plan
-      ? `${origin}/merci?session_id={CHECKOUT_SESSION_ID}&plan=${plan}`
-      : `${origin}/merci?session_id={CHECKOUT_SESSION_ID}`;
+    const isRapport = mode === "payment";
+    const successUrl = isRapport
+      ? `${origin}/rapport?session_id={CHECKOUT_SESSION_ID}`
+      : plan
+        ? `${origin}/merci?session_id={CHECKOUT_SESSION_ID}&plan=${plan}`
+        : `${origin}/merci?session_id={CHECKOUT_SESSION_ID}`;
 
     const session = await stripe.checkout.sessions.create({
       mode: mode as "payment" | "subscription",
@@ -25,6 +28,7 @@ export async function POST(req: NextRequest) {
       success_url: successUrl,
       cancel_url: `${origin}/tarifs`,
       ...(userId ? { client_reference_id: userId } : {}),
+      ...(isRapport ? { metadata: { type: "rapport_pdf" } } : {}),
       locale: "fr",
     });
 

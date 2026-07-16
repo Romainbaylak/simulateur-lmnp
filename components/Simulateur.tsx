@@ -1618,7 +1618,19 @@ ${annexeTable}
           )}
         </div>
       </div>
-      {showPayPopup && <PopupPaiementUnite onClose={() => setShowPayPopup(false)} />}
+      {showPayPopup && (
+        <PopupPaiementUnite
+          onClose={() => setShowPayPopup(false)}
+          simulationData={{
+            form,
+            amortPct,
+            amortMode,
+            amortDureeEnsemble,
+            composants,
+            savedAt: Date.now(),
+          }}
+        />
+      )}
       {showAmortLimite && <PopupAmortLimite onClose={() => setShowAmortLimite(false)} />}
       {showPDFStarter && (
         <PopupPDFStarter
