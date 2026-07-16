@@ -17,6 +17,10 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <ClerkProvider
+      signInUrl="/sign-in"
+      signUpUrl="/sign-in"
+      afterSignInUrl="/"
+      afterSignUpUrl="/"
       appearance={{
         variables: { colorPrimary: "#C95B2A" },
         elements: { socialButtonsRoot: { display: "none" } },

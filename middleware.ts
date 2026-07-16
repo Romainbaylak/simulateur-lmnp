@@ -4,6 +4,11 @@ const isProtected = createRouteMatcher(["/dashboard(.*)", "/account(.*)"]);
 
 export default clerkMiddleware((auth, req) => {
   if (isProtected(req)) auth().protect();
+}, {
+  signInUrl: "/sign-in",
+  signUpUrl: "/sign-in",
+  afterSignInUrl: "/",
+  afterSignUpUrl: "/",
 });
 
 export const config = {

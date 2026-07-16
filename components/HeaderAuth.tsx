@@ -33,7 +33,7 @@ export default function HeaderAuth({ dark = true }: { dark?: boolean }) {
 
   return (
     <div className="flex items-center gap-2">
-      <SignInButton mode="modal">
+      <SignInButton mode="modal" fallbackRedirectUrl="/">
         <button
           className="text-sm font-medium px-4 py-2 transition-opacity hover:opacity-80"
           style={{
