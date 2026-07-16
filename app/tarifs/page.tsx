@@ -2,6 +2,7 @@ import Logo from "@/components/Logo";
 import Link from "next/link";
 import type { Metadata } from "next";
 import HeaderAuth from "@/components/HeaderAuth";
+import MobileHeader from "@/components/MobileHeader";
 
 export const metadata: Metadata = {
   title: "Tarifs – toutlmnp Gratuit & Premium",
@@ -12,9 +13,9 @@ export default function TarifsPage() {
   return (
     <main className="min-h-screen" style={{ backgroundColor: "#F5F0E8" }}>
       <header style={{ backgroundColor: "#4E1F12", borderBottom: "2px solid rgba(245,240,232,0.18)" }} className="sticky top-0 z-50">
-        <div className="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between">
+        <div className="hidden md:flex max-w-6xl mx-auto px-4 py-3 items-center justify-between">
           <Link href="/"><Logo variant="light" /></Link>
-          <nav className="hidden md:flex items-center gap-6 text-base font-normal" style={{ color: "#F5F0E8" }}>
+          <nav className="flex items-center gap-6 text-base font-normal" style={{ color: "#F5F0E8" }}>
             <Link href="/comment-ca-marche" className="hover:text-[#F5F0E8] transition-colors">LMNP</Link>
             <Link href="/blog" className="hover:text-[#F5F0E8] transition-colors">Articles</Link>
             <Link href="/tarifs" style={{ color: "#C95B2A" }}>Tarifs</Link>
@@ -27,6 +28,7 @@ export default function TarifsPage() {
             </a>
           </div>
         </div>
+        <MobileHeader />
       </header>
 
       <div className="py-10 px-4 text-center" style={{ borderBottom: "1px solid rgba(26,22,18,0.07)" }}>

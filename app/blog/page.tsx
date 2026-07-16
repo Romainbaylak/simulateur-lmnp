@@ -2,6 +2,7 @@ import Logo from "@/components/Logo";
 import Link from "next/link";
 import type { Metadata } from "next";
 import HeaderAuth from "@/components/HeaderAuth";
+import MobileHeader from "@/components/MobileHeader";
 
 export const metadata: Metadata = {
   title: "Articles LMNP – Conseils investissement immobilier meublé",
@@ -43,15 +44,15 @@ export default function BlogPage() {
   return (
     <main className="min-h-screen" style={{ backgroundColor: "#F5F0E8" }}>
       <header style={{ backgroundColor: "#4E1F12", borderBottom: "2px solid rgba(245,240,232,0.18)" }} className="sticky top-0 z-50">
-        <div className="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between">
+        <div className="hidden md:flex max-w-6xl mx-auto px-4 py-3 items-center justify-between">
           <div className="flex items-center gap-5">
             <Link href="/"><Logo variant="light" /></Link>
-            <div className="hidden md:block pl-5" style={{ borderLeft: "1px solid rgba(245,240,232,0.15)" }}>
+            <div className="pl-5" style={{ borderLeft: "1px solid rgba(245,240,232,0.15)" }}>
               <div className="text-base font-light leading-tight" style={{ color: "#F5F0E8" }}>Articles</div>
               <div className="text-[11px] leading-tight mt-0.5" style={{ color: "rgba(245,240,232,0.45)" }}>Guides, actualités fiscales et conseils</div>
             </div>
           </div>
-          <nav className="hidden md:flex items-center gap-6 text-base font-normal" style={{ color: "#F5F0E8" }}>
+          <nav className="flex items-center gap-6 text-base font-normal" style={{ color: "#F5F0E8" }}>
             <Link href="/comment-ca-marche" className="hover:text-[#F5F0E8] transition-colors">LMNP</Link>
             <Link href="/blog" style={{ color: "#C95B2A" }}>Articles</Link>
             <Link href="/tarifs" className="hover:text-[#F5F0E8] transition-colors">Tarifs</Link>
@@ -64,6 +65,7 @@ export default function BlogPage() {
             </a>
           </div>
         </div>
+        <MobileHeader />
       </header>
 
       <div className="max-w-4xl mx-auto px-4 py-12">

@@ -2,6 +2,7 @@ import Simulateur from "@/components/Simulateur";
 import Logo from "@/components/Logo";
 import Link from "next/link";
 import HeaderAuth from "@/components/HeaderAuth";
+import MobileHeader from "@/components/MobileHeader";
 
 export default function Home() {
   return (
@@ -9,12 +10,11 @@ export default function Home() {
       {/* ─── Header ─── */}
       <header style={{ backgroundColor: "#4E1F12", borderBottom: "2px solid rgba(245,240,232,0.18)" }}
         className="sticky top-0 z-50">
-        <div className="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between">
+        {/* Desktop */}
+        <div className="hidden md:flex max-w-6xl mx-auto px-4 py-3 items-center justify-between">
           <Link href="/"><Logo variant="light" /></Link>
-          <nav className="hidden md:flex items-center gap-6 text-base font-normal" style={{ color: "#F5F0E8" }}>
-            <Link href="/comment-ca-marche" className="hover:text-[#F5F0E8] transition-colors">
-              LMNP
-            </Link>
+          <nav className="flex items-center gap-6 text-base font-normal" style={{ color: "#F5F0E8" }}>
+            <Link href="/comment-ca-marche" className="hover:text-[#F5F0E8] transition-colors">LMNP</Link>
             <Link href="/blog" className="hover:text-[#F5F0E8] transition-colors">Articles</Link>
             <Link href="/tarifs" className="hover:text-[#F5F0E8] transition-colors">Tarifs</Link>
           </nav>
@@ -27,6 +27,8 @@ export default function Home() {
             </a>
           </div>
         </div>
+        {/* Mobile */}
+        <MobileHeader simulerHref="#simulateur" />
       </header>
 
       {/* ─── Hero ─── */}

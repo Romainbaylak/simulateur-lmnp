@@ -2,6 +2,7 @@ import Logo from "@/components/Logo";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import HeaderAuth from "@/components/HeaderAuth";
+import MobileHeader from "@/components/MobileHeader";
 
 const articles: Record<string, { titre: string; contenu: string; date: string; tag: string }> = {
   "reforme-micro-bic-2025": {
@@ -166,7 +167,7 @@ export default async function ArticlePage({ params }: { params: Promise<{ slug: 
   return (
     <main className="min-h-screen" style={{ backgroundColor: "#F5F0E8" }}>
       <header style={{ backgroundColor: "#4E1F12", borderBottom: "2px solid rgba(245,240,232,0.18)" }} className="sticky top-0 z-50">
-        <div className="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between">
+        <div className="hidden md:flex max-w-6xl mx-auto px-4 py-3 items-center justify-between">
           <Link href="/"><Logo variant="light" /></Link>
           <div className="flex items-center gap-2">
             <HeaderAuth dark={true} />
@@ -176,6 +177,7 @@ export default async function ArticlePage({ params }: { params: Promise<{ slug: 
             </a>
           </div>
         </div>
+        <MobileHeader />
       </header>
 
       <div className="py-8 px-4" style={{ borderBottom: "1px solid rgba(26,22,18,0.07)" }}>
