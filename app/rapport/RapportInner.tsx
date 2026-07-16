@@ -34,6 +34,20 @@ export default function RapportInner() {
   const [resultats, setResultats] = useState<Resultats | null>(null);
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [pdfGenerated, setPdfGenerated] = useState(false);
+
+  // Editable amort state
+  const [amortPct, setAmortPct] = useState(85);
+  const [amortMode, setAmortMode] = useState<"ensemble" | "composant">("ensemble");
+  const [amortDureeEnsemble, setAmortDureeEnsemble] = useState(25);
+  const [composants, setComposants] = useState<{ label: string; pct: number; duree: number }[]>([
+    { label: "Gros œuvre", pct: 40, duree: 50 },
+    { label: "Toiture", pct: 10, duree: 25 },
+    { label: "Façade", pct: 10, duree: 20 },
+    { label: "Électricité / plomberie", pct: 15, duree: 15 },
+    { label: "Menuiseries", pct: 10, duree: 20 },
+    { label: "Agencement intérieur", pct: 15, duree: 12 },
+  ]);
+
   const sessionId = params.get("session_id") ?? "";
 
   useEffect(() => {
@@ -52,19 +66,23 @@ export default function RapportInner() {
 
       setSimData(data);
       setForm(data.form);
+      setAmortPct(data.amortPct);
+      setAmortMode(data.amortMode);
+      setAmortDureeEnsemble(data.amortDureeEnsemble);
+      if (data.composants?.length) setComposants(data.composants);
       setStatus("ready");
     } catch { setStatus("expired"); }
   }, [sessionId, router]);
 
-  const recalc = useCallback((f: SimulationForm, sd: SimulationData) => {
+  const recalc = useCallback((f: SimulationForm, _sd: SimulationData, aPct: number, aMode: "ensemble" | "composant", aDuree: number, aComps: typeof composants) => {
     const loyer = parseFloat(f.loyer) || 0;
-    const res = computeResultats(f, loyer, sd.amortPct, sd.amortMode, sd.amortDureeEnsemble, sd.composants);
+    const res = computeResultats(f, loyer, aPct, aMode, aDuree, aComps);
     setResultats(res);
-  }, []);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
-    if (form && simData) recalc(form, simData);
-  }, [form, simData, recalc]);
+    if (form && simData) recalc(form, simData, amortPct, amortMode, amortDureeEnsemble, composants);
+  }, [form, simData, amortPct, amortMode, amortDureeEnsemble, composants, recalc]);
 
   useEffect(() => {
     if (status !== "ready" || !isLoaded) return;
@@ -190,7 +208,7 @@ export default function RapportInner() {
     sectionHeader("Tableau d'amortissement");
     doc.setFont("helvetica", "normal"); doc.setFontSize(9);
     [
-      ["Valeur amortissable du bien", fEur((parseFloat(form.prix) || 0) * simData.amortPct / 100)],
+      ["Valeur amortissable du bien", fEur((parseFloat(form.prix) || 0) * amortPct / 100)],
       ["Amortissement bien/an", fEur(resultats.amortBien)],
       ["Amortissement mobilier/an", fEur(resultats.amortMobilier)],
       ["Amortissement travaux/an", fEur(resultats.amortTravaux)],
@@ -356,9 +374,9 @@ export default function RapportInner() {
             <table className="w-full text-sm">
               <thead>
                 <tr>
-                  <th className="text-left px-4 py-3 text-xs font-medium" style={{ color: "rgba(26,22,18,0.45)", background: "#EDE7DC" }}></th>
-                  <th className="px-4 py-3 text-xs font-medium text-center" style={{ color: "#F5F0E8", background: "#C95B2A" }}>Régime réel</th>
-                  <th className="px-4 py-3 text-xs font-medium text-center" style={{ color: "#F5F0E8", background: "#4E1F12" }}>Micro-BIC</th>
+                  <th className="text-left px-4 py-3 text-sm font-medium" style={{ color: "rgba(26,22,18,0.45)", background: "#EDE7DC" }}></th>
+                  <th className="px-4 py-3 text-sm font-medium text-center" style={{ color: "#F5F0E8", background: "#C95B2A" }}>Régime réel</th>
+                  <th className="px-4 py-3 text-sm font-medium text-center" style={{ color: "#F5F0E8", background: "#4E1F12" }}>Micro-BIC</th>
                 </tr>
               </thead>
               <tbody>
@@ -371,9 +389,9 @@ export default function RapportInner() {
                   ["Cash-flow mensuel", fEur(resultats.cashflowReelMensuel), fEur(resultats.cashflowBICMensuel)],
                 ] as [string, string, string][]).map(([label, reel, bic], i) => (
                   <tr key={label} style={{ background: i % 2 === 0 ? "#F5F0E8" : "#EDE7DC" }}>
-                    <td className="px-4 py-2.5 text-xs" style={{ color: "rgba(26,22,18,0.6)" }}>{label}</td>
-                    <td className="px-4 py-2.5 text-xs text-center font-medium" style={{ color: "#C95B2A" }}>{reel}</td>
-                    <td className="px-4 py-2.5 text-xs text-center" style={{ color: "rgba(26,22,18,0.7)" }}>{bic}</td>
+                    <td className="px-4 py-3 text-sm" style={{ color: "rgba(26,22,18,0.6)" }}>{label}</td>
+                    <td className="px-4 py-3 text-sm text-center font-medium" style={{ color: "#C95B2A" }}>{reel}</td>
+                    <td className="px-4 py-3 text-sm text-center" style={{ color: "rgba(26,22,18,0.7)" }}>{bic}</td>
                   </tr>
                 ))}
               </tbody>
@@ -387,16 +405,110 @@ export default function RapportInner() {
             <h2 className="font-medium text-sm" style={{ color: "#F5F0E8" }}>Tableau d&apos;amortissement</h2>
           </div>
           <div className="p-5" style={{ background: "#F5F0E8" }}>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8">
+
+            {/* Mode toggle */}
+            <div className="flex gap-2 mb-5">
+              {(["ensemble", "composant"] as const).map(m => (
+                <button
+                  key={m}
+                  onClick={() => setAmortMode(m)}
+                  className="px-4 py-2 rounded text-sm font-medium transition-all"
+                  style={amortMode === m
+                    ? { background: "#C95B2A", color: "#F5F0E8" }
+                    : { background: "#EDE7DC", color: "rgba(26,22,18,0.6)", border: "0.5px solid rgba(26,22,18,0.15)" }
+                  }
+                >
+                  {m === "ensemble" ? "Par ensemble" : "Par composant"}
+                </button>
+              ))}
+            </div>
+
+            {amortMode === "ensemble" ? (
+              <div className="mb-5 grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className={LABEL}>% amortissable du bien</label>
+                  <div className="flex items-center gap-3">
+                    <input
+                      type="range" min={50} max={100} step={1}
+                      value={amortPct}
+                      onChange={e => setAmortPct(Number(e.target.value))}
+                      className="flex-1 accent-[#C95B2A]"
+                    />
+                    <input
+                      type="number" min={50} max={100}
+                      value={amortPct}
+                      onChange={e => setAmortPct(Number(e.target.value))}
+                      className="w-16 px-2 py-1.5 text-sm rounded text-center"
+                      style={{ background: "#EDE7DC", border: "0.5px solid rgba(26,22,18,0.12)", color: "#1A1612" }}
+                    />
+                    <span className="text-sm" style={{ color: "rgba(26,22,18,0.5)" }}>%</span>
+                  </div>
+                </div>
+                <div>
+                  <label className={LABEL}>Durée d&apos;amortissement (ans)</label>
+                  <input
+                    type="number" min={1} max={50}
+                    value={amortDureeEnsemble}
+                    onChange={e => setAmortDureeEnsemble(Number(e.target.value))}
+                    className={INPUT}
+                    style={INPUT_STYLE}
+                  />
+                </div>
+              </div>
+            ) : (
+              <div className="mb-5">
+                <div className="grid grid-cols-[1fr_90px_90px] gap-x-3 mb-2">
+                  <span className="text-xs font-medium uppercase tracking-wider" style={{ color: "rgba(26,22,18,0.4)" }}>Composant</span>
+                  <span className="text-xs font-medium uppercase tracking-wider text-center" style={{ color: "rgba(26,22,18,0.4)" }}>%</span>
+                  <span className="text-xs font-medium uppercase tracking-wider text-center" style={{ color: "rgba(26,22,18,0.4)" }}>Durée (ans)</span>
+                </div>
+                {composants.map((c, i) => (
+                  <div key={i} className="grid grid-cols-[1fr_90px_90px] gap-x-3 mb-2 items-center">
+                    <span className="text-sm" style={{ color: "rgba(26,22,18,0.7)" }}>{c.label}</span>
+                    <div className="flex items-center gap-1">
+                      <input
+                        type="number" min={0} max={100}
+                        value={c.pct}
+                        onChange={e => {
+                          const next = [...composants];
+                          next[i] = { ...next[i], pct: Number(e.target.value) };
+                          setComposants(next);
+                        }}
+                        className="w-full px-2 py-1.5 text-sm rounded text-center"
+                        style={{ background: "#EDE7DC", border: "0.5px solid rgba(26,22,18,0.12)", color: "#1A1612" }}
+                      />
+                      <span className="text-xs" style={{ color: "rgba(26,22,18,0.4)" }}>%</span>
+                    </div>
+                    <input
+                      type="number" min={1} max={80}
+                      value={c.duree}
+                      onChange={e => {
+                        const next = [...composants];
+                        next[i] = { ...next[i], duree: Number(e.target.value) };
+                        setComposants(next);
+                      }}
+                      className="w-full px-2 py-1.5 text-sm rounded text-center"
+                      style={{ background: "#EDE7DC", border: "0.5px solid rgba(26,22,18,0.12)", color: "#1A1612" }}
+                    />
+                  </div>
+                ))}
+                <p className="text-xs mt-2" style={{ color: "rgba(26,22,18,0.4)" }}>
+                  Total : {composants.reduce((s, c) => s + c.pct, 0)}% (recommandé ≤ 100%)
+                </p>
+              </div>
+            )}
+
+            {/* Results */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 mt-4 pt-4" style={{ borderTop: "0.5px solid rgba(26,22,18,0.08)" }}>
               {([
-                ["Valeur amortissable", fEur((parseFloat(form.prix) || 0) * simData.amortPct / 100)],
+                ["Valeur amortissable", fEur((parseFloat(form.prix) || 0) * amortPct / 100)],
                 ["Amortissement bien/an", fEur(resultats.amortBien)],
                 ["Amortissement mobilier/an", fEur(resultats.amortMobilier)],
                 ["Amortissement travaux/an", fEur(resultats.amortTravaux)],
                 ["Amortissement notaire/an", fEur(resultats.amortNotaire)],
                 ["Total amortissement/an", fEur(resultats.amortTotal)],
               ] as [string, string][]).map(([k, v]) => (
-                <div key={k} className="flex justify-between py-2.5" style={{ borderBottom: "0.5px solid rgba(26,22,18,0.06)" }}>
+                <div key={k} className="flex justify-between py-3" style={{ borderBottom: "0.5px solid rgba(26,22,18,0.06)" }}>
                   <span className="text-sm" style={{ color: "rgba(26,22,18,0.55)" }}>{k}</span>
                   <span className="text-sm font-medium" style={{ color: "#C95B2A" }}>{v}</span>
                 </div>
