@@ -3,6 +3,8 @@ import Link from "next/link";
 import HeaderAuth from "@/components/HeaderAuth";
 import MobileHeader from "@/components/MobileHeader";
 import type { Metadata } from "next";
+import { Suspense } from "react";
+import MerciPlanSetter from "@/components/MerciPlanSetter";
 
 export const metadata: Metadata = {
   title: "Merci pour votre achat – toutlmnp",
@@ -30,6 +32,7 @@ export default function MerciPage() {
         <MobileHeader />
       </header>
 
+      <Suspense fallback={null}><MerciPlanSetter /></Suspense>
       <div className="max-w-2xl mx-auto px-4 py-24 text-center">
         <div className="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-8 text-2xl"
           style={{ background: "rgba(201,91,42,0.12)", color: "#C95B2A" }}>✓</div>

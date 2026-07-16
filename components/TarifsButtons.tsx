@@ -8,11 +8,13 @@ const PRICE_PRO = "price_1Ttn9rRkmRCKEt1cfdcRt1f7";
 
 function SubscribeButton({
   priceId,
+  plan,
   label,
   style,
   errorStyle,
 }: {
   priceId: string;
+  plan: string;
   label: string;
   style: React.CSSProperties;
   errorStyle?: React.CSSProperties;
@@ -25,6 +27,7 @@ function SubscribeButton({
       priceId,
       mode: "subscription",
       userId: user?.id,
+      plan,
     });
   };
 
@@ -64,6 +67,7 @@ export function InvestisseurButton() {
   return (
     <SubscribeButton
       priceId={PRICE_INVESTISSEUR}
+      plan="starter"
       label="Commencer — 4,99 €/mois"
       style={{ backgroundColor: "#C95B2A", color: "#F5F0E8" }}
     />
@@ -74,6 +78,7 @@ export function ProButton() {
   return (
     <SubscribeButton
       priceId={PRICE_PRO}
+      plan="pro"
       label="Passer Pro — 12,99 €/mois"
       style={{ backgroundColor: "#F5F0E8", color: "#1A1612" }}
       errorStyle={{ color: "#C95B2A" }}
