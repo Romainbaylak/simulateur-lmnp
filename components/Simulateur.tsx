@@ -268,7 +268,8 @@ export default function Simulateur() {
     : [];
 
   const updateField = useCallback(<K extends keyof FormState>(key: K, value: FormState[K]) => {
-    setForm(prev => ({ ...prev, [key]: value }));
+    const stripped = typeof value === "string" ? stripLeadingZeros(value) : value;
+    setForm(prev => ({ ...prev, [key]: stripped }));
   }, []);
 
   const handleBlur = useCallback((field: keyof FormState) => {
