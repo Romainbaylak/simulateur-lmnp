@@ -19,7 +19,7 @@ export default function TarifsPage() {
           <nav className="flex items-center gap-6 text-base font-normal" style={{ color: "#F5F0E8" }}>
             <Link href="/comment-ca-marche" className="hover:text-[#F5F0E8] transition-colors">LMNP</Link>
             <Link href="/blog" className="hover:text-[#F5F0E8] transition-colors">Articles</Link>
-            <Link href="/tarifs" style={{ color: "#C95B2A" }}>Tarifs</Link>
+            <Link href="/tarifs" style={{ color: "#C95B2A" }}>Abonnements</Link>
           </nav>
           <div className="flex items-center gap-2">
             <HeaderAuth dark={true} />
@@ -162,7 +162,7 @@ export default function TarifsPage() {
           <nav className="hidden md:flex items-center gap-6 text-xs" style={{ color: "rgba(26,22,18,0.4)" }}>
             <Link href="/comment-ca-marche" className="hover:opacity-80">LMNP</Link>
             <Link href="/blog" className="hover:opacity-80">Articles</Link>
-            <Link href="/tarifs" className="hover:opacity-80">Tarifs</Link>
+            <Link href="/tarifs" className="hover:opacity-80">Abonnements</Link>
             <Link href="/contact" className="hover:opacity-80">Contact</Link>
           </nav>
           <p className="text-xs" style={{ color: "rgba(26,22,18,0.35)" }}>© 2026 toutlmnp</p>

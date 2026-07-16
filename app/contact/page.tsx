@@ -18,7 +18,7 @@ export default function ContactPage() {
           <nav className="flex items-center gap-6 text-base font-normal" style={{ color: "#F5F0E8" }}>
             <Link href="/comment-ca-marche" className="hover:opacity-80 transition-opacity">LMNP</Link>
             <Link href="/blog" className="hover:opacity-80 transition-opacity">Articles</Link>
-            <Link href="/tarifs" className="hover:opacity-80 transition-opacity">Tarifs</Link>
+            <Link href="/tarifs" className="hover:opacity-80 transition-opacity">Abonnements</Link>
             <Link href="/contact" style={{ color: "#C95B2A" }}>Contact</Link>
           </nav>
           <div className="flex items-center gap-2">
@@ -53,7 +53,7 @@ export default function ContactPage() {
           <nav className="hidden md:flex items-center gap-6 text-xs" style={{ color: "rgba(26,22,18,0.4)" }}>
             <Link href="/comment-ca-marche" className="hover:opacity-80">LMNP</Link>
             <Link href="/blog" className="hover:opacity-80">Articles</Link>
-            <Link href="/tarifs" className="hover:opacity-80">Tarifs</Link>
+            <Link href="/tarifs" className="hover:opacity-80">Abonnements</Link>
             <Link href="/contact" className="hover:opacity-80">Contact</Link>
           </nav>
           <p className="text-xs" style={{ color: "rgba(26,22,18,0.35)" }}>© 2026 toutlmnp</p>
