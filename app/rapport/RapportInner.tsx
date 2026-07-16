@@ -96,139 +96,291 @@ export default function RapportInner() {
     setForm(prev => prev ? { ...prev, [key]: val } : prev);
   };
 
-  const handleGeneratePDF = async () => {
+  const handleGeneratePDF = () => {
     if (!form || !resultats || !simData) return;
 
-    const { jsPDF } = await import("jspdf");
-    const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
+    const prix = parseFloat(form.prix) || 0;
+    const travaux = parseFloat(form.travaux) || 0;
+    const notaire = parseFloat(form.notaire) || 0;
+    const mobilier = parseFloat(form.mobilier) || 0;
+    const taux = parseFloat(form.taux) / 100 || 0;
+    const duree = form.duree;
+    const tmi = form.tmi;
+    const loyerAnnuel = resultats.loyerAnnuel;
+    const chargesAnnuelles = resultats.chargesAnnuelles;
+    const montantCredit = resultats.montantCredit;
+    const r = taux / 12;
+    const n = duree * 12;
+    const M = montantCredit > 0 && taux > 0
+      ? montantCredit * r * Math.pow(1 + r, n) / (Math.pow(1 + r, n) - 1)
+      : (duree > 0 ? montantCredit / n : 0);
 
-    const orange = [201, 91, 42] as [number, number, number];
-    const dark = [26, 22, 18] as [number, number, number];
-    const beige = [245, 240, 232] as [number, number, number];
-    const maroon = [78, 31, 18] as [number, number, number];
-    const W = doc.internal.pageSize.getWidth();
-    let y = 0;
+    const amortBienMaxDuree = amortMode === "ensemble"
+      ? amortDureeEnsemble
+      : Math.max(...composants.map(c => c.duree));
+    const maxAmortDuree = Math.max(amortBienMaxDuree, 20, 15, 7);
+    const totalYears = Math.max(duree, maxAmortDuree) + 5;
+    const valeurAmortissable = prix * amortPct / 100;
+    const fEurLocal = (v: number) => new Intl.NumberFormat("fr-FR", { style: "currency", currency: "EUR", maximumFractionDigits: 0 }).format(v);
 
-    // Header
-    doc.setFillColor(...maroon);
-    doc.rect(0, 0, W, 22, "F");
-    doc.setFontSize(16); doc.setTextColor(...beige); doc.setFont("helvetica", "bold");
-    doc.text("toutlmnp", 14, 14);
-    doc.setFont("helvetica", "normal"); doc.setFontSize(10);
-    doc.text("Rapport de rentabilité LMNP", 55, 14);
-    doc.setFontSize(8);
-    doc.text(`Généré le ${new Date().toLocaleDateString("fr-FR")}`, W - 14, 14, { align: "right" });
-    y = 30;
+    interface PdfRow {
+      year: number; capitalDebut: number; creditAnnuelR: number; interetsAnnee: number;
+      amortTotalA: number; amortDisponible: number; reportEntrant: number; reportNplus1: number;
+      resultatAvantAmort: number; chargesDeductibles: number; baseImposable: number;
+      impot: number; cashflow: number;
+    }
+    const rows: PdfRow[] = [];
+    let capitalRestant = montantCredit;
+    let reportN = 0;
 
-    const ville = form.villeLabel || "—";
-    doc.setFontSize(17); doc.setTextColor(...maroon); doc.setFont("helvetica", "bold");
-    doc.text(`Simulation — ${ville}`, 14, y);
-    y += 12;
-
-    const sectionHeader = (title: string) => {
-      doc.setFillColor(...beige);
-      doc.roundedRect(14, y, W - 28, 8, 2, 2, "F");
-      doc.setFontSize(10); doc.setTextColor(...maroon); doc.setFont("helvetica", "bold");
-      doc.text(title, 18, y + 5.5);
-      y += 12;
-    };
-
-    const twoColRows = (rows: [string, string][], valOffset = 50) => {
-      doc.setFont("helvetica", "normal"); doc.setFontSize(9);
-      rows.forEach(([k, v], i) => {
-        const col = i % 2; const row = Math.floor(i / 2);
-        const x = col === 0 ? 14 : W / 2 + 4;
-        const cy = y + row * 7;
-        doc.setTextColor(...dark); doc.text(k, x, cy);
-        doc.setFont("helvetica", "bold"); doc.setTextColor(...orange);
-        doc.text(v, x + valOffset, cy, { align: "right" });
-        doc.setFont("helvetica", "normal");
-      });
-      y += Math.ceil(rows.length / 2) * 7 + 6;
-    };
-
-    // Section 1
-    sectionHeader("Récapitulatif du bien");
-    twoColRows([
-      ["Prix d'achat", fEur(parseFloat(form.prix) || 0)],
-      ["Travaux", fEur(parseFloat(form.travaux) || 0)],
-      ["Frais de notaire", fEur(parseFloat(form.notaire) || 0)],
-      ["Mobilier", fEur(parseFloat(form.mobilier) || 0)],
-      ["Surface", `${form.surface} m²`],
-      ["Loyer mensuel", fEur(parseFloat(form.loyer) || 0)],
-      ["Taxe foncière/an", fEur(parseFloat(form.taxeFonciere) || 0)],
-      ["Charges copro/an", fEur(parseFloat(form.chargesCopro) || 0)],
-      ["Apport", fEur(parseFloat(form.apport) || 0)],
-      [`Crédit ${form.duree} ans`, `${form.taux}% · ${fEur(resultats.mensualite)}/mois`],
-      ["TMI", `${form.tmi}%`],
-    ]);
-
-    // Section 2
-    sectionHeader("Résultats clés");
-    twoColRows([
-      ["Rendement brut", fPct(resultats.rendementBrut)],
-      ["Rendement net", fPct(resultats.rendementNet)],
-      ["Cash-flow réel /mois", fEur(resultats.cashflowReelMensuel)],
-      ["Cash-flow micro-BIC /mois", fEur(resultats.cashflowBICMensuel)],
-      ["Investissement total", fEur(resultats.investTotal)],
-      ["Mensualité crédit", fEur(resultats.mensualite)],
-    ], 60);
-
-    // Section 3 — Tableau fiscal
-    sectionHeader("Comparaison régimes fiscaux");
-    const cw = (W - 28) / 3;
-    const fiscalRows: [string, string, string][] = [
-      ["", "Régime réel", "Micro-BIC"],
-      ["Loyers annuels", fEur(resultats.loyerAnnuel), fEur(resultats.loyerAnnuel)],
-      ["Charges déductibles", fEur(resultats.chargesDeductibles), "Abattement 30 %"],
-      ["Amortissements", fEur(resultats.amortTotal), "—"],
-      ["Base imposable", fEur(resultats.baseImposableReel), fEur(resultats.baseBIC)],
-      ["Impôt estimé", fEur(resultats.impotReel), fEur(resultats.impotBIC)],
-      ["Cash-flow mensuel", fEur(resultats.cashflowReelMensuel), fEur(resultats.cashflowBICMensuel)],
-    ];
-    doc.setFontSize(9);
-    fiscalRows.forEach(([label, reel, bic], i) => {
-      const cy = y + i * 7;
-      if (i === 0) {
-        doc.setFont("helvetica", "bold");
-        doc.setFillColor(...orange); doc.roundedRect(14 + cw, cy - 5, cw - 2, 6, 1, 1, "F");
-        doc.setTextColor(...beige); doc.text(reel, 14 + cw + cw / 2, cy, { align: "center" });
-        doc.setFillColor(...maroon); doc.roundedRect(14 + cw * 2, cy - 5, cw - 2, 6, 1, 1, "F");
-        doc.text(bic, 14 + cw * 2 + cw / 2, cy, { align: "center" });
-      } else {
-        doc.setFont("helvetica", "normal"); doc.setTextColor(...dark); doc.text(label, 14, cy);
-        doc.setTextColor(...orange); doc.text(reel, 14 + cw + cw / 2, cy, { align: "center" });
-        doc.setTextColor(100, 80, 60); doc.text(bic, 14 + cw * 2 + cw / 2, cy, { align: "center" });
+    for (let year = 1; year <= totalYears; year++) {
+      const capitalDebut = Math.max(0, capitalRestant);
+      let interetsAnnee = 0;
+      let creditAnnuelR = 0;
+      if (year <= duree && montantCredit > 0 && taux > 0) {
+        for (let m = 0; m < 12; m++) {
+          const im = capitalRestant * r;
+          interetsAnnee += im;
+          capitalRestant -= (M - im);
+        }
+        capitalRestant = Math.max(0, capitalRestant);
+        creditAnnuelR = M * 12;
+      } else if (year <= duree && montantCredit > 0) {
+        creditAnnuelR = montantCredit / n * 12;
       }
-    });
-    y += fiscalRows.length * 7 + 6;
 
-    // Section 4 — Amortissement
-    if (y > 235) { doc.addPage(); y = 20; }
-    sectionHeader("Tableau d'amortissement");
-    doc.setFont("helvetica", "normal"); doc.setFontSize(9);
-    [
-      ["Valeur amortissable du bien", fEur((parseFloat(form.prix) || 0) * amortPct / 100)],
-      ["Amortissement bien/an", fEur(resultats.amortBien)],
-      ["Amortissement mobilier/an", fEur(resultats.amortMobilier)],
-      ["Amortissement travaux/an", fEur(resultats.amortTravaux)],
-      ["Amortissement notaire/an", fEur(resultats.amortNotaire)],
-      ["Total amortissement/an", fEur(resultats.amortTotal)],
-    ].forEach(([k, v]) => {
-      doc.setTextColor(...dark); doc.text(k, 14, y);
-      doc.setFont("helvetica", "bold"); doc.setTextColor(...orange);
-      doc.text(v, W - 14, y, { align: "right" });
-      doc.setFont("helvetica", "normal");
-      y += 7;
-    });
+      let amortBienA = 0;
+      if (amortMode === "ensemble") {
+        amortBienA = year <= amortDureeEnsemble ? valeurAmortissable / amortDureeEnsemble : 0;
+      } else {
+        for (const c of composants) {
+          amortBienA += year <= c.duree ? (valeurAmortissable * c.pct / 100) / c.duree : 0;
+        }
+      }
+      const amortMobilierA = year <= 7 ? mobilier / 7 : 0;
+      const amortTravauxA = year <= 15 ? travaux / 15 : 0;
+      const amortNotaireA = year <= 20 ? notaire / 20 : 0;
+      const amortTotalA = amortBienA + amortMobilierA + amortTravauxA + amortNotaireA;
+      const chargesDeductibles = chargesAnnuelles + interetsAnnee;
+      const resultatAvantAmort = loyerAnnuel - chargesDeductibles;
+      const reportEntrant = reportN;
+      const amortDisponible = amortTotalA + reportEntrant;
+      const baseImposable = Math.max(0, resultatAvantAmort - amortDisponible);
+      const newReport = Math.max(0, amortDisponible - Math.max(0, resultatAvantAmort));
+      const impot = baseImposable * (tmi / 100 + 0.186);
+      const cashflow = (loyerAnnuel - creditAnnuelR - chargesAnnuelles - impot) / 12;
+      rows.push({ year, capitalDebut, creditAnnuelR, interetsAnnee, amortTotalA, amortDisponible, reportEntrant, reportNplus1: newReport, resultatAvantAmort, chargesDeductibles, baseImposable, impot, cashflow });
+      reportN = newReport;
+    }
 
-    // Footer
-    const pageH = doc.internal.pageSize.getHeight();
-    doc.setFontSize(7); doc.setTextColor(180, 160, 140);
-    doc.text("Généré par ToutLMNP — toutlmnp.fr | Simulation à titre indicatif, non contractuelle.", W / 2, pageH - 8, { align: "center" });
+    const zerosYears = rows.filter(ro => ro.baseImposable === 0).length;
+    const firstTaxRow = rows.find(ro => ro.baseImposable > 0);
+    const baseBIC = loyerAnnuel * 0.70;
+    const impotBIC = baseBIC * (tmi / 100 + 0.186);
 
-    const fileName = `rapport-lmnp-${ville.toLowerCase().replace(/[^a-z0-9]+/g, "-")}-${new Date().toISOString().slice(0, 10)}.pdf`;
-    doc.save(fileName);
+    const tableRows = rows.map(ro => {
+      const reportLines = ro.reportNplus1 > 0
+        ? `<div style="font-size:9px;color:#B08A2A;margin-top:2px">→ N+1 : ${fEurLocal(ro.reportNplus1)}</div>`
+        : "";
+      return `<tr class="${ro.year === duree + 1 ? "credit-end" : ""}">
+        <td class="col-an">${ro.year}</td>
+        <td class="cc">${ro.year <= duree ? fEurLocal(ro.capitalDebut) : ""}</td>
+        <td class="cc">${ro.year <= duree ? fEurLocal(ro.creditAnnuelR) : ""}</td>
+        <td class="cc-last">${ro.year <= duree ? fEurLocal(ro.interetsAnnee) : ""}</td>
+        <td>${fEurLocal(chargesAnnuelles)}</td>
+        <td>${fEurLocal(ro.resultatAvantAmort)}</td>
+        <td style="font-weight:600">${fEurLocal(ro.amortDisponible)}${reportLines}</td>
+        <td style="color:${ro.baseImposable === 0 ? "#1A7A52" : "#B03A2A"};font-weight:600">${fEurLocal(ro.baseImposable)}</td>
+        <td style="color:${ro.impot === 0 ? "#1A7A52" : "#B03A2A"};font-weight:600">${fEurLocal(ro.impot)}</td>
+        <td style="color:${ro.cashflow >= 0 ? "#1A7A52" : "#B03A2A"}">${fEurLocal(ro.cashflow)}/mois</td>
+      </tr>`;
+    }).join("");
+
+    const annexeCols: { label: string; annuel: number; duree: number; initial: number }[] = [];
+    if (amortMode === "ensemble") {
+      if (valeurAmortissable > 0) annexeCols.push({ label: "Bien immobilier", annuel: valeurAmortissable / amortDureeEnsemble, duree: amortDureeEnsemble, initial: valeurAmortissable });
+    } else {
+      for (const c of composants) {
+        const val = valeurAmortissable * c.pct / 100;
+        if (val > 0) annexeCols.push({ label: c.label, annuel: val / c.duree, duree: c.duree, initial: val });
+      }
+    }
+    if (mobilier > 0) annexeCols.push({ label: "Mobilier", annuel: mobilier / 7, duree: 7, initial: mobilier });
+    if (travaux > 0) annexeCols.push({ label: "Travaux", annuel: travaux / 15, duree: 15, initial: travaux });
+    if (notaire > 0) annexeCols.push({ label: "Frais notaire", annuel: notaire / 20, duree: 20, initial: notaire });
+    const annexeMaxDuree = annexeCols.length > 0 ? Math.max(...annexeCols.map(c => c.duree)) : 0;
+    const totalSubCols = annexeCols.length * 2 + 2;
+    const afs = totalSubCols > 16 ? 7 : totalSubCols > 12 ? 8 : totalSubCols > 8 ? 9 : 10;
+    const headerRow1 = annexeCols.map(c =>
+      `<th colspan="2" style="text-align:center;font-size:${afs}px;border-right:1px solid rgba(255,255,255,0.15);padding:5px 4px;vertical-align:top">
+        <div style="font-weight:700">${c.label}</div>
+        <div style="font-weight:400;opacity:.75;font-size:${Math.max(6, afs - 1)}px;margin-top:3px;line-height:1.55;white-space:nowrap">
+          Valeur initiale : ${fEurLocal(c.initial)}<br>Durée : ${c.duree} ans<br>Amort. annuel : ${fEurLocal(c.annuel)}
+        </div>
+      </th>`).join("");
+    const headerRow2 = annexeCols.map(() =>
+      `<th style="font-size:${afs}px;background:#3a1509;padding:4px 5px">Amort.</th>
+       <th style="font-size:${afs}px;background:#3a1509;padding:4px 5px;border-right:1px solid rgba(255,255,255,0.12)">Reste</th>`).join("");
+    const annexeBodyRows = Array.from({ length: annexeMaxDuree }, (_, i) => {
+      const year = i + 1;
+      let cumul = 0;
+      const cells = annexeCols.map(c => {
+        if (year <= c.duree) {
+          const reste = Math.max(0, c.initial - year * c.annuel);
+          cumul += c.annuel;
+          return `<td style="font-size:${afs}px;padding:4px 5px">${fEurLocal(c.annuel)}</td>
+                  <td style="font-size:${afs}px;padding:4px 5px;color:${reste <= 0.01 ? "#1A7A52" : "rgba(26,22,18,0.55)"};border-right:1px solid rgba(26,22,18,0.07)">${fEurLocal(reste)}</td>`;
+        }
+        return `<td></td><td style="border-right:1px solid rgba(26,22,18,0.07)"></td>`;
+      }).join("");
+      return `<tr><td class="col-an" style="font-size:${afs}px;padding:4px 4px;width:18px">${year}</td>${cells}<td style="font-weight:700;color:#C95B2A;font-size:${afs}px;padding:4px 5px">${fEurLocal(cumul)}</td></tr>`;
+    }).join("");
+    const annexeTable = annexeCols.length > 0 ? `
+      <table style="width:100%;border-collapse:collapse">
+        <thead>
+          <tr>
+            <th rowspan="2" style="font-size:${afs}px;width:18px;padding:4px" class="col-an">An</th>
+            ${headerRow1}
+            <th rowspan="2" style="background:#C95B2A;color:#1A1612;font-size:${afs}px;padding:5px 4px;text-align:center">Cumul<br>/an</th>
+          </tr>
+          <tr>${headerRow2}</tr>
+        </thead>
+        <tbody>${annexeBodyRows}</tbody>
+      </table>` : "";
+
+    const conclusionText = zerosYears >= totalYears
+      ? `Sur toute la période analysée (${totalYears} ans), la base imposable reste à 0 € grâce à l'amortissement. Vous ne payez aucun impôt sur vos revenus locatifs pendant cette période.`
+      : zerosYears > 0
+      ? `Vous ne payez aucun impôt pendant <strong>${zerosYears} an${zerosYears > 1 ? "s" : ""}</strong>.${firstTaxRow ? ` À partir de l'année ${firstTaxRow.year}, la base imposable s'établit à ${fEurLocal(firstTaxRow.baseImposable)}, générant un impôt de ${fEurLocal(firstTaxRow.impot)}/an.` : ""}`
+      : `Dès la 1ère année, la base imposable s'établit à ${fEurLocal(rows[0]?.baseImposable ?? 0)}, générant un impôt de ${fEurLocal(rows[0]?.impot ?? 0)}/an.`;
+
+    const microbicNote = tmi > 0
+      ? `En Micro-BIC 2025, votre base imposable serait de <strong>${fEurLocal(baseBIC)}</strong> par an (70 % des loyers bruts de ${fEurLocal(loyerAnnuel)}/an), générant un impôt estimé de <strong>${fEurLocal(impotBIC)}</strong> par an (TMI ${tmi} % + prélèvements sociaux 18,6 %).`
+      : `En Micro-BIC 2025, votre base imposable serait de <strong>${fEurLocal(baseBIC)}</strong> par an (70 % des loyers bruts de ${fEurLocal(loyerAnnuel)}/an).`;
+
+    const html = `<!DOCTYPE html><html lang="fr"><head><meta charset="UTF-8">
+<title>Analyse de Rentabilité LMNP – toutlmnp</title>
+<style>
+@page{size:A4;margin:10mm 12mm}
+*{box-sizing:border-box}
+html{background:#6B6B6B;min-height:100%}
+body{font-family:'Helvetica Neue',Arial,sans-serif;color:#1A1612;background:#F5F0E8;
+  width:794px;min-height:1123px;margin:24px auto;padding:18mm 16mm;font-size:12px;
+  box-shadow:0 6px 32px rgba(0,0,0,0.45);-webkit-print-color-adjust:exact;print-color-adjust:exact}
+header{background:#4E1F12;color:#F5F0E8;padding:12px 18px;border-radius:6px;margin-bottom:6px;display:flex;align-items:center;gap:8px}
+.lt{font-weight:300;font-size:19px;color:#F5F0E8}.ll{font-weight:700;font-size:19px;color:#C95B2A}
+.ls{font-size:8px;letter-spacing:.12em;color:rgba(245,240,232,.5);text-transform:uppercase;margin-top:2px}
+.main-title{text-align:center;margin:18px 0 22px}
+.main-title h1{font-size:20px;font-weight:700;color:#4E1F12;letter-spacing:-.02em;margin:0 0 4px}
+.main-title .sub{font-size:10px;text-transform:uppercase;letter-spacing:.12em;color:rgba(26,22,18,.4)}
+h2{font-size:12px;font-weight:700;color:#4E1F12;border-bottom:2px solid #C95B2A;padding-bottom:4px;margin:20px 0 8px}
+table{width:100%;border-collapse:collapse;font-size:11px}
+th{background:#4E1F12;color:#F5F0E8;padding:6px 7px;text-align:right;font-weight:500;white-space:nowrap}
+th:first-child,th.col-an{text-align:left}
+td{padding:6px 7px;text-align:right;border-bottom:.5px solid rgba(26,22,18,.07);vertical-align:middle}
+td:first-child,td.col-an{text-align:left;font-weight:600}
+tr:nth-child(even){background:rgba(201,91,42,.04)}
+th.cc,th.cc-last{background:#3a1509;border-top:2px solid #C95B2A}
+th.cc:first-of-type{border-left:2px solid #C95B2A}
+th.cc-last{border-right:2px solid #C95B2A}
+td.cc{background:rgba(78,31,18,0.04);border-left:2px solid rgba(201,91,42,.25)}
+td.cc-last{background:rgba(78,31,18,0.04);border-right:2px solid rgba(201,91,42,.25)}
+th.col-an,td.col-an{width:18px}
+.recap{display:flex;gap:0;margin-bottom:10px}
+.recap-col{flex:1;padding:9px 11px;border-radius:5px;margin-right:7px}
+.recap-col:last-child{margin-right:0}
+.recap-prestep{background:#EDE7DC;margin-bottom:7px;border-radius:5px;padding:7px 11px;display:flex;gap:10px;flex-wrap:wrap}
+.kvi{flex:1;min-width:70px}
+.kvl{font-size:8px;text-transform:uppercase;letter-spacing:.1em;color:rgba(26,22,18,.45)}
+.kvv{font-size:11px;font-weight:600;color:#1A1612}
+.orange{color:#C95B2A}
+.note{background:rgba(201,91,42,.08);border:1px solid rgba(201,91,42,.2);border-radius:5px;padding:9px 13px;line-height:1.6;color:rgba(26,22,18,.7);margin-top:10px}
+.conclusion{background:#4E1F12;color:#F5F0E8;border-radius:6px;padding:11px 15px;margin-top:12px;line-height:1.7}
+.fiscal-note{background:#EDE7DC;border-radius:5px;padding:11px 15px;line-height:1.8;color:rgba(26,22,18,.65);margin-top:10px;font-size:11px}
+.fiscal-note p{margin:0 0 5px}
+.page-break{page-break-before:always}
+@media print{
+  html{background:none;padding:0}
+  body{width:100%;margin:0;padding:0;box-shadow:none;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .page-break{page-break-before:always}
+  header{border-radius:0}
+}
+</style></head><body>
+<header>
+  <div><div style="display:flex"><span class="lt">tout</span><span class="ll">lmnp</span></div><div class="ls">Simulateur de rentabilité</div></div>
+  <div style="margin-left:auto;font-size:10px;opacity:.6">${new Date().toLocaleDateString("fr-FR")}</div>
+</header>
+<div class="main-title">
+  <h1>Analyse de Rentabilité</h1>
+  <div class="sub">LMNP — Régime réel simplifié</div>
+</div>
+
+<h2>Récapitulatif</h2>
+<div class="recap-prestep">
+  ${form.villeLabel ? `<div class="kvi"><div class="kvl">Ville</div><div class="kvv">${form.villeLabel}</div></div>` : ""}
+  ${form.surface ? `<div class="kvi"><div class="kvl">Surface</div><div class="kvv">${form.surface} m²</div></div>` : ""}
+  <div class="kvi"><div class="kvl">Type de bien</div><div class="kvv">${form.type === "ap" ? "Appartement" : "Maison"}</div></div>
+</div>
+<div class="recap">
+  <div class="recap-col" style="background:#EDE7DC">
+    <div class="kvl" style="margin-bottom:6px;font-weight:700">Acquisition</div>
+    <div class="kvi" style="margin-bottom:6px"><div class="kvl">Prix d'achat</div><div class="kvv">${fEurLocal(prix)}</div></div>
+    ${travaux > 0 ? `<div class="kvi" style="margin-bottom:6px"><div class="kvl">Travaux</div><div class="kvv">${fEurLocal(travaux)}</div></div>` : ""}
+    ${mobilier > 0 ? `<div class="kvi" style="margin-bottom:6px"><div class="kvl">Mobilier</div><div class="kvv">${fEurLocal(mobilier)}</div></div>` : ""}
+  </div>
+  <div class="recap-col" style="background:rgba(201,91,42,0.09);border:1px solid rgba(201,91,42,0.2)">
+    <div class="kvl" style="margin-bottom:6px;font-weight:700;color:#C95B2A">Revenus</div>
+    <div class="kvi" style="margin-bottom:6px"><div class="kvl">Loyer mensuel CC</div><div class="kvv orange">${fEurLocal(loyerAnnuel / 12)}/mois</div></div>
+    <div class="kvi" style="margin-bottom:6px"><div class="kvl">Loyer annuel</div><div class="kvv orange">${fEurLocal(loyerAnnuel)}/an</div></div>
+    <div class="kvi"><div class="kvl">Charges annuelles</div><div class="kvv">${fEurLocal(chargesAnnuelles)}</div></div>
+  </div>
+  <div class="recap-col" style="background:#EDE7DC">
+    <div class="kvl" style="margin-bottom:6px;font-weight:700">Financement</div>
+    <div class="kvi" style="margin-bottom:6px"><div class="kvl">Apport personnel</div><div class="kvv">${fEurLocal(parseFloat(form.apport) || 0)}</div></div>
+    <div class="kvi" style="margin-bottom:6px"><div class="kvl">Montant du crédit</div><div class="kvv">${fEurLocal(montantCredit)}</div></div>
+    <div class="kvi" style="margin-bottom:6px"><div class="kvl">Taux · Durée</div><div class="kvv">${form.taux} % · ${duree} ans</div></div>
+    <div class="kvi"><div class="kvl">Frais de notaire</div><div class="kvv">${fEurLocal(notaire)}</div></div>
+  </div>
+</div>
+
+<h2>Comparaison régimes fiscaux (année 1)</h2>
+<table><thead><tr><th>Indicateur</th><th>Régime réel simplifié</th><th>Micro-BIC 2025</th></tr></thead><tbody>
+<tr><td>Loyers annuels</td><td>${fEurLocal(loyerAnnuel)}</td><td>${fEurLocal(loyerAnnuel)}</td></tr>
+<tr><td>Charges déductibles</td><td>${fEurLocal(rows[0]?.chargesDeductibles ?? 0)}</td><td>Abattement 30 %</td></tr>
+<tr><td>Amortissements</td><td>${fEurLocal(rows[0]?.amortTotalA ?? 0)}</td><td>—</td></tr>
+<tr><td>Base imposable</td><td style="font-weight:600;color:${(rows[0]?.baseImposable ?? 0) === 0 ? "#1A7A52" : "#B03A2A"}">${fEurLocal(rows[0]?.baseImposable ?? 0)}</td><td>${fEurLocal(baseBIC)}</td></tr>
+<tr><td>Impôt estimé</td><td style="font-weight:600">${fEurLocal(rows[0]?.impot ?? 0)}</td><td>${fEurLocal(impotBIC)}</td></tr>
+<tr><td>Cash-flow mensuel</td><td style="color:${(rows[0]?.cashflow ?? 0) >= 0 ? "#1A7A52" : "#B03A2A"};font-weight:600">${fEurLocal(rows[0]?.cashflow ?? 0)}/mois</td><td style="color:${resultats.cashflowBICMensuel >= 0 ? "#1A7A52" : "#B03A2A"}">${fEurLocal(resultats.cashflowBICMensuel)}/mois</td></tr>
+</tbody></table>
+
+<div class="fiscal-note">
+  <p><strong>Comment est calculé votre impôt ?</strong></p>
+  <p><strong>TMI</strong> : taux appliqué à votre dernière tranche de revenus, ici <strong>${tmi} %</strong>.</p>
+  <p><strong>PS</strong> (Prélèvements Sociaux) : <strong>18,6 %</strong> prélevés sur les revenus du patrimoine.</p>
+  <p>Impôt total = base imposable × (TMI + PS) = base × <strong>${(tmi + 18.6).toFixed(1)} %</strong>.</p>
+</div>
+
+<div class="page-break">
+<h2>Tableau récapitulatif (${totalYears} ans)</h2>
+<p style="font-size:10px;color:rgba(26,22,18,.5);margin-bottom:6px">Projection en régime réel simplifié avec loyers et charges constants. L'amortissement évolue chaque année.</p>
+<table><thead><tr>
+  <th class="col-an">An</th>
+  <th class="cc">Capital restant</th><th class="cc">Annuités</th><th class="cc-last">dont intérêts</th>
+  <th>Charges</th><th>Résultat av. amort.</th><th>Amortissement</th>
+  <th>Base imposable</th><th>Impôt</th><th>Cash-flow/mois</th>
+</tr></thead><tbody>${tableRows}</tbody></table>
+<div class="conclusion">✓ ${conclusionText}</div>
+<div class="note" style="margin-top:12px"><strong>Micro-BIC 2025 :</strong> ${microbicNote}</div>
+</div>
+
+<div class="page-break">
+<h2>Annexe — Amortissement par catégorie</h2>
+${annexeTable}
+</div>
+</body></html>`;
+
+    const win = window.open("", "_blank");
+    if (win) { win.document.write(html); win.document.close(); setTimeout(() => win.print(), 600); }
 
     // Mark session as used
     sessionStorage.setItem(`lmnp_rapport_used_${sessionId}`, "1");
