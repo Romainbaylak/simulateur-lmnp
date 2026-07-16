@@ -1,11 +1,20 @@
 "use client";
 import Link from "next/link";
+import { useStripeCheckout } from "@/lib/useStripeCheckout";
+
+const PRICE_RAPPORT = "price_1TtnAdRkmRCKEt1c3M6Nnvu1";
 
 interface Props {
   onClose: () => void;
 }
 
 export default function PopupPaiementUnite({ onClose }: Props) {
+  const { redirectToCheckout, loading, error } = useStripeCheckout();
+
+  const handlePay = () => {
+    redirectToCheckout({ priceId: PRICE_RAPPORT, mode: "payment" });
+  };
+
   return (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center px-4"
@@ -56,11 +65,17 @@ export default function PopupPaiementUnite({ onClose }: Props) {
 
         {/* CTA */}
         <button
-          className="w-full py-3 rounded-lg font-medium text-sm transition-opacity hover:opacity-[0.88] mb-3"
+          onClick={handlePay}
+          disabled={loading}
+          className="w-full py-3 rounded-lg font-medium text-sm transition-opacity hover:opacity-[0.88] disabled:opacity-60 mb-3"
           style={{ backgroundColor: "#C95B2A", color: "#F5F0E8" }}
         >
-          Payer 1,99 € et télécharger
+          {loading ? "Redirection…" : "Payer 1,99 € et télécharger"}
         </button>
+
+        {error && (
+          <p className="text-xs text-center mb-3" style={{ color: "#B03A2A" }}>{error}</p>
+        )}
 
         {/* Divider */}
         <div className="flex items-center gap-3 mb-3">

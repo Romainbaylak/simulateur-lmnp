@@ -3,6 +3,7 @@ import Link from "next/link";
 import type { Metadata } from "next";
 import HeaderAuth from "@/components/HeaderAuth";
 import MobileHeader from "@/components/MobileHeader";
+import { InvestisseurButton, ProButton } from "@/components/TarifsButtons";
 
 export const metadata: Metadata = {
   title: "Abonnements – toutlmnp",
@@ -106,10 +107,7 @@ export default function TarifsPage() {
                 </li>
               ))}
             </ul>
-            <button className="block w-full text-center py-3 rounded font-medium transition-opacity hover:opacity-[0.88]"
-              style={{ backgroundColor: "#C95B2A", color: "#F5F0E8", borderRadius: 6 }}>
-              Commencer — 4,99 €/mois
-            </button>
+            <InvestisseurButton />
             <p className="text-xs text-center mt-3" style={{ color: "rgba(26,22,18,0.35)" }}>
               Paiement sécurisé via Stripe · Sans engagement
             </p>
@@ -143,10 +141,7 @@ export default function TarifsPage() {
                 </li>
               ))}
             </ul>
-            <button className="block w-full text-center py-3 rounded font-medium transition-opacity hover:opacity-[0.88]"
-              style={{ backgroundColor: "#F5F0E8", color: "#1A1612", borderRadius: 6 }}>
-              Passer Pro — 12,99 €/mois
-            </button>
+            <ProButton />
             <p className="text-xs text-center mt-3" style={{ color: "rgba(245,240,232,0.25)" }}>
               Paiement sécurisé via Stripe · Sans engagement
             </p>
