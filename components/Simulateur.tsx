@@ -1392,51 +1392,101 @@ ${annexeTable}
                               const totalPct = composants.reduce((s, c) => s + c.pct, 0);
                               return (
                                 <div className="rounded-lg overflow-hidden" style={{ border: "1px solid rgba(78,31,18,0.2)" }}>
-                                  <div className="grid gap-x-3 px-3 py-2 text-[10px] font-semibold uppercase tracking-wider"
-                                    style={{ gridTemplateColumns: "2fr 1fr 0.7fr 1fr", background: "#4E1F12", color: "rgba(245,240,232,0.7)" }}>
+                                  {/* Desktop header */}
+                                  <div className="hidden sm:grid gap-x-3 px-3 py-2 text-[10px] font-semibold uppercase tracking-wider"
+                                    style={{ gridTemplateColumns: "2fr 1.2fr 1fr 1fr", background: "#4E1F12", color: "rgba(245,240,232,0.7)" }}>
                                     <span>Composant</span>
                                     <span>% · Valeur €</span>
-                                    <span>Durée</span>
-                                    <span style={{ color: "#C95B2A" }}>Amort 1ère Année</span>
+                                    <span>Durée (ans)</span>
+                                    <span style={{ color: "#C95B2A" }}>Amort / an</span>
                                   </div>
+                                  {/* Mobile header */}
+                                  <div className="sm:hidden px-3 py-2 text-[10px] font-semibold uppercase tracking-wider"
+                                    style={{ background: "#4E1F12", color: "rgba(245,240,232,0.7)" }}>
+                                    Composants — % · Durée · Amort/an
+                                  </div>
+
                                   {composants.map((c, i) => {
                                     const val = valAmort * c.pct / 100;
                                     return (
-                                      <div key={c.label} className="grid gap-x-3 items-center px-3 py-2.5"
-                                        style={{ gridTemplateColumns: "2fr 1fr 0.7fr 1fr", background: i % 2 === 0 ? "#F5F0E8" : "#EDE7DC", borderBottom: "0.5px solid rgba(26,22,18,0.06)" }}>
-                                        <span className="text-xs font-semibold" style={{ color: "#1A1612" }}>{c.label}</span>
-                                        <div className="flex items-center gap-1 flex-wrap">
-                                          <input type="number" min={0} max={100} value={c.pct}
-                                            onChange={e => {
-                                              const v = Math.min(100, Math.max(0, parseInt(e.target.value) || 0));
-                                              setComposants(prev => prev.map((x, j) => j === i ? { ...x, pct: v } : x));
-                                            }}
-                                            className="w-12 px-2 py-1 text-xs rounded text-center focus:outline-none focus:ring-1 focus:ring-[#C95B2A] [appearance:none] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none [-moz-appearance:textfield]"
-                                            style={INPUT_STYLE} />
-                                          <span className="text-xs" style={{ color: "rgba(26,22,18,0.5)" }}>%</span>
-                                          <span className="text-[10px]" style={{ color: "#C95B2A" }}>({formatEuro(val)})</span>
+                                      <div key={c.label} style={{ background: i % 2 === 0 ? "#F5F0E8" : "#EDE7DC", borderBottom: "0.5px solid rgba(26,22,18,0.06)" }}>
+                                        {/* Desktop row */}
+                                        <div className="hidden sm:grid gap-x-3 items-center px-3 py-2.5"
+                                          style={{ gridTemplateColumns: "2fr 1.2fr 1fr 1fr" }}>
+                                          <span className="text-xs font-semibold" style={{ color: "#1A1612" }}>{c.label}</span>
+                                          <div className="flex items-center gap-1">
+                                            <input type="number" min={0} max={100} value={c.pct}
+                                              onChange={e => {
+                                                const v = Math.min(100, Math.max(0, parseInt(e.target.value) || 0));
+                                                setComposants(prev => prev.map((x, j) => j === i ? { ...x, pct: v } : x));
+                                              }}
+                                              className="w-12 px-2 py-1 text-xs rounded text-center focus:outline-none focus:ring-1 focus:ring-[#C95B2A] [appearance:none] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none [-moz-appearance:textfield]"
+                                              style={INPUT_STYLE} />
+                                            <span className="text-xs" style={{ color: "rgba(26,22,18,0.5)" }}>%</span>
+                                            <span className="text-[10px] ml-1" style={{ color: "#C95B2A" }}>({formatEuro(val)})</span>
+                                          </div>
+                                          <div className="flex items-center gap-1">
+                                            <input type="number" min={1} max={50} value={c.duree}
+                                              onChange={e => {
+                                                const v = Math.max(1, parseInt(e.target.value) || 1);
+                                                setComposants(prev => prev.map((x, j) => j === i ? { ...x, duree: v } : x));
+                                              }}
+                                              className="w-14 px-2 py-1 text-xs rounded text-center focus:outline-none focus:ring-1 focus:ring-[#C95B2A] [appearance:none] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none [-moz-appearance:textfield]"
+                                              style={INPUT_STYLE} />
+                                            <span className="text-[10px]" style={{ color: "rgba(26,22,18,0.4)" }}>ans</span>
+                                          </div>
+                                          <span className="text-sm font-bold" style={{ color: "#C95B2A" }}>
+                                            {formatEuro(c.duree > 0 ? val / c.duree : 0)}
+                                          </span>
                                         </div>
-                                        <div className="flex items-center gap-1">
-                                          <input type="number" min={1} max={50} value={c.duree}
-                                            onChange={e => {
-                                              const v = Math.max(1, parseInt(e.target.value) || 1);
-                                              setComposants(prev => prev.map((x, j) => j === i ? { ...x, duree: v } : x));
-                                            }}
-                                            className="w-14 px-2 py-1 text-xs rounded text-center focus:outline-none focus:ring-1 focus:ring-[#C95B2A] [appearance:none] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none [-moz-appearance:textfield]"
-                                            style={INPUT_STYLE} />
-                                          <span className="text-[10px]" style={{ color: "rgba(26,22,18,0.4)" }}>ans</span>
+                                        {/* Mobile card */}
+                                        <div className="sm:hidden px-4 py-3 space-y-2">
+                                          <div className="text-sm font-bold" style={{ color: "#1A1612" }}>{c.label}</div>
+                                          <div className="grid grid-cols-2 gap-3">
+                                            <div>
+                                              <div className="text-[10px] uppercase tracking-wide mb-1" style={{ color: "rgba(26,22,18,0.45)" }}>Pourcentage</div>
+                                              <div className="flex items-center gap-2">
+                                                <input type="number" min={0} max={100} value={c.pct}
+                                                  onChange={e => {
+                                                    const v = Math.min(100, Math.max(0, parseInt(e.target.value) || 0));
+                                                    setComposants(prev => prev.map((x, j) => j === i ? { ...x, pct: v } : x));
+                                                  }}
+                                                  className="w-16 px-3 py-2 text-sm rounded text-center focus:outline-none focus:ring-1 focus:ring-[#C95B2A] [appearance:none] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none [-moz-appearance:textfield]"
+                                                  style={INPUT_STYLE} />
+                                                <span className="text-sm font-medium" style={{ color: "rgba(26,22,18,0.5)" }}>%</span>
+                                              </div>
+                                              <div className="text-[11px] mt-1" style={{ color: "#C95B2A" }}>{formatEuro(val)}</div>
+                                            </div>
+                                            <div>
+                                              <div className="text-[10px] uppercase tracking-wide mb-1" style={{ color: "rgba(26,22,18,0.45)" }}>Durée</div>
+                                              <div className="flex items-center gap-2">
+                                                <input type="number" min={1} max={50} value={c.duree}
+                                                  onChange={e => {
+                                                    const v = Math.max(1, parseInt(e.target.value) || 1);
+                                                    setComposants(prev => prev.map((x, j) => j === i ? { ...x, duree: v } : x));
+                                                  }}
+                                                  className="w-16 px-3 py-2 text-sm rounded text-center focus:outline-none focus:ring-1 focus:ring-[#C95B2A] [appearance:none] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none [-moz-appearance:textfield]"
+                                                  style={INPUT_STYLE} />
+                                                <span className="text-sm" style={{ color: "rgba(26,22,18,0.4)" }}>ans</span>
+                                              </div>
+                                            </div>
+                                          </div>
+                                          <div className="flex justify-between items-center pt-1" style={{ borderTop: "0.5px solid rgba(26,22,18,0.08)" }}>
+                                            <span className="text-[11px]" style={{ color: "rgba(26,22,18,0.5)" }}>Amortissement / an</span>
+                                            <span className="text-base font-bold" style={{ color: "#C95B2A" }}>
+                                              {formatEuro(c.duree > 0 ? val / c.duree : 0)}
+                                            </span>
+                                          </div>
                                         </div>
-                                        <span className="text-sm font-bold" style={{ color: "#C95B2A" }}>
-                                          {formatEuro(c.duree > 0 ? val / c.duree : 0)}
-                                        </span>
                                       </div>
                                     );
                                   })}
+
                                   <div className="grid gap-x-3 items-center px-3 py-2.5 font-bold"
-                                    style={{ gridTemplateColumns: "2fr 1fr 0.7fr 1fr", background: "#4E1F12" }}>
+                                    style={{ gridTemplateColumns: "2fr 1.2fr 1fr 1fr", background: "#4E1F12" }}>
                                     <span className="text-xs" style={{ color: "#F5F0E8" }}>Total</span>
                                     <span className="text-xs" style={{ color: totalPct === 100 ? "#6FCF97" : "#EB5757" }}>
-                                      {totalPct}%{totalPct !== 100 && " ⚠"}
+                                      {totalPct} %{totalPct !== 100 && " ⚠"}
                                     </span>
                                     <span />
                                     <span className="text-sm" style={{ color: "#C95B2A" }}>

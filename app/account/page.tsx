@@ -1,6 +1,7 @@
 import Logo from "@/components/Logo";
 import Link from "next/link";
 import HeaderAuth from "@/components/HeaderAuth";
+import MobileHeader from "@/components/MobileHeader";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
@@ -11,9 +12,9 @@ export default function AccountPage() {
   return (
     <main className="min-h-screen" style={{ backgroundColor: "#F5F0E8" }}>
       <header style={{ backgroundColor: "#4E1F12", borderBottom: "2px solid rgba(245,240,232,0.18)" }} className="sticky top-0 z-50">
-        <div className="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between">
+        <div className="hidden md:flex max-w-6xl mx-auto px-4 py-3 items-center justify-between">
           <Link href="/"><Logo variant="light" /></Link>
-          <nav className="hidden md:flex items-center gap-6 text-base font-normal" style={{ color: "#F5F0E8" }}>
+          <nav className="flex items-center gap-6 text-base font-normal" style={{ color: "#F5F0E8" }}>
             <Link href="/comment-ca-marche" className="hover:opacity-80 transition-opacity">LMNP</Link>
             <Link href="/blog" className="hover:opacity-80 transition-opacity">Articles</Link>
             <Link href="/tarifs" className="hover:opacity-80 transition-opacity">Tarifs</Link>
@@ -26,6 +27,7 @@ export default function AccountPage() {
             </a>
           </div>
         </div>
+        <MobileHeader />
       </header>
 
       <div className="max-w-3xl mx-auto px-4 py-24 text-center">
