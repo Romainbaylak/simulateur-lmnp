@@ -246,7 +246,7 @@ export default async function ArticlePage({ params }: { params: Promise<{ slug: 
           <nav className="hidden md:flex items-center gap-6 text-xs" style={{ color: "rgba(26,22,18,0.4)" }}>
             <Link href="/comment-ca-marche" className="hover:opacity-80">LMNP</Link>
             <Link href="/blog" className="hover:opacity-80">Articles</Link>
-            <Link href="/tarifs" className="hover:opacity-80">Tarifs</Link>
+            <Link href="/tarifs" className="hover:opacity-80">Abonnements</Link>
             <Link href="/contact" className="hover:opacity-80">Contact</Link>
           </nav>
           <p className="text-xs" style={{ color: "rgba(26,22,18,0.35)" }}>© 2026 toutlmnp</p>

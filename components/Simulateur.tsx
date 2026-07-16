@@ -1430,7 +1430,7 @@ ${annexeTable}
                                 </div>
                                 <div className="rounded-lg p-3" style={{ background: "#F5F0E8" }}>
                                   <div className={LABEL}>Durée (années)</div>
-                                  <input type="number" min={1} max={50} value={amortDureeEnsemble}
+                                  <input type="number" max={50} value={amortDureeEnsemble}
                                     onChange={e => setAmortDureeEnsemble(Math.max(1, parseInt(e.target.value) || 1))}
                                     className="w-16 px-2 py-1.5 text-sm rounded-md text-[#1A1612] focus:outline-none focus:ring-1 focus:ring-[#C95B2A]"
                                     style={INPUT_STYLE} />
@@ -1483,7 +1483,7 @@ ${annexeTable}
                                             <span className="text-[10px] ml-1" style={{ color: "#C95B2A" }}>({formatEuro(val)})</span>
                                           </div>
                                           <div className="flex items-center gap-1">
-                                            <input type="number" min={1} max={50} value={c.duree}
+                                            <input type="number" max={50} value={c.duree}
                                               onChange={e => {
                                                 const v = Math.max(1, parseInt(e.target.value) || 1);
                                                 setComposants(prev => prev.map((x, j) => j === i ? { ...x, duree: v } : x));
@@ -1517,7 +1517,7 @@ ${annexeTable}
                                             <div>
                                               <div className="text-[10px] uppercase tracking-wide mb-1" style={{ color: "rgba(26,22,18,0.45)" }}>Durée</div>
                                               <div className="flex items-center gap-2">
-                                                <input type="number" min={1} max={50} value={c.duree}
+                                                <input type="number" max={50} value={c.duree}
                                                   onChange={e => {
                                                     const v = Math.max(1, parseInt(e.target.value) || 1);
                                                     setComposants(prev => prev.map((x, j) => j === i ? { ...x, duree: v } : x));

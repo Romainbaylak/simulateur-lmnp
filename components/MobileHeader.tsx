@@ -8,7 +8,7 @@ import HeaderAuth from "@/components/HeaderAuth";
 const NAV_LINKS = [
   { href: "/comment-ca-marche", label: "LMNP" },
   { href: "/blog", label: "Articles" },
-  { href: "/tarifs", label: "Tarifs" },
+  { href: "/tarifs", label: "Abonnements" },
   { href: "/contact", label: "Contact" },
 ];
 

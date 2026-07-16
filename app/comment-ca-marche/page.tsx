@@ -29,7 +29,7 @@ export default function GrandesLignesPage() {
           <nav className="flex items-center gap-6 text-base font-normal" style={{ color: "#F5F0E8" }}>
             <Link href="/comment-ca-marche" style={{ color: "#C95B2A" }}>LMNP</Link>
             <Link href="/blog" className="hover:text-[#F5F0E8] transition-colors">Articles</Link>
-            <Link href="/tarifs" className="hover:text-[#F5F0E8] transition-colors">Tarifs</Link>
+            <Link href="/tarifs" className="hover:text-[#F5F0E8] transition-colors">Abonnements</Link>
           </nav>
           <div className="flex items-center gap-2">
             <HeaderAuth dark={true} />
@@ -308,7 +308,7 @@ export default function GrandesLignesPage() {
           <nav className="flex gap-6 text-sm" style={{ color: "rgba(26,22,18,0.4)" }}>
             <Link href="/comment-ca-marche" className="hover:text-[#1A1612] transition-colors">LMNP</Link>
             <Link href="/blog" className="hover:text-[#1A1612] transition-colors">Articles</Link>
-            <Link href="/tarifs" className="hover:text-[#1A1612] transition-colors">Tarifs</Link>
+            <Link href="/tarifs" className="hover:text-[#1A1612] transition-colors">Abonnements</Link>
             <Link href="/contact" className="hover:text-[#1A1612] transition-colors">Contact</Link>
           </nav>
           <p className="text-xs" style={{ color: "rgba(26,22,18,0.35)" }}>
