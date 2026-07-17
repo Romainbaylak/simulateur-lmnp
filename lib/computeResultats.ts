@@ -53,6 +53,12 @@ export interface SimulationData {
   amortDureeEnsemble: number;
   composants: { label: string; pct: number; duree: number }[];
   savedAt: number;
+  isSaisonnier?: boolean;
+  prixNuitee?: string;
+  tauxOccBas?: string;
+  tauxOccMoyen?: string;
+  tauxOccHaut?: string;
+  resultatsTriple?: { bas: Resultats | null; moyen: Resultats | null; haut: Resultats | null } | null;
 }
 
 export function calcMensualite(capital: number, tauxAnnuel: number, dureeAns: number): number {

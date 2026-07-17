@@ -1597,6 +1597,12 @@ ${annexeTable}
             amortDureeEnsemble,
             composants,
             savedAt: Date.now(),
+            isSaisonnier,
+            prixNuitee,
+            tauxOccBas,
+            tauxOccMoyen,
+            tauxOccHaut,
+            resultatsTriple,
           }}
         />
       )}
@@ -1604,7 +1610,7 @@ ${annexeTable}
       {showSauvegarder && (
         <PopupSauvegarder
           isPro={getPlan() === "starter" || getPlan() === "pro"}
-          simulationData={{ form, amortPct, amortMode, amortDureeEnsemble, composants, savedAt: Date.now() }}
+          simulationData={{ form, amortPct, amortMode, amortDureeEnsemble, composants, savedAt: Date.now(), isSaisonnier, prixNuitee, tauxOccBas, tauxOccMoyen, tauxOccHaut, resultatsTriple }}
           onClose={() => setShowSauvegarder(false)}
           onSaved={() => setShowSauvegarder(false)}
         />

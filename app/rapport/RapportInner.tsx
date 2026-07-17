@@ -48,6 +48,16 @@ export default function RapportInner() {
     { label: "Agencement intérieur", pct: 15, duree: 12 },
   ]);
 
+  // Saisonnier state
+  const [isSaisonnier, setIsSaisonnier] = useState(false);
+  const [prixNuitee, setPrixNuitee] = useState("");
+  const [tauxOccBas, setTauxOccBas] = useState("20");
+  const [tauxOccMoyen, setTauxOccMoyen] = useState("35");
+  const [tauxOccHaut, setTauxOccHaut] = useState("45");
+  const [resultatsTriple, setResultatsTriple] = useState<{
+    bas: Resultats | null; moyen: Resultats | null; haut: Resultats | null;
+  } | null>(null);
+
   const sessionId = params.get("session_id") ?? "";
 
   useEffect(() => {
@@ -70,9 +80,19 @@ export default function RapportInner() {
       setAmortMode(data.amortMode);
       setAmortDureeEnsemble(data.amortDureeEnsemble);
       if (data.composants?.length) setComposants(data.composants);
+      if (data.isSaisonnier) {
+        setIsSaisonnier(true);
+        if (data.prixNuitee) setPrixNuitee(data.prixNuitee);
+        if (data.tauxOccBas) setTauxOccBas(data.tauxOccBas);
+        if (data.tauxOccMoyen) setTauxOccMoyen(data.tauxOccMoyen);
+        if (data.tauxOccHaut) setTauxOccHaut(data.tauxOccHaut);
+        if (data.resultatsTriple) setResultatsTriple(data.resultatsTriple);
+      }
       setStatus("ready");
     } catch { setStatus("expired"); }
   }, [sessionId, router]);
+
+  const loyerSaisonnier = (nuitee: number, taux: number) => nuitee * (taux / 100) * 365 / 12;
 
   const recalc = useCallback((f: SimulationForm, _sd: SimulationData, aPct: number, aMode: "ensemble" | "composant", aDuree: number, aComps: typeof composants) => {
     const loyer = parseFloat(f.loyer) || 0;
@@ -83,6 +103,22 @@ export default function RapportInner() {
   useEffect(() => {
     if (form && simData) recalc(form, simData, amortPct, amortMode, amortDureeEnsemble, composants);
   }, [form, simData, amortPct, amortMode, amortDureeEnsemble, composants, recalc]);
+
+  useEffect(() => {
+    if (!isSaisonnier || !form) return;
+    const nuitee = parseFloat(prixNuitee) || 0;
+    const lBas   = loyerSaisonnier(nuitee, parseFloat(tauxOccBas)   || 0);
+    const lMoyen = loyerSaisonnier(nuitee, parseFloat(tauxOccMoyen) || 0);
+    const lHaut  = loyerSaisonnier(nuitee, parseFloat(tauxOccHaut)  || 0);
+    setResultatsTriple({
+      bas:   computeResultats(form, lBas,   amortPct, amortMode, amortDureeEnsemble, composants),
+      moyen: computeResultats(form, lMoyen, amortPct, amortMode, amortDureeEnsemble, composants),
+      haut:  computeResultats(form, lHaut,  amortPct, amortMode, amortDureeEnsemble, composants),
+    });
+    // Also set resultats to moyen scenario
+    setResultats(computeResultats(form, lMoyen, amortPct, amortMode, amortDureeEnsemble, composants));
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isSaisonnier, form, prixNuitee, tauxOccBas, tauxOccMoyen, tauxOccHaut, amortPct, amortMode, amortDureeEnsemble, composants]);
 
   useEffect(() => {
     if (status !== "ready" || !isLoaded) return;
@@ -177,6 +213,62 @@ export default function RapportInner() {
     const firstTaxRow = rows.find(ro => ro.baseImposable > 0);
     const baseBIC = loyerAnnuel * 0.70;
     const impotBIC = baseBIC * (tmi / 100 + 0.186);
+
+    // Saisonnier 3-scenario block
+    let saisonniereSummaryHtml = "";
+    if (isSaisonnier && resultatsTriple) {
+      const scenarios = [
+        { label: "Estimation basse", r: resultatsTriple.bas, taux: tauxOccBas },
+        { label: "Estimation moyenne", r: resultatsTriple.moyen, taux: tauxOccMoyen },
+        { label: "Estimation haute", r: resultatsTriple.haut, taux: tauxOccHaut },
+      ];
+      const makeScenarioCol = (label: string, r: Resultats | null, taux: string, nuits: number) => {
+        if (!r) return `<div style="flex:1"></div>`;
+        const lr = r.loyerAnnuel;
+        const bic = lr * 0.70;
+        const impBic = bic * (tmi / 100 + 0.186);
+        const cfBic = r.cashflowBICMensuel;
+        const cfReel = r.cashflowReelMensuel;
+        const row = (lbl: string, val: string, color?: string, bold?: boolean, sep?: boolean) =>
+          `<tr><td style="padding:4px 6px;font-size:10px;color:rgba(26,22,18,.55);${sep?"border-top:1px solid rgba(26,22,18,.12);padding-top:6px":""}">${lbl}</td><td style="padding:4px 6px;font-size:10px;text-align:right;${bold?"font-weight:700;":""}${color?`color:${color};`:""}${sep?"border-top:1px solid rgba(26,22,18,.12);padding-top:6px":""}">${val}</td></tr>`;
+        return `<div style="flex:1;min-width:0;border-radius:8px;overflow:hidden;border:1px solid rgba(26,22,18,.12)">
+          <div style="text-align:center;padding:10px 8px 8px;background:#4E1F12;color:#F5F0E8">
+            <div style="font-size:11px;font-weight:700;letter-spacing:.05em;text-transform:uppercase">${label}</div>
+            <div style="font-size:9px;opacity:.65;margin-top:2px">${taux}% · ${nuits} nuits/an</div>
+            <div style="font-size:16px;font-weight:300;color:#C95B2A;margin-top:4px;letter-spacing:-.02em">${fEurLocal(lr/12)}/mois</div>
+            <div style="font-size:9px;opacity:.55;margin-top:1px">${fEurLocal(lr)}/an</div>
+          </div>
+          <div style="background:#EDE7DC;padding:6px 0 2px">
+            <div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#4E1F12;padding:4px 6px 2px">Régime Réel</div>
+            <table style="width:100%;border-collapse:collapse">
+              ${row("Revenus annuels", fEurLocal(lr), undefined, true)}
+              ${row("Emprunt", `−${fEurLocal(r.creditAnnuel)}`, "#B03A2A")}
+              ${row("Charges", `−${fEurLocal(r.chargesAnnuelles)}`, "#B03A2A")}
+              ${row("Amortissements", `−${fEurLocal(r.amortTotal)}`, "#B03A2A")}
+              ${row("Base imposable", fEurLocal(r.baseImposableReel), r.baseImposableReel===0?"#1A7A52":"#1A1612", true, true)}
+              ${row("Impôt estimé", fEurLocal(r.impotReel), "#B03A2A")}
+              ${row("Cash-flow/mois", `${fEurLocal(cfReel)}/mois`, cfReel>=0?"#1A7A52":"#B03A2A", true, true)}
+            </table>
+          </div>
+          <div style="background:#F5F0E8;padding:6px 0 6px;border-top:2px solid rgba(26,82,122,.15)">
+            <div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#26527A;padding:4px 6px 2px">Micro-BIC 2025</div>
+            <table style="width:100%;border-collapse:collapse">
+              ${row("Revenus annuels", fEurLocal(lr), undefined, true)}
+              ${row("Abattement 30%", `−${fEurLocal(lr*.30)}`, "#B03A2A")}
+              ${row("Base imposable", fEurLocal(bic), "#1A1612", true, true)}
+              ${row("Impôt estimé", fEurLocal(impBic), "#B03A2A")}
+              ${row("Cash-flow/mois", `${fEurLocal(cfBic)}/mois`, cfBic>=0?"#1A7A52":"#B03A2A", true, true)}
+            </table>
+          </div>
+        </div>`;
+      };
+      saisonniereSummaryHtml = `
+<h2>Location Saisonnière — Comparaison des 3 scénarios (année 1)</h2>
+<p style="font-size:10px;color:rgba(26,22,18,.5);margin-bottom:12px">Prix par nuitée : <strong>${fEurLocal(parseFloat(prixNuitee)||0)}</strong>. Le tableau de projection détaillé ci-dessous utilise l'estimation <strong>Moyenne</strong>.</p>
+<div style="display:flex;gap:12px;align-items:stretch">
+  ${scenarios.map(s => makeScenarioCol(s.label, s.r, s.taux, Math.round(parseFloat(s.taux)/100*365))).join("")}
+</div>`;
+    }
 
     const tableRows = rows.map(ro => {
       const reportLines = ro.reportNplus1 > 0
@@ -343,7 +435,8 @@ th.col-an,td.col-an{width:18px}
   </div>
 </div>
 
-<h2>Comparaison régimes fiscaux (année 1)</h2>
+${saisonniereSummaryHtml}
+${!isSaisonnier ? `<h2>Comparaison régimes fiscaux (année 1)</h2>
 <table><thead><tr><th>Indicateur</th><th>Régime réel simplifié</th><th>Micro-BIC 2025</th></tr></thead><tbody>
 <tr><td>Loyers annuels</td><td>${fEurLocal(loyerAnnuel)}</td><td>${fEurLocal(loyerAnnuel)}</td></tr>
 <tr><td>Charges déductibles</td><td>${fEurLocal(rows[0]?.chargesDeductibles ?? 0)}</td><td>Abattement 30 %</td></tr>
@@ -351,7 +444,7 @@ th.col-an,td.col-an{width:18px}
 <tr><td>Base imposable</td><td style="font-weight:600;color:${(rows[0]?.baseImposable ?? 0) === 0 ? "#1A7A52" : "#B03A2A"}">${fEurLocal(rows[0]?.baseImposable ?? 0)}</td><td>${fEurLocal(baseBIC)}</td></tr>
 <tr><td>Impôt estimé</td><td style="font-weight:600">${fEurLocal(rows[0]?.impot ?? 0)}</td><td>${fEurLocal(impotBIC)}</td></tr>
 <tr><td>Cash-flow mensuel</td><td style="color:${(rows[0]?.cashflow ?? 0) >= 0 ? "#1A7A52" : "#B03A2A"};font-weight:600">${fEurLocal(rows[0]?.cashflow ?? 0)}/mois</td><td style="color:${resultats.cashflowBICMensuel >= 0 ? "#1A7A52" : "#B03A2A"}">${fEurLocal(resultats.cashflowBICMensuel)}/mois</td></tr>
-</tbody></table>
+</tbody></table>` : ""}
 
 <div class="fiscal-note">
   <p><strong>Comment est calculé votre impôt ?</strong></p>
@@ -361,7 +454,7 @@ th.col-an,td.col-an{width:18px}
 </div>
 
 <div class="page-break">
-<h2>Tableau récapitulatif (${totalYears} ans)</h2>
+<h2>Tableau récapitulatif (${totalYears} ans)${isSaisonnier ? " — Estimation moyenne des revenus" : ""}</h2>
 <p style="font-size:10px;color:rgba(26,22,18,.5);margin-bottom:6px">Projection en régime réel simplifié avec loyers et charges constants. L'amortissement évolue chaque année.</p>
 <table><thead><tr>
   <th class="col-an">An</th>
@@ -517,7 +610,59 @@ ${annexeTable}
           ))}
         </div>
 
+        {/* Section Saisonnier — 3-scenario comparison */}
+        {isSaisonnier && resultatsTriple && (
+          <div className="rounded-xl overflow-hidden mb-6" style={{ border: "0.5px solid rgba(38,82,122,0.3)" }}>
+            <div className="px-5 py-3" style={{ background: "#26527A" }}>
+              <h2 className="font-medium text-sm" style={{ color: "#F5F0E8" }}>Location Saisonnière — 3 scénarios</h2>
+              <p className="text-xs mt-0.5" style={{ color: "rgba(245,240,232,0.6)" }}>
+                Prix nuitée : {fEur(parseFloat(prixNuitee) || 0)} · Le tableau de projection utilise l&apos;estimation Moyenne
+              </p>
+            </div>
+            <div className="p-5" style={{ background: "#F5F0E8" }}>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                {([
+                  { label: "Estimation basse", r: resultatsTriple.bas, taux: tauxOccBas, accent: "rgba(176,58,42,0.07)", border: "rgba(176,58,42,0.3)", tagColor: "#B03A2A", tagBg: "rgba(176,58,42,0.1)" },
+                  { label: "Estimation moyenne", r: resultatsTriple.moyen, taux: tauxOccMoyen, accent: "rgba(201,91,42,0.07)", border: "rgba(201,91,42,0.4)", tagColor: "#C95B2A", tagBg: "rgba(201,91,42,0.12)" },
+                  { label: "Estimation haute", r: resultatsTriple.haut, taux: tauxOccHaut, accent: "rgba(26,122,82,0.07)", border: "rgba(26,122,82,0.3)", tagColor: "#1A7A52", tagBg: "rgba(26,122,82,0.1)" },
+                ] as const).map(({ label, r, taux, accent, border, tagColor, tagBg }) => {
+                  const nuits = Math.round((parseFloat(taux) || 0) / 100 * 365);
+                  return (
+                    <div key={label} className="rounded-xl p-4" style={{ background: accent, border: `1px solid ${border}` }}>
+                      <div className="mb-3">
+                        <span className="text-xs font-medium px-2 py-0.5 rounded-full" style={{ background: tagBg, color: tagColor }}>{label}</span>
+                        <div className="text-xs mt-1.5" style={{ color: "rgba(26,22,18,0.45)" }}>{taux}% · {nuits} nuits/an</div>
+                      </div>
+                      {r ? (
+                        <div className="space-y-1.5">
+                          <div className="flex justify-between text-sm">
+                            <span style={{ color: "rgba(26,22,18,0.55)" }}>Revenus/mois</span>
+                            <span className="font-medium" style={{ color: tagColor }}>{fEur(r.loyerAnnuel / 12)}</span>
+                          </div>
+                          <div className="flex justify-between text-sm">
+                            <span style={{ color: "rgba(26,22,18,0.55)" }}>Base imposable</span>
+                            <span className="font-medium" style={{ color: r.baseImposableReel === 0 ? "#1A7A52" : "#1A1612" }}>{fEur(r.baseImposableReel)}</span>
+                          </div>
+                          <div className="flex justify-between text-sm">
+                            <span style={{ color: "rgba(26,22,18,0.55)" }}>Impôt/an</span>
+                            <span className="font-medium">{fEur(r.impotReel)}</span>
+                          </div>
+                          <div className="flex justify-between text-sm pt-1.5" style={{ borderTop: `0.5px solid ${border}` }}>
+                            <span style={{ color: "rgba(26,22,18,0.55)" }}>Cash-flow/mois</span>
+                            <span className="font-medium" style={{ color: r.cashflowReelMensuel >= 0 ? "#1A7A52" : "#B03A2A" }}>{fEur(r.cashflowReelMensuel)}</span>
+                          </div>
+                        </div>
+                      ) : <p className="text-xs" style={{ color: "rgba(26,22,18,0.4)" }}>Données insuffisantes</p>}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Section 3 — Tableau fiscal */}
+        {!isSaisonnier && (
         <div className="rounded-xl overflow-hidden mb-6" style={{ border: "0.5px solid rgba(26,22,18,0.1)" }}>
           <div className="px-5 py-3" style={{ background: "#4E1F12" }}>
             <h2 className="font-medium text-sm" style={{ color: "#F5F0E8" }}>Comparaison régimes fiscaux</h2>
@@ -550,6 +695,7 @@ ${annexeTable}
             </table>
           </div>
         </div>
+        )}
 
         {/* Section 4 — Amortissement */}
         <div className="rounded-xl overflow-hidden mb-10" style={{ border: "0.5px solid rgba(26,22,18,0.1)" }}>
