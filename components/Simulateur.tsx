@@ -1398,44 +1398,47 @@ ${annexeTable}
                                   <span className="text-sm" style={{ color: "rgba(26,22,18,0.5)" }}>%</span>
                                 </div>
                               </div>
-                              <div className="rounded-lg p-4" style={{ background: "rgba(201,91,42,0.06)", border: "0.5px solid rgba(201,91,42,0.2)" }}>
-                                <div className={LABEL}>Valeur amortissable</div>
-                                <div className="font-bold text-base" style={{ color: "#C95B2A" }}>{formatEuro(valAmort)}</div>
-                                <div className="text-[10px] mt-1" style={{ color: "rgba(26,22,18,0.4)" }}>
-                                  Terrain : {formatEuro(prixVal * (1 - amortPct / 100))}
+                              {/* 3rd card: slider en mode ensemble, valeur amortissable en mode composant */}
+                              {amortMode === "ensemble" ? (
+                                <div className="rounded-lg p-4" style={{ background: "#F5F0E8", border: "0.5px solid rgba(26,22,18,0.08)" }}>
+                                  <div className="flex items-center justify-between mb-3">
+                                    <div className={LABEL} style={{ marginBottom: 0 }}>Durée d&apos;amortissement</div>
+                                    <div className="flex items-baseline gap-1">
+                                      <span className="text-lg font-semibold" style={{ color: "#C95B2A" }}>{amortDureeEnsemble}</span>
+                                      <span className="text-xs" style={{ color: "rgba(26,22,18,0.45)" }}>ans</span>
+                                    </div>
+                                  </div>
+                                  <input
+                                    type="range" min={5} max={50} step={1}
+                                    value={amortDureeEnsemble}
+                                    onChange={e => setAmortDureeEnsemble(parseInt(e.target.value))}
+                                    className="w-full accent-[#C95B2A]"
+                                  />
+                                  <div className="flex justify-between text-[10px] mt-0.5" style={{ color: "rgba(26,22,18,0.3)" }}>
+                                    <span>5</span><span>50 ans</span>
+                                  </div>
                                 </div>
-                              </div>
+                              ) : (
+                                <div className="rounded-lg p-4" style={{ background: "rgba(201,91,42,0.06)", border: "0.5px solid rgba(201,91,42,0.2)" }}>
+                                  <div className={LABEL}>Valeur amortissable</div>
+                                  <div className="font-bold text-base" style={{ color: "#C95B2A" }}>{formatEuro(valAmort)}</div>
+                                  <div className="text-[10px] mt-1" style={{ color: "rgba(26,22,18,0.4)" }}>
+                                    Terrain : {formatEuro(prixVal * (1 - amortPct / 100))}
+                                  </div>
+                                </div>
+                              )}
                             </div>
 
-                            {/* Mode Par ensemble — slider durée */}
+                            {/* Résultats sous le slider (mode ensemble uniquement) */}
                             {amortMode === "ensemble" && (
-                              <div className="rounded-xl p-5 space-y-4" style={{ background: "#F5F0E8", border: "0.5px solid rgba(26,22,18,0.08)" }}>
-                                <div className="flex items-center justify-between">
-                                  <div className={LABEL} style={{ marginBottom: 0 }}>Durée d&apos;amortissement</div>
-                                  <div className="flex items-baseline gap-1.5">
-                                    <span className="text-2xl font-light" style={{ color: "#C95B2A", letterSpacing: "-0.03em" }}>{amortDureeEnsemble}</span>
-                                    <span className="text-sm" style={{ color: "rgba(26,22,18,0.45)" }}>ans</span>
-                                  </div>
+                              <div className="grid grid-cols-2 gap-3">
+                                <div className="rounded-lg p-3 text-center" style={{ background: "#EDE7DC", border: "0.5px solid rgba(26,22,18,0.08)" }}>
+                                  <div className="text-[10px] uppercase tracking-[0.12em] mb-1" style={{ color: "rgba(26,22,18,0.45)" }}>Valeur amortissable</div>
+                                  <div className="text-base font-semibold" style={{ color: "#1A1612" }}>{formatEuro(valAmort)}</div>
                                 </div>
-                                <input
-                                  type="range" min={5} max={50} step={1}
-                                  value={amortDureeEnsemble}
-                                  onChange={e => setAmortDureeEnsemble(parseInt(e.target.value))}
-                                  className="w-full accent-[#C95B2A]"
-                                  style={{ height: 4 }}
-                                />
-                                <div className="flex justify-between text-[10px]" style={{ color: "rgba(26,22,18,0.35)" }}>
-                                  <span>5 ans</span><span>50 ans</span>
-                                </div>
-                                <div className="grid grid-cols-2 gap-3 pt-1">
-                                  <div className="rounded-lg p-3 text-center" style={{ background: "#EDE7DC", border: "0.5px solid rgba(26,22,18,0.08)" }}>
-                                    <div className="text-[10px] uppercase tracking-[0.12em] mb-1" style={{ color: "rgba(26,22,18,0.45)" }}>Valeur amortissable</div>
-                                    <div className="text-base font-semibold" style={{ color: "#1A1612" }}>{formatEuro(valAmort)}</div>
-                                  </div>
-                                  <div className="rounded-lg p-3 text-center" style={{ background: "rgba(201,91,42,0.08)", border: "1px solid rgba(201,91,42,0.2)" }}>
-                                    <div className="text-[10px] uppercase tracking-[0.12em] mb-1" style={{ color: "#C95B2A" }}>Amortissement / an</div>
-                                    <div className="text-base font-bold" style={{ color: "#C95B2A" }}>{formatEuro(amortDureeEnsemble > 0 ? valAmort / amortDureeEnsemble : 0)}</div>
-                                  </div>
+                                <div className="rounded-lg p-3 text-center" style={{ background: "rgba(201,91,42,0.08)", border: "1px solid rgba(201,91,42,0.2)" }}>
+                                  <div className="text-[10px] uppercase tracking-[0.12em] mb-1" style={{ color: "#C95B2A" }}>Amortissement / an</div>
+                                  <div className="text-base font-bold" style={{ color: "#C95B2A" }}>{formatEuro(amortDureeEnsemble > 0 ? valAmort / amortDureeEnsemble : 0)}</div>
                                 </div>
                               </div>
                             )}
