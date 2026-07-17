@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import Link from "next/link";
 import { useSearchParams, useRouter } from "next/navigation";
 import { useUser, SignInButton } from "@clerk/nextjs";
@@ -16,6 +16,7 @@ import {
   type Resultats,
   type TMI,
 } from "@/lib/computeResultats";
+import PopupBienInfo, { type BienInfo, defaultBienInfo } from "@/components/PopupBienInfo";
 
 const SESSION_TTL_MS = 2 * 60 * 60 * 1000; // 2 hours
 
@@ -34,6 +35,8 @@ export default function RapportInner() {
   const [resultats, setResultats] = useState<Resultats | null>(null);
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [pdfGenerated, setPdfGenerated] = useState(false);
+  const [showBienInfoPopup, setShowBienInfoPopup] = useState(false);
+  const bienInfoRef = useRef<BienInfo>(defaultBienInfo);
 
   // Editable amort state
   const [amortPct, setAmortPct] = useState(85);
@@ -409,9 +412,10 @@ th.col-an,td.col-an{width:18px}
 
 <h2>Récapitulatif</h2>
 <div class="recap-prestep">
-  ${form.villeLabel ? `<div class="kvi"><div class="kvl">Ville</div><div class="kvv">${form.villeLabel}</div></div>` : ""}
-  ${form.surface ? `<div class="kvi"><div class="kvl">Surface</div><div class="kvv">${form.surface} m²</div></div>` : ""}
-  <div class="kvi"><div class="kvl">Type de bien</div><div class="kvv">${form.type === "ap" ? "Appartement" : "Maison"}</div></div>
+  ${bienInfoRef.current.type ? `<div class="kvi"><div class="kvl">Type de bien</div><div class="kvv">${bienInfoRef.current.type === "ap" ? "Appartement" : "Maison"}</div></div>` : ""}
+  ${bienInfoRef.current.ville ? `<div class="kvi"><div class="kvl">Ville</div><div class="kvv">${bienInfoRef.current.ville}</div></div>` : ""}
+  ${bienInfoRef.current.surface ? `<div class="kvi"><div class="kvl">Surface</div><div class="kvv">${bienInfoRef.current.surface} m²</div></div>` : ""}
+  ${bienInfoRef.current.description ? `<div class="kvi" style="flex:2"><div class="kvl">Description</div><div class="kvv" style="font-weight:400;font-size:10px;white-space:pre-wrap">${bienInfoRef.current.description}</div></div>` : ""}
 </div>
 <div class="recap">
   <div class="recap-col" style="background:#EDE7DC">
@@ -904,7 +908,7 @@ ${annexeTable}
         {!pdfGenerated ? (
           <div className="flex justify-center mb-12">
             <button
-              onClick={handleGeneratePDF}
+              onClick={() => setShowBienInfoPopup(true)}
               className="px-12 py-4 text-base font-medium transition-opacity hover:opacity-[0.88] rounded-xl"
               style={{ background: "#C95B2A", color: "#F5F0E8" }}
             >
@@ -933,6 +937,19 @@ ${annexeTable}
           <p className="text-xs" style={{ color: "rgba(26,22,18,0.35)" }}>© 2026 toutlmnp</p>
         </div>
       </footer>
+
+      {/* BienInfo popup */}
+      {showBienInfoPopup && (
+        <PopupBienInfo
+          initial={bienInfoRef.current}
+          onClose={() => setShowBienInfoPopup(false)}
+          onConfirm={info => {
+            bienInfoRef.current = info;
+            setShowBienInfoPopup(false);
+            handleGeneratePDF();
+          }}
+        />
+      )}
 
       {/* Auth modal */}
       {showAuthModal && !isSignedIn && (
