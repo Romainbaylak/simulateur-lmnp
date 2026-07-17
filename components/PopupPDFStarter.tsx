@@ -1,14 +1,17 @@
 "use client";
 
+import Link from "next/link";
+
 interface Props {
   onGenerate: () => void;
   onClose: () => void;
+  onPayUnit: () => void;
   weekCount: number;
 }
 
-const PDF_WEEK_LIMIT = 2;
+export const PDF_WEEK_LIMIT = 5;
 
-export default function PopupPDFStarter({ onGenerate, onClose, weekCount }: Props) {
+export default function PopupPDFStarter({ onGenerate, onClose, onPayUnit, weekCount }: Props) {
   const remaining = Math.max(0, PDF_WEEK_LIMIT - weekCount);
 
   return (
@@ -54,12 +57,29 @@ export default function PopupPDFStarter({ onGenerate, onClose, weekCount }: Prop
             className="w-full py-3 rounded-lg font-medium text-sm transition-opacity hover:opacity-[0.88]"
             style={{ backgroundColor: "#C95B2A", color: "#F5F0E8" }}
           >
-            Générer le PDF gratuitement
+            Générer le PDF
           </button>
         ) : (
-          <p className="text-sm text-center py-3" style={{ color: "rgba(26,22,18,0.55)" }}>
-            Quota hebdomadaire atteint. Revenez lundi ou passez au plan Pro.
-          </p>
+          <div className="space-y-3">
+            <p className="text-sm text-center mb-4" style={{ color: "rgba(26,22,18,0.55)" }}>
+              Quota hebdomadaire atteint. Revenez lundi, payez à l&apos;unité ou passez au plan Pro.
+            </p>
+            <button
+              onClick={() => { onClose(); onPayUnit(); }}
+              className="w-full py-3 rounded-lg font-medium text-sm transition-opacity hover:opacity-[0.88] flex items-center justify-center gap-2"
+              style={{ backgroundColor: "#C95B2A", color: "#F5F0E8" }}
+            >
+              <span>Générer ce rapport — 1,99 €</span>
+            </button>
+            <Link
+              href="/tarifs"
+              onClick={onClose}
+              className="block w-full py-3 text-center rounded-lg font-medium text-sm transition-opacity hover:opacity-[0.88]"
+              style={{ background: "#1A1612", color: "#C95B2A", border: "1px solid rgba(201,91,42,0.3)" }}
+            >
+              Passer au plan Pro — illimité →
+            </Link>
+          </div>
         )}
       </div>
     </div>
