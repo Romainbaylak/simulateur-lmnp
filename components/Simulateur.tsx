@@ -1237,65 +1237,52 @@ ${annexeTable}
                         ))}
                       </div>
                     );
-                  })() : (
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      {[
-                        {
-                          regime: "Régime réel simplifié",
-                          badge: "Recommandé",
-                          loyers: resultats.loyerAnnuel,
-                          creditAnnuel: resultats.creditAnnuel,
-                          charges: resultats.chargesDeductibles,
-                          amort: resultats.amortTotal,
-                          base: resultats.baseImposableReel,
-                          impot: resultats.impotReel,
-                          cf: resultats.cashflowReelMensuel,
-                          highlight: true,
-                        },
-                        {
-                          regime: "Micro-BIC 2025",
-                          badge: "Abattement 30%",
-                          loyers: resultats.loyerAnnuel,
-                          creditAnnuel: resultats.creditAnnuel,
-                          charges: null,
-                          amort: null,
-                          base: resultats.baseBIC,
-                          impot: resultats.impotBIC,
-                          cf: resultats.cashflowBICMensuel,
-                          highlight: false,
-                        },
-                      ].map(r => (
-                        <div key={r.regime} className="rounded-lg p-4"
-                          style={{
-                            background: r.highlight ? "rgba(201,91,42,0.06)" : "#F5F0E8",
-                            border: r.highlight ? "0.5px solid rgba(201,91,42,0.2)" : "0.5px solid rgba(26,22,18,0.08)",
-                          }}>
-                          <div className="flex items-center justify-between mb-3">
-                            <div className="text-sm font-medium" style={{ color: "#1A1612" }}>{r.regime}</div>
-                            <span className="text-[10px] uppercase tracking-[0.1em] px-2 py-0.5 rounded"
-                              style={{
-                                background: r.highlight ? "#C95B2A" : "rgba(26,22,18,0.08)",
-                                color: r.highlight ? "#F5F0E8" : "rgba(26,22,18,0.5)",
-                              }}>
-                              {r.badge}
-                            </span>
+                  })() : (() => {
+                    const Row = ({ label, val, color, bold, sep, indent }: { label: string; val: string; color?: string; bold?: boolean; sep?: boolean; indent?: boolean }) => (
+                      <div className={`flex justify-between items-baseline py-2.5${indent ? " pl-4" : ""}${sep ? " mt-1" : ""}`}
+                        style={{ borderTop: sep ? "1px solid rgba(26,22,18,0.09)" : undefined }}>
+                        <span className="text-sm pr-3" style={{ color: indent ? "rgba(26,22,18,0.4)" : "rgba(26,22,18,0.58)", fontSize: indent ? 12 : 13 }}>{label}</span>
+                        <span className="text-sm whitespace-nowrap" style={{ fontSize: 13, fontWeight: bold ? 600 : 400, color: color ?? "#1A1612" }}>{val}</span>
+                      </div>
+                    );
+                    return (
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {/* Réel */}
+                        <div className="rounded-xl overflow-hidden" style={{ border: "1px solid rgba(201,91,42,0.25)" }}>
+                          <div className="flex items-center justify-between px-5 py-3.5" style={{ background: "rgba(201,91,42,0.08)", borderBottom: "1px solid rgba(201,91,42,0.15)" }}>
+                            <span className="font-semibold" style={{ color: "#4E1F12", fontSize: 14 }}>Régime réel simplifié</span>
+                            <span className="text-[10px] uppercase tracking-[0.12em] font-semibold px-2.5 py-1 rounded" style={{ background: "#C95B2A", color: "#F5F0E8" }}>RECOMMANDÉ</span>
                           </div>
-                          <div className="space-y-1.5 text-xs">
-                            <div className="flex justify-between"><span style={{ color: "rgba(26,22,18,0.5)" }}>Loyers annuels</span><span className="font-medium">{formatEuro(r.loyers)}</span></div>
-                            <div className="flex justify-between"><span style={{ color: "rgba(26,22,18,0.5)" }}>Emprunt</span><span style={{ color: "#B03A2A" }}>−{formatEuro(r.creditAnnuel)}</span></div>
-                            {r.highlight && (<div className="flex justify-between pl-3" style={{ color: "rgba(26,22,18,0.45)" }}><span>Dont frais d&apos;emprunt</span><span>{formatEuro(resultats.interetsAnnee1)}</span></div>)}
-                            {r.charges !== null && (<div className="flex justify-between"><span style={{ color: "rgba(26,22,18,0.5)" }}>Charges déductibles</span><span style={{ color: "#B03A2A" }}>−{formatEuro(r.charges)}</span></div>)}
-                            {r.highlight && (<div className="flex justify-between pt-1.5" style={{ borderTop: "0.5px solid rgba(26,22,18,0.08)" }}><span style={{ color: "rgba(26,22,18,0.5)" }}>Résultat avant amortissement</span><span className="font-medium" style={{ color: resultats.resultatAvantAmort >= 0 ? "#1A1612" : "#B03A2A" }}>{formatEuro(resultats.resultatAvantAmort)}</span></div>)}
-                            {r.amort !== null && (<div className="flex justify-between"><span style={{ color: "rgba(26,22,18,0.5)" }}>Amortissements (Bien, travaux, mobilier, frais de notaire)</span><span style={{ color: "#B03A2A" }}>−{formatEuro(r.amort)}</span></div>)}
-                            <div className="flex justify-between pt-1.5" style={{ borderTop: "0.5px solid rgba(26,22,18,0.08)" }}><span style={{ color: "rgba(26,22,18,0.5)" }}>Base imposable</span><span className="font-medium">{formatEuro(r.base)}</span></div>
-                            <div className="flex justify-between"><span style={{ color: "rgba(26,22,18,0.5)" }}>Impôt estimé</span><span style={{ color: "#B03A2A" }}>{formatEuro(r.impot)}</span></div>
-                            {r.highlight && (<div className="flex justify-between"><span style={{ color: "rgba(26,22,18,0.5)" }}>Amortissement à reporter N+1</span><span style={{ color: "#B08A2A" }}>{formatEuro(resultats.amortAReporter)}</span></div>)}
-                            <div className="flex justify-between pt-1.5 font-medium" style={{ borderTop: "0.5px solid rgba(26,22,18,0.08)" }}><span>Cash-flow mensuel</span><span style={{ color: r.cf >= 0 ? "#1A7A52" : "#B03A2A" }}>{formatEuro(r.cf)}</span></div>
+                          <div className="px-5 divide-y-0" style={{ background: "#FDFAF6" }}>
+                            <Row label="Loyers annuels" val={formatEuro(resultats.loyerAnnuel)} bold />
+                            <Row label="Emprunt" val={`−${formatEuro(resultats.creditAnnuel)}`} color="#B03A2A" />
+                            <Row label="Dont frais d'emprunt" val={formatEuro(resultats.interetsAnnee1)} indent />
+                            <Row label="Charges déductibles" val={`−${formatEuro(resultats.chargesDeductibles)}`} color="#B03A2A" />
+                            <Row label="Résultat avant amortissement" val={formatEuro(resultats.resultatAvantAmort)} bold color={resultats.resultatAvantAmort >= 0 ? "#1A1612" : "#B03A2A"} sep />
+                            <Row label="Amortissements (Bien, travaux, mobilier, notaire)" val={`−${formatEuro(resultats.amortTotal)}`} color="#B03A2A" />
+                            <Row label="Base imposable" val={formatEuro(resultats.baseImposableReel)} bold sep />
+                            <Row label="Impôt estimé" val={formatEuro(resultats.impotReel)} color="#B03A2A" />
+                            <Row label="Amortissement à reporter N+1" val={formatEuro(resultats.amortAReporter)} color="#B08A2A" />
+                            <Row label="Cash-flow mensuel" val={formatEuro(resultats.cashflowReelMensuel)} bold color={resultats.cashflowReelMensuel >= 0 ? "#1A7A52" : "#B03A2A"} sep />
                           </div>
                         </div>
-                      ))}
-                    </div>
-                  )}
+                        {/* Micro-BIC */}
+                        <div className="rounded-xl overflow-hidden" style={{ border: "0.5px solid rgba(26,22,18,0.1)" }}>
+                          <div className="flex items-center justify-between px-5 py-3.5" style={{ background: "#EDE7DC", borderBottom: "0.5px solid rgba(26,22,18,0.1)" }}>
+                            <span className="font-semibold" style={{ color: "#1A1612", fontSize: 14 }}>Micro-BIC 2025</span>
+                            <span className="text-[10px] uppercase tracking-[0.12em] font-semibold px-2.5 py-1 rounded" style={{ background: "rgba(26,22,18,0.1)", color: "rgba(26,22,18,0.55)" }}>ABATTEMENT 30%</span>
+                          </div>
+                          <div className="px-5" style={{ background: "#FDFAF6" }}>
+                            <Row label="Loyers annuels" val={formatEuro(resultats.loyerAnnuel)} bold />
+                            <Row label="Emprunt" val={`−${formatEuro(resultats.creditAnnuel)}`} color="#B03A2A" />
+                            <Row label="Base imposable" val={formatEuro(resultats.baseBIC)} bold sep />
+                            <Row label="Impôt estimé" val={formatEuro(resultats.impotBIC)} color="#B03A2A" />
+                            <Row label="Cash-flow mensuel" val={formatEuro(resultats.cashflowBICMensuel)} bold color={resultats.cashflowBICMensuel >= 0 ? "#1A7A52" : "#B03A2A"} sep />
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })()}
 
                   <div className="mt-4 p-4 rounded-lg text-[13px]"
                     style={{ background: "#F5F0E8", border: "0.5px solid rgba(26,22,18,0.08)", color: "rgba(26,22,18,0.65)", lineHeight: 1.6 }}>
@@ -1669,6 +1656,7 @@ ${annexeTable}
             setShowPDFStarter(false);
             handleGeneratePDF();
           }}
+          onPayUnit={() => setShowPayPopup(true)}
         />
       )}
     </section>
