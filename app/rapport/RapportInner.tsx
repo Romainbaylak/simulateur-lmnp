@@ -561,7 +561,6 @@ ${annexeTable}
               ["Frais de notaire (€)", "notaire"],
               ["Mobilier (€)", "mobilier"],
               ["Surface (m²)", "surface"],
-              ["Loyer mensuel (€)", "loyer"],
               ["Taxe foncière/an (€)", "taxeFonciere"],
               ["Charges copro/an (€)", "chargesCopro"],
               ["Apport (€)", "apport"],
@@ -593,9 +592,95 @@ ${annexeTable}
               </select>
             </div>
           </div>
+
+          {/* Mode de location */}
+          <div className="mt-5 pt-5" style={{ borderTop: "0.5px solid rgba(26,22,18,0.12)" }}>
+            <div className={LABEL}>Mode de location</div>
+            <button
+              onClick={() => setIsSaisonnier(v => !v)}
+              className="flex items-center gap-2.5 px-4 py-2.5 rounded-md text-sm font-medium transition-all"
+              style={{
+                background: isSaisonnier ? "rgba(38,82,122,0.1)" : "#F5F0E8",
+                border: isSaisonnier ? "1.5px solid #26527A" : "0.5px solid rgba(26,22,18,0.18)",
+                color: isSaisonnier ? "#26527A" : "rgba(26,22,18,0.55)",
+              }}
+            >
+              <span className="w-4 h-4 rounded flex items-center justify-center flex-shrink-0"
+                style={{
+                  background: isSaisonnier ? "#26527A" : "transparent",
+                  border: isSaisonnier ? "none" : "1.5px solid rgba(26,22,18,0.3)",
+                }}>
+                {isSaisonnier && <span className="text-white text-[10px] leading-none font-bold">✓</span>}
+              </span>
+              Location Saisonnière
+            </button>
+          </div>
+
+          {/* Saisonnier inputs */}
+          {isSaisonnier && (
+            <div className="mt-4 rounded-xl p-4 space-y-3" style={{ background: "rgba(38,82,122,0.05)", border: "1px solid rgba(38,82,122,0.2)" }}>
+              <div className="text-[11px] font-medium uppercase tracking-[0.14em]" style={{ color: "#26527A" }}>Location Saisonnière</div>
+              <div>
+                <label className={LABEL}>Prix moyen par nuitée (€)</label>
+                <input
+                  type="number"
+                  value={prixNuitee}
+                  onChange={e => setPrixNuitee(e.target.value)}
+                  placeholder="Ex : 80"
+                  className={INPUT}
+                  style={INPUT_STYLE}
+                />
+              </div>
+              <div>
+                <label className={LABEL}>Taux d&apos;occupation estimé (%)</label>
+                <div className="grid grid-cols-3 gap-2">
+                  {([
+                    { label: "Basse", val: tauxOccBas, set: setTauxOccBas },
+                    { label: "Moyenne", val: tauxOccMoyen, set: setTauxOccMoyen },
+                    { label: "Haute", val: tauxOccHaut, set: setTauxOccHaut },
+                  ] as const).map(({ label, val, set }) => {
+                    const taux = parseFloat(val) || 0;
+                    const nuits = Math.round(taux / 100 * 365);
+                    const loyer = loyerSaisonnier(parseFloat(prixNuitee) || 0, taux);
+                    return (
+                      <div key={label}>
+                        <div className="text-[10px] mb-1 font-medium" style={{ color: "rgba(26,22,18,0.45)" }}>{label}</div>
+                        <input
+                          type="number" min={0} max={100}
+                          value={val}
+                          onChange={e => set(e.target.value)}
+                          placeholder="0"
+                          className={INPUT}
+                          style={INPUT_STYLE}
+                        />
+                        <div className="text-[10px] mt-1" style={{ color: "rgba(38,82,122,0.7)" }}>
+                          {nuits} nuits · {fEur(loyer)}/mois
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Loyer mensuel — only shown when NOT saisonnier */}
+          {!isSaisonnier && (
+            <div className="mt-4">
+              <label className={LABEL}>Loyer mensuel (€)</label>
+              <input
+                type="number"
+                className={INPUT}
+                style={INPUT_STYLE}
+                value={form.loyer}
+                onChange={e => setField("loyer", e.target.value)}
+              />
+            </div>
+          )}
         </div>
 
         {/* Section 2 — KPIs */}
+        {isSaisonnier && <p className="text-xs mb-2" style={{ color: "rgba(38,82,122,0.7)" }}>Indicateurs basés sur l&apos;estimation Moyenne</p>}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
           {[
             { label: "Rendement brut", val: fPct(resultats.rendementBrut) },
