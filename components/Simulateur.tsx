@@ -310,6 +310,8 @@ export default function Simulateur() {
   };
 
   const handleAjuster = () => {
+    if (isAmortBlocked()) { setShowAmortLimite(true); return; }
+    markAmortUsed();
     if (isSaisonnier) {
       const nuitee = parseFloat(prixNuitee) || 0;
       const lBas   = loyerSaisonnier(nuitee, parseFloat(tauxOccBas)   || 0);
@@ -1148,9 +1150,7 @@ ${annexeTable}
                     );
                   })()}
 
-                  <div className="mt-4 p-4 rounded-lg text-[13px]"
-                    style={{ background: "#F5F0E8", border: "0.5px solid rgba(26,22,18,0.08)", color: "rgba(26,22,18,0.65)", lineHeight: 1.6 }}>
-                    Si vous avez un emprunt et des charges, nous conseillons le Régime Réel au Régime Micro-BIC, qui permet un amortissement partiel du bien, des charges déductibles, et donc un résultat au bilan comptable nul qui réduit la base imposable.{" "}
+                  <div className="mt-4 text-[13px]">
                     <Link href="/comment-ca-marche"
                       className="inline-flex items-center gap-1 font-medium underline"
                       style={{ color: "#C95B2A" }}>
@@ -1163,8 +1163,6 @@ ${annexeTable}
                 <div className="rounded-xl overflow-hidden" style={cardStyle}>
                   <button onClick={() => {
                     if (showAmort) { setShowAmort(false); return; }
-                    if (isAmortBlocked()) { setShowAmortLimite(true); return; }
-                    markAmortUsed();
                     setShowAmort(true);
                   }}
                     className="w-full flex justify-between items-center p-5 text-left transition-all hover:opacity-95"
@@ -1421,8 +1419,8 @@ ${annexeTable}
                 <button onClick={() => {
                   const plan = getPlan();
                   if (plan === "pro") { setPendingPdfAction("pro"); setShowBienInfoPopup(true); return; }
-                  if (plan === "starter") { setPendingPdfAction("starter"); setShowBienInfoPopup(true); return; }
-                  setPendingPdfAction("pay"); setShowBienInfoPopup(true);
+                  if (plan === "starter") { setPdfWeekCount(getPdfWeekCount()); setShowPDFStarter(true); return; }
+                  setShowPayPopup(true);
                 }}
                   className="px-10 py-4 text-base font-medium transition-opacity hover:opacity-[0.88] rounded-lg"
                   style={{ background: "#4E1F12", color: "#C95B2A", border: "1px solid rgba(201,91,42,0.3)", letterSpacing: "0.02em" }}>
@@ -1482,7 +1480,8 @@ ${annexeTable}
           onGenerate={() => {
             incrementPdfWeekCount();
             setShowPDFStarter(false);
-            handleGeneratePDF();
+            setPendingPdfAction("pro");
+            setShowBienInfoPopup(true);
           }}
           onPayUnit={() => setShowPayPopup(true)}
         />
