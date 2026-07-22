@@ -2,11 +2,11 @@
 
 import { useState, useEffect, useCallback, useRef } from "react";
 import Link from "next/link";
-import { loyersData, allVillesList } from "@/data/loyers";
 import PopupPaiementUnite from "./PopupPaiementUnite";
 import PopupAmortLimite from "./PopupAmortLimite";
 import PopupPDFStarter from "./PopupPDFStarter";
 import PopupSauvegarder from "./PopupSauvegarder";
+import PopupBienInfo, { type BienInfo, defaultBienInfo } from "./PopupBienInfo";
 
 type TypeBien = "ap" | "ma";
 type TMI = 0 | 11 | 30 | 41 | 45;
@@ -178,8 +178,6 @@ export default function Simulateur() {
     tmi: 30,
   });
 
-  const [villeSearch, setVilleSearch] = useState("");
-  const [showDropdown, setShowDropdown] = useState(false);
   const [loyerSlider, setLoyerSlider] = useState<number>(0);
   const [sliderMax, setSliderMax] = useState(10000);
   const [isSaisonnier, setIsSaisonnier] = useState(false);
@@ -208,6 +206,9 @@ export default function Simulateur() {
   const [showPDFStarter, setShowPDFStarter] = useState(false);
   const [pdfWeekCount, setPdfWeekCount] = useState(0);
   const [showSauvegarder, setShowSauvegarder] = useState(false);
+  const [showBienInfoPopup, setShowBienInfoPopup] = useState(false);
+  const [pendingPdfAction, setPendingPdfAction] = useState<"pro" | "starter" | "pay" | null>(null);
+  const bienInfoRef = useRef<BienInfo>(defaultBienInfo);
 
   // Helpers pour lire le plan et les compteurs localStorage
   const getPlan = () => (typeof window !== "undefined" ? localStorage.getItem("lmnp_plan") : null);
@@ -253,21 +254,7 @@ export default function Simulateur() {
     const diff = d.getDate() - day + (day === 0 ? -6 : 1);
     return new Date(d.setDate(diff)).toISOString().slice(0, 10);
   };
-  const dropdownRef = useRef<HTMLDivElement>(null);
   const resultsRef = useRef<HTMLDivElement>(null);
-
-  const villeData = form.villeKey ? loyersData[form.villeKey] : null;
-  const surface = parseFloat(form.surface) || 0;
-  const typeKey = form.type;
-
-  const loyerBas   = villeData && surface > 0 ? villeData[typeKey].b * surface : 0;
-  const loyerMoyen = villeData && surface > 0 ? villeData[typeKey].m * surface : 0;
-  const loyerHaut  = villeData && surface > 0 ? villeData[typeKey].h * surface : 0;
-  const showFourchette = !!villeData && surface > 0;
-
-  const filteredVilles = villeSearch.length >= 1
-    ? allVillesList.filter(v => v.label.toLowerCase().includes(villeSearch.toLowerCase())).slice(0, 10)
-    : [];
 
   const updateField = useCallback(<K extends keyof FormState>(key: K, value: FormState[K]) => {
     const stripped = typeof value === "string" ? stripLeadingZeros(value) : value;
@@ -279,24 +266,14 @@ export default function Simulateur() {
   }, []);
 
   useEffect(() => {
-    const handler = (e: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
-        setShowDropdown(false);
-      }
-    };
-    document.addEventListener("mousedown", handler);
-    return () => document.removeEventListener("mousedown", handler);
-  }, []);
-
-  useEffect(() => {
     const prix = parseFloat(form.prix) || 0;
     if (prix > 0) {
       const notaire = Math.round(prix * 0.075);
-      const chargesCopro = form.type === "ap" ? Math.round(prix * 0.01) : 0;
+      const chargesCopro = Math.round(prix * 0.01);
       setForm(prev => ({ ...prev, notaire: notaire.toString(), chargesCopro: chargesCopro.toString() }));
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [form.prix, form.type]);
+  }, [form.prix]);
 
   useEffect(() => {
     const l = parseFloat(form.loyer) || 0;
@@ -333,6 +310,8 @@ export default function Simulateur() {
   };
 
   const handleAjuster = () => {
+    if (isAmortBlocked()) { setShowAmortLimite(true); return; }
+    markAmortUsed();
     if (isSaisonnier) {
       const nuitee = parseFloat(prixNuitee) || 0;
       const lBas   = loyerSaisonnier(nuitee, parseFloat(tauxOccBas)   || 0);
@@ -666,9 +645,10 @@ th.col-an,td.col-an{width:18px}
 
 <h2>Récapitulatif</h2>
 <div class="recap-prestep">
-  ${form.villeLabel ? `<div class="kvi"><div class="kvl">Ville</div><div class="kvv">${form.villeLabel}</div></div>` : ""}
-  ${form.surface ? `<div class="kvi"><div class="kvl">Surface</div><div class="kvv">${form.surface} m²</div></div>` : ""}
-  <div class="kvi"><div class="kvl">Type de bien</div><div class="kvv">${form.type === "ap" ? "Appartement" : "Maison"}</div></div>
+  ${bienInfoRef.current.type ? `<div class="kvi"><div class="kvl">Type de bien</div><div class="kvv">${bienInfoRef.current.type === "ap" ? "Appartement" : "Maison"}</div></div>` : ""}
+  ${bienInfoRef.current.ville ? `<div class="kvi"><div class="kvl">Ville</div><div class="kvv">${bienInfoRef.current.ville}</div></div>` : ""}
+  ${bienInfoRef.current.surface ? `<div class="kvi"><div class="kvl">Surface</div><div class="kvv">${bienInfoRef.current.surface} m²</div></div>` : ""}
+  ${bienInfoRef.current.description ? `<div class="kvi" style="flex:2"><div class="kvl">Description</div><div class="kvv" style="font-weight:400;font-size:10px;white-space:pre-wrap">${bienInfoRef.current.description}</div></div>` : ""}
 </div>
 <div class="recap">
   <div class="recap-col" style="background:#EDE7DC">
@@ -743,43 +723,26 @@ ${annexeTable}
         {/* ─── FORM ─── */}
         <div className="rounded-xl p-6 md:p-8 mb-6" style={sectionStyle}>
 
-          {/* Type de bien + Location Saisonnière */}
-          <div className="mb-6 flex items-end justify-between gap-4 flex-wrap">
-            <div>
-              <div className={LABEL}>Type de bien</div>
-              <div className="flex rounded-md overflow-hidden" style={{ border: "0.5px solid rgba(26,22,18,0.12)", width: "fit-content" }}>
-                {(["ap", "ma"] as TypeBien[]).map(t => (
-                  <button key={t} onClick={() => updateField("type", t)}
-                    className="px-5 py-2.5 text-sm font-medium transition-colors"
-                    style={{
-                      background: form.type === t ? "#1A1612" : "#F5F0E8",
-                      color: form.type === t ? "#F5F0E8" : "rgba(26,22,18,0.55)",
-                    }}>
-                    {t === "ap" ? "Appartement" : "Maison"}
-                  </button>
-                ))}
-              </div>
-            </div>
-            <div>
-              <div className={LABEL}>Mode de location</div>
-              <button
-                onClick={() => { setIsSaisonnier(!isSaisonnier); setResultatsTriple(null); }}
-                className="flex items-center gap-2.5 px-4 py-2.5 rounded-md text-sm font-medium transition-all"
+          {/* Mode de location */}
+          <div className="mb-6">
+            <div className={LABEL}>Mode de location</div>
+            <button
+              onClick={() => { setIsSaisonnier(!isSaisonnier); setResultatsTriple(null); }}
+              className="flex items-center gap-2.5 px-4 py-2.5 rounded-md text-sm font-medium transition-all"
+              style={{
+                background: isSaisonnier ? "rgba(26,82,122,0.1)" : "#F5F0E8",
+                border: isSaisonnier ? "1.5px solid #26527A" : "0.5px solid rgba(26,22,18,0.18)",
+                color: isSaisonnier ? "#26527A" : "rgba(26,22,18,0.55)",
+              }}>
+              <span className="w-4 h-4 rounded flex items-center justify-center flex-shrink-0"
                 style={{
-                  background: isSaisonnier ? "rgba(26,82,122,0.1)" : "#F5F0E8",
-                  border: isSaisonnier ? "1.5px solid #26527A" : "0.5px solid rgba(26,22,18,0.18)",
-                  color: isSaisonnier ? "#26527A" : "rgba(26,22,18,0.55)",
+                  background: isSaisonnier ? "#26527A" : "transparent",
+                  border: isSaisonnier ? "none" : "1.5px solid rgba(26,22,18,0.3)",
                 }}>
-                <span className="w-4 h-4 rounded flex items-center justify-center flex-shrink-0"
-                  style={{
-                    background: isSaisonnier ? "#26527A" : "transparent",
-                    border: isSaisonnier ? "none" : "1.5px solid rgba(26,22,18,0.3)",
-                  }}>
-                  {isSaisonnier && <span className="text-white text-[10px] leading-none font-bold">✓</span>}
-                </span>
-                Location Saisonnière
-              </button>
-            </div>
+                {isSaisonnier && <span className="text-white text-[10px] leading-none font-bold">✓</span>}
+              </span>
+              Location Saisonnière
+            </button>
           </div>
 
           {/* Grid 2 cols */}
@@ -876,106 +839,9 @@ ${annexeTable}
               </div>
             </div>
 
-            {/* ── RIGHT : Localisation & Loyer ── */}
+            {/* ── RIGHT : Loyer ── */}
             <div className="space-y-4">
-              <p className={LABEL} style={{ opacity: 1, color: "#1A1612" }}>Localisation &amp; Loyer</p>
-
-              {/* Ville autocomplete */}
-              <div>
-                <label className={LABEL}>Ville</label>
-                <div className="relative" ref={dropdownRef}>
-                  <input
-                    type="text"
-                    value={villeSearch}
-                    onChange={e => {
-                      setVilleSearch(e.target.value);
-                      setShowDropdown(true);
-                      if (!e.target.value) {
-                        updateField("villeKey", "");
-                        updateField("villeLabel", "");
-                      }
-                    }}
-                    onFocus={() => villeSearch.length >= 1 && setShowDropdown(true)}
-                    placeholder="Tapez une ville..."
-                    className={INPUT} style={INPUT_STYLE}
-                  />
-                  {showDropdown && filteredVilles.length > 0 && (
-                    <div className="absolute z-20 w-full mt-1 rounded-md shadow-lg overflow-hidden"
-                      style={{ background: "#F5F0E8", border: "0.5px solid rgba(26,22,18,0.12)" }}>
-                      {filteredVilles.map(v => (
-                        <button key={v.key}
-                          className="w-full text-left px-3 py-2 text-sm flex items-center justify-between transition-colors"
-                          style={{ color: "#1A1612" }}
-                          onMouseEnter={e => (e.currentTarget.style.background = "#EDE7DC")}
-                          onMouseLeave={e => (e.currentTarget.style.background = "transparent")}
-                          onMouseDown={() => {
-                            setVilleSearch(v.label);
-                            updateField("villeKey", v.key);
-                            updateField("villeLabel", v.label);
-                            setShowDropdown(false);
-                          }}>
-                          {v.label}
-                          {v.hasData && (
-                            <span className="ml-2 text-[10px] uppercase tracking-wide"
-                              style={{ color: "#C95B2A" }}>données officielles</span>
-                          )}
-                        </button>
-                      ))}
-                    </div>
-                  )}
-                </div>
-                {form.villeKey && villeData && (
-                  <p className="mt-1 text-[11px]" style={{ color: "rgba(26,22,18,0.40)" }}>
-                    Source : Observatoire des loyers · data.gouv.fr
-                  </p>
-                )}
-              </div>
-
-              {/* Surface */}
-              <div>
-                <label className={LABEL}>Surface (m²)</label>
-                <input type="number" value={form.surface}
-                  onChange={e => updateField("surface", e.target.value)}
-                  onBlur={() => handleBlur("surface")}
-                  placeholder="45" className={INPUT} style={INPUT_STYLE} />
-              </div>
-
-              {/* Fourchette loyers */}
-              {showFourchette && (
-                <div className="rounded-md p-3" style={{ background: "#F5F0E8", border: "0.5px solid rgba(26,22,18,0.08)" }}>
-                  <p className={LABEL} style={{ marginBottom: 8 }}>Fourchette de loyer estimée</p>
-                  <div className="flex gap-2">
-                    {[
-                      { label: "Bas", val: loyerBas },
-                      { label: "Médian", val: loyerMoyen },
-                      { label: "Haut", val: loyerHaut },
-                    ].map(({ label, val }) => (
-                      <button key={label}
-                        onClick={() => {
-                          updateField("loyer", Math.round(val).toString());
-                          setLoyerSlider(Math.round(val));
-                        }}
-                        className="flex-1 rounded py-2 text-center transition-opacity hover:opacity-80"
-                        style={{ background: "#EDE7DC", border: "0.5px solid rgba(26,22,18,0.08)" }}>
-                        <div className="text-[10px] uppercase tracking-[0.1em]" style={{ color: "rgba(26,22,18,0.4)" }}>{label}</div>
-                        <div className="text-sm font-medium" style={{ color: "#C95B2A" }}>{formatEuro(Math.round(val))}</div>
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* Seloger message */}
-              {form.villeKey && !villeData && (
-                <div className="rounded-md p-3 text-[12px]"
-                  style={{ background: "#F5F0E8", border: "0.5px solid rgba(26,22,18,0.08)", color: "rgba(26,22,18,0.55)" }}>
-                  <a href="https://www.seloger.com" target="_blank" rel="noopener noreferrer"
-                    className="underline" style={{ color: "#C95B2A" }}>
-                    Consultez Seloger.com
-                  </a>
-                  {" "}— section Location, filtrez par surface et nombre de pièces similaires pour estimer le loyer de marché.
-                </div>
-              )}
+              <p className={LABEL} style={{ opacity: 1, color: "#1A1612" }}>Loyer</p>
 
               {/* Loyer mensuel ou Saisonnier */}
               {isSaisonnier ? (
@@ -1081,29 +947,64 @@ ${annexeTable}
 
                 {/* KPIs */}
                 <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
-                  {[
-                    { label: "Rendement brut", val: formatPct(resultats.rendementBrut), sub: "loyers / investissement" },
-                    { label: "Rendement net", val: formatPct(resultats.rendementNet), sub: "après charges" },
-                    { label: "Impôt estimé annuel", val: formatEuro(resultats.impotReel), sub: `TMI ${form.tmi}% + PS 18,6% (LFSS 2026)` },
-                    { label: "Impôt estimé mensuel", val: formatEuro(resultats.impotReelMensuel), sub: "annuel ÷ 12" },
-                    {
-                      label: "Cash-flow mensuel",
-                      val: formatEuro(resultats.cashflowReelMensuel),
-                      sub: "net régime réel",
-                      positive: resultats.cashflowReelMensuel >= 0,
-                    },
-                  ].map(({ label, val, sub, positive }) => (
-                    <div key={label} className="rounded-xl p-4" style={cardStyle}>
-                      <div className={LABEL}>{label}</div>
-                      <div className="text-xl font-light mt-1" style={{
-                        color: positive !== undefined
-                          ? (positive ? "#1A7A52" : "#B03A2A")
-                          : "#1A1612",
-                        letterSpacing: "-0.02em",
-                      }}>{val}</div>
-                      <div className="text-[11px] mt-1" style={{ color: "rgba(26,22,18,0.40)" }}>{sub}</div>
+                  {/* Rendement brut + net */}
+                  <div className="rounded-xl p-4" style={cardStyle}>
+                    <div className={LABEL}>Rendement</div>
+                    <div className="text-xl font-light mt-1" style={{ color: "#1A1612", letterSpacing: "-0.02em" }}>
+                      {formatPct(resultats.rendementBrut)}
                     </div>
-                  ))}
+                    <div className="text-[11px] mt-0.5" style={{ color: "rgba(26,22,18,0.40)" }}>brut · loyers / investissement</div>
+                    <div className="text-base font-light mt-2" style={{ color: "#C95B2A", letterSpacing: "-0.02em" }}>
+                      {formatPct(resultats.rendementNet)}
+                    </div>
+                    <div className="text-[11px] mt-0.5" style={{ color: "rgba(26,22,18,0.40)" }}>net · après charges</div>
+                  </div>
+
+                  {/* Revenus annuels */}
+                  <div className="rounded-xl p-4" style={cardStyle}>
+                    <div className={LABEL}>Revenus annuels</div>
+                    <div className="text-xl font-light mt-1" style={{ color: "#1A1612", letterSpacing: "-0.02em" }}>
+                      {formatEuro(resultats.loyerAnnuel)}
+                    </div>
+                    <div className="text-[11px] mt-1" style={{ color: "rgba(26,22,18,0.40)" }}>loyers encaissés / an</div>
+                  </div>
+
+                  {/* Charges annuelles */}
+                  <div className="rounded-xl p-4" style={cardStyle}>
+                    <div className={LABEL}>Charges annuelles</div>
+                    <div className="text-xl font-light mt-1" style={{ color: "#B03A2A", letterSpacing: "-0.02em" }}>
+                      {formatEuro(resultats.chargesDeductibles)}
+                    </div>
+                    <div className="text-[11px] mt-0.5" style={{ color: "rgba(26,22,18,0.40)" }}>charges + intérêts emprunt</div>
+                    <div className="text-[11px] mt-1.5" style={{ color: "rgba(26,22,18,0.35)" }}>
+                      dont {formatEuro(resultats.interetsAnnee1)} d&apos;intérêts
+                    </div>
+                  </div>
+
+                  {/* Impôt annuel + mensuel */}
+                  <div className="rounded-xl p-4" style={cardStyle}>
+                    <div className={LABEL}>Impôt estimé annuel</div>
+                    <div className="text-xl font-light mt-1" style={{ color: "#1A1612", letterSpacing: "-0.02em" }}>
+                      {formatEuro(resultats.impotReel)}
+                    </div>
+                    <div className="text-[11px] mt-0.5" style={{ color: "rgba(26,22,18,0.40)" }}>TMI {form.tmi}% + PS 18,6%</div>
+                    <div className="text-base font-light mt-2" style={{ color: "rgba(26,22,18,0.45)", letterSpacing: "-0.02em" }}>
+                      {formatEuro(resultats.impotReelMensuel)}
+                    </div>
+                    <div className="text-[11px] mt-0.5" style={{ color: "rgba(26,22,18,0.40)" }}>mensuel · annuel ÷ 12</div>
+                  </div>
+
+                  {/* Cash-flow mensuel */}
+                  <div className="rounded-xl p-4" style={cardStyle}>
+                    <div className={LABEL}>Cash-flow mensuel</div>
+                    <div className="text-xl font-light mt-1" style={{
+                      color: resultats.cashflowReelMensuel >= 0 ? "#1A7A52" : "#B03A2A",
+                      letterSpacing: "-0.02em",
+                    }}>
+                      {formatEuro(resultats.cashflowReelMensuel)}
+                    </div>
+                    <div className="text-[11px] mt-1" style={{ color: "rgba(26,22,18,0.40)" }}>net régime réel</div>
+                  </div>
                 </div>
 
                 {/* Loyer slider ou estimations saisonnières */}
@@ -1284,9 +1185,7 @@ ${annexeTable}
                     );
                   })()}
 
-                  <div className="mt-4 p-4 rounded-lg text-[13px]"
-                    style={{ background: "#F5F0E8", border: "0.5px solid rgba(26,22,18,0.08)", color: "rgba(26,22,18,0.65)", lineHeight: 1.6 }}>
-                    Si vous avez un emprunt et des charges, nous conseillons le Régime Réel au Régime Micro-BIC, qui permet un amortissement partiel du bien, des charges déductibles, et donc un résultat au bilan comptable nul qui réduit la base imposable.{" "}
+                  <div className="mt-4 text-[13px]">
                     <Link href="/comment-ca-marche"
                       className="inline-flex items-center gap-1 font-medium underline"
                       style={{ color: "#C95B2A" }}>
@@ -1299,8 +1198,6 @@ ${annexeTable}
                 <div className="rounded-xl overflow-hidden" style={cardStyle}>
                   <button onClick={() => {
                     if (showAmort) { setShowAmort(false); return; }
-                    if (isAmortBlocked()) { setShowAmortLimite(true); return; }
-                    markAmortUsed();
                     setShowAmort(true);
                   }}
                     className="w-full flex justify-between items-center p-5 text-left transition-all hover:opacity-95"
@@ -1556,12 +1453,8 @@ ${annexeTable}
               <div className="flex flex-wrap justify-center items-center gap-3 mt-6">
                 <button onClick={() => {
                   const plan = getPlan();
-                  if (plan === "pro") { handleGeneratePDF(); return; }
-                  if (plan === "starter") {
-                    setPdfWeekCount(getPdfWeekCount());
-                    setShowPDFStarter(true);
-                    return;
-                  }
+                  if (plan === "pro") { setPendingPdfAction("pro"); setShowBienInfoPopup(true); return; }
+                  if (plan === "starter") { setPdfWeekCount(getPdfWeekCount()); setShowPDFStarter(true); return; }
                   setShowPayPopup(true);
                 }}
                   className="px-10 py-4 text-base font-medium transition-opacity hover:opacity-[0.88] rounded-lg"
@@ -1597,6 +1490,12 @@ ${annexeTable}
             amortDureeEnsemble,
             composants,
             savedAt: Date.now(),
+            isSaisonnier,
+            prixNuitee,
+            tauxOccBas,
+            tauxOccMoyen,
+            tauxOccHaut,
+            resultatsTriple,
           }}
         />
       )}
@@ -1604,7 +1503,7 @@ ${annexeTable}
       {showSauvegarder && (
         <PopupSauvegarder
           isPro={getPlan() === "starter" || getPlan() === "pro"}
-          simulationData={{ form, amortPct, amortMode, amortDureeEnsemble, composants, savedAt: Date.now() }}
+          simulationData={{ form, amortPct, amortMode, amortDureeEnsemble, composants, savedAt: Date.now(), isSaisonnier, prixNuitee, tauxOccBas, tauxOccMoyen, tauxOccHaut, resultatsTriple }}
           onClose={() => setShowSauvegarder(false)}
           onSaved={() => setShowSauvegarder(false)}
         />
@@ -1616,9 +1515,25 @@ ${annexeTable}
           onGenerate={() => {
             incrementPdfWeekCount();
             setShowPDFStarter(false);
-            handleGeneratePDF();
+            setPendingPdfAction("pro");
+            setShowBienInfoPopup(true);
           }}
           onPayUnit={() => setShowPayPopup(true)}
+        />
+      )}
+      {showBienInfoPopup && (
+        <PopupBienInfo
+          initial={bienInfoRef.current}
+          onClose={() => setShowBienInfoPopup(false)}
+          ctaLabel={pendingPdfAction === "pay" ? "Continuer vers le paiement" : "Continuer vers le PDF"}
+          onConfirm={info => {
+            bienInfoRef.current = info;
+            setShowBienInfoPopup(false);
+            if (pendingPdfAction === "pro") { handleGeneratePDF(); }
+            else if (pendingPdfAction === "starter") { setPdfWeekCount(getPdfWeekCount()); setShowPDFStarter(true); }
+            else if (pendingPdfAction === "pay") { setShowPayPopup(true); }
+            setPendingPdfAction(null);
+          }}
         />
       )}
     </section>
