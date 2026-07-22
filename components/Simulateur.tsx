@@ -24,9 +24,17 @@ interface FormState {
   apport: string;
   duree: number;
   taux: string;
-  loyer: string;
+  loyer: string;           // Loyer HC (hors charges locataire)
+  chargesLoyer: string;    // Charges récupérables sur locataire (neutrales, non dans rendement)
   taxeFonciere: string;
   tmi: TMI;
+  // Autres charges déductibles
+  assurancePNO: string;
+  gestionLocativePct: string;
+  entretienCourant: string;
+  comptabilite: string;
+  // Charge financière
+  assuranceEmprunteur: string;
 }
 
 interface Resultats {
@@ -36,6 +44,8 @@ interface Resultats {
   creditAnnuel: number;
   interetsAnnee1: number;
   chargesAnnuelles: number;
+  autresCharges: number;
+  assuranceEmprunteurAnnuel: number;
   loyerAnnuel: number;
   amortBien: number;
   amortMobilier: number;
@@ -109,6 +119,11 @@ function computeResultats(
   const apport = parseFloat(form.apport) || 0;
   const taux = parseFloat(form.taux) / 100 || 0;
   const taxeFonciere = parseFloat(form.taxeFonciere) || 0;
+  const assurancePNO = parseFloat(form.assurancePNO) || 0;
+  const gestionLocativePct = parseFloat(form.gestionLocativePct) || 0;
+  const entretienCourant = parseFloat(form.entretienCourant) || 0;
+  const comptabilite = parseFloat(form.comptabilite) || 0;
+  const assuranceEmprunteurAnnuel = parseFloat(form.assuranceEmprunteur) || 0;
 
   if (prix <= 0 || loyerMensuel <= 0) return null;
 
@@ -118,8 +133,11 @@ function computeResultats(
   const mensualite = calcMensualite(montantCredit, taux, form.duree);
   const creditAnnuel = mensualite * 12;
   const interetsAnnee1 = calcInteretsAnnee1(montantCredit, taux, form.duree);
-  const chargesAnnuelles = taxeFonciere + chargesCopro;
   const loyerAnnuel = loyerMensuel * 12;
+
+  const gestionLocative = loyerAnnuel * (gestionLocativePct / 100);
+  const autresCharges = assurancePNO + gestionLocative + entretienCourant + comptabilite;
+  const chargesAnnuelles = taxeFonciere + chargesCopro + autresCharges;
 
   const valeurAmortissable = prix * (amortPct / 100);
   const amortBien = amortMode === "ensemble"
@@ -130,24 +148,25 @@ function computeResultats(
   const amortNotaire = notaire / 20;
   const amortTotal = amortBien + amortMobilier + amortTravaux + amortNotaire;
 
-  const chargesDeductibles = chargesAnnuelles + interetsAnnee1;
+  const chargesDeductibles = chargesAnnuelles + interetsAnnee1 + assuranceEmprunteurAnnuel;
   const resultatAvantAmort = loyerAnnuel - chargesDeductibles;
   const baseImposableReel = Math.max(0, resultatAvantAmort - amortTotal);
   const impotReel = baseImposableReel * (form.tmi / 100 + 0.186);
   const impotReelMensuel = impotReel / 12;
   const amortAReporter = Math.max(0, amortTotal - Math.max(0, resultatAvantAmort));
-  const cashflowReelMensuel = (loyerAnnuel - creditAnnuel - chargesAnnuelles - impotReel) / 12;
+  const cashflowReelMensuel = (loyerAnnuel - creditAnnuel - chargesAnnuelles - assuranceEmprunteurAnnuel - impotReel) / 12;
 
   const baseBIC = loyerAnnuel * 0.70;
   const impotBIC = baseBIC * (form.tmi / 100 + 0.186);
-  const cashflowBICMensuel = (loyerAnnuel - creditAnnuel - chargesAnnuelles - impotBIC) / 12;
+  const cashflowBICMensuel = (loyerAnnuel - creditAnnuel - chargesAnnuelles - assuranceEmprunteurAnnuel - impotBIC) / 12;
 
   const rendementBrut = (loyerAnnuel / investTotal) * 100;
   const rendementNet = ((loyerAnnuel - chargesAnnuelles) / investTotal) * 100;
 
   return {
     investTotal, montantCredit, mensualite, creditAnnuel, interetsAnnee1,
-    chargesAnnuelles, loyerAnnuel, amortBien, amortMobilier, amortTravaux, amortNotaire, amortTotal,
+    chargesAnnuelles, autresCharges, assuranceEmprunteurAnnuel,
+    loyerAnnuel, amortBien, amortMobilier, amortTravaux, amortNotaire, amortTotal,
     chargesDeductibles, resultatAvantAmort, baseImposableReel, impotReel, impotReelMensuel,
     amortAReporter, cashflowReelMensuel, baseBIC, impotBIC, cashflowBICMensuel,
     rendementBrut, rendementNet,
@@ -174,9 +193,16 @@ export default function Simulateur() {
     duree: 20,
     taux: "3.5",
     loyer: "",
+    chargesLoyer: "0",
     taxeFonciere: "",
     tmi: 30,
+    assurancePNO: "0",
+    gestionLocativePct: "0",
+    entretienCourant: "0",
+    comptabilite: "0",
+    assuranceEmprunteur: "0",
   });
+  const [showAutresCharges, setShowAutresCharges] = useState(false);
 
   const [loyerSlider, setLoyerSlider] = useState<number>(0);
   const [sliderMax, setSliderMax] = useState(10000);
@@ -270,7 +296,16 @@ export default function Simulateur() {
     if (prix > 0) {
       const notaire = Math.round(prix * 0.075);
       const chargesCopro = Math.round(prix * 0.01);
-      setForm(prev => ({ ...prev, notaire: notaire.toString(), chargesCopro: chargesCopro.toString() }));
+      const assurancePNO = Math.max(150, Math.round(prix * 0.0015));
+      const entretienCourant = Math.round(prix * 0.005);
+      setForm(prev => ({
+        ...prev,
+        notaire: notaire.toString(),
+        chargesCopro: chargesCopro.toString(),
+        assurancePNO: assurancePNO.toString(),
+        entretienCourant: entretienCourant.toString(),
+        comptabilite: prev.comptabilite === "0" || prev.comptabilite === "" ? "800" : prev.comptabilite,
+      }));
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [form.prix]);
@@ -363,7 +398,9 @@ export default function Simulateur() {
     const duree = form.duree;
     const tmi = form.tmi;
     const loyerAnnuel = resultats.loyerAnnuel;
+    const chargesLoyer = parseFloat(form.chargesLoyer) || 0;
     const chargesAnnuelles = resultats.chargesAnnuelles;
+    const assuranceEmprunteurAnnuel = resultats.assuranceEmprunteurAnnuel;
     const montantCredit = resultats.montantCredit;
     const apport = parseFloat(form.apport) || 0;
     const r = taux / 12;
@@ -424,14 +461,14 @@ export default function Simulateur() {
       const amortTravauxA = year <= 15 ? travaux / 15 : 0;
       const amortNotaireA = year <= 20 ? notaire / 20 : 0;
       const amortTotalA = amortBienA + amortMobilierA + amortTravauxA + amortNotaireA;
-      const chargesDeductibles = chargesAnnuelles + interetsAnnee;
+      const chargesDeductibles = chargesAnnuelles + interetsAnnee + assuranceEmprunteurAnnuel;
       const resultatAvantAmort = loyerAnnuel - chargesDeductibles;
       const reportEntrant = reportN;
       const amortDisponible = amortTotalA + reportEntrant;
       const baseImposable = Math.max(0, resultatAvantAmort - amortDisponible);
       const newReport = Math.max(0, amortDisponible - Math.max(0, resultatAvantAmort));
       const impot = baseImposable * (tmi / 100 + 0.186);
-      const cashflow = (loyerAnnuel - creditAnnuelR - chargesAnnuelles - impot) / 12;
+      const cashflow = (loyerAnnuel - creditAnnuelR - chargesAnnuelles - assuranceEmprunteurAnnuel - impot) / 12;
       rows.push({
         year, capitalDebut, creditAnnuelR, interetsAnnee, amortTotalA, amortDisponible,
         reportEntrant, reportNplus1: newReport,
@@ -659,9 +696,11 @@ th.col-an,td.col-an{width:18px}
   </div>
   <div class="recap-col" style="background:rgba(201,91,42,0.09);border:1px solid rgba(201,91,42,0.2)">
     <div class="kvl" style="margin-bottom:6px;font-weight:700;color:#C95B2A">Revenus</div>
-    <div class="kvi" style="margin-bottom:6px"><div class="kvl">Loyer mensuel CC</div><div class="kvv orange">${fEur(loyerAnnuel / 12)}/mois</div></div>
-    <div class="kvi" style="margin-bottom:6px"><div class="kvl">Loyer annuel</div><div class="kvv orange">${fEur(loyerAnnuel)}/an</div></div>
-    <div class="kvi"><div class="kvl">Charges annuelles</div><div class="kvv">${fEur(chargesAnnuelles)}</div></div>
+    <div class="kvi" style="margin-bottom:6px"><div class="kvl">Loyer HC mensuel</div><div class="kvv orange">${fEur(loyerAnnuel / 12)}/mois</div></div>
+    ${chargesLoyer > 0 ? `<div class="kvi" style="margin-bottom:6px"><div class="kvl">Charges locataire</div><div class="kvv">${fEur(chargesLoyer)}/mois</div></div>` : ""}
+    <div class="kvi" style="margin-bottom:6px"><div class="kvl">Loyer HC annuel</div><div class="kvv orange">${fEur(loyerAnnuel)}/an</div></div>
+    <div class="kvi"><div class="kvl">Charges propriétaire/an</div><div class="kvv">${fEur(chargesAnnuelles)}</div></div>
+    ${assuranceEmprunteurAnnuel > 0 ? `<div class="kvi" style="margin-top:4px"><div class="kvl">Ass. emprunteur/an</div><div class="kvv">${fEur(assuranceEmprunteurAnnuel)}</div></div>` : ""}
   </div>
   <div class="recap-col" style="background:#EDE7DC">
     <div class="kvl" style="margin-bottom:6px;font-weight:700">Financement</div>
@@ -830,12 +869,22 @@ ${annexeTable}
                 </div>
               </div>
 
-              <div>
-                <label className={LABEL}>Taux d&apos;intérêt annuel (%)</label>
-                <input type="number" step="0.1" value={form.taux}
-                  onChange={e => updateField("taux", e.target.value)}
-                  onBlur={() => handleBlur("taux")}
-                  placeholder="3.5" className={INPUT} style={INPUT_STYLE} />
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className={LABEL}>Taux d&apos;intérêt annuel (%)</label>
+                  <input type="number" step="0.1" value={form.taux}
+                    onChange={e => updateField("taux", e.target.value)}
+                    onBlur={() => handleBlur("taux")}
+                    placeholder="3.5" className={INPUT} style={INPUT_STYLE} />
+                </div>
+                <div>
+                  <label className={LABEL}>Assurance emprunteur/an (€)</label>
+                  <input type="number" value={form.assuranceEmprunteur}
+                    onChange={e => updateField("assuranceEmprunteur", e.target.value)}
+                    onBlur={() => handleBlur("assuranceEmprunteur")}
+                    placeholder="0" className={INPUT} style={INPUT_STYLE} />
+                  <p className="text-[10px] mt-1" style={{ color: "rgba(26,22,18,0.4)" }}>Charge financière déductible</p>
+                </div>
               </div>
             </div>
 
@@ -879,15 +928,26 @@ ${annexeTable}
                   </div>
                 </div>
               ) : (
-                <div>
-                  <label className={LABEL}>Loyer mensuel (€) <span style={{ fontWeight: 400, fontSize: "0.75rem", color: "rgba(26,22,18,0.45)" }}>— charges comprises</span></label>
-                  <input type="number" value={form.loyer}
-                    onChange={e => {
-                      updateField("loyer", e.target.value);
-                      setLoyerSlider(parseFloat(e.target.value) || 0);
-                    }}
-                    onBlur={() => handleBlur("loyer")}
-                    placeholder="Ex : 1 200" className={INPUT} style={INPUT_STYLE} />
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className={LABEL}>Loyer HC / mois (€)</label>
+                    <input type="number" value={form.loyer}
+                      onChange={e => {
+                        updateField("loyer", e.target.value);
+                        setLoyerSlider(parseFloat(e.target.value) || 0);
+                      }}
+                      onBlur={() => handleBlur("loyer")}
+                      placeholder="Ex : 1 100" className={INPUT} style={INPUT_STYLE} />
+                    <p className="text-[10px] mt-1" style={{ color: "rgba(26,22,18,0.4)" }}>Hors charges locataire</p>
+                  </div>
+                  <div>
+                    <label className={LABEL}>Charges locataire / mois (€)</label>
+                    <input type="number" value={form.chargesLoyer}
+                      onChange={e => updateField("chargesLoyer", e.target.value)}
+                      onBlur={() => handleBlur("chargesLoyer")}
+                      placeholder="0" className={INPUT} style={INPUT_STYLE} />
+                    <p className="text-[10px] mt-1" style={{ color: "rgba(26,22,18,0.4)" }}>Neutral — non inclus dans le rendement</p>
+                  </div>
                 </div>
               )}
 
@@ -907,6 +967,106 @@ ${annexeTable}
                   ))}
                 </div>
               </div>
+
+              {/* Autres charges — expandable */}
+              {(() => {
+                const assurancePNO = parseFloat(form.assurancePNO) || 0;
+                const gestionPct = parseFloat(form.gestionLocativePct) || 0;
+                const loyerHC = parseFloat(form.loyer) || 0;
+                const gestionLocative = loyerHC * 12 * (gestionPct / 100);
+                const entretien = parseFloat(form.entretienCourant) || 0;
+                const compta = parseFloat(form.comptabilite) || 0;
+                const total = assurancePNO + gestionLocative + entretien + compta;
+                return (
+                  <div className="rounded-xl overflow-hidden" style={{ border: "0.5px solid rgba(26,22,18,0.12)" }}>
+                    <button
+                      onClick={() => setShowAutresCharges(v => !v)}
+                      className="w-full flex items-center justify-between px-4 py-3 text-left transition-opacity hover:opacity-80"
+                      style={{ background: "#EDE7DC" }}>
+                      <div>
+                        <span className="text-xs font-medium uppercase tracking-[0.12em]" style={{ color: "rgba(26,22,18,0.55)" }}>
+                          Autres charges déductibles
+                        </span>
+                        {total > 0 && (
+                          <span className="ml-2 text-xs font-medium" style={{ color: "#C95B2A" }}>
+                            {new Intl.NumberFormat("fr-FR", { style: "currency", currency: "EUR", maximumFractionDigits: 0 }).format(total)}/an
+                          </span>
+                        )}
+                      </div>
+                      <span className="text-xs font-medium" style={{ color: "#C95B2A" }}>
+                        {showAutresCharges ? "▲ Réduire" : "▼ Détailler"}
+                      </span>
+                    </button>
+                    {showAutresCharges && (
+                      <div className="p-4 space-y-3" style={{ background: "#F5F0E8" }}>
+                        {/* Assurance PNO */}
+                        <div className="grid grid-cols-2 gap-3 items-end">
+                          <div>
+                            <label className={LABEL}>Assurance PNO / GLI (€/an)</label>
+                            <input type="number" value={form.assurancePNO}
+                              onChange={e => updateField("assurancePNO", e.target.value)}
+                              onBlur={() => handleBlur("assurancePNO")}
+                              placeholder="0" className={INPUT} style={AUTO_STYLE} />
+                          </div>
+                          <p className="text-[10px] pb-2.5" style={{ color: "rgba(26,22,18,0.4)" }}>
+                            Pré-rempli ≈ 0,15% du prix · Modifiable
+                          </p>
+                        </div>
+                        {/* Gestion locative */}
+                        <div className="grid grid-cols-2 gap-3 items-end">
+                          <div>
+                            <label className={LABEL}>Gestion locative (% loyer HC)</label>
+                            <input type="number" step="0.5" value={form.gestionLocativePct}
+                              onChange={e => updateField("gestionLocativePct", e.target.value)}
+                              onBlur={() => handleBlur("gestionLocativePct")}
+                              placeholder="0" className={INPUT} style={INPUT_STYLE} />
+                          </div>
+                          <p className="text-[10px] pb-2.5" style={{ color: "rgba(26,22,18,0.4)" }}>
+                            {gestionPct > 0 && loyerHC > 0
+                              ? `= ${new Intl.NumberFormat("fr-FR", { style: "currency", currency: "EUR", maximumFractionDigits: 0 }).format(gestionLocative)}/an`
+                              : "Typique : 7–10% du loyer HC"}
+                          </p>
+                        </div>
+                        {/* Entretien courant */}
+                        <div className="grid grid-cols-2 gap-3 items-end">
+                          <div>
+                            <label className={LABEL}>Entretien courant (€/an)</label>
+                            <input type="number" value={form.entretienCourant}
+                              onChange={e => updateField("entretienCourant", e.target.value)}
+                              onBlur={() => handleBlur("entretienCourant")}
+                              placeholder="0" className={INPUT} style={AUTO_STYLE} />
+                          </div>
+                          <p className="text-[10px] pb-2.5" style={{ color: "rgba(26,22,18,0.4)" }}>
+                            Pré-rempli ≈ 0,5% du prix · Modifiable
+                          </p>
+                        </div>
+                        {/* Comptabilité LMNP */}
+                        <div className="grid grid-cols-2 gap-3 items-end">
+                          <div>
+                            <label className={LABEL}>Comptabilité LMNP (€/an)</label>
+                            <input type="number" value={form.comptabilite}
+                              onChange={e => updateField("comptabilite", e.target.value)}
+                              onBlur={() => handleBlur("comptabilite")}
+                              placeholder="0" className={INPUT} style={AUTO_STYLE} />
+                          </div>
+                          <p className="text-[10px] pb-2.5" style={{ color: "rgba(26,22,18,0.4)" }}>
+                            Pré-rempli à 800 € (honoraires comptable)
+                          </p>
+                        </div>
+                        {/* Total */}
+                        {total > 0 && (
+                          <div className="pt-2 flex justify-between items-center" style={{ borderTop: "0.5px solid rgba(26,22,18,0.1)" }}>
+                            <span className="text-xs font-medium uppercase tracking-[0.1em]" style={{ color: "rgba(26,22,18,0.5)" }}>Total autres charges</span>
+                            <span className="text-sm font-medium" style={{ color: "#C95B2A" }}>
+                              {new Intl.NumberFormat("fr-FR", { style: "currency", currency: "EUR", maximumFractionDigits: 0 }).format(total)}/an
+                            </span>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                );
+              })()}
             </div>
           </div>
         </div>

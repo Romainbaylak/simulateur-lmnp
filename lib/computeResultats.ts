@@ -14,9 +14,17 @@ export interface SimulationForm {
   apport: string;
   duree: number;
   taux: string;
-  loyer: string;
+  loyer: string;           // Loyer HC (hors charges locataire)
+  chargesLoyer: string;    // Charges récupérables sur locataire (non incluses dans rendement)
   taxeFonciere: string;
   tmi: TMI;
+  // Autres charges déductibles
+  assurancePNO: string;         // Assurance PNO/GLI annuelle
+  gestionLocativePct: string;   // % gestion locative sur loyer HC
+  entretienCourant: string;     // Entretien courant annuel
+  comptabilite: string;         // Comptabilité LMNP annuelle
+  // Charge financière
+  assuranceEmprunteur: string;  // Assurance emprunteur annuelle
 }
 
 export interface Resultats {
@@ -26,6 +34,8 @@ export interface Resultats {
   creditAnnuel: number;
   interetsAnnee1: number;
   chargesAnnuelles: number;
+  autresCharges: number;
+  assuranceEmprunteurAnnuel: number;
   loyerAnnuel: number;
   amortBien: number;
   amortMobilier: number;
@@ -99,6 +109,11 @@ export function computeResultats(
   const apport = parseFloat(form.apport) || 0;
   const taux = parseFloat(form.taux) / 100 || 0;
   const taxeFonciere = parseFloat(form.taxeFonciere) || 0;
+  const assurancePNO = parseFloat(form.assurancePNO) || 0;
+  const gestionLocativePct = parseFloat(form.gestionLocativePct) || 0;
+  const entretienCourant = parseFloat(form.entretienCourant) || 0;
+  const comptabilite = parseFloat(form.comptabilite) || 0;
+  const assuranceEmprunteurAnnuel = parseFloat(form.assuranceEmprunteur) || 0;
 
   if (prix <= 0 || loyerMensuel <= 0) return null;
 
@@ -108,8 +123,11 @@ export function computeResultats(
   const mensualite = calcMensualite(montantCredit, taux, form.duree);
   const creditAnnuel = mensualite * 12;
   const interetsAnnee1 = calcInteretsAnnee1(montantCredit, taux, form.duree);
-  const chargesAnnuelles = taxeFonciere + chargesCopro;
   const loyerAnnuel = loyerMensuel * 12;
+
+  const gestionLocative = loyerAnnuel * (gestionLocativePct / 100);
+  const autresCharges = assurancePNO + gestionLocative + entretienCourant + comptabilite;
+  const chargesAnnuelles = taxeFonciere + chargesCopro + autresCharges;
 
   const valeurAmortissable = prix * (amortPct / 100);
   const amortBien = amortMode === "ensemble"
@@ -120,24 +138,27 @@ export function computeResultats(
   const amortNotaire = notaire / 20;
   const amortTotal = amortBien + amortMobilier + amortTravaux + amortNotaire;
 
-  const chargesDeductibles = chargesAnnuelles + interetsAnnee1;
+  // Assurance emprunteur = charge financière déductible (comme les intérêts)
+  const chargesDeductibles = chargesAnnuelles + interetsAnnee1 + assuranceEmprunteurAnnuel;
   const resultatAvantAmort = loyerAnnuel - chargesDeductibles;
   const baseImposableReel = Math.max(0, resultatAvantAmort - amortTotal);
   const impotReel = baseImposableReel * (form.tmi / 100 + 0.186);
   const impotReelMensuel = impotReel / 12;
   const amortAReporter = Math.max(0, amortTotal - Math.max(0, resultatAvantAmort));
-  const cashflowReelMensuel = (loyerAnnuel - creditAnnuel - chargesAnnuelles - impotReel) / 12;
+  const cashflowReelMensuel = (loyerAnnuel - creditAnnuel - chargesAnnuelles - assuranceEmprunteurAnnuel - impotReel) / 12;
 
   const baseBIC = loyerAnnuel * 0.70;
   const impotBIC = baseBIC * (form.tmi / 100 + 0.186);
-  const cashflowBICMensuel = (loyerAnnuel - creditAnnuel - chargesAnnuelles - impotBIC) / 12;
+  const cashflowBICMensuel = (loyerAnnuel - creditAnnuel - chargesAnnuelles - assuranceEmprunteurAnnuel - impotBIC) / 12;
 
+  // Rendement calculé sur loyer HC uniquement (sans charges locataire)
   const rendementBrut = (loyerAnnuel / investTotal) * 100;
   const rendementNet = ((loyerAnnuel - chargesAnnuelles) / investTotal) * 100;
 
   return {
     investTotal, montantCredit, mensualite, creditAnnuel, interetsAnnee1,
-    chargesAnnuelles, loyerAnnuel, amortBien, amortMobilier, amortTravaux, amortNotaire, amortTotal,
+    chargesAnnuelles, autresCharges, assuranceEmprunteurAnnuel,
+    loyerAnnuel, amortBien, amortMobilier, amortTravaux, amortNotaire, amortTotal,
     chargesDeductibles, resultatAvantAmort, baseImposableReel, impotReel, impotReelMensuel,
     amortAReporter, cashflowReelMensuel, baseBIC, impotBIC, cashflowBICMensuel,
     rendementBrut, rendementNet,

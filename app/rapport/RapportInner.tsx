@@ -148,7 +148,9 @@ export default function RapportInner() {
     const duree = form.duree;
     const tmi = form.tmi;
     const loyerAnnuel = resultats.loyerAnnuel;
+    const chargesLoyer = parseFloat(form.chargesLoyer ?? "0") || 0;
     const chargesAnnuelles = resultats.chargesAnnuelles;
+    const assuranceEmprunteurAnnuel = resultats.assuranceEmprunteurAnnuel ?? 0;
     const montantCredit = resultats.montantCredit;
     const r = taux / 12;
     const n = duree * 12;
@@ -202,14 +204,14 @@ export default function RapportInner() {
       const amortTravauxA = year <= 15 ? travaux / 15 : 0;
       const amortNotaireA = year <= 20 ? notaire / 20 : 0;
       const amortTotalA = amortBienA + amortMobilierA + amortTravauxA + amortNotaireA;
-      const chargesDeductibles = chargesAnnuelles + interetsAnnee;
+      const chargesDeductibles = chargesAnnuelles + interetsAnnee + assuranceEmprunteurAnnuel;
       const resultatAvantAmort = loyerAnnuel - chargesDeductibles;
       const reportEntrant = reportN;
       const amortDisponible = amortTotalA + reportEntrant;
       const baseImposable = Math.max(0, resultatAvantAmort - amortDisponible);
       const newReport = Math.max(0, amortDisponible - Math.max(0, resultatAvantAmort));
       const impot = baseImposable * (tmi / 100 + 0.186);
-      const cashflow = (loyerAnnuel - creditAnnuelR - chargesAnnuelles - impot) / 12;
+      const cashflow = (loyerAnnuel - creditAnnuelR - chargesAnnuelles - assuranceEmprunteurAnnuel - impot) / 12;
       rows.push({ year, capitalDebut, creditAnnuelR, interetsAnnee, amortTotalA, amortDisponible, reportEntrant, reportNplus1: newReport, resultatAvantAmort, chargesDeductibles, baseImposable, impot, cashflow });
       reportN = newReport;
     }
@@ -428,9 +430,11 @@ th.col-an,td.col-an{width:18px}
   </div>
   <div class="recap-col" style="background:rgba(201,91,42,0.09);border:1px solid rgba(201,91,42,0.2)">
     <div class="kvl" style="margin-bottom:6px;font-weight:700;color:#C95B2A">Revenus</div>
-    <div class="kvi" style="margin-bottom:6px"><div class="kvl">Loyer mensuel CC</div><div class="kvv orange">${fEurLocal(loyerAnnuel / 12)}/mois</div></div>
-    <div class="kvi" style="margin-bottom:6px"><div class="kvl">Loyer annuel</div><div class="kvv orange">${fEurLocal(loyerAnnuel)}/an</div></div>
-    <div class="kvi"><div class="kvl">Charges annuelles</div><div class="kvv">${fEurLocal(chargesAnnuelles)}</div></div>
+    <div class="kvi" style="margin-bottom:6px"><div class="kvl">Loyer HC mensuel</div><div class="kvv orange">${fEurLocal(loyerAnnuel / 12)}/mois</div></div>
+    ${chargesLoyer > 0 ? `<div class="kvi" style="margin-bottom:6px"><div class="kvl">Charges locataire</div><div class="kvv">${fEurLocal(chargesLoyer)}/mois</div></div>` : ""}
+    <div class="kvi" style="margin-bottom:6px"><div class="kvl">Loyer HC annuel</div><div class="kvv orange">${fEurLocal(loyerAnnuel)}/an</div></div>
+    <div class="kvi"><div class="kvl">Charges propriétaire/an</div><div class="kvv">${fEurLocal(chargesAnnuelles)}</div></div>
+    ${assuranceEmprunteurAnnuel > 0 ? `<div class="kvi" style="margin-top:4px"><div class="kvl">Ass. emprunteur/an</div><div class="kvv">${fEurLocal(assuranceEmprunteurAnnuel)}</div></div>` : ""}
   </div>
   <div class="recap-col" style="background:#EDE7DC">
     <div class="kvl" style="margin-bottom:6px;font-weight:700">Financement</div>
@@ -566,11 +570,11 @@ ${annexeTable}
               ["Travaux (€)", "travaux"],
               ["Frais de notaire (€)", "notaire"],
               ["Mobilier (€)", "mobilier"],
-              ["Surface (m²)", "surface"],
               ["Taxe foncière/an (€)", "taxeFonciere"],
               ["Charges copro/an (€)", "chargesCopro"],
               ["Apport (€)", "apport"],
               ["Taux d'intérêt (%)", "taux"],
+              ["Ass. emprunteur/an (€)", "assuranceEmprunteur"],
             ] as [string, keyof SimulationForm][]).map(([label, key]) => (
               <div key={key}>
                 <label className={LABEL}>{label}</label>
@@ -578,7 +582,7 @@ ${annexeTable}
                   type="number"
                   className={INPUT}
                   style={INPUT_STYLE}
-                  value={form[key] as string}
+                  value={(form[key] as string) ?? "0"}
                   onChange={e => setField(key, e.target.value)}
                 />
               </div>
@@ -597,6 +601,30 @@ ${annexeTable}
                 {[0, 11, 30, 41, 45].map(t => <option key={t} value={t}>{t}%</option>)}
               </select>
             </div>
+          </div>
+
+          {/* Autres charges */}
+          <div className="mt-4 pt-4 grid grid-cols-2 md:grid-cols-3 gap-4" style={{ borderTop: "0.5px solid rgba(26,22,18,0.1)" }}>
+            <div className="col-span-2 md:col-span-3">
+              <p className="text-[11px] font-medium uppercase tracking-[0.12em] mb-3" style={{ color: "rgba(26,22,18,0.45)" }}>Autres charges déductibles</p>
+            </div>
+            {([
+              ["Assurance PNO/GLI (€/an)", "assurancePNO"],
+              ["Gestion locative (% loyer HC)", "gestionLocativePct"],
+              ["Entretien courant (€/an)", "entretienCourant"],
+              ["Comptabilité LMNP (€/an)", "comptabilite"],
+            ] as [string, keyof SimulationForm][]).map(([label, key]) => (
+              <div key={key}>
+                <label className={LABEL}>{label}</label>
+                <input
+                  type="number"
+                  className={INPUT}
+                  style={INPUT_STYLE}
+                  value={(form[key] as string) ?? "0"}
+                  onChange={e => setField(key, e.target.value)}
+                />
+              </div>
+            ))}
           </div>
 
           {/* Mode de location */}
@@ -670,17 +698,31 @@ ${annexeTable}
             </div>
           )}
 
-          {/* Loyer mensuel — only shown when NOT saisonnier */}
+          {/* Loyer — only shown when NOT saisonnier */}
           {!isSaisonnier && (
-            <div className="mt-4">
-              <label className={LABEL}>Loyer mensuel (€)</label>
-              <input
-                type="number"
-                className={INPUT}
-                style={INPUT_STYLE}
-                value={form.loyer}
-                onChange={e => setField("loyer", e.target.value)}
-              />
+            <div className="mt-4 grid grid-cols-2 gap-4">
+              <div>
+                <label className={LABEL}>Loyer HC / mois (€)</label>
+                <input
+                  type="number"
+                  className={INPUT}
+                  style={INPUT_STYLE}
+                  value={form.loyer}
+                  onChange={e => setField("loyer", e.target.value)}
+                />
+                <p className="text-[10px] mt-1" style={{ color: "rgba(26,22,18,0.4)" }}>Hors charges locataire</p>
+              </div>
+              <div>
+                <label className={LABEL}>Charges locataire / mois (€)</label>
+                <input
+                  type="number"
+                  className={INPUT}
+                  style={INPUT_STYLE}
+                  value={form.chargesLoyer ?? "0"}
+                  onChange={e => setField("chargesLoyer", e.target.value)}
+                />
+                <p className="text-[10px] mt-1" style={{ color: "rgba(26,22,18,0.4)" }}>Neutral — non dans le rendement</p>
+              </div>
             </div>
           )}
         </div>
