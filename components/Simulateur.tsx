@@ -973,9 +973,12 @@ ${annexeTable}
                   <div className="rounded-xl p-4" style={cardStyle}>
                     <div className={LABEL}>Charges annuelles</div>
                     <div className="text-xl font-light mt-1" style={{ color: "#B03A2A", letterSpacing: "-0.02em" }}>
-                      {formatEuro(resultats.chargesAnnuelles)}
+                      {formatEuro(resultats.chargesDeductibles)}
                     </div>
-                    <div className="text-[11px] mt-1" style={{ color: "rgba(26,22,18,0.40)" }}>taxe foncière + copro</div>
+                    <div className="text-[11px] mt-0.5" style={{ color: "rgba(26,22,18,0.40)" }}>charges + intérêts emprunt</div>
+                    <div className="text-[11px] mt-1.5" style={{ color: "rgba(26,22,18,0.35)" }}>
+                      dont {formatEuro(resultats.interetsAnnee1)} d&apos;intérêts
+                    </div>
                   </div>
 
                   {/* Impôt annuel + mensuel */}
