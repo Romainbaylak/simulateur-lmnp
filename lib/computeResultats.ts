@@ -113,13 +113,14 @@ export function computeResultats(
   const gestionLocativePct = parseFloat(form.gestionLocativePct) || 0;
   const entretienCourant = parseFloat(form.entretienCourant) || 0;
   const comptabilite = parseFloat(form.comptabilite) || 0;
-  const assuranceEmprunteurAnnuel = parseFloat(form.assuranceEmprunteur) || 0;
+  const assuranceEmprunteurPct = parseFloat(form.assuranceEmprunteur) || 0;
 
   if (prix <= 0 || loyerMensuel <= 0) return null;
 
   const mobilier = parseFloat(form.mobilier) || 0;
   const investTotal = prix + travaux + notaire;
   const montantCredit = Math.max(0, investTotal - apport);
+  const assuranceEmprunteurAnnuel = montantCredit * (assuranceEmprunteurPct / 100);
   const mensualite = calcMensualite(montantCredit, taux, form.duree);
   const creditAnnuel = mensualite * 12;
   const interetsAnnee1 = calcInteretsAnnee1(montantCredit, taux, form.duree);

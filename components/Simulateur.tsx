@@ -123,13 +123,14 @@ function computeResultats(
   const gestionLocativePct = parseFloat(form.gestionLocativePct) || 0;
   const entretienCourant = parseFloat(form.entretienCourant) || 0;
   const comptabilite = parseFloat(form.comptabilite) || 0;
-  const assuranceEmprunteurAnnuel = parseFloat(form.assuranceEmprunteur) || 0;
+  const assuranceEmprunteurPct = parseFloat(form.assuranceEmprunteur) || 0;
 
   if (prix <= 0 || loyerMensuel <= 0) return null;
 
   const mobilier = parseFloat(form.mobilier) || 0;
   const investTotal = prix + travaux + notaire;
   const montantCredit = Math.max(0, investTotal - apport);
+  const assuranceEmprunteurAnnuel = montantCredit * (assuranceEmprunteurPct / 100);
   const mensualite = calcMensualite(montantCredit, taux, form.duree);
   const creditAnnuel = mensualite * 12;
   const interetsAnnee1 = calcInteretsAnnee1(montantCredit, taux, form.duree);
@@ -200,7 +201,7 @@ export default function Simulateur() {
     gestionLocativePct: "0",
     entretienCourant: "0",
     comptabilite: "0",
-    assuranceEmprunteur: "0",
+    assuranceEmprunteur: "0.25",
   });
   const [showAutresCharges, setShowAutresCharges] = useState(false);
 
@@ -871,19 +872,36 @@ ${annexeTable}
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className={LABEL}>Taux d&apos;intérêt annuel (%)</label>
-                  <input type="number" step="0.1" value={form.taux}
-                    onChange={e => updateField("taux", e.target.value)}
-                    onBlur={() => handleBlur("taux")}
-                    placeholder="3.5" className={INPUT} style={INPUT_STYLE} />
+                  <label className={LABEL}>Taux d&apos;intérêt annuel</label>
+                  <div className="flex items-center gap-1.5">
+                    <input type="number" step="0.1" value={form.taux}
+                      onChange={e => updateField("taux", e.target.value)}
+                      onBlur={() => handleBlur("taux")}
+                      placeholder="3.5" className={INPUT} style={{ ...INPUT_STYLE, flex: 1 }} />
+                    <span className="text-xs font-medium" style={{ color: "rgba(26,22,18,0.45)" }}>%</span>
+                  </div>
                 </div>
                 <div>
-                  <label className={LABEL}>Assurance emprunteur/an (€)</label>
-                  <input type="number" value={form.assuranceEmprunteur}
-                    onChange={e => updateField("assuranceEmprunteur", e.target.value)}
-                    onBlur={() => handleBlur("assuranceEmprunteur")}
-                    placeholder="0" className={INPUT} style={INPUT_STYLE} />
-                  <p className="text-[10px] mt-1" style={{ color: "rgba(26,22,18,0.4)" }}>Charge financière déductible</p>
+                  <label className={LABEL}>Assurance emprunteur</label>
+                  <div className="flex items-center gap-1.5">
+                    <input type="number" step="0.01" min="0" max="1" value={form.assuranceEmprunteur}
+                      onChange={e => updateField("assuranceEmprunteur", e.target.value)}
+                      onBlur={() => handleBlur("assuranceEmprunteur")}
+                      placeholder="0.25" className={INPUT} style={{ ...INPUT_STYLE, flex: 1 }} />
+                    <span className="text-xs font-medium" style={{ color: "rgba(26,22,18,0.45)" }}>%</span>
+                  </div>
+                  {(() => {
+                    const pct = parseFloat(form.assuranceEmprunteur) || 0;
+                    const capital = resultats?.montantCredit ?? 0;
+                    const annuel = capital * pct / 100;
+                    return capital > 0 && pct > 0 ? (
+                      <p className="text-[10px] mt-1" style={{ color: "rgba(26,22,18,0.4)" }}>
+                        = {new Intl.NumberFormat("fr-FR", { style: "currency", currency: "EUR", maximumFractionDigits: 0 }).format(annuel)}/an · charge financière déductible
+                      </p>
+                    ) : (
+                      <p className="text-[10px] mt-1" style={{ color: "rgba(26,22,18,0.4)" }}>% du capital emprunté · déductible</p>
+                    );
+                  })()}
                 </div>
               </div>
             </div>
@@ -999,59 +1017,57 @@ ${annexeTable}
                     </button>
                     {showAutresCharges && (
                       <div className="p-4 space-y-3" style={{ background: "#F5F0E8" }}>
-                        {/* Assurance PNO */}
-                        <div className="grid grid-cols-2 gap-3 items-end">
-                          <div>
-                            <label className={LABEL}>Assurance PNO / GLI (€/an)</label>
+                        {/* Assurance Loyer impayé */}
+                        <div>
+                          <label className={LABEL}>Assurance Loyer impayé (PNO / GLI)</label>
+                          <div className="flex items-center gap-1.5">
                             <input type="number" value={form.assurancePNO}
                               onChange={e => updateField("assurancePNO", e.target.value)}
                               onBlur={() => handleBlur("assurancePNO")}
-                              placeholder="0" className={INPUT} style={AUTO_STYLE} />
+                              placeholder="0" className={INPUT} style={{ ...AUTO_STYLE, flex: 1 }} />
+                            <span className="text-xs font-medium" style={{ color: "rgba(26,22,18,0.45)" }}>€/an</span>
                           </div>
-                          <p className="text-[10px] pb-2.5" style={{ color: "rgba(26,22,18,0.4)" }}>
-                            Pré-rempli ≈ 0,15% du prix · Modifiable
-                          </p>
+                          <p className="text-[10px] mt-1" style={{ color: "rgba(26,22,18,0.4)" }}>Pré-rempli ≈ 0,15% du prix · Modifiable</p>
                         </div>
                         {/* Gestion locative */}
-                        <div className="grid grid-cols-2 gap-3 items-end">
-                          <div>
-                            <label className={LABEL}>Gestion locative (% loyer HC)</label>
-                            <input type="number" step="0.5" value={form.gestionLocativePct}
+                        <div>
+                          <label className={LABEL}>Gestion locative</label>
+                          <div className="flex items-center gap-1.5">
+                            <input type="number" step="0.5" min="0" max="70" value={form.gestionLocativePct}
                               onChange={e => updateField("gestionLocativePct", e.target.value)}
                               onBlur={() => handleBlur("gestionLocativePct")}
-                              placeholder="0" className={INPUT} style={INPUT_STYLE} />
+                              placeholder="0" className={INPUT} style={{ ...INPUT_STYLE, flex: 1 }} />
+                            <span className="text-xs font-medium" style={{ color: "rgba(26,22,18,0.45)" }}>% loyer HC</span>
                           </div>
-                          <p className="text-[10px] pb-2.5" style={{ color: "rgba(26,22,18,0.4)" }}>
+                          <p className="text-[10px] mt-1" style={{ color: "rgba(26,22,18,0.4)" }}>
                             {gestionPct > 0 && loyerHC > 0
                               ? `= ${new Intl.NumberFormat("fr-FR", { style: "currency", currency: "EUR", maximumFractionDigits: 0 }).format(gestionLocative)}/an`
                               : "Typique : 7–10% du loyer HC"}
                           </p>
                         </div>
                         {/* Entretien courant */}
-                        <div className="grid grid-cols-2 gap-3 items-end">
-                          <div>
-                            <label className={LABEL}>Entretien courant (€/an)</label>
+                        <div>
+                          <label className={LABEL}>Entretien courant</label>
+                          <div className="flex items-center gap-1.5">
                             <input type="number" value={form.entretienCourant}
                               onChange={e => updateField("entretienCourant", e.target.value)}
                               onBlur={() => handleBlur("entretienCourant")}
-                              placeholder="0" className={INPUT} style={AUTO_STYLE} />
+                              placeholder="0" className={INPUT} style={{ ...AUTO_STYLE, flex: 1 }} />
+                            <span className="text-xs font-medium" style={{ color: "rgba(26,22,18,0.45)" }}>€/an</span>
                           </div>
-                          <p className="text-[10px] pb-2.5" style={{ color: "rgba(26,22,18,0.4)" }}>
-                            Pré-rempli ≈ 0,5% du prix · Modifiable
-                          </p>
+                          <p className="text-[10px] mt-1" style={{ color: "rgba(26,22,18,0.4)" }}>Pré-rempli ≈ 0,5% du prix · Modifiable</p>
                         </div>
                         {/* Comptabilité LMNP */}
-                        <div className="grid grid-cols-2 gap-3 items-end">
-                          <div>
-                            <label className={LABEL}>Comptabilité LMNP (€/an)</label>
+                        <div>
+                          <label className={LABEL}>Comptabilité LMNP</label>
+                          <div className="flex items-center gap-1.5">
                             <input type="number" value={form.comptabilite}
                               onChange={e => updateField("comptabilite", e.target.value)}
                               onBlur={() => handleBlur("comptabilite")}
-                              placeholder="0" className={INPUT} style={AUTO_STYLE} />
+                              placeholder="0" className={INPUT} style={{ ...AUTO_STYLE, flex: 1 }} />
+                            <span className="text-xs font-medium" style={{ color: "rgba(26,22,18,0.45)" }}>€/an</span>
                           </div>
-                          <p className="text-[10px] pb-2.5" style={{ color: "rgba(26,22,18,0.4)" }}>
-                            Pré-rempli à 800 € (honoraires comptable)
-                          </p>
+                          <p className="text-[10px] mt-1" style={{ color: "rgba(26,22,18,0.4)" }}>Pré-rempli à 800 € (honoraires comptable)</p>
                         </div>
                         {/* Total */}
                         {total > 0 && (

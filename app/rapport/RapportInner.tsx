@@ -574,7 +574,7 @@ ${annexeTable}
               ["Charges copro/an (€)", "chargesCopro"],
               ["Apport (€)", "apport"],
               ["Taux d'intérêt (%)", "taux"],
-              ["Ass. emprunteur/an (€)", "assuranceEmprunteur"],
+              ["Ass. emprunteur (% capital)", "assuranceEmprunteur"],
             ] as [string, keyof SimulationForm][]).map(([label, key]) => (
               <div key={key}>
                 <label className={LABEL}>{label}</label>
@@ -609,7 +609,7 @@ ${annexeTable}
               <p className="text-[11px] font-medium uppercase tracking-[0.12em] mb-3" style={{ color: "rgba(26,22,18,0.45)" }}>Autres charges déductibles</p>
             </div>
             {([
-              ["Assurance PNO/GLI (€/an)", "assurancePNO"],
+              ["Assurance Loyer impayé PNO/GLI (€/an)", "assurancePNO"],
               ["Gestion locative (% loyer HC)", "gestionLocativePct"],
               ["Entretien courant (€/an)", "entretienCourant"],
               ["Comptabilité LMNP (€/an)", "comptabilite"],
