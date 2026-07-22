@@ -113,13 +113,15 @@ export default function RapportInner() {
     const lBas   = loyerSaisonnier(nuitee, parseFloat(tauxOccBas)   || 0);
     const lMoyen = loyerSaisonnier(nuitee, parseFloat(tauxOccMoyen) || 0);
     const lHaut  = loyerSaisonnier(nuitee, parseFloat(tauxOccHaut)  || 0);
+    // Don't wipe resultats if price is not filled yet
+    if (lBas === 0 && lMoyen === 0 && lHaut === 0) return;
     setResultatsTriple({
       bas:   computeResultats(form, lBas,   amortPct, amortMode, amortDureeEnsemble, composants),
       moyen: computeResultats(form, lMoyen, amortPct, amortMode, amortDureeEnsemble, composants),
       haut:  computeResultats(form, lHaut,  amortPct, amortMode, amortDureeEnsemble, composants),
     });
-    // Also set resultats to moyen scenario
-    setResultats(computeResultats(form, lMoyen, amortPct, amortMode, amortDureeEnsemble, composants));
+    const rMoyen = computeResultats(form, lMoyen, amortPct, amortMode, amortDureeEnsemble, composants);
+    if (rMoyen) setResultats(rMoyen);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isSaisonnier, form, prixNuitee, tauxOccBas, tauxOccMoyen, tauxOccHaut, amortPct, amortMode, amortDureeEnsemble, composants]);
 
@@ -810,7 +812,10 @@ ${annexeTable}
               ))}
             </div>
 
-            {amortMode === "ensemble" ? (
+            {amortMode === "ensemble" ? (() => {
+              const valAmort = (parseFloat(form.prix) || 0) * amortPct / 100;
+              const annuelAmort = amortDureeEnsemble > 0 ? valAmort / amortDureeEnsemble : 0;
+              return (
               <div className="mb-5 grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className={LABEL}>% amortissable du bien</label>
@@ -830,6 +835,9 @@ ${annexeTable}
                     />
                     <span className="text-sm" style={{ color: "rgba(26,22,18,0.5)" }}>%</span>
                   </div>
+                  <div className="text-xs mt-1.5 font-medium" style={{ color: "#C95B2A" }}>
+                    = {fEur(valAmort)} à amortir
+                  </div>
                 </div>
                 <div>
                   <label className={LABEL}>Durée d&apos;amortissement (ans)</label>
@@ -840,45 +848,60 @@ ${annexeTable}
                     className={INPUT}
                     style={INPUT_STYLE}
                   />
+                  <div className="text-xs mt-1.5 font-medium" style={{ color: "#C95B2A" }}>
+                    = {fEur(annuelAmort)} / an
+                  </div>
                 </div>
               </div>
-            ) : (
+              );
+            })() : (
               <div className="mb-5">
-                <div className="grid grid-cols-[1fr_90px_90px] gap-x-3 mb-2">
+                <div className="grid grid-cols-[1fr_130px_130px] gap-x-3 mb-2">
                   <span className="text-xs font-medium uppercase tracking-wider" style={{ color: "rgba(26,22,18,0.4)" }}>Composant</span>
-                  <span className="text-xs font-medium uppercase tracking-wider text-center" style={{ color: "rgba(26,22,18,0.4)" }}>%</span>
-                  <span className="text-xs font-medium uppercase tracking-wider text-center" style={{ color: "rgba(26,22,18,0.4)" }}>Durée (ans)</span>
+                  <span className="text-xs font-medium uppercase tracking-wider text-center" style={{ color: "rgba(26,22,18,0.4)" }}>% · Montant</span>
+                  <span className="text-xs font-medium uppercase tracking-wider text-center" style={{ color: "rgba(26,22,18,0.4)" }}>Durée · /an</span>
                 </div>
-                {composants.map((c, i) => (
-                  <div key={i} className="grid grid-cols-[1fr_90px_90px] gap-x-3 mb-2 items-center">
-                    <span className="text-sm" style={{ color: "rgba(26,22,18,0.7)" }}>{c.label}</span>
-                    <div className="flex items-center gap-1">
+                {composants.map((c, i) => {
+                  const valAmort = (parseFloat(form.prix) || 0) * amortPct / 100;
+                  const montant = valAmort * c.pct / 100;
+                  const annuel = c.duree > 0 ? montant / c.duree : 0;
+                  return (
+                  <div key={i} className="grid grid-cols-[1fr_130px_130px] gap-x-3 mb-3 items-start">
+                    <span className="text-sm pt-1.5" style={{ color: "rgba(26,22,18,0.7)" }}>{c.label}</span>
+                    <div>
+                      <div className="flex items-center gap-1">
+                        <input
+                          type="number" min={0} max={100}
+                          value={c.pct}
+                          onChange={e => {
+                            const next = [...composants];
+                            next[i] = { ...next[i], pct: Number(e.target.value) };
+                            setComposants(next);
+                          }}
+                          className="w-full px-2 py-1.5 text-sm rounded text-center"
+                          style={{ background: "#EDE7DC", border: "0.5px solid rgba(26,22,18,0.12)", color: "#1A1612" }}
+                        />
+                        <span className="text-xs flex-shrink-0" style={{ color: "rgba(26,22,18,0.4)" }}>%</span>
+                      </div>
+                      <div className="text-xs mt-1 font-medium text-center" style={{ color: "#C95B2A" }}>{fEur(montant)}</div>
+                    </div>
+                    <div>
                       <input
-                        type="number" min={0} max={100}
-                        value={c.pct}
+                        type="number" min={1} max={80}
+                        value={c.duree}
                         onChange={e => {
                           const next = [...composants];
-                          next[i] = { ...next[i], pct: Number(e.target.value) };
+                          next[i] = { ...next[i], duree: Number(e.target.value) };
                           setComposants(next);
                         }}
                         className="w-full px-2 py-1.5 text-sm rounded text-center"
                         style={{ background: "#EDE7DC", border: "0.5px solid rgba(26,22,18,0.12)", color: "#1A1612" }}
                       />
-                      <span className="text-xs" style={{ color: "rgba(26,22,18,0.4)" }}>%</span>
+                      <div className="text-xs mt-1 font-medium text-center" style={{ color: "#C95B2A" }}>{fEur(annuel)}/an</div>
                     </div>
-                    <input
-                      type="number" min={1} max={80}
-                      value={c.duree}
-                      onChange={e => {
-                        const next = [...composants];
-                        next[i] = { ...next[i], duree: Number(e.target.value) };
-                        setComposants(next);
-                      }}
-                      className="w-full px-2 py-1.5 text-sm rounded text-center"
-                      style={{ background: "#EDE7DC", border: "0.5px solid rgba(26,22,18,0.12)", color: "#1A1612" }}
-                    />
                   </div>
-                ))}
+                  );
+                })}
                 <p className="text-xs mt-2" style={{ color: "rgba(26,22,18,0.4)" }}>
                   Total : {composants.reduce((s, c) => s + c.pct, 0)}% (recommandé ≤ 100%)
                 </p>
