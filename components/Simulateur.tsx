@@ -947,29 +947,61 @@ ${annexeTable}
 
                 {/* KPIs */}
                 <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
-                  {[
-                    { label: "Rendement brut", val: formatPct(resultats.rendementBrut), sub: "loyers / investissement" },
-                    { label: "Rendement net", val: formatPct(resultats.rendementNet), sub: "après charges" },
-                    { label: "Impôt estimé annuel", val: formatEuro(resultats.impotReel), sub: `TMI ${form.tmi}% + PS 18,6% (LFSS 2026)` },
-                    { label: "Impôt estimé mensuel", val: formatEuro(resultats.impotReelMensuel), sub: "annuel ÷ 12" },
-                    {
-                      label: "Cash-flow mensuel",
-                      val: formatEuro(resultats.cashflowReelMensuel),
-                      sub: "net régime réel",
-                      positive: resultats.cashflowReelMensuel >= 0,
-                    },
-                  ].map(({ label, val, sub, positive }) => (
-                    <div key={label} className="rounded-xl p-4" style={cardStyle}>
-                      <div className={LABEL}>{label}</div>
-                      <div className="text-xl font-light mt-1" style={{
-                        color: positive !== undefined
-                          ? (positive ? "#1A7A52" : "#B03A2A")
-                          : "#1A1612",
-                        letterSpacing: "-0.02em",
-                      }}>{val}</div>
-                      <div className="text-[11px] mt-1" style={{ color: "rgba(26,22,18,0.40)" }}>{sub}</div>
+                  {/* Rendement brut + net */}
+                  <div className="rounded-xl p-4" style={cardStyle}>
+                    <div className={LABEL}>Rendement</div>
+                    <div className="text-xl font-light mt-1" style={{ color: "#1A1612", letterSpacing: "-0.02em" }}>
+                      {formatPct(resultats.rendementBrut)}
                     </div>
-                  ))}
+                    <div className="text-[11px] mt-0.5" style={{ color: "rgba(26,22,18,0.40)" }}>brut · loyers / investissement</div>
+                    <div className="text-base font-light mt-2" style={{ color: "#C95B2A", letterSpacing: "-0.02em" }}>
+                      {formatPct(resultats.rendementNet)}
+                    </div>
+                    <div className="text-[11px] mt-0.5" style={{ color: "rgba(26,22,18,0.40)" }}>net · après charges</div>
+                  </div>
+
+                  {/* Revenus annuels */}
+                  <div className="rounded-xl p-4" style={cardStyle}>
+                    <div className={LABEL}>Revenus annuels</div>
+                    <div className="text-xl font-light mt-1" style={{ color: "#1A1612", letterSpacing: "-0.02em" }}>
+                      {formatEuro(resultats.loyerAnnuel)}
+                    </div>
+                    <div className="text-[11px] mt-1" style={{ color: "rgba(26,22,18,0.40)" }}>loyers encaissés / an</div>
+                  </div>
+
+                  {/* Charges annuelles */}
+                  <div className="rounded-xl p-4" style={cardStyle}>
+                    <div className={LABEL}>Charges annuelles</div>
+                    <div className="text-xl font-light mt-1" style={{ color: "#B03A2A", letterSpacing: "-0.02em" }}>
+                      {formatEuro(resultats.chargesAnnuelles)}
+                    </div>
+                    <div className="text-[11px] mt-1" style={{ color: "rgba(26,22,18,0.40)" }}>taxe foncière + copro</div>
+                  </div>
+
+                  {/* Impôt annuel + mensuel */}
+                  <div className="rounded-xl p-4" style={cardStyle}>
+                    <div className={LABEL}>Impôt estimé annuel</div>
+                    <div className="text-xl font-light mt-1" style={{ color: "#1A1612", letterSpacing: "-0.02em" }}>
+                      {formatEuro(resultats.impotReel)}
+                    </div>
+                    <div className="text-[11px] mt-0.5" style={{ color: "rgba(26,22,18,0.40)" }}>TMI {form.tmi}% + PS 18,6%</div>
+                    <div className="text-base font-light mt-2" style={{ color: "rgba(26,22,18,0.45)", letterSpacing: "-0.02em" }}>
+                      {formatEuro(resultats.impotReelMensuel)}
+                    </div>
+                    <div className="text-[11px] mt-0.5" style={{ color: "rgba(26,22,18,0.40)" }}>mensuel · annuel ÷ 12</div>
+                  </div>
+
+                  {/* Cash-flow mensuel */}
+                  <div className="rounded-xl p-4" style={cardStyle}>
+                    <div className={LABEL}>Cash-flow mensuel</div>
+                    <div className="text-xl font-light mt-1" style={{
+                      color: resultats.cashflowReelMensuel >= 0 ? "#1A7A52" : "#B03A2A",
+                      letterSpacing: "-0.02em",
+                    }}>
+                      {formatEuro(resultats.cashflowReelMensuel)}
+                    </div>
+                    <div className="text-[11px] mt-1" style={{ color: "rgba(26,22,18,0.40)" }}>net régime réel</div>
+                  </div>
                 </div>
 
                 {/* Loyer slider ou estimations saisonnières */}
