@@ -1047,31 +1047,30 @@ ${annexeTable}
                         </div>
 
                         {/* Gestion locative */}
-                        <div className="flex items-center justify-between gap-3">
-                          <div style={{ flex: 1 }}>
-                            <span className={LABEL} style={{ margin: 0 }}>Gestion locative</span>
-                            <span className="ml-1.5 text-[10px]" style={{ color: "rgba(26,22,18,0.38)" }}>si applicable</span>
-                            {gestionPct > 0 && loyerHC > 0 && (
-                              <span className="ml-2 text-[10px]" style={{ color: "rgba(26,22,18,0.5)" }}>
-                                = {new Intl.NumberFormat("fr-FR", { style: "currency", currency: "EUR", maximumFractionDigits: 0 }).format(gestionLocative)}/an
-                              </span>
-                            )}
+                        <div>
+                          <div className="flex items-center justify-between gap-3">
+                            <label className={LABEL} style={{ margin: 0, flex: 1 }}>Gestion locative</label>
+                            <div className="flex items-center gap-1.5 shrink-0">
+                              <input
+                                type="text" inputMode="decimal"
+                                value={form.gestionLocativePct}
+                                placeholder="Entre 7% et 10%"
+                                onClick={() => { if (!loyerHC) setShowLoyerWarning(true); }}
+                                onChange={e => {
+                                  const v = e.target.value;
+                                  if (/^\d*\.?\d*$/.test(v) && (parseFloat(v) || 0) <= 70)
+                                    updateField("gestionLocativePct", v);
+                                }}
+                                onBlur={() => handleBlur("gestionLocativePct")}
+                                className={INPUT} style={{ ...INPUT_STYLE, width: "88px" }} />
+                              <span className="text-xs" style={{ color: "rgba(26,22,18,0.45)", whiteSpace: "nowrap" }}>% loyer HC</span>
+                            </div>
                           </div>
-                          <div className="flex items-center gap-1.5 shrink-0">
-                            <input
-                              type="text" inputMode="decimal"
-                              value={form.gestionLocativePct}
-                              placeholder="Entre 7% et 10%"
-                              onClick={() => { if (!loyerHC) setShowLoyerWarning(true); }}
-                              onChange={e => {
-                                const v = e.target.value;
-                                if (/^\d*\.?\d*$/.test(v) && (parseFloat(v) || 0) <= 70)
-                                  updateField("gestionLocativePct", v);
-                              }}
-                              onBlur={() => handleBlur("gestionLocativePct")}
-                              className={INPUT} style={{ ...INPUT_STYLE, width: "88px" }} />
-                            <span className="text-xs" style={{ color: "rgba(26,22,18,0.45)", whiteSpace: "nowrap" }}>% loyer HC</span>
-                          </div>
+                          {gestionPct > 0 && loyerHC > 0 && (
+                            <p className="text-xs font-medium mt-1" style={{ color: "#C95B2A" }}>
+                              Soit {new Intl.NumberFormat("fr-FR", { style: "currency", currency: "EUR", maximumFractionDigits: 0 }).format(gestionLocative)}/an
+                            </p>
+                          )}
                         </div>
 
                         {/* Entretien courant */}
