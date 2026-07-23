@@ -1812,8 +1812,8 @@ ${annexeTable}
                         );
                       })()}
 
-                      {/* Récap cards */}
-                      <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+                      {/* Récap cards + bouton — visibles uniquement après choix de méthode */}
+                      {amortMode !== null && <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
                         {[
                           { label: "Bien", val: amortBienDisplay, sub: (amortMode ?? "ensemble") === "ensemble" ? `${amortPct}% prix · ${amortDureeEnsemble} ans` : `${amortPct}% · composants`, color: "#4E1F12" },
                           { label: "Mobilier", val: amortMobilierDisplay, sub: "mobilier · 7 ans", color: "#6B4226" },
@@ -1830,16 +1830,16 @@ ${annexeTable}
                             <div className="text-[11px] mt-1" style={{ color: "rgba(26,22,18,0.38)" }}>{sub}</div>
                           </div>
                         ))}
-                      </div>
+                      </div>}
 
-                      {/* Bouton Ajuster/Valider */}
-                      <div className="flex justify-center">
+                      {/* Bouton Ajuster/Valider — visible uniquement après choix de méthode */}
+                      {amortMode !== null && <div className="flex justify-center">
                         <button onClick={handleAjuster}
                           className="px-10 py-4 text-base font-medium transition-opacity hover:opacity-[0.88] rounded-lg"
                           style={{ backgroundColor: "#C95B2A", color: "#F5F0E8", letterSpacing: "0.02em" }}>
                           Valider la simulation →
                         </button>
-                      </div>
+                      </div>}
                   </div>
                 </div>}
 
