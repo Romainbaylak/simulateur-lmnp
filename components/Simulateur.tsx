@@ -119,7 +119,7 @@ function computeResultats(
   const apport = parseFloat(form.apport) || 0;
   const taux = parseFloat(form.taux) / 100 || 0;
   const taxeFonciere = parseFloat(form.taxeFonciere) || 0;
-  const assurancePNO = parseFloat(form.assurancePNO) || 0;
+  const assurancePNOPct = parseFloat(form.assurancePNO) || 0;
   const gestionLocativePct = parseFloat(form.gestionLocativePct) || 0;
   const entretienCourant = parseFloat(form.entretienCourant) || 0;
   const comptabilite = parseFloat(form.comptabilite) || 0;
@@ -136,6 +136,7 @@ function computeResultats(
   const interetsAnnee1 = calcInteretsAnnee1(montantCredit, taux, form.duree);
   const loyerAnnuel = loyerMensuel * 12;
 
+  const assurancePNO = loyerAnnuel * (assurancePNOPct / 100);
   const gestionLocative = loyerAnnuel * (gestionLocativePct / 100);
   const autresCharges = assurancePNO + gestionLocative + entretienCourant + comptabilite;
   const chargesAnnuelles = taxeFonciere + chargesCopro + autresCharges;
@@ -197,7 +198,7 @@ export default function Simulateur() {
     chargesLoyer: "0",
     taxeFonciere: "",
     tmi: 30,
-    assurancePNO: "0",
+    assurancePNO: "2.5",
     gestionLocativePct: "0",
     entretienCourant: "0",
     comptabilite: "0",
@@ -298,13 +299,11 @@ export default function Simulateur() {
     if (prix > 0) {
       const notaire = Math.round(prix * 0.075);
       const chargesCopro = Math.round(prix * 0.01);
-      const assurancePNO = Math.max(150, Math.round(prix * 0.0015));
       const entretienCourant = Math.round(prix * 0.005);
       setForm(prev => ({
         ...prev,
         notaire: notaire.toString(),
         chargesCopro: chargesCopro.toString(),
-        assurancePNO: assurancePNO.toString(),
         entretienCourant: entretienCourant.toString(),
         comptabilite: prev.comptabilite === "0" || prev.comptabilite === "" ? "800" : prev.comptabilite,
       }));
@@ -989,13 +988,15 @@ ${annexeTable}
 
               {/* Autres charges — expandable */}
               {(() => {
-                const assurancePNO = parseFloat(form.assurancePNO) || 0;
+                const pnoPct = parseFloat(form.assurancePNO) || 0;
                 const gestionPct = parseFloat(form.gestionLocativePct) || 0;
                 const loyerHC = parseFloat(form.loyer) || 0;
-                const gestionLocative = loyerHC * 12 * (gestionPct / 100);
+                const loyerAnnuelUI = loyerHC * 12;
+                const assurancePNOEur = loyerAnnuelUI * (pnoPct / 100);
+                const gestionLocative = loyerAnnuelUI * (gestionPct / 100);
                 const entretien = parseFloat(form.entretienCourant) || 0;
                 const compta = parseFloat(form.comptabilite) || 0;
-                const total = assurancePNO + gestionLocative + entretien + compta;
+                const total = assurancePNOEur + gestionLocative + entretien + compta;
                 return (
                   <div className="rounded-xl overflow-hidden" style={{ border: "0.5px solid rgba(26,22,18,0.12)" }}>
                     <button
@@ -1035,15 +1036,29 @@ ${annexeTable}
                         )}
 
                         {/* Assurance Loyer impayé */}
-                        <div className="flex items-center justify-between gap-3">
-                          <label className={LABEL} style={{ margin: 0, flex: 1 }}>Assurance Loyer impayé (PNO / GLI)</label>
-                          <div className="flex items-center gap-1.5 shrink-0">
-                            <input type="number" value={form.assurancePNO}
-                              onChange={e => updateField("assurancePNO", e.target.value)}
-                              onBlur={() => handleBlur("assurancePNO")}
-                              placeholder="0" className={INPUT} style={{ ...AUTO_STYLE, width: "88px" }} />
-                            <span className="text-xs" style={{ color: "rgba(26,22,18,0.45)", whiteSpace: "nowrap" }}>€/an</span>
+                        <div>
+                          <div className="flex items-center justify-between gap-3">
+                            <label className={LABEL} style={{ margin: 0, flex: 1 }}>Assurance Loyer impayé (PNO / GLI)</label>
+                            <div className="flex items-center gap-1.5 shrink-0">
+                              <input
+                                type="text" inputMode="decimal"
+                                value={form.assurancePNO}
+                                placeholder="~2.5%"
+                                onChange={e => {
+                                  const v = e.target.value;
+                                  if (/^\d*\.?\d*$/.test(v))
+                                    updateField("assurancePNO", v);
+                                }}
+                                onBlur={() => handleBlur("assurancePNO")}
+                                className={INPUT} style={{ ...INPUT_STYLE, width: "88px" }} />
+                              <span className="text-xs" style={{ color: "rgba(26,22,18,0.45)", whiteSpace: "nowrap" }}>% loyer HC</span>
+                            </div>
                           </div>
+                          {pnoPct > 0 && loyerHC > 0 && (
+                            <p className="text-xs font-medium mt-1" style={{ color: "#C95B2A" }}>
+                              Soit {new Intl.NumberFormat("fr-FR", { style: "currency", currency: "EUR", maximumFractionDigits: 0 }).format(assurancePNOEur)}/an
+                            </p>
+                          )}
                         </div>
 
                         {/* Gestion locative */}
@@ -1054,7 +1069,7 @@ ${annexeTable}
                               <input
                                 type="text" inputMode="decimal"
                                 value={form.gestionLocativePct}
-                                placeholder="Entre 7% et 10%"
+                                placeholder="~25%"
                                 onClick={() => { if (!loyerHC) setShowLoyerWarning(true); }}
                                 onChange={e => {
                                   const v = e.target.value;

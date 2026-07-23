@@ -109,7 +109,7 @@ export function computeResultats(
   const apport = parseFloat(form.apport) || 0;
   const taux = parseFloat(form.taux) / 100 || 0;
   const taxeFonciere = parseFloat(form.taxeFonciere) || 0;
-  const assurancePNO = parseFloat(form.assurancePNO) || 0;
+  const assurancePNOPct = parseFloat(form.assurancePNO) || 0;
   const gestionLocativePct = parseFloat(form.gestionLocativePct) || 0;
   const entretienCourant = parseFloat(form.entretienCourant) || 0;
   const comptabilite = parseFloat(form.comptabilite) || 0;
@@ -126,6 +126,7 @@ export function computeResultats(
   const interetsAnnee1 = calcInteretsAnnee1(montantCredit, taux, form.duree);
   const loyerAnnuel = loyerMensuel * 12;
 
+  const assurancePNO = loyerAnnuel * (assurancePNOPct / 100);
   const gestionLocative = loyerAnnuel * (gestionLocativePct / 100);
   const autresCharges = assurancePNO + gestionLocative + entretienCourant + comptabilite;
   const chargesAnnuelles = taxeFonciere + chargesCopro + autresCharges;
