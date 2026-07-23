@@ -198,10 +198,10 @@ export default function Simulateur() {
     chargesLoyer: "0",
     taxeFonciere: "",
     tmi: 30,
-    assurancePNO: "2.5",
-    gestionLocativePct: "0",
-    entretienCourant: "0",
-    comptabilite: "0",
+    assurancePNO: "",
+    gestionLocativePct: "",
+    entretienCourant: "",
+    comptabilite: "",
     assuranceEmprunteur: "0.25",
   });
   const [showAutresCharges, setShowAutresCharges] = useState(false);
@@ -301,13 +301,10 @@ export default function Simulateur() {
     if (prix > 0) {
       const notaire = Math.round(prix * 0.075);
       const chargesCopro = Math.round(prix * 0.01);
-      const entretienCourant = Math.round(prix * 0.005);
       setForm(prev => ({
         ...prev,
         notaire: notaire.toString(),
         chargesCopro: chargesCopro.toString(),
-        entretienCourant: entretienCourant.toString(),
-        comptabilite: prev.comptabilite === "0" || prev.comptabilite === "" ? "800" : prev.comptabilite,
       }));
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -1110,7 +1107,7 @@ ${annexeTable}
                             <input type="number" value={form.entretienCourant}
                               onChange={e => updateField("entretienCourant", e.target.value)}
                               onBlur={() => handleBlur("entretienCourant")}
-                              placeholder="0" className={INPUT} style={{ ...AUTO_STYLE, width: "88px" }} />
+                              placeholder="500" className={INPUT} style={{ ...INPUT_STYLE, width: "88px" }} />
                             <span className="text-xs" style={{ color: "rgba(26,22,18,0.45)", whiteSpace: "nowrap" }}>€/an</span>
                           </div>
                         </div>
@@ -1122,7 +1119,7 @@ ${annexeTable}
                             <input type="number" value={form.comptabilite}
                               onChange={e => updateField("comptabilite", e.target.value)}
                               onBlur={() => handleBlur("comptabilite")}
-                              placeholder="0" className={INPUT} style={{ ...AUTO_STYLE, width: "88px" }} />
+                              placeholder="800" className={INPUT} style={{ ...INPUT_STYLE, width: "88px" }} />
                             <span className="text-xs" style={{ color: "rgba(26,22,18,0.45)", whiteSpace: "nowrap" }}>€/an</span>
                           </div>
                         </div>
@@ -1326,10 +1323,6 @@ ${annexeTable}
                         }
                       }}
                       className="w-full" />
-                    <div className="flex justify-between text-[11px] mt-1" style={{ color: "rgba(26,22,18,0.40)" }}>
-                      <span>Bas marché</span>
-                      <span>Haut marché</span>
-                    </div>
                   </div>
                 ) : null}
 
@@ -1343,9 +1336,9 @@ ${annexeTable}
                       ? `Le régime réel semble plus avantageux pour vous${economy > 0 ? ` : ${formatEuro(economy)}/an d'impôt économisé` : ""}${cfDiff > 0 ? `, cash-flow supérieur de ${formatEuro(cfDiff)}/mois` : ""}.`
                       : `Le Micro-BIC peut être suffisant — écart d'impôt de ${formatEuro(Math.abs(economy))}/an.`;
                     return (
-                      <div className="mb-5">
-                        <h3 className="font-semibold text-base mb-1" style={{ color: "#1A1612" }}>Choisissez votre régime fiscal</h3>
-                        <p className="text-[13px]" style={{ color: "#C95B2A" }}>{recoText}</p>
+                      <div className="mb-6">
+                        <h3 className="font-bold text-xl mb-2" style={{ color: "#1A1612" }}>Choisissez votre régime fiscal</h3>
+                        <p className="text-base font-medium" style={{ color: "#C95B2A" }}>{recoText}</p>
                       </div>
                     );
                   })()}
@@ -1422,17 +1415,14 @@ ${annexeTable}
                       </div>
                     );
                     return (
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <><div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-start">
                         {/* Réel */}
-                        <button
-                          type="button"
-                          onClick={() => setSelectedRegime("reel")}
-                          className="text-left rounded-xl overflow-hidden transition-all hover:opacity-90 focus:outline-none"
+                        <div className="rounded-xl overflow-hidden"
                           style={{
                             border: selectedRegime === "reel" ? "2.5px solid #C95B2A" : "1px solid rgba(201,91,42,0.25)",
                             boxShadow: selectedRegime === "reel" ? "0 0 0 3px rgba(201,91,42,0.15)" : "none",
                           }}>
-                          <div className="flex items-center justify-between px-5 py-3.5" style={{ background: selectedRegime === "reel" ? "#C95B2A" : "rgba(201,91,42,0.08)", borderBottom: selectedRegime === "reel" ? "none" : "1px solid rgba(201,91,42,0.15)" }}>
+                          <div className="flex items-center justify-between px-5 py-3.5" style={{ background: selectedRegime === "reel" ? "#C95B2A" : "rgba(201,91,42,0.08)", borderBottom: "1px solid rgba(201,91,42,0.15)" }}>
                             <span className="font-semibold" style={{ color: selectedRegime === "reel" ? "#F5F0E8" : "#4E1F12", fontSize: 14 }}>Régime réel simplifié</span>
                             <span className="text-[10px] uppercase tracking-[0.12em] font-semibold px-2.5 py-1 rounded" style={{ background: selectedRegime === "reel" ? "rgba(245,240,232,0.25)" : "#C95B2A", color: "#F5F0E8" }}>
                               {selectedRegime === "reel" ? "✓ SÉLECTIONNÉ" : "RECOMMANDÉ"}
@@ -1450,17 +1440,9 @@ ${annexeTable}
                             <Row label="Amortissement à reporter N+1" val={formatEuro(resultats.amortAReporter)} color="#B08A2A" />
                             <Row label="Cash-flow mensuel" val={formatEuro(resultats.cashflowReelMensuel)} bold color={resultats.cashflowReelMensuel >= 0 ? "#1A7A52" : "#B03A2A"} sep />
                           </div>
-                          {selectedRegime !== "reel" && (
-                            <div className="px-5 py-2.5 text-center text-[12px] font-medium" style={{ background: "rgba(201,91,42,0.06)", color: "#C95B2A" }}>
-                              Cliquez pour choisir ce régime →
-                            </div>
-                          )}
-                        </button>
+                        </div>
                         {/* Micro-BIC */}
-                        <button
-                          type="button"
-                          onClick={() => { setSelectedRegime("micro"); setSimulationValidated(true); }}
-                          className="text-left rounded-xl overflow-hidden transition-all hover:opacity-90 focus:outline-none"
+                        <div className="rounded-xl overflow-hidden"
                           style={{
                             border: selectedRegime === "micro" ? "2.5px solid #1A1612" : "0.5px solid rgba(26,22,18,0.1)",
                             boxShadow: selectedRegime === "micro" ? "0 0 0 3px rgba(26,22,18,0.1)" : "none",
@@ -1479,23 +1461,64 @@ ${annexeTable}
                             <Row label="Impôt estimé" val={formatEuro(resultats.impotBIC)} color="#B03A2A" />
                             <Row label="Cash-flow mensuel" val={formatEuro(resultats.cashflowBICMensuel)} bold color={resultats.cashflowBICMensuel >= 0 ? "#1A7A52" : "#B03A2A"} sep />
                           </div>
-                          {selectedRegime !== "micro" && (
-                            <div className="px-5 py-2.5 text-center text-[12px] font-medium" style={{ background: "rgba(26,22,18,0.03)", color: "rgba(26,22,18,0.5)" }}>
-                              Cliquez pour choisir ce régime →
-                            </div>
-                          )}
-                        </button>
+                        </div>
                       </div>
+                      {/* Choix clair du régime en dessous */}
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+                        <button
+                          type="button"
+                          onClick={() => setSelectedRegime("reel")}
+                          className="rounded-xl px-5 py-4 text-left transition-all hover:opacity-90 focus:outline-none"
+                          style={{
+                            background: selectedRegime === "reel" ? "#C95B2A" : "rgba(201,91,42,0.07)",
+                            border: selectedRegime === "reel" ? "2px solid #C95B2A" : "1.5px solid rgba(201,91,42,0.3)",
+                          }}>
+                          <div className="flex items-center justify-between">
+                            <span className="font-bold text-[15px]" style={{ color: selectedRegime === "reel" ? "#F5F0E8" : "#4E1F12" }}>
+                              {selectedRegime === "reel" ? "✓ " : ""}Régime réel simplifié
+                            </span>
+                            {selectedRegime !== "reel" && <span className="text-xs font-semibold px-2.5 py-1 rounded" style={{ background: "#C95B2A", color: "#F5F0E8" }}>Choisir →</span>}
+                          </div>
+                          <div className="flex gap-6 mt-2">
+                            <div>
+                              <div className="text-xs font-medium" style={{ color: selectedRegime === "reel" ? "rgba(245,240,232,0.7)" : "rgba(26,22,18,0.5)" }}>Impôt</div>
+                              <div className="text-base font-bold" style={{ color: selectedRegime === "reel" ? "#F5F0E8" : "#B03A2A" }}>{formatEuro(resultats.impotReel)}/an</div>
+                            </div>
+                            <div>
+                              <div className="text-xs font-medium" style={{ color: selectedRegime === "reel" ? "rgba(245,240,232,0.7)" : "rgba(26,22,18,0.5)" }}>Cash-flow</div>
+                              <div className="text-base font-bold" style={{ color: selectedRegime === "reel" ? "#F5F0E8" : (resultats.cashflowReelMensuel >= 0 ? "#1A7A52" : "#B03A2A") }}>{formatEuro(resultats.cashflowReelMensuel)}/mois</div>
+                            </div>
+                          </div>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => { setSelectedRegime("micro"); setSimulationValidated(true); }}
+                          className="rounded-xl px-5 py-4 text-left transition-all hover:opacity-90 focus:outline-none"
+                          style={{
+                            background: selectedRegime === "micro" ? "#1A1612" : "rgba(26,22,18,0.04)",
+                            border: selectedRegime === "micro" ? "2px solid #1A1612" : "1.5px solid rgba(26,22,18,0.15)",
+                          }}>
+                          <div className="flex items-center justify-between">
+                            <span className="font-bold text-[15px]" style={{ color: selectedRegime === "micro" ? "#F5F0E8" : "#1A1612" }}>
+                              {selectedRegime === "micro" ? "✓ " : ""}Micro-BIC 2025
+                            </span>
+                            {selectedRegime !== "micro" && <span className="text-xs font-semibold px-2.5 py-1 rounded" style={{ background: "rgba(26,22,18,0.12)", color: "rgba(26,22,18,0.65)" }}>Choisir →</span>}
+                          </div>
+                          <div className="flex gap-6 mt-2">
+                            <div>
+                              <div className="text-xs font-medium" style={{ color: selectedRegime === "micro" ? "rgba(245,240,232,0.6)" : "rgba(26,22,18,0.5)" }}>Impôt</div>
+                              <div className="text-base font-bold" style={{ color: selectedRegime === "micro" ? "#F5F0E8" : "#B03A2A" }}>{formatEuro(resultats.impotBIC)}/an</div>
+                            </div>
+                            <div>
+                              <div className="text-xs font-medium" style={{ color: selectedRegime === "micro" ? "rgba(245,240,232,0.6)" : "rgba(26,22,18,0.5)" }}>Cash-flow</div>
+                              <div className="text-base font-bold" style={{ color: selectedRegime === "micro" ? "#F5F0E8" : (resultats.cashflowBICMensuel >= 0 ? "#1A7A52" : "#B03A2A") }}>{formatEuro(resultats.cashflowBICMensuel)}/mois</div>
+                            </div>
+                          </div>
+                        </button>
+                      </div></>
                     );
                   })()}
 
-                  <div className="mt-4 text-[13px]">
-                    <Link href="/comment-ca-marche"
-                      className="inline-flex items-center gap-1 font-medium underline"
-                      style={{ color: "#C95B2A" }}>
-                      En savoir plus → Grandes Lignes du LMNP
-                    </Link>
-                  </div>
                 </div>
 
                 {/* Amortissement — réel uniquement */}
@@ -1506,66 +1529,28 @@ ${annexeTable}
                   </p>
                 </div>}
                 {selectedRegime === "reel" && <div className="rounded-xl overflow-hidden" style={cardStyle}>
-                  <button onClick={() => {
-                    if (showAmort) { setShowAmort(false); return; }
-                    setShowAmort(true);
-                  }}
-                    className="w-full flex justify-between items-center p-5 text-left transition-all hover:opacity-95"
-                    style={{ background: "linear-gradient(90deg, #4E1F12 0%, rgba(201,91,42,0.85) 100%)" }}>
-                    <div className="flex items-center gap-3">
-                      <div className="w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0 text-lg"
-                        style={{ background: "rgba(245,240,232,0.18)", color: "#F5F0E8" }}>⚙</div>
-                      <div>
-                        <div className="font-bold text-base"
-                          style={{ color: "#F5F0E8", letterSpacing: "-0.01em" }}>Amortissement LMNP</div>
-                        <div className="text-[13px] mt-0.5 font-medium" style={{ color: "rgba(245,240,232,0.75)" }}>
-                          Configurez vos durées · Optimisez votre impôt
-                        </div>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-3">
-                      <span className="text-sm font-medium px-4 py-2 rounded-lg hidden sm:inline-block"
-                        style={{ background: "#EDE7DC", color: "#C95B2A" }}>
-                        {showAmort ? "Réduire" : "Configurer →"}
-                      </span>
-                      <span style={{ color: "#F5F0E8", fontSize: 14, fontWeight: 700 }}>{showAmort ? "▲" : "▼"}</span>
-                    </div>
-                  </button>
-                  {showAmort && (
-                    <div className="px-5 pb-5 space-y-4" style={{ borderTop: "0.5px solid rgba(26,22,18,0.08)" }}>
+                  <div className="px-5 pt-5 pb-5 space-y-4">
 
-                      {/* OBJECTIF */}
-                      <div className="rounded-lg p-4 mt-4" style={{ background: "rgba(201,91,42,0.08)", border: "1px solid rgba(201,91,42,0.25)" }}>
-                        {isSaisonnier ? (
-                          <>
-                            <div className="font-bold text-sm mb-2 uppercase tracking-wide" style={{ color: "#C95B2A" }}>
-                              Objectif : Diminuer la base imposable à moyen / long terme pour diminuer l&apos;impôt
-                            </div>
-                            <p className="text-[13px]" style={{ color: "#C95B2A", lineHeight: 1.7 }}>
-                              Ajuste tes durées d&apos;amortissement pour réduire au maximum ta base imposable chaque année.
+                      {/* Explications méthodes — au-dessus des boutons */}
+                      <div>
+                        {amortMode === "ensemble" && (
+                          <div className="rounded-xl p-4 mb-4" style={{ background: "rgba(201,91,42,0.06)", border: "1px solid rgba(201,91,42,0.18)" }}>
+                            <div className="font-bold text-base mb-1" style={{ color: "#4E1F12" }}>Méthode globale (simplifiée)</div>
+                            <p className="text-[14px] leading-relaxed" style={{ color: "rgba(26,22,18,0.65)" }}>
+                              Tolérée pour les petits biens gérés sans comptable. Le bien est amorti en une seule fois sur la durée choisie. Simple, mais moins optimisé. Idéalement, privilégiez la méthode <strong>par composant</strong> pour réduire davantage votre base imposable.
                             </p>
-                          </>
-                        ) : (
-                          <>
-                            <div className="font-bold text-sm mb-2 uppercase tracking-wide" style={{ color: "#C95B2A" }}>
-                              OBJECTIF : Payer 0 € d&apos;impôt
-                            </div>
-                            <p className="text-[13px]" style={{ color: "#C95B2A", lineHeight: 1.7 }}>
-                              L&apos;objectif est clair ici : joue avec les durées d&apos;amortissement, quitte à les raccourcir pour réduire la base imposable et diminuer l&apos;impôt.
-                            </p>
-                          </>
+                          </div>
                         )}
-                        <p className="text-[12px] mt-3" style={{ color: "rgba(26,22,18,0.45)", lineHeight: 1.65 }}>
-                          Les amortissements déduits pendant la détention sont réintégrés dans le calcul de la plus-value à la revente. Des abattements pour durée de détention s&apos;appliquent néanmoins.{" "}
-                          <Link href="/blog/revente-lmnp-plus-value" className="underline font-medium" style={{ color: "#C95B2A" }}>
-                            En savoir plus →
-                          </Link>
-                        </p>
-                      </div>
-
-                      {/* Toggle mode */}
-                      <div>
-                        <div className="flex gap-2 mb-2">
+                        {amortMode === "composant" && (
+                          <div className="rounded-xl p-4 mb-4" style={{ background: "rgba(26,122,82,0.06)", border: "1px solid rgba(26,122,82,0.2)" }}>
+                            <div className="font-bold text-base mb-1" style={{ color: "#1A7A52" }}>Méthode par composant (optimale)</div>
+                            <p className="text-[14px] leading-relaxed" style={{ color: "rgba(26,22,18,0.65)" }}>
+                              Méthode recommandée par les experts LMNP. Répartissez les <strong>%</strong> de la valeur amortissable entre chaque composant (gros œuvre, toiture, aménagement…), puis indiquez la <strong>durée en années</strong> sur laquelle vous souhaitez l&apos;amortir. Le total des % doit atteindre 100 %.
+                            </p>
+                          </div>
+                        )}
+                        {/* Toggle mode */}
+                        <div className="flex gap-2">
                           {(["ensemble", "composant"] as const).map(mode => (
                             <button key={mode} onClick={() => setAmortMode(mode)}
                               className="px-5 py-2.5 rounded-lg text-sm font-semibold transition-all"
@@ -1577,16 +1562,6 @@ ${annexeTable}
                             </button>
                           ))}
                         </div>
-                        {amortMode === "ensemble" && (
-                          <p className="text-[12px] leading-relaxed" style={{ color: "rgba(26,22,18,0.5)" }}>
-                            Méthode simplifiée — tolérée pour les petits biens gérés sans comptable. Idéalement, privilégiez la méthode <strong>par composant</strong> pour optimiser davantage.
-                          </p>
-                        )}
-                        {amortMode === "composant" && (
-                          <p className="text-[12px] leading-relaxed" style={{ color: "rgba(26,22,18,0.5)" }}>
-                            Méthode optimale. Répartissez les <strong>%</strong> de la valeur amortissable entre chaque composant, puis indiquez la <strong>durée en années</strong> sur laquelle vous souhaitez l&apos;amortir. Le total des % doit atteindre 100 %.
-                          </p>
-                        )}
                       </div>
 
                       {/* Bien immobilier — commun aux deux modes */}
@@ -1651,13 +1626,14 @@ ${annexeTable}
                             {/* Résultats sous le slider (mode ensemble uniquement) */}
                             {amortMode === "ensemble" && (
                               <div className="grid grid-cols-2 gap-3">
-                                <div className="rounded-lg p-3 text-center" style={{ background: "#EDE7DC", border: "0.5px solid rgba(26,22,18,0.08)" }}>
-                                  <div className="text-[10px] uppercase tracking-[0.12em] mb-1" style={{ color: "rgba(26,22,18,0.45)" }}>Valeur amortissable</div>
-                                  <div className="text-base font-semibold" style={{ color: "#1A1612" }}>{formatEuro(valAmort)}</div>
+                                <div className="rounded-lg p-4 text-center" style={{ background: "linear-gradient(135deg, #4E1F12 0%, #C95B2A 100%)", border: "2px solid #C95B2A", boxShadow: "0 2px 12px rgba(201,91,42,0.25)" }}>
+                                  <div className="text-[11px] uppercase tracking-[0.14em] mb-1.5 font-semibold" style={{ color: "rgba(245,240,232,0.75)" }}>Valeur amortissable</div>
+                                  <div className="text-xl font-bold" style={{ color: "#F5F0E8", letterSpacing: "-0.02em" }}>{formatEuro(valAmort)}</div>
+                                  <div className="text-[10px] mt-1" style={{ color: "rgba(245,240,232,0.55)" }}>Terrain exclus ({100 - amortPct}%)</div>
                                 </div>
-                                <div className="rounded-lg p-3 text-center" style={{ background: "rgba(201,91,42,0.08)", border: "1px solid rgba(201,91,42,0.2)" }}>
+                                <div className="rounded-lg p-4 text-center" style={{ background: "rgba(201,91,42,0.08)", border: "1px solid rgba(201,91,42,0.2)" }}>
                                   <div className="text-[10px] uppercase tracking-[0.12em] mb-1" style={{ color: "#C95B2A" }}>Amortissement / an</div>
-                                  <div className="text-base font-bold" style={{ color: "#C95B2A" }}>{formatEuro(amortDureeEnsemble > 0 ? valAmort / amortDureeEnsemble : 0)}</div>
+                                  <div className="text-xl font-bold" style={{ color: "#C95B2A" }}>{formatEuro(amortDureeEnsemble > 0 ? valAmort / amortDureeEnsemble : 0)}</div>
                                 </div>
                               </div>
                             )}
@@ -1765,8 +1741,7 @@ ${annexeTable}
                           Valider la simulation →
                         </button>
                       </div>
-                    </div>
-                  )}
+                  </div>
                 </div>}
 
               </div>{/* end space-y-5 */}
