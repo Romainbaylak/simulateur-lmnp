@@ -1508,11 +1508,10 @@ ${annexeTable}
                                 {selectedRegime === "reel" ? (
                                   <>
                                     <Row label="Loyers annuels" val={formatEuro(resultats.loyerAnnuel)} bold />
-                                    <div className="flex justify-between items-baseline py-2.5">
-                                      <span className="text-sm pr-3" style={{ color: "rgba(26,22,18,0.58)", fontSize: 13 }}>
-                                        Emprunt <span style={{ color: "rgba(26,22,18,0.38)", fontSize: 11 }}>dont {formatEuro(resultats.interetsAnnee1)} d&apos;intérêts</span>
-                                      </span>
-                                      <span className="text-sm whitespace-nowrap" style={{ fontSize: 13, color: "#B03A2A" }}>{`−${formatEuro(resultats.creditAnnuel)}`}</span>
+                                    <Row label="Emprunt" val={`−${formatEuro(resultats.creditAnnuel)}`} color="#B03A2A" />
+                                    <div className="pl-3 -mt-1 pb-2">
+                                      <span className="text-[12px]" style={{ color: "rgba(26,22,18,0.45)" }}>Dont frais d&apos;emprunt </span>
+                                      <span className="text-[13px] font-semibold" style={{ color: "#B03A2A" }}>{formatEuro(resultats.interetsAnnee1)}</span>
                                     </div>
                                     <Row label="Charges déductibles" val={`−${formatEuro(resultats.chargesDeductibles)}`} color="#B03A2A" />
                                     <Row label="Résultat avant amortissement" val={formatEuro(resultats.resultatAvantAmort)} bold color={resultats.resultatAvantAmort >= 0 ? "#1A1612" : "#B03A2A"} sep />
@@ -1525,11 +1524,10 @@ ${annexeTable}
                                 ) : (
                                   <>
                                     <Row label="Loyers annuels" val={formatEuro(resultats.loyerAnnuel)} bold />
-                                    <div className="flex justify-between items-baseline py-2.5">
-                                      <span className="text-sm pr-3" style={{ color: "rgba(26,22,18,0.58)", fontSize: 13 }}>
-                                        Emprunt <span style={{ color: "rgba(26,22,18,0.38)", fontSize: 11 }}>dont {formatEuro(resultats.interetsAnnee1)} d&apos;intérêts</span>
-                                      </span>
-                                      <span className="text-sm whitespace-nowrap" style={{ fontSize: 13, color: "#B03A2A" }}>{`−${formatEuro(resultats.creditAnnuel)}`}</span>
+                                    <Row label="Emprunt" val={`−${formatEuro(resultats.creditAnnuel)}`} color="#B03A2A" />
+                                    <div className="pl-3 -mt-1 pb-2">
+                                      <span className="text-[12px]" style={{ color: "rgba(26,22,18,0.45)" }}>Dont frais d&apos;emprunt </span>
+                                      <span className="text-[13px] font-semibold" style={{ color: "#B03A2A" }}>{formatEuro(resultats.interetsAnnee1)}</span>
                                     </div>
                                     <Row label="Base imposable (70% loyers)" val={formatEuro(resultats.baseBIC)} bold sep />
                                     <Row label="Impôt estimé" val={formatEuro(resultats.impotBIC)} color="#B03A2A" />
