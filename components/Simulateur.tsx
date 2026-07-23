@@ -1193,10 +1193,11 @@ ${annexeTable}
                     style={{ background: verdict.bg, color: "#F5F0E8" }}>
                     <span className="text-2xl font-bold">{verdict.icon}</span>
                     <div>
-                      <div className="font-medium text-lg">{verdict.label}</div>
-                      <div className="text-sm" style={{ opacity: 0.85 }}>
-                        Rendement net {formatPct(resultats.rendementNet)} · Cash-flow {formatEuro(displayCashflow)}/mois
-                        {selectedRegime ? ` · ${selectedRegime === "reel" ? "Régime réel" : "Micro-BIC"}` : ""}
+                      <div className="font-bold text-xl">{verdict.label}</div>
+                      <div className="text-[14px] mt-0.5" style={{ color: "rgba(245,240,232,0.8)" }}>
+                        Rendement net <span className="font-bold" style={{ color: "#F5A623" }}>{formatPct(resultats.rendementNet)}</span>
+                        {" · "}Cash-flow <span className="font-bold" style={{ color: "#F5A623" }}>{formatEuro(displayCashflow)}/mois</span>
+                        {selectedRegime ? <> · <span style={{ color: "rgba(245,240,232,0.65)" }}>{selectedRegime === "reel" ? "Régime réel" : "Micro-BIC"}</span></> : ""}
                       </div>
                     </div>
                   </div>
