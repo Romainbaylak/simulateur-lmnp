@@ -1204,7 +1204,7 @@ ${annexeTable}
                 )}
 
                 {/* KPIs */}
-                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
                   {/* Rendement brut + net */}
                   <div className="rounded-xl p-4" style={cardStyle}>
                     <div className={LABEL}>Rendement</div>
@@ -1225,6 +1225,18 @@ ${annexeTable}
                       {formatEuro(resultats.loyerAnnuel)}
                     </div>
                     <div className="text-[11px] mt-1" style={{ color: "rgba(26,22,18,0.40)" }}>loyers encaissés / an</div>
+                  </div>
+
+                  {/* Emprunt annuel */}
+                  <div className="rounded-xl p-4" style={cardStyle}>
+                    <div className={LABEL}>Emprunt annuel</div>
+                    <div className="text-xl font-light mt-1" style={{ color: "#B03A2A", letterSpacing: "-0.02em" }}>
+                      {formatEuro(resultats.creditAnnuel + resultats.assuranceEmprunteurAnnuel)}
+                    </div>
+                    <div className="text-[11px] mt-0.5" style={{ color: "rgba(26,22,18,0.40)" }}>mensualités + assurance emprunt</div>
+                    <div className="text-[11px] mt-1.5" style={{ color: "rgba(26,22,18,0.35)" }}>
+                      soit {formatEuro((resultats.creditAnnuel + resultats.assuranceEmprunteurAnnuel) / 12)}/mois
+                    </div>
                   </div>
 
                   {/* Charges annuelles */}
