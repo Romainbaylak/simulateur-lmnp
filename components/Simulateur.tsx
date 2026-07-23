@@ -368,7 +368,7 @@ export default function Simulateur() {
       if (loyerMensuel > 0) setSliderMax(Math.max(loyerMensuel * 2, 200));
     }
     setSimulationValidated(true);
-    resultsRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+    setTimeout(() => resultsRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }), 50);
   };
 
   const displayCashflow = resultats
@@ -1057,7 +1057,7 @@ ${annexeTable}
                                 value={form.assurancePNO}
                                 placeholder="~2.5%"
                                 onChange={e => {
-                                  const v = e.target.value;
+                                  const v = e.target.value.replace(",", ".");
                                   if (/^\d*\.?\d*$/.test(v))
                                     updateField("assurancePNO", v);
                                 }}
@@ -1084,7 +1084,7 @@ ${annexeTable}
                                 placeholder="~25%"
                                 onClick={() => { if (!loyerHC) setShowLoyerWarning(true); }}
                                 onChange={e => {
-                                  const v = e.target.value;
+                                  const v = e.target.value.replace(",", ".");
                                   if (/^\d*\.?\d*$/.test(v) && (parseFloat(v) || 0) <= 70)
                                     updateField("gestionLocativePct", v);
                                 }}
@@ -1142,7 +1142,7 @@ ${annexeTable}
         </div>
 
         {/* ─── BOUTON SIMULER ─── */}
-        <div className="text-center mb-10">
+        <div className="flex justify-end mb-10">
           <button onClick={handleSimuler}
             className="px-10 py-4 text-base font-medium transition-opacity hover:opacity-[0.88]"
             style={{ backgroundColor: "#C95B2A", color: "#F5F0E8", borderRadius: 8, letterSpacing: "0.02em" }}>
@@ -1328,20 +1328,6 @@ ${annexeTable}
 
                 {/* Comparaison régimes + choix */}
                 <div className="rounded-xl p-5" style={cardStyle}>
-                  {!isSaisonnier && (() => {
-                    const economy = resultats.impotBIC - resultats.impotReel;
-                    const cfDiff = resultats.cashflowReelMensuel - resultats.cashflowBICMensuel;
-                    const reelBetter = economy > 0 || (economy === 0 && cfDiff >= 0);
-                    const recoText = reelBetter
-                      ? `Le régime réel semble plus avantageux pour vous${economy > 0 ? ` : ${formatEuro(economy)}/an d'impôt économisé` : ""}${cfDiff > 0 ? `, cash-flow supérieur de ${formatEuro(cfDiff)}/mois` : ""}.`
-                      : `Le Micro-BIC peut être suffisant — écart d'impôt de ${formatEuro(Math.abs(economy))}/an.`;
-                    return (
-                      <div className="mb-6">
-                        <h3 className="font-bold text-xl mb-2" style={{ color: "#1A1612" }}>Choisissez votre régime fiscal</h3>
-                        <p className="text-base font-medium" style={{ color: "#C95B2A" }}>{recoText}</p>
-                      </div>
-                    );
-                  })()}
                   {isSaisonnier && <h3 className="font-medium text-[#1A1612] mb-4">Comparaison des régimes fiscaux</h3>}
 
                   {isSaisonnier && resultatsTriple ? (() => {
@@ -1387,17 +1373,14 @@ ${annexeTable}
                         {scenarios.map(sc => (
                           <div key={sc.label} className="rounded-xl overflow-hidden flex flex-col"
                             style={{ border: `1.5px solid ${sc.border}`, background: sc.accent }}>
-                            {/* Column header */}
                             <div className="px-3 py-3 text-center" style={{ borderBottom: `1px solid ${sc.border}` }}>
                               <div className="text-[11px] font-bold uppercase tracking-[0.12em]" style={{ color: sc.tagColor }}>{sc.label}</div>
                               {sc.r && <div className="text-base font-semibold mt-0.5" style={{ color: sc.tagColor }}>{formatEuro(sc.r.loyerAnnuel)}/an</div>}
                             </div>
-                            {/* Réel block */}
                             <div className="px-3 pt-2 pb-3" style={{ borderBottom: `1px solid ${sc.border}` }}>
                               <div className="text-[10px] font-semibold uppercase tracking-[0.1em] mb-2" style={{ color: "#4E1F12" }}>Régime réel <span className="px-1.5 py-0.5 rounded text-[9px]" style={{ background: "#C95B2A", color: "#F5F0E8" }}>Recommandé</span></div>
                               <RegimeRow sc={sc} isReel={true} />
                             </div>
-                            {/* BIC block */}
                             <div className="px-3 pt-2 pb-3">
                               <div className="text-[10px] font-semibold uppercase tracking-[0.1em] mb-2" style={{ color: "rgba(26,22,18,0.5)" }}>Micro-BIC 2025 <span className="px-1.5 py-0.5 rounded text-[9px]" style={{ background: "rgba(26,22,18,0.08)", color: "rgba(26,22,18,0.5)" }}>Abatt. 30%</span></div>
                               <RegimeRow sc={sc} isReel={false} />
@@ -1407,6 +1390,14 @@ ${annexeTable}
                       </div>
                     );
                   })() : (() => {
+                    const economy = resultats.impotBIC - resultats.impotReel;
+                    const cfDiff = resultats.cashflowReelMensuel - resultats.cashflowBICMensuel;
+                    const reelBetter = economy > 0 || (economy === 0 && cfDiff >= 0);
+                    const bestLabel = reelBetter ? "Régime Réel Simplifié" : "Micro-BIC 2025";
+                    const bestColor = reelBetter ? "#C95B2A" : "#1A1612";
+                    const bestBg = reelBetter ? "rgba(201,91,42,0.06)" : "rgba(26,22,18,0.04)";
+                    const bestBorder = reelBetter ? "rgba(201,91,42,0.3)" : "rgba(26,22,18,0.2)";
+
                     const Row = ({ label, val, color, bold, sep, indent }: { label: string; val: string; color?: string; bold?: boolean; sep?: boolean; indent?: boolean }) => (
                       <div className={`flex justify-between items-baseline py-2.5${indent ? " pl-4" : ""}${sep ? " mt-1" : ""}`}
                         style={{ borderTop: sep ? "1px solid rgba(26,22,18,0.09)" : undefined }}>
@@ -1414,153 +1405,197 @@ ${annexeTable}
                         <span className="text-sm whitespace-nowrap" style={{ fontSize: 13, fontWeight: bold ? 600 : 400, color: color ?? "#1A1612" }}>{val}</span>
                       </div>
                     );
+
                     return (
-                      <><div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-start">
-                        {/* Réel */}
-                        <div className="rounded-xl overflow-hidden"
-                          style={{
-                            border: selectedRegime === "reel" ? "2.5px solid #C95B2A" : "1px solid rgba(201,91,42,0.25)",
-                            boxShadow: selectedRegime === "reel" ? "0 0 0 3px rgba(201,91,42,0.15)" : "none",
-                          }}>
-                          <div className="flex items-center justify-between px-5 py-3.5" style={{ background: selectedRegime === "reel" ? "#C95B2A" : "rgba(201,91,42,0.08)", borderBottom: "1px solid rgba(201,91,42,0.15)" }}>
-                            <span className="font-semibold" style={{ color: selectedRegime === "reel" ? "#F5F0E8" : "#4E1F12", fontSize: 14 }}>Régime réel simplifié</span>
-                            <span className="text-[10px] uppercase tracking-[0.12em] font-semibold px-2.5 py-1 rounded" style={{ background: selectedRegime === "reel" ? "rgba(245,240,232,0.25)" : "#C95B2A", color: "#F5F0E8" }}>
-                              {selectedRegime === "reel" ? "✓ SÉLECTIONNÉ" : "RECOMMANDÉ"}
-                            </span>
-                          </div>
-                          <div className="px-5 divide-y-0" style={{ background: "#FDFAF6" }}>
-                            <Row label="Loyers annuels" val={formatEuro(resultats.loyerAnnuel)} bold />
-                            <Row label="Emprunt" val={`−${formatEuro(resultats.creditAnnuel)}`} color="#B03A2A" />
-                            <Row label="Dont frais d'emprunt" val={formatEuro(resultats.interetsAnnee1)} indent />
-                            <Row label="Charges déductibles" val={`−${formatEuro(resultats.chargesDeductibles)}`} color="#B03A2A" />
-                            <Row label="Résultat avant amortissement" val={formatEuro(resultats.resultatAvantAmort)} bold color={resultats.resultatAvantAmort >= 0 ? "#1A1612" : "#B03A2A"} sep />
-                            <Row label="Amortissements (Bien, travaux, mobilier, notaire)" val={`−${formatEuro(resultats.amortTotal)}`} color="#B03A2A" />
-                            <Row label="Base imposable" val={formatEuro(resultats.baseImposableReel)} bold sep />
-                            <Row label="Impôt estimé" val={formatEuro(resultats.impotReel)} color="#B03A2A" />
-                            <Row label="Amortissement à reporter N+1" val={formatEuro(resultats.amortAReporter)} color="#B08A2A" />
-                            <Row label="Cash-flow mensuel" val={formatEuro(resultats.cashflowReelMensuel)} bold color={resultats.cashflowReelMensuel >= 0 ? "#1A7A52" : "#B03A2A"} sep />
+                      <>
+                        {/* Recommandation banner */}
+                        <div className="rounded-xl px-5 py-4 mb-5" style={{ background: bestBg, border: `1.5px solid ${bestBorder}` }}>
+                          <div className="text-xs font-semibold uppercase tracking-[0.14em] mb-1" style={{ color: "rgba(26,22,18,0.45)" }}>Régime le plus adapté à votre situation</div>
+                          <div className="text-2xl font-black" style={{ color: bestColor, letterSpacing: "-0.02em" }}>{bestLabel}</div>
+                          <div className="text-sm mt-1 font-medium" style={{ color: "rgba(26,22,18,0.6)" }}>
+                            {reelBetter
+                              ? `${economy > 0 ? `${formatEuro(economy)}/an d'impôt économisé` : ""}${cfDiff > 0 ? `${economy > 0 ? " · " : ""}Cash-flow supérieur de ${formatEuro(cfDiff)}/mois` : ""}`
+                              : `Micro-BIC suffisant — écart d'impôt de ${formatEuro(Math.abs(economy))}/an`}
                           </div>
                         </div>
-                        {/* Micro-BIC */}
-                        <div className="rounded-xl overflow-hidden"
-                          style={{
-                            border: selectedRegime === "micro" ? "2.5px solid #1A1612" : "0.5px solid rgba(26,22,18,0.1)",
-                            boxShadow: selectedRegime === "micro" ? "0 0 0 3px rgba(26,22,18,0.1)" : "none",
-                          }}>
-                          <div className="flex items-center justify-between px-5 py-3.5" style={{ background: selectedRegime === "micro" ? "#1A1612" : "#EDE7DC", borderBottom: "0.5px solid rgba(26,22,18,0.1)" }}>
-                            <span className="font-semibold" style={{ color: selectedRegime === "micro" ? "#F5F0E8" : "#1A1612", fontSize: 14 }}>Micro-BIC 2025</span>
-                            <span className="text-[10px] uppercase tracking-[0.12em] font-semibold px-2.5 py-1 rounded"
-                              style={{ background: selectedRegime === "micro" ? "rgba(245,240,232,0.15)" : "rgba(26,22,18,0.1)", color: selectedRegime === "micro" ? "#F5F0E8" : "rgba(26,22,18,0.55)" }}>
-                              {selectedRegime === "micro" ? "✓ SÉLECTIONNÉ" : "ABATTEMENT 30%"}
-                            </span>
-                          </div>
-                          <div className="px-5" style={{ background: "#FDFAF6" }}>
-                            <Row label="Loyers annuels" val={formatEuro(resultats.loyerAnnuel)} bold />
-                            <Row label="Emprunt" val={`−${formatEuro(resultats.creditAnnuel)}`} color="#B03A2A" />
-                            <Row label="Base imposable" val={formatEuro(resultats.baseBIC)} bold sep />
-                            <Row label="Impôt estimé" val={formatEuro(resultats.impotBIC)} color="#B03A2A" />
-                            <Row label="Cash-flow mensuel" val={formatEuro(resultats.cashflowBICMensuel)} bold color={resultats.cashflowBICMensuel >= 0 ? "#1A7A52" : "#B03A2A"} sep />
-                          </div>
-                        </div>
-                      </div>
-                      {/* Choix clair du régime en dessous */}
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
-                        <button
-                          type="button"
-                          onClick={() => setSelectedRegime("reel")}
-                          className="rounded-xl px-5 py-4 text-left transition-all hover:opacity-90 focus:outline-none"
-                          style={{
-                            background: selectedRegime === "reel" ? "#C95B2A" : "rgba(201,91,42,0.07)",
-                            border: selectedRegime === "reel" ? "2px solid #C95B2A" : "1.5px solid rgba(201,91,42,0.3)",
-                          }}>
-                          <div className="flex items-center justify-between">
-                            <span className="font-bold text-[15px]" style={{ color: selectedRegime === "reel" ? "#F5F0E8" : "#4E1F12" }}>
-                              {selectedRegime === "reel" ? "✓ " : ""}Régime réel simplifié
-                            </span>
-                            {selectedRegime !== "reel" && <span className="text-xs font-semibold px-2.5 py-1 rounded" style={{ background: "#C95B2A", color: "#F5F0E8" }}>Choisir →</span>}
-                          </div>
-                          <div className="flex gap-6 mt-2">
-                            <div>
-                              <div className="text-xs font-medium" style={{ color: selectedRegime === "reel" ? "rgba(245,240,232,0.7)" : "rgba(26,22,18,0.5)" }}>Impôt</div>
-                              <div className="text-base font-bold" style={{ color: selectedRegime === "reel" ? "#F5F0E8" : "#B03A2A" }}>{formatEuro(resultats.impotReel)}/an</div>
+
+                        {/* "Fais ton choix" + tableaux */}
+                        {selectedRegime === null ? (
+                          <>
+                            <div className="text-center mb-4">
+                              <span className="text-base font-semibold" style={{ color: "#1A1612" }}>Fais ton choix de régime fiscal</span>
                             </div>
-                            <div>
-                              <div className="text-xs font-medium" style={{ color: selectedRegime === "reel" ? "rgba(245,240,232,0.7)" : "rgba(26,22,18,0.5)" }}>Cash-flow</div>
-                              <div className="text-base font-bold" style={{ color: selectedRegime === "reel" ? "#F5F0E8" : (resultats.cashflowReelMensuel >= 0 ? "#1A7A52" : "#B03A2A") }}>{formatEuro(resultats.cashflowReelMensuel)}/mois</div>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-start">
+                              {/* Réel — clickable */}
+                              <button type="button" onClick={() => setSelectedRegime("reel")}
+                                className="rounded-xl overflow-hidden text-left w-full transition-all hover:shadow-md focus:outline-none group"
+                                style={{ border: "2px solid rgba(201,91,42,0.35)" }}>
+                                {/* Radio header */}
+                                <div className="flex items-center gap-3 px-5 py-3.5" style={{ background: "rgba(201,91,42,0.08)", borderBottom: "1px solid rgba(201,91,42,0.2)" }}>
+                                  <div className="w-5 h-5 rounded-full flex-shrink-0 flex items-center justify-center" style={{ border: "2px solid #C95B2A", background: "#fff" }}>
+                                    <div className="w-2 h-2 rounded-full opacity-0 group-hover:opacity-40 transition-opacity" style={{ background: "#C95B2A" }} />
+                                  </div>
+                                  <span className="font-bold text-[15px]" style={{ color: "#4E1F12" }}>Régime réel simplifié</span>
+                                  <span className="ml-auto text-[10px] font-bold px-2.5 py-1 rounded" style={{ background: "#C95B2A", color: "#F5F0E8" }}>RECOMMANDÉ</span>
+                                </div>
+                                <div className="px-5 pb-2" style={{ background: "#FDFAF6" }}>
+                                  <Row label="Loyers annuels" val={formatEuro(resultats.loyerAnnuel)} bold />
+                                  <Row label="Emprunt" val={`−${formatEuro(resultats.creditAnnuel)}`} color="#B03A2A" />
+                                  <Row label="Charges déductibles" val={`−${formatEuro(resultats.chargesDeductibles)}`} color="#B03A2A" />
+                                  <Row label="Amortissements" val={`−${formatEuro(resultats.amortTotal)}`} color="#B03A2A" />
+                                  <Row label="Base imposable" val={formatEuro(resultats.baseImposableReel)} bold sep />
+                                  <Row label="Impôt estimé" val={formatEuro(resultats.impotReel)} color="#B03A2A" />
+                                  <Row label="Cash-flow mensuel" val={formatEuro(resultats.cashflowReelMensuel)} bold color={resultats.cashflowReelMensuel >= 0 ? "#1A7A52" : "#B03A2A"} sep />
+                                </div>
+                                <div className="px-5 py-3 text-center text-sm font-semibold" style={{ background: "rgba(201,91,42,0.08)", color: "#C95B2A" }}>
+                                  Choisir ce régime →
+                                </div>
+                              </button>
+
+                              {/* Micro-BIC — clickable */}
+                              <button type="button" onClick={() => { setSelectedRegime("micro"); setSimulationValidated(true); }}
+                                className="rounded-xl overflow-hidden text-left w-full transition-all hover:shadow-md focus:outline-none group"
+                                style={{ border: "1.5px solid rgba(26,22,18,0.15)" }}>
+                                <div className="flex items-center gap-3 px-5 py-3.5" style={{ background: "#EDE7DC", borderBottom: "0.5px solid rgba(26,22,18,0.12)" }}>
+                                  <div className="w-5 h-5 rounded-full flex-shrink-0 flex items-center justify-center" style={{ border: "2px solid rgba(26,22,18,0.35)", background: "#fff" }}>
+                                    <div className="w-2 h-2 rounded-full opacity-0 group-hover:opacity-40 transition-opacity" style={{ background: "#1A1612" }} />
+                                  </div>
+                                  <span className="font-bold text-[15px]" style={{ color: "#1A1612" }}>Micro-BIC 2025</span>
+                                  <span className="ml-auto text-[10px] font-semibold px-2.5 py-1 rounded" style={{ background: "rgba(26,22,18,0.1)", color: "rgba(26,22,18,0.55)" }}>ABATTEMENT 30%</span>
+                                </div>
+                                <div className="px-5 pb-2" style={{ background: "#FDFAF6" }}>
+                                  <Row label="Loyers annuels" val={formatEuro(resultats.loyerAnnuel)} bold />
+                                  <Row label="Emprunt" val={`−${formatEuro(resultats.creditAnnuel)}`} color="#B03A2A" />
+                                  <Row label="Base imposable (70% loyers)" val={formatEuro(resultats.baseBIC)} bold sep />
+                                  <Row label="Impôt estimé" val={formatEuro(resultats.impotBIC)} color="#B03A2A" />
+                                  <Row label="Cash-flow mensuel" val={formatEuro(resultats.cashflowBICMensuel)} bold color={resultats.cashflowBICMensuel >= 0 ? "#1A7A52" : "#B03A2A"} sep />
+                                </div>
+                                <div className="px-5 py-3 text-center text-sm font-semibold" style={{ background: "#EDE7DC", color: "rgba(26,22,18,0.6)" }}>
+                                  Choisir ce régime →
+                                </div>
+                              </button>
+                            </div>
+                          </>
+                        ) : (
+                          /* Un régime sélectionné — tableau unique + bouton changer */
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-start">
+                            {/* Tableau du régime choisi */}
+                            <div className="rounded-xl overflow-hidden"
+                              style={{
+                                border: selectedRegime === "reel" ? "2.5px solid #C95B2A" : "2.5px solid #1A1612",
+                                boxShadow: selectedRegime === "reel" ? "0 0 0 3px rgba(201,91,42,0.12)" : "0 0 0 3px rgba(26,22,18,0.07)",
+                              }}>
+                              <div className="flex items-center gap-3 px-5 py-3.5" style={{ background: selectedRegime === "reel" ? "#C95B2A" : "#1A1612", borderBottom: "1px solid rgba(255,255,255,0.1)" }}>
+                                <div className="w-5 h-5 rounded-full flex-shrink-0 flex items-center justify-center" style={{ border: "2px solid #F5F0E8", background: "transparent" }}>
+                                  <div className="w-2.5 h-2.5 rounded-full" style={{ background: "#F5F0E8" }} />
+                                </div>
+                                <span className="font-bold text-[15px]" style={{ color: "#F5F0E8" }}>
+                                  {selectedRegime === "reel" ? "Régime réel simplifié" : "Micro-BIC 2025"}
+                                </span>
+                                <span className="ml-auto text-[10px] font-bold px-2.5 py-1 rounded" style={{ background: "rgba(245,240,232,0.2)", color: "#F5F0E8" }}>✓ SÉLECTIONNÉ</span>
+                              </div>
+                              <div className="px-5" style={{ background: "#FDFAF6" }}>
+                                {selectedRegime === "reel" ? (
+                                  <>
+                                    <Row label="Loyers annuels" val={formatEuro(resultats.loyerAnnuel)} bold />
+                                    <Row label="Emprunt" val={`−${formatEuro(resultats.creditAnnuel)}`} color="#B03A2A" />
+                                    <Row label="Dont frais d'emprunt" val={formatEuro(resultats.interetsAnnee1)} indent />
+                                    <Row label="Charges déductibles" val={`−${formatEuro(resultats.chargesDeductibles)}`} color="#B03A2A" />
+                                    <Row label="Résultat avant amortissement" val={formatEuro(resultats.resultatAvantAmort)} bold color={resultats.resultatAvantAmort >= 0 ? "#1A1612" : "#B03A2A"} sep />
+                                    <Row label="Amortissements" val={`−${formatEuro(resultats.amortTotal)}`} color="#B03A2A" />
+                                    <Row label="Base imposable" val={formatEuro(resultats.baseImposableReel)} bold sep />
+                                    <Row label="Impôt estimé" val={formatEuro(resultats.impotReel)} color="#B03A2A" />
+                                    <Row label="Amortissement à reporter N+1" val={formatEuro(resultats.amortAReporter)} color="#B08A2A" />
+                                    <Row label="Cash-flow mensuel" val={formatEuro(resultats.cashflowReelMensuel)} bold color={resultats.cashflowReelMensuel >= 0 ? "#1A7A52" : "#B03A2A"} sep />
+                                  </>
+                                ) : (
+                                  <>
+                                    <Row label="Loyers annuels" val={formatEuro(resultats.loyerAnnuel)} bold />
+                                    <Row label="Emprunt" val={`−${formatEuro(resultats.creditAnnuel)}`} color="#B03A2A" />
+                                    <Row label="Base imposable (70% loyers)" val={formatEuro(resultats.baseBIC)} bold sep />
+                                    <Row label="Impôt estimé" val={formatEuro(resultats.impotBIC)} color="#B03A2A" />
+                                    <Row label="Cash-flow mensuel" val={formatEuro(resultats.cashflowBICMensuel)} bold color={resultats.cashflowBICMensuel >= 0 ? "#1A7A52" : "#B03A2A"} sep />
+                                  </>
+                                )}
+                              </div>
+                            </div>
+
+                            {/* Bouton changer de régime */}
+                            <div className="flex flex-col items-center justify-center gap-3 p-6 rounded-xl" style={{ background: "rgba(26,22,18,0.03)", border: "1px dashed rgba(26,22,18,0.15)", minHeight: 180 }}>
+                              <div className="text-sm text-center" style={{ color: "rgba(26,22,18,0.45)" }}>
+                                Vous avez choisi le<br />
+                                <strong style={{ color: selectedRegime === "reel" ? "#C95B2A" : "#1A1612" }}>
+                                  {selectedRegime === "reel" ? "Régime réel simplifié" : "Micro-BIC 2025"}
+                                </strong>
+                              </div>
+                              <button
+                                type="button"
+                                onClick={() => { setSelectedRegime(null); setSimulationValidated(false); }}
+                                className="px-5 py-2.5 rounded-xl text-sm font-semibold transition-all hover:opacity-80"
+                                style={{ background: "#EDE7DC", color: "#4E1F12", border: "1px solid rgba(78,31,18,0.2)" }}>
+                                ← Changer de régime fiscal
+                              </button>
                             </div>
                           </div>
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => { setSelectedRegime("micro"); setSimulationValidated(true); }}
-                          className="rounded-xl px-5 py-4 text-left transition-all hover:opacity-90 focus:outline-none"
-                          style={{
-                            background: selectedRegime === "micro" ? "#1A1612" : "rgba(26,22,18,0.04)",
-                            border: selectedRegime === "micro" ? "2px solid #1A1612" : "1.5px solid rgba(26,22,18,0.15)",
-                          }}>
-                          <div className="flex items-center justify-between">
-                            <span className="font-bold text-[15px]" style={{ color: selectedRegime === "micro" ? "#F5F0E8" : "#1A1612" }}>
-                              {selectedRegime === "micro" ? "✓ " : ""}Micro-BIC 2025
-                            </span>
-                            {selectedRegime !== "micro" && <span className="text-xs font-semibold px-2.5 py-1 rounded" style={{ background: "rgba(26,22,18,0.12)", color: "rgba(26,22,18,0.65)" }}>Choisir →</span>}
-                          </div>
-                          <div className="flex gap-6 mt-2">
-                            <div>
-                              <div className="text-xs font-medium" style={{ color: selectedRegime === "micro" ? "rgba(245,240,232,0.6)" : "rgba(26,22,18,0.5)" }}>Impôt</div>
-                              <div className="text-base font-bold" style={{ color: selectedRegime === "micro" ? "#F5F0E8" : "#B03A2A" }}>{formatEuro(resultats.impotBIC)}/an</div>
-                            </div>
-                            <div>
-                              <div className="text-xs font-medium" style={{ color: selectedRegime === "micro" ? "rgba(245,240,232,0.6)" : "rgba(26,22,18,0.5)" }}>Cash-flow</div>
-                              <div className="text-base font-bold" style={{ color: selectedRegime === "micro" ? "#F5F0E8" : (resultats.cashflowBICMensuel >= 0 ? "#1A7A52" : "#B03A2A") }}>{formatEuro(resultats.cashflowBICMensuel)}/mois</div>
-                            </div>
-                          </div>
-                        </button>
-                      </div></>
+                        )}
+                      </>
                     );
                   })()}
 
                 </div>
 
                 {/* Amortissement — réel uniquement */}
-                {selectedRegime === "reel" && <div className="rounded-xl p-5" style={{ background: "rgba(78,31,18,0.05)", border: "1px solid rgba(78,31,18,0.15)" }}>
-                  <h3 className="font-semibold text-[15px] mb-2" style={{ color: "#4E1F12" }}>L&apos;amortissement comptable au régime réel</h3>
-                  <p className="text-[13px] leading-relaxed" style={{ color: "rgba(26,22,18,0.65)" }}>
-                    En LMNP au réel, vous pouvez amortir comptablement votre bien — <strong>hors terrain (~85% de la valeur)</strong> — sur sa durée d&apos;usage. Chaque année, cet amortissement est déduit de vos revenus locatifs, ce qui <strong>réduit la base imposable et donc l&apos;impôt</strong>. C&apos;est le principal avantage fiscal du statut LMNP au réel.
-                  </p>
-                </div>}
                 {selectedRegime === "reel" && <div className="rounded-xl overflow-hidden" style={cardStyle}>
-                  <div className="px-5 pt-5 pb-5 space-y-4">
-
-                      {/* Explications méthodes — au-dessus des boutons */}
+                  {/* En-tête L'Amortissement */}
+                  <div className="px-6 py-5" style={{ background: "linear-gradient(90deg, #4E1F12 0%, #7A2E15 100%)", borderBottom: "3px solid #C95B2A" }}>
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 text-xl font-bold"
+                        style={{ background: "rgba(201,91,42,0.3)", color: "#F5F0E8" }}>A</div>
                       <div>
-                        {amortMode === "ensemble" && (
-                          <div className="rounded-xl p-4 mb-4" style={{ background: "rgba(201,91,42,0.06)", border: "1px solid rgba(201,91,42,0.18)" }}>
-                            <div className="font-bold text-base mb-1" style={{ color: "#4E1F12" }}>Méthode globale (simplifiée)</div>
-                            <p className="text-[14px] leading-relaxed" style={{ color: "rgba(26,22,18,0.65)" }}>
-                              Tolérée pour les petits biens gérés sans comptable. Le bien est amorti en une seule fois sur la durée choisie. Simple, mais moins optimisé. Idéalement, privilégiez la méthode <strong>par composant</strong> pour réduire davantage votre base imposable.
-                            </p>
-                          </div>
-                        )}
-                        {amortMode === "composant" && (
-                          <div className="rounded-xl p-4 mb-4" style={{ background: "rgba(26,122,82,0.06)", border: "1px solid rgba(26,122,82,0.2)" }}>
-                            <div className="font-bold text-base mb-1" style={{ color: "#1A7A52" }}>Méthode par composant (optimale)</div>
-                            <p className="text-[14px] leading-relaxed" style={{ color: "rgba(26,22,18,0.65)" }}>
-                              Méthode recommandée par les experts LMNP. Répartissez les <strong>%</strong> de la valeur amortissable entre chaque composant (gros œuvre, toiture, aménagement…), puis indiquez la <strong>durée en années</strong> sur laquelle vous souhaitez l&apos;amortir. Le total des % doit atteindre 100 %.
-                            </p>
-                          </div>
-                        )}
-                        {/* Toggle mode */}
-                        <div className="flex gap-2">
-                          {(["ensemble", "composant"] as const).map(mode => (
-                            <button key={mode} onClick={() => setAmortMode(mode)}
-                              className="px-5 py-2.5 rounded-lg text-sm font-semibold transition-all"
-                              style={amortMode === mode
-                                ? { background: "#C95B2A", color: "#F5F0E8", border: "1.5px solid #C95B2A" }
-                                : { background: "transparent", color: "rgba(26,22,18,0.5)", border: "1.5px solid rgba(26,22,18,0.15)" }
-                              }>
-                              {mode === "ensemble" ? "Global" : "Par composant"}
-                            </button>
-                          ))}
+                        <div className="text-xl font-black tracking-tight" style={{ color: "#F5F0E8" }}>L&apos;Amortissement LMNP</div>
+                        <div className="text-sm mt-0.5" style={{ color: "rgba(245,240,232,0.65)" }}>Régime réel simplifié · Optimisation fiscale</div>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="px-5 pt-5 pb-5 space-y-5">
+
+                      {/* Explication principale fusionnée */}
+                      <div className="rounded-xl p-5" style={{ background: "rgba(78,31,18,0.05)", border: "1px solid rgba(78,31,18,0.12)" }}>
+                        <p className="text-[15px] leading-relaxed font-medium" style={{ color: "#4E1F12" }}>
+                          En LMNP au réel, vous pouvez amortir comptablement votre bien — <strong>hors terrain (~{100 - amortPct}%)</strong> — sur sa durée d&apos;usage. Chaque année, cet amortissement est déduit de vos revenus locatifs, ce qui <strong>réduit la base imposable et donc l&apos;impôt</strong>. C&apos;est le principal avantage fiscal du statut LMNP au réel.
+                        </p>
+                        <p className="text-[13px] mt-3 leading-relaxed" style={{ color: "rgba(26,22,18,0.5)" }}>
+                          Les amortissements déduits sont réintégrés au calcul de la plus-value à la revente, mais des abattements pour durée de détention s&apos;appliquent.
+                        </p>
+                      </div>
+
+                      {/* Deux méthodes côte à côte — toujours visibles */}
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="rounded-xl p-4" style={{ background: amortMode === "ensemble" ? "rgba(201,91,42,0.06)" : "rgba(26,22,18,0.03)", border: amortMode === "ensemble" ? "2px solid #C95B2A" : "1px solid rgba(26,22,18,0.12)" }}>
+                          <div className="font-bold text-[15px] mb-2" style={{ color: amortMode === "ensemble" ? "#4E1F12" : "rgba(26,22,18,0.45)" }}>Amort. Global Simplifié</div>
+                          <p className="text-[13px] leading-relaxed mb-4" style={{ color: amortMode === "ensemble" ? "rgba(26,22,18,0.65)" : "rgba(26,22,18,0.4)" }}>
+                            Tolérée sans comptable. Le bien est amorti en une seule fois sur la durée choisie. Simple, mais moins optimisé.
+                          </p>
+                          <button onClick={() => setAmortMode("ensemble")}
+                            className="w-full py-3 rounded-lg text-sm font-bold transition-all"
+                            style={amortMode === "ensemble"
+                              ? { background: "#C95B2A", color: "#F5F0E8", border: "none" }
+                              : { background: "transparent", color: "rgba(26,22,18,0.5)", border: "1.5px solid rgba(26,22,18,0.2)" }}>
+                            {amortMode === "ensemble" ? "✓ Amort. Global Simplifié" : "Amort. Global Simplifié"}
+                          </button>
+                        </div>
+                        <div className="rounded-xl p-4" style={{ background: amortMode === "composant" ? "rgba(26,122,82,0.06)" : "rgba(26,22,18,0.03)", border: amortMode === "composant" ? "2px solid #1A7A52" : "1px solid rgba(26,22,18,0.12)" }}>
+                          <div className="font-bold text-[15px] mb-2" style={{ color: amortMode === "composant" ? "#1A7A52" : "rgba(26,22,18,0.45)" }}>Amort. par Composant</div>
+                          <p className="text-[13px] leading-relaxed mb-4" style={{ color: amortMode === "composant" ? "rgba(26,22,18,0.65)" : "rgba(26,22,18,0.4)" }}>
+                            Méthode optimale recommandée par les experts. Répartissez la valeur amortissable entre chaque composant avec des durées distinctes pour maximiser la déduction.
+                          </p>
+                          <button onClick={() => setAmortMode("composant")}
+                            className="w-full py-3 rounded-lg text-sm font-bold transition-all"
+                            style={amortMode === "composant"
+                              ? { background: "#1A7A52", color: "#F5F0E8", border: "none" }
+                              : { background: "transparent", color: "rgba(26,22,18,0.5)", border: "1.5px solid rgba(26,22,18,0.2)" }}>
+                            {amortMode === "composant" ? "✓ Amort. par Composant" : "Amort. par Composant"}
+                          </button>
                         </div>
                       </div>
 
@@ -1663,20 +1698,22 @@ ${annexeTable}
                                           <div className="text-[11px]" style={{ color: "#C95B2A" }}>{formatEuro(val)}</div>
                                         </div>
                                         <div className="flex items-center justify-center gap-1">
-                                          <input type="number" min={0} max={100} value={c.pct}
+                                          <input type="number" min={0} max={100} value={c.pct === 0 ? "" : c.pct}
+                                            placeholder="0"
                                             onChange={e => {
-                                              const v = Math.min(100, Math.max(0, parseInt(e.target.value) || 0));
-                                              e.target.value = String(v);
+                                              const raw = e.target.value;
+                                              const v = raw === "" ? 0 : Math.min(100, Math.max(0, parseInt(raw) || 0));
                                               setComposants(prev => prev.map((x, j) => j === i ? { ...x, pct: v } : x));
                                             }}
                                             className={inputCls} style={INPUT_STYLE} />
                                           <span className="text-xs" style={{ color: "rgba(26,22,18,0.4)" }}>%</span>
                                         </div>
                                         <div className="flex items-center justify-center gap-1">
-                                          <input type="number" min={1} max={80} value={c.duree}
+                                          <input type="number" min={0} max={100} value={c.duree === 0 ? "" : c.duree}
+                                            placeholder="0"
                                             onChange={e => {
-                                              const v = Math.max(1, parseInt(e.target.value) || 1);
-                                              e.target.value = String(v);
+                                              const raw = e.target.value;
+                                              const v = raw === "" ? 0 : Math.min(100, Math.max(0, parseInt(raw) || 0));
                                               setComposants(prev => prev.map((x, j) => j === i ? { ...x, duree: v } : x));
                                             }}
                                             className={inputCls} style={INPUT_STYLE} />
@@ -1703,7 +1740,12 @@ ${annexeTable}
                                   </div>
                                   {totalPct !== 100 && (
                                     <p className="px-4 py-2 text-xs" style={{ color: "#B03A2A", background: "rgba(176,58,42,0.06)" }}>
-                                      Les % doivent totaliser 100 % pour couvrir toute la valeur amortissable.
+                                      ⚠ Les % doivent totaliser 100 % pour couvrir toute la valeur amortissable.
+                                    </p>
+                                  )}
+                                  {composants.some(c => c.duree === 0 && c.pct > 0) && (
+                                    <p className="px-4 py-2 text-xs" style={{ color: "#B03A2A", background: "rgba(176,58,42,0.06)" }}>
+                                      ⚠ La durée d&apos;amortissement ne peut pas être 0 an pour un composant avec un % &gt; 0.
                                     </p>
                                   )}
                                 </div>
