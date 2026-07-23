@@ -1616,39 +1616,60 @@ ${annexeTable}
                               </div>
                             </div>
 
-                            {/* Deux colonnes texte séparées par un trait orange */}
-                            <div className="grid grid-cols-2" style={{ borderTop: "2px solid #C95B2A" }}>
-                              <div className="p-4" style={{ borderRight: "2px solid #C95B2A" }}>
-                                <div className="font-bold text-[13px] mb-1.5" style={{ color: amortMode === "ensemble" ? "#4E1F12" : "rgba(26,22,18,0.5)" }}>Amort. Global Simplifié</div>
-                                <p className="text-[12px] leading-relaxed" style={{ color: "rgba(26,22,18,0.5)" }}>
+                            {/* Deux colonnes texte — suite naturelle, sans bordure top */}
+                            <div className="grid grid-cols-2 gap-0" style={{ borderTop: "none" }}>
+                              <div className="p-5" style={{ background: "rgba(78,31,18,0.04)", borderRight: "2px solid #C95B2A" }}>
+                                <div className="font-bold text-[14px] mb-2" style={{ color: "#4E1F12" }}>Amort. Global Simplifié</div>
+                                <p className="text-[13px] leading-relaxed" style={{ color: "#4E1F12", opacity: 0.75 }}>
                                   Tolérée sans comptable. Le bien est amorti en une seule fois sur la durée choisie. Simple, mais moins optimisé.
                                 </p>
                               </div>
-                              <div className="p-4">
-                                <div className="font-bold text-[13px] mb-1.5" style={{ color: amortMode === "composant" ? "#1A7A52" : "rgba(26,22,18,0.5)" }}>Amort. par Composant</div>
-                                <p className="text-[12px] leading-relaxed" style={{ color: "rgba(26,22,18,0.5)" }}>
+                              <div className="p-5" style={{ background: "rgba(26,122,82,0.04)" }}>
+                                <div className="font-bold text-[14px] mb-2" style={{ color: "#1A7A52" }}>Amort. par Composant</div>
+                                <p className="text-[13px] leading-relaxed" style={{ color: "#1A7A52", opacity: 0.8 }}>
                                   Méthode optimale recommandée par les experts. Durées distinctes par composant pour maximiser la déduction.
                                 </p>
                               </div>
                             </div>
+                          </div>
 
-                            {/* Boutons côte à côte pleine largeur */}
-                            <div className="grid grid-cols-2" style={{ borderTop: "1px solid rgba(78,31,18,0.1)" }}>
-                              <button onClick={() => setAmortMode("ensemble")}
-                                className="py-3.5 text-sm font-bold transition-all"
-                                style={amortMode === "ensemble"
-                                  ? { background: "#C95B2A", color: "#F5F0E8", borderRight: "1px solid rgba(78,31,18,0.1)" }
-                                  : { background: "rgba(26,22,18,0.03)", color: "rgba(26,22,18,0.45)", borderRight: "1px solid rgba(78,31,18,0.1)" }}>
-                                {amortMode === "ensemble" ? "✓ Global Simplifié" : "Global Simplifié"}
-                              </button>
-                              <button onClick={() => setAmortMode("composant")}
-                                className="py-3.5 text-sm font-bold transition-all"
-                                style={amortMode === "composant"
-                                  ? { background: "#1A7A52", color: "#F5F0E8" }
-                                  : { background: "rgba(26,22,18,0.03)", color: "rgba(26,22,18,0.45)" }}>
-                                {amortMode === "composant" ? "✓ Par Composant" : "Par Composant"}
-                              </button>
-                            </div>
+                          {/* Boutons choix — séparés, style radio comme le choix de régime */}
+                          <div className="grid grid-cols-2 gap-4 pt-1">
+                            {/* Global Simplifié */}
+                            <button onClick={() => setAmortMode("ensemble")}
+                              className="rounded-xl overflow-hidden text-left w-full transition-all hover:shadow-md focus:outline-none group"
+                              style={{
+                                border: amortMode === "ensemble" ? "2.5px solid #C95B2A" : "1.5px solid rgba(201,91,42,0.25)",
+                                boxShadow: amortMode === "ensemble" ? "0 0 0 3px rgba(201,91,42,0.1)" : "none",
+                              }}>
+                              <div className="flex items-center gap-3 px-4 py-3" style={{ background: amortMode === "ensemble" ? "#C95B2A" : "rgba(201,91,42,0.06)" }}>
+                                <div className="w-5 h-5 rounded-full flex-shrink-0 flex items-center justify-center" style={{ border: `2px solid ${amortMode === "ensemble" ? "#F5F0E8" : "#C95B2A"}`, background: "transparent" }}>
+                                  {amortMode === "ensemble"
+                                    ? <div className="w-2.5 h-2.5 rounded-full" style={{ background: "#F5F0E8" }} />
+                                    : <div className="w-2 h-2 rounded-full opacity-0 group-hover:opacity-40 transition-opacity" style={{ background: "#C95B2A" }} />}
+                                </div>
+                                <span className="font-bold text-[14px]" style={{ color: amortMode === "ensemble" ? "#F5F0E8" : "#4E1F12" }}>Global Simplifié</span>
+                                {amortMode === "ensemble" && <span className="ml-auto text-[10px] font-bold px-2 py-0.5 rounded" style={{ background: "rgba(245,240,232,0.25)", color: "#F5F0E8" }}>✓ SÉLECTIONNÉ</span>}
+                              </div>
+                            </button>
+
+                            {/* Par Composant */}
+                            <button onClick={() => setAmortMode("composant")}
+                              className="rounded-xl overflow-hidden text-left w-full transition-all hover:shadow-md focus:outline-none group"
+                              style={{
+                                border: amortMode === "composant" ? "2.5px solid #1A7A52" : "1.5px solid rgba(26,122,82,0.25)",
+                                boxShadow: amortMode === "composant" ? "0 0 0 3px rgba(26,122,82,0.1)" : "none",
+                              }}>
+                              <div className="flex items-center gap-3 px-4 py-3" style={{ background: amortMode === "composant" ? "#1A7A52" : "rgba(26,122,82,0.06)" }}>
+                                <div className="w-5 h-5 rounded-full flex-shrink-0 flex items-center justify-center" style={{ border: `2px solid ${amortMode === "composant" ? "#F5F0E8" : "#1A7A52"}`, background: "transparent" }}>
+                                  {amortMode === "composant"
+                                    ? <div className="w-2.5 h-2.5 rounded-full" style={{ background: "#F5F0E8" }} />
+                                    : <div className="w-2 h-2 rounded-full opacity-0 group-hover:opacity-40 transition-opacity" style={{ background: "#1A7A52" }} />}
+                                </div>
+                                <span className="font-bold text-[14px]" style={{ color: amortMode === "composant" ? "#F5F0E8" : "#1A7A52" }}>Par Composant</span>
+                                {amortMode === "composant" && <span className="ml-auto text-[10px] font-bold px-2 py-0.5 rounded" style={{ background: "rgba(245,240,232,0.25)", color: "#F5F0E8" }}>✓ SÉLECTIONNÉ</span>}
+                              </div>
+                            </button>
                           </div>
                         );
                       })()}
