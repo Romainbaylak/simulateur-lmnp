@@ -1588,7 +1588,7 @@ ${annexeTable}
                         const valAmort2 = prixVal2 * amortPct / 100;
                         return (
                           <>
-                          <div className="rounded-xl overflow-hidden" style={{ border: "1px solid rgba(78,31,18,0.12)" }}>
+                          <div className="rounded-xl overflow-hidden">
                             {/* Explication principale + calcul valeur amortissable */}
                             <div className="p-5" style={{ background: "rgba(78,31,18,0.05)" }}>
                               <p className="text-[15px] leading-relaxed font-medium" style={{ color: "#4E1F12" }}>
