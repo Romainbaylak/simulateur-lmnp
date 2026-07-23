@@ -206,6 +206,8 @@ export default function Simulateur() {
   });
   const [showAutresCharges, setShowAutresCharges] = useState(false);
   const [showLoyerWarning, setShowLoyerWarning] = useState(false);
+  const [selectedRegime, setSelectedRegime] = useState<"micro" | "reel" | null>(null);
+  const [simulationValidated, setSimulationValidated] = useState(false);
 
   const [loyerSlider, setLoyerSlider] = useState<number>(0);
   const [sliderMax, setSliderMax] = useState(10000);
@@ -331,6 +333,8 @@ export default function Simulateur() {
       setResultatsTriple({ bas: rBas, moyen: rMoyen, haut: rHaut });
       setResultats(rMoyen);
       setShowResults(true);
+      setSelectedRegime(null);
+      setSimulationValidated(false);
       setTimeout(() => resultsRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }), 50);
     } else {
       const loyerMensuel = loyerSlider > 0 ? loyerSlider : parseFloat(form.loyer) || 0;
@@ -341,6 +345,8 @@ export default function Simulateur() {
         setSliderMax(Math.max(loyerMensuel * 2, 200));
       }
       setShowResults(true);
+      setSelectedRegime(null);
+      setSimulationValidated(false);
       setTimeout(() => resultsRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }), 50);
     }
   };
@@ -364,11 +370,20 @@ export default function Simulateur() {
       setResultats(r);
       if (loyerMensuel > 0) setSliderMax(Math.max(loyerMensuel * 2, 200));
     }
+    setSimulationValidated(true);
     resultsRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
   };
 
+  const displayCashflow = resultats
+    ? (selectedRegime === "micro" ? resultats.cashflowBICMensuel : resultats.cashflowReelMensuel)
+    : 0;
+  const displayImpot = resultats
+    ? (selectedRegime === "micro" ? resultats.impotBIC : resultats.impotReel)
+    : 0;
+  const displayImpotMensuel = displayImpot / 12;
+
   const verdict = resultats
-    ? resultats.rendementNet > 5 && resultats.cashflowReelMensuel > 0
+    ? resultats.rendementNet > 5 && displayCashflow > 0
       ? { label: "Excellent investissement", bg: "#1A7A52", icon: "✓" }
       : resultats.rendementNet > 3
       ? { label: "Investissement correct", bg: "#B08A2A", icon: "~" }
@@ -1148,7 +1163,32 @@ ${annexeTable}
                 </p>
               </div>
             ) : (
-              <><div className="space-y-5">
+              <>
+              {/* ─── BOUTONS PDF + SAUVEGARDER — haut de page ─── */}
+              {simulationValidated && <div className="flex flex-wrap justify-center items-center gap-3 mb-5">
+                <button onClick={() => {
+                  const plan = getPlan();
+                  if (plan === "pro") { setPendingPdfAction("pro"); setShowBienInfoPopup(true); return; }
+                  if (plan === "starter") { setPdfWeekCount(getPdfWeekCount()); setShowPDFStarter(true); return; }
+                  setShowPayPopup(true);
+                }}
+                  className="px-10 py-4 text-base font-medium transition-opacity hover:opacity-[0.88] rounded-lg"
+                  style={{ background: "#4E1F12", color: "#C95B2A", border: "1px solid rgba(201,91,42,0.3)", letterSpacing: "0.02em" }}>
+                  Générer compte rendu PDF
+                </button>
+                <button
+                  onClick={() => setShowSauvegarder(true)}
+                  className="flex items-center gap-2 px-6 py-4 text-base font-medium transition-opacity hover:opacity-[0.88] rounded-lg"
+                  style={{ background: "#EDE7DC", color: "#4E1F12", border: "1px solid rgba(78,31,18,0.2)" }}>
+                  <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/>
+                    <polyline points="17 21 17 13 7 13 7 21"/>
+                    <polyline points="7 3 7 8 15 8"/>
+                  </svg>
+                  Sauvegarder
+                </button>
+              </div>}
+              <div className="space-y-5">
                 {/* Verdict */}
                 {verdict && (
                   <div className="rounded-xl p-4 flex items-center gap-3"
@@ -1157,7 +1197,8 @@ ${annexeTable}
                     <div>
                       <div className="font-medium text-lg">{verdict.label}</div>
                       <div className="text-sm" style={{ opacity: 0.85 }}>
-                        Rendement net {formatPct(resultats.rendementNet)} · Cash-flow {formatEuro(resultats.cashflowReelMensuel)}/mois (régime réel)
+                        Rendement net {formatPct(resultats.rendementNet)} · Cash-flow {formatEuro(displayCashflow)}/mois
+                        {selectedRegime ? ` · ${selectedRegime === "reel" ? "Régime réel" : "Micro-BIC"}` : ""}
                       </div>
                     </div>
                   </div>
@@ -1203,11 +1244,11 @@ ${annexeTable}
                   <div className="rounded-xl p-4" style={cardStyle}>
                     <div className={LABEL}>Impôt estimé annuel</div>
                     <div className="text-xl font-light mt-1" style={{ color: "#1A1612", letterSpacing: "-0.02em" }}>
-                      {formatEuro(resultats.impotReel)}
+                      {formatEuro(displayImpot)}
                     </div>
                     <div className="text-[11px] mt-0.5" style={{ color: "rgba(26,22,18,0.40)" }}>TMI {form.tmi}% + PS 18,6%</div>
                     <div className="text-base font-light mt-2" style={{ color: "rgba(26,22,18,0.45)", letterSpacing: "-0.02em" }}>
-                      {formatEuro(resultats.impotReelMensuel)}
+                      {formatEuro(displayImpotMensuel)}
                     </div>
                     <div className="text-[11px] mt-0.5" style={{ color: "rgba(26,22,18,0.40)" }}>mensuel · annuel ÷ 12</div>
                   </div>
@@ -1216,12 +1257,14 @@ ${annexeTable}
                   <div className="rounded-xl p-4" style={cardStyle}>
                     <div className={LABEL}>Cash-flow mensuel</div>
                     <div className="text-xl font-light mt-1" style={{
-                      color: resultats.cashflowReelMensuel >= 0 ? "#1A7A52" : "#B03A2A",
+                      color: displayCashflow >= 0 ? "#1A7A52" : "#B03A2A",
                       letterSpacing: "-0.02em",
                     }}>
-                      {formatEuro(resultats.cashflowReelMensuel)}
+                      {formatEuro(displayCashflow)}
                     </div>
-                    <div className="text-[11px] mt-1" style={{ color: "rgba(26,22,18,0.40)" }}>net régime réel</div>
+                    <div className="text-[11px] mt-1" style={{ color: "rgba(26,22,18,0.40)" }}>
+                      {selectedRegime === "micro" ? "Micro-BIC" : selectedRegime === "reel" ? "Régime réel" : "Régime réel (par défaut)"}
+                    </div>
                   </div>
                 </div>
 
@@ -1290,9 +1333,23 @@ ${annexeTable}
                   </div>
                 ) : null}
 
-                {/* Comparaison régimes */}
+                {/* Comparaison régimes + choix */}
                 <div className="rounded-xl p-5" style={cardStyle}>
-                  <h3 className="font-medium text-[#1A1612] mb-4">Comparaison des régimes fiscaux</h3>
+                  {!isSaisonnier && (() => {
+                    const economy = resultats.impotBIC - resultats.impotReel;
+                    const cfDiff = resultats.cashflowReelMensuel - resultats.cashflowBICMensuel;
+                    const reelBetter = economy > 0 || (economy === 0 && cfDiff >= 0);
+                    const recoText = reelBetter
+                      ? `Le régime réel semble plus avantageux pour vous${economy > 0 ? ` : ${formatEuro(economy)}/an d'impôt économisé` : ""}${cfDiff > 0 ? `, cash-flow supérieur de ${formatEuro(cfDiff)}/mois` : ""}.`
+                      : `Le Micro-BIC peut être suffisant — écart d'impôt de ${formatEuro(Math.abs(economy))}/an.`;
+                    return (
+                      <div className="mb-5">
+                        <h3 className="font-semibold text-base mb-1" style={{ color: "#1A1612" }}>Choisissez votre régime fiscal</h3>
+                        <p className="text-[13px]" style={{ color: "#C95B2A" }}>{recoText}</p>
+                      </div>
+                    );
+                  })()}
+                  {isSaisonnier && <h3 className="font-medium text-[#1A1612] mb-4">Comparaison des régimes fiscaux</h3>}
 
                   {isSaisonnier && resultatsTriple ? (() => {
                     const scenarios = [
@@ -1367,10 +1424,19 @@ ${annexeTable}
                     return (
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         {/* Réel */}
-                        <div className="rounded-xl overflow-hidden" style={{ border: "1px solid rgba(201,91,42,0.25)" }}>
-                          <div className="flex items-center justify-between px-5 py-3.5" style={{ background: "rgba(201,91,42,0.08)", borderBottom: "1px solid rgba(201,91,42,0.15)" }}>
-                            <span className="font-semibold" style={{ color: "#4E1F12", fontSize: 14 }}>Régime réel simplifié</span>
-                            <span className="text-[10px] uppercase tracking-[0.12em] font-semibold px-2.5 py-1 rounded" style={{ background: "#C95B2A", color: "#F5F0E8" }}>RECOMMANDÉ</span>
+                        <button
+                          type="button"
+                          onClick={() => setSelectedRegime("reel")}
+                          className="text-left rounded-xl overflow-hidden transition-all hover:opacity-90 focus:outline-none"
+                          style={{
+                            border: selectedRegime === "reel" ? "2.5px solid #C95B2A" : "1px solid rgba(201,91,42,0.25)",
+                            boxShadow: selectedRegime === "reel" ? "0 0 0 3px rgba(201,91,42,0.15)" : "none",
+                          }}>
+                          <div className="flex items-center justify-between px-5 py-3.5" style={{ background: selectedRegime === "reel" ? "#C95B2A" : "rgba(201,91,42,0.08)", borderBottom: selectedRegime === "reel" ? "none" : "1px solid rgba(201,91,42,0.15)" }}>
+                            <span className="font-semibold" style={{ color: selectedRegime === "reel" ? "#F5F0E8" : "#4E1F12", fontSize: 14 }}>Régime réel simplifié</span>
+                            <span className="text-[10px] uppercase tracking-[0.12em] font-semibold px-2.5 py-1 rounded" style={{ background: selectedRegime === "reel" ? "rgba(245,240,232,0.25)" : "#C95B2A", color: "#F5F0E8" }}>
+                              {selectedRegime === "reel" ? "✓ SÉLECTIONNÉ" : "RECOMMANDÉ"}
+                            </span>
                           </div>
                           <div className="px-5 divide-y-0" style={{ background: "#FDFAF6" }}>
                             <Row label="Loyers annuels" val={formatEuro(resultats.loyerAnnuel)} bold />
@@ -1384,12 +1450,27 @@ ${annexeTable}
                             <Row label="Amortissement à reporter N+1" val={formatEuro(resultats.amortAReporter)} color="#B08A2A" />
                             <Row label="Cash-flow mensuel" val={formatEuro(resultats.cashflowReelMensuel)} bold color={resultats.cashflowReelMensuel >= 0 ? "#1A7A52" : "#B03A2A"} sep />
                           </div>
-                        </div>
+                          {selectedRegime !== "reel" && (
+                            <div className="px-5 py-2.5 text-center text-[12px] font-medium" style={{ background: "rgba(201,91,42,0.06)", color: "#C95B2A" }}>
+                              Cliquez pour choisir ce régime →
+                            </div>
+                          )}
+                        </button>
                         {/* Micro-BIC */}
-                        <div className="rounded-xl overflow-hidden" style={{ border: "0.5px solid rgba(26,22,18,0.1)" }}>
-                          <div className="flex items-center justify-between px-5 py-3.5" style={{ background: "#EDE7DC", borderBottom: "0.5px solid rgba(26,22,18,0.1)" }}>
-                            <span className="font-semibold" style={{ color: "#1A1612", fontSize: 14 }}>Micro-BIC 2025</span>
-                            <span className="text-[10px] uppercase tracking-[0.12em] font-semibold px-2.5 py-1 rounded" style={{ background: "rgba(26,22,18,0.1)", color: "rgba(26,22,18,0.55)" }}>ABATTEMENT 30%</span>
+                        <button
+                          type="button"
+                          onClick={() => { setSelectedRegime("micro"); setSimulationValidated(true); }}
+                          className="text-left rounded-xl overflow-hidden transition-all hover:opacity-90 focus:outline-none"
+                          style={{
+                            border: selectedRegime === "micro" ? "2.5px solid #1A1612" : "0.5px solid rgba(26,22,18,0.1)",
+                            boxShadow: selectedRegime === "micro" ? "0 0 0 3px rgba(26,22,18,0.1)" : "none",
+                          }}>
+                          <div className="flex items-center justify-between px-5 py-3.5" style={{ background: selectedRegime === "micro" ? "#1A1612" : "#EDE7DC", borderBottom: "0.5px solid rgba(26,22,18,0.1)" }}>
+                            <span className="font-semibold" style={{ color: selectedRegime === "micro" ? "#F5F0E8" : "#1A1612", fontSize: 14 }}>Micro-BIC 2025</span>
+                            <span className="text-[10px] uppercase tracking-[0.12em] font-semibold px-2.5 py-1 rounded"
+                              style={{ background: selectedRegime === "micro" ? "rgba(245,240,232,0.15)" : "rgba(26,22,18,0.1)", color: selectedRegime === "micro" ? "#F5F0E8" : "rgba(26,22,18,0.55)" }}>
+                              {selectedRegime === "micro" ? "✓ SÉLECTIONNÉ" : "ABATTEMENT 30%"}
+                            </span>
                           </div>
                           <div className="px-5" style={{ background: "#FDFAF6" }}>
                             <Row label="Loyers annuels" val={formatEuro(resultats.loyerAnnuel)} bold />
@@ -1398,7 +1479,12 @@ ${annexeTable}
                             <Row label="Impôt estimé" val={formatEuro(resultats.impotBIC)} color="#B03A2A" />
                             <Row label="Cash-flow mensuel" val={formatEuro(resultats.cashflowBICMensuel)} bold color={resultats.cashflowBICMensuel >= 0 ? "#1A7A52" : "#B03A2A"} sep />
                           </div>
-                        </div>
+                          {selectedRegime !== "micro" && (
+                            <div className="px-5 py-2.5 text-center text-[12px] font-medium" style={{ background: "rgba(26,22,18,0.03)", color: "rgba(26,22,18,0.5)" }}>
+                              Cliquez pour choisir ce régime →
+                            </div>
+                          )}
+                        </button>
                       </div>
                     );
                   })()}
@@ -1412,8 +1498,14 @@ ${annexeTable}
                   </div>
                 </div>
 
-                {/* Amortissement */}
-                <div className="rounded-xl overflow-hidden" style={cardStyle}>
+                {/* Amortissement — réel uniquement */}
+                {selectedRegime === "reel" && <div className="rounded-xl p-5" style={{ background: "rgba(78,31,18,0.05)", border: "1px solid rgba(78,31,18,0.15)" }}>
+                  <h3 className="font-semibold text-[15px] mb-2" style={{ color: "#4E1F12" }}>L&apos;amortissement comptable au régime réel</h3>
+                  <p className="text-[13px] leading-relaxed" style={{ color: "rgba(26,22,18,0.65)" }}>
+                    En LMNP au réel, vous pouvez amortir comptablement votre bien — <strong>hors terrain (~85% de la valeur)</strong> — sur sa durée d&apos;usage. Chaque année, cet amortissement est déduit de vos revenus locatifs, ce qui <strong>réduit la base imposable et donc l&apos;impôt</strong>. C&apos;est le principal avantage fiscal du statut LMNP au réel.
+                  </p>
+                </div>}
+                {selectedRegime === "reel" && <div className="rounded-xl overflow-hidden" style={cardStyle}>
                   <button onClick={() => {
                     if (showAmort) { setShowAmort(false); return; }
                     setShowAmort(true);
@@ -1472,17 +1564,29 @@ ${annexeTable}
                       </div>
 
                       {/* Toggle mode */}
-                      <div className="flex gap-2">
-                        {(["ensemble", "composant"] as const).map(mode => (
-                          <button key={mode} onClick={() => setAmortMode(mode)}
-                            className="px-5 py-2.5 rounded-lg text-sm font-semibold transition-all"
-                            style={amortMode === mode
-                              ? { background: "#C95B2A", color: "#F5F0E8", border: "1.5px solid #C95B2A" }
-                              : { background: "transparent", color: "rgba(26,22,18,0.5)", border: "1.5px solid rgba(26,22,18,0.15)" }
-                            }>
-                            {mode === "ensemble" ? "Par ensemble" : "Par composant"}
-                          </button>
-                        ))}
+                      <div>
+                        <div className="flex gap-2 mb-2">
+                          {(["ensemble", "composant"] as const).map(mode => (
+                            <button key={mode} onClick={() => setAmortMode(mode)}
+                              className="px-5 py-2.5 rounded-lg text-sm font-semibold transition-all"
+                              style={amortMode === mode
+                                ? { background: "#C95B2A", color: "#F5F0E8", border: "1.5px solid #C95B2A" }
+                                : { background: "transparent", color: "rgba(26,22,18,0.5)", border: "1.5px solid rgba(26,22,18,0.15)" }
+                              }>
+                              {mode === "ensemble" ? "Global" : "Par composant"}
+                            </button>
+                          ))}
+                        </div>
+                        {amortMode === "ensemble" && (
+                          <p className="text-[12px] leading-relaxed" style={{ color: "rgba(26,22,18,0.5)" }}>
+                            Méthode simplifiée — tolérée pour les petits biens gérés sans comptable. Idéalement, privilégiez la méthode <strong>par composant</strong> pour optimiser davantage.
+                          </p>
+                        )}
+                        {amortMode === "composant" && (
+                          <p className="text-[12px] leading-relaxed" style={{ color: "rgba(26,22,18,0.5)" }}>
+                            Méthode optimale. Répartissez les <strong>%</strong> de la valeur amortissable entre chaque composant, puis indiquez la <strong>durée en années</strong> sur laquelle vous souhaitez l&apos;amortir. Le total des % doit atteindre 100 %.
+                          </p>
+                        )}
                       </div>
 
                       {/* Bien immobilier — commun aux deux modes */}
@@ -1653,22 +1757,22 @@ ${annexeTable}
                         ))}
                       </div>
 
-                      {/* Bouton Ajuster centré */}
+                      {/* Bouton Ajuster/Valider */}
                       <div className="flex justify-center">
                         <button onClick={handleAjuster}
                           className="px-10 py-4 text-base font-medium transition-opacity hover:opacity-[0.88] rounded-lg"
                           style={{ backgroundColor: "#C95B2A", color: "#F5F0E8", letterSpacing: "0.02em" }}>
-                          Ajuster Simulation →
+                          Valider la simulation →
                         </button>
                       </div>
                     </div>
                   )}
-                </div>
+                </div>}
 
-              </div>
+              </div>{/* end space-y-5 */}
 
-              {/* ─── BOUTONS PDF + SAUVEGARDER ─── */}
-              <div className="flex flex-wrap justify-center items-center gap-3 mt-6">
+              {/* ─── BOUTONS PDF + SAUVEGARDER — bas de page ─── */}
+              {simulationValidated && <div className="flex flex-wrap justify-center items-center gap-3 mt-6">
                 <button onClick={() => {
                   const plan = getPlan();
                   if (plan === "pro") { setPendingPdfAction("pro"); setShowBienInfoPopup(true); return; }
@@ -1692,7 +1796,7 @@ ${annexeTable}
                   </svg>
                   Sauvegarder
                 </button>
-              </div>
+              </div>}
               </>
             )
           )}
