@@ -1577,6 +1577,7 @@ ${annexeTable}
                         const prixVal2 = parseFloat(form.prix) || 0;
                         const valAmort2 = prixVal2 * amortPct / 100;
                         return (
+                          <>
                           <div className="rounded-xl overflow-hidden" style={{ border: "1px solid rgba(78,31,18,0.12)" }}>
                             {/* Explication principale + calcul valeur amortissable */}
                             <div className="p-5" style={{ background: "rgba(78,31,18,0.05)" }}>
@@ -1632,7 +1633,6 @@ ${annexeTable}
                               </div>
                             </div>
                           </div>
-
                           {/* Boutons choix — séparés, style radio comme le choix de régime */}
                           <div className="grid grid-cols-2 gap-4 pt-1">
                             {/* Global Simplifié */}
@@ -1671,6 +1671,7 @@ ${annexeTable}
                               </div>
                             </button>
                           </div>
+                          </>
                         );
                       })()}
 
