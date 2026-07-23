@@ -221,7 +221,7 @@ export default function Simulateur() {
   } | null>(null);
   const [showAmort, setShowAmort] = useState(false);
   const [amortPct, setAmortPct] = useState(85);
-  const [amortMode, setAmortMode] = useState<"ensemble" | "composant">("ensemble");
+  const [amortMode, setAmortMode] = useState<"ensemble" | "composant" | null>(null);
   const [amortDureeEnsemble, setAmortDureeEnsemble] = useState(25);
   const [composants, setComposants] = useState([
     { label: "Bâti / Gros œuvre", pct: 45, duree: 40 },
@@ -325,9 +325,9 @@ export default function Simulateur() {
       const lBas   = loyerSaisonnier(nuitee, parseFloat(tauxOccBas)   || 0);
       const lMoyen = loyerSaisonnier(nuitee, parseFloat(tauxOccMoyen) || 0);
       const lHaut  = loyerSaisonnier(nuitee, parseFloat(tauxOccHaut)  || 0);
-      const rBas   = computeResultats(form, lBas,   amortPct, amortMode, amortDureeEnsemble, composants);
-      const rMoyen = computeResultats(form, lMoyen, amortPct, amortMode, amortDureeEnsemble, composants);
-      const rHaut  = computeResultats(form, lHaut,  amortPct, amortMode, amortDureeEnsemble, composants);
+      const rBas   = computeResultats(form, lBas,   amortPct, amortMode ?? "ensemble", amortDureeEnsemble, composants);
+      const rMoyen = computeResultats(form, lMoyen, amortPct, amortMode ?? "ensemble", amortDureeEnsemble, composants);
+      const rHaut  = computeResultats(form, lHaut,  amortPct, amortMode ?? "ensemble", amortDureeEnsemble, composants);
       setResultatsTriple({ bas: rBas, moyen: rMoyen, haut: rHaut });
       setResultats(rMoyen);
       setShowResults(true);
@@ -336,7 +336,7 @@ export default function Simulateur() {
       setTimeout(() => pdfButtonsRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }), 100);
     } else {
       const loyerMensuel = loyerSlider > 0 ? loyerSlider : parseFloat(form.loyer) || 0;
-      const r = computeResultats(form, loyerMensuel, amortPct, amortMode, amortDureeEnsemble, composants);
+      const r = computeResultats(form, loyerMensuel, amortPct, amortMode ?? "ensemble", amortDureeEnsemble, composants);
       setResultats(r);
       if (loyerMensuel > 0) {
         setLoyerSlider(loyerMensuel);
@@ -357,14 +357,14 @@ export default function Simulateur() {
       const lBas   = loyerSaisonnier(nuitee, parseFloat(tauxOccBas)   || 0);
       const lMoyen = loyerSaisonnier(nuitee, parseFloat(tauxOccMoyen) || 0);
       const lHaut  = loyerSaisonnier(nuitee, parseFloat(tauxOccHaut)  || 0);
-      const rBas   = computeResultats(form, lBas,   amortPct, amortMode, amortDureeEnsemble, composants);
-      const rMoyen = computeResultats(form, lMoyen, amortPct, amortMode, amortDureeEnsemble, composants);
-      const rHaut  = computeResultats(form, lHaut,  amortPct, amortMode, amortDureeEnsemble, composants);
+      const rBas   = computeResultats(form, lBas,   amortPct, amortMode ?? "ensemble", amortDureeEnsemble, composants);
+      const rMoyen = computeResultats(form, lMoyen, amortPct, amortMode ?? "ensemble", amortDureeEnsemble, composants);
+      const rHaut  = computeResultats(form, lHaut,  amortPct, amortMode ?? "ensemble", amortDureeEnsemble, composants);
       setResultatsTriple({ bas: rBas, moyen: rMoyen, haut: rHaut });
       setResultats(rMoyen);
     } else {
       const loyerMensuel = loyerSlider > 0 ? loyerSlider : parseFloat(form.loyer) || 0;
-      const r = computeResultats(form, loyerMensuel, amortPct, amortMode, amortDureeEnsemble, composants);
+      const r = computeResultats(form, loyerMensuel, amortPct, amortMode ?? "ensemble", amortDureeEnsemble, composants);
       setResultats(r);
       if (loyerMensuel > 0) setSliderMax(Math.max(loyerMensuel * 2, 200));
     }
@@ -394,7 +394,7 @@ export default function Simulateur() {
   // Inline amort display values (always reflect current state, not frozen resultats)
   const prixDisplay = parseFloat(form.prix) || 0;
   const valAmortDisplay = prixDisplay * amortPct / 100;
-  const amortBienDisplay = amortMode === "ensemble"
+  const amortBienDisplay = (amortMode ?? "ensemble") === "ensemble"
     ? (amortDureeEnsemble > 0 ? valAmortDisplay / amortDureeEnsemble : 0)
     : composants.reduce((sum, c) => sum + (valAmortDisplay * c.pct / 100) / (c.duree || 1), 0);
   const amortMobilierDisplay = (parseFloat(form.mobilier) || 0) / 7;
@@ -423,7 +423,7 @@ export default function Simulateur() {
       ? montantCredit * r * Math.pow(1 + r, n) / (Math.pow(1 + r, n) - 1)
       : (duree > 0 ? montantCredit / n : 0);
 
-    const amortBienMaxDuree = amortMode === "ensemble"
+    const amortBienMaxDuree = (amortMode ?? "ensemble") === "ensemble"
       ? amortDureeEnsemble
       : Math.max(...composants.map(c => c.duree));
     const maxAmortDuree = Math.max(amortBienMaxDuree, 20, 15, 7);
@@ -462,7 +462,7 @@ export default function Simulateur() {
 
       let amortBienA = 0;
       const amortParComposant: number[] = [];
-      if (amortMode === "ensemble") {
+      if ((amortMode ?? "ensemble") === "ensemble") {
         amortBienA = year <= amortDureeEnsemble ? valeurAmortissable / amortDureeEnsemble : 0;
       } else {
         for (const c of composants) {
@@ -518,7 +518,7 @@ export default function Simulateur() {
 
     // Annexe — table unifiée avec sous-colonnes Amort + Reste par catégorie
     const annexeCols: { label: string; annuel: number; duree: number; initial: number }[] = [];
-    if (amortMode === "ensemble") {
+    if ((amortMode ?? "ensemble") === "ensemble") {
       if (valeurAmortissable > 0) annexeCols.push({ label: "Bien immobilier", annuel: valeurAmortissable / amortDureeEnsemble, duree: amortDureeEnsemble, initial: valeurAmortissable });
     } else {
       for (const c of composants) {
@@ -1301,7 +1301,7 @@ ${annexeTable}
                             setLoyerSlider(v);
                             updateField("loyer", e.target.value);
                             if (showResults) {
-                              const r = computeResultats(form, v, amortPct, amortMode, amortDureeEnsemble, composants);
+                              const r = computeResultats(form, v, amortPct, amortMode ?? "ensemble", amortDureeEnsemble, composants);
                               setResultats(r);
                             }
                           }}
@@ -1319,7 +1319,7 @@ ${annexeTable}
                         setLoyerSlider(v);
                         updateField("loyer", v.toString());
                         if (showResults) {
-                          const r = computeResultats(form, v, amortPct, amortMode, amortDureeEnsemble, composants);
+                          const r = computeResultats(form, v, amortPct, amortMode ?? "ensemble", amortDureeEnsemble, composants);
                           setResultats(r);
                         }
                       }}
@@ -1442,6 +1442,10 @@ ${annexeTable}
                                 <div className="px-5 pb-2" style={{ background: "#FDFAF6" }}>
                                   <Row label="Loyers annuels" val={formatEuro(resultats.loyerAnnuel)} bold />
                                   <Row label="Emprunt" val={`−${formatEuro(resultats.creditAnnuel)}`} color="#B03A2A" />
+                                  <div className="pl-3 pb-1.5 -mt-1">
+                                    <span className="text-[13px] font-medium" style={{ color: "rgba(26,22,18,0.5)" }}>Dont frais d&apos;emprunt : </span>
+                                    <span className="text-[13px] font-semibold" style={{ color: "#4E1F12" }}>{formatEuro(resultats.interetsAnnee1)}</span>
+                                  </div>
                                   <Row label="Charges déductibles" val={`−${formatEuro(resultats.chargesDeductibles)}`} color="#B03A2A" />
                                   <Row label="Amortissements" val={`−${formatEuro(resultats.amortTotal)}`} color="#B03A2A" />
                                   <Row label="Base imposable" val={formatEuro(resultats.baseImposableReel)} bold sep />
@@ -1467,6 +1471,10 @@ ${annexeTable}
                                 <div className="px-5 pb-2" style={{ background: "#FDFAF6" }}>
                                   <Row label="Loyers annuels" val={formatEuro(resultats.loyerAnnuel)} bold />
                                   <Row label="Emprunt" val={`−${formatEuro(resultats.creditAnnuel)}`} color="#B03A2A" />
+                                  <div className="pl-3 pb-1.5 -mt-1">
+                                    <span className="text-[13px] font-medium" style={{ color: "rgba(26,22,18,0.5)" }}>Dont frais d&apos;emprunt : </span>
+                                    <span className="text-[13px] font-semibold" style={{ color: "#4E1F12" }}>{formatEuro(resultats.interetsAnnee1)}</span>
+                                  </div>
                                   <Row label="Base imposable (70% loyers)" val={formatEuro(resultats.baseBIC)} bold sep />
                                   <Row label="Impôt estimé" val={formatEuro(resultats.impotBIC)} color="#B03A2A" />
                                   <Row label="Cash-flow mensuel" val={formatEuro(resultats.cashflowBICMensuel)} bold color={resultats.cashflowBICMensuel >= 0 ? "#1A7A52" : "#B03A2A"} sep />
@@ -1563,84 +1571,88 @@ ${annexeTable}
                   </div>
                   <div className="px-5 pt-5 pb-5 space-y-5">
 
-                      {/* Bloc unifié : explication + méthodes + boutons */}
-                      <div className="rounded-xl overflow-hidden" style={{ border: "1px solid rgba(78,31,18,0.12)" }}>
-                        {/* Explication principale */}
-                        <div className="p-5" style={{ background: "rgba(78,31,18,0.05)" }}>
-                          <p className="text-[15px] leading-relaxed font-medium" style={{ color: "#4E1F12" }}>
-                            En LMNP au réel, vous pouvez amortir comptablement votre bien — <strong>hors terrain (~{100 - amortPct}%)</strong> — sur sa durée d&apos;usage. Chaque année, cet amortissement est déduit de vos revenus locatifs, ce qui <strong>réduit la base imposable et donc l&apos;impôt</strong>.
-                          </p>
-                          <p className="text-[13px] mt-2 leading-relaxed" style={{ color: "rgba(26,22,18,0.5)" }}>
-                            Les amortissements sont réintégrés à la plus-value à la revente, mais des abattements pour durée de détention s&apos;appliquent.
-                          </p>
-                        </div>
-
-                        {/* Séparateur + deux colonnes texte */}
-                        <div className="grid grid-cols-2" style={{ borderTop: "1px solid rgba(78,31,18,0.1)" }}>
-                          <div className="p-4" style={{ borderRight: "1px solid rgba(78,31,18,0.1)" }}>
-                            <div className="font-bold text-[13px] mb-1.5" style={{ color: amortMode === "ensemble" ? "#4E1F12" : "rgba(26,22,18,0.5)" }}>Amort. Global Simplifié</div>
-                            <p className="text-[12px] leading-relaxed" style={{ color: "rgba(26,22,18,0.5)" }}>
-                              Tolérée sans comptable. Le bien est amorti en une seule fois sur la durée choisie. Simple, mais moins optimisé.
-                            </p>
-                          </div>
-                          <div className="p-4">
-                            <div className="font-bold text-[13px] mb-1.5" style={{ color: amortMode === "composant" ? "#1A7A52" : "rgba(26,22,18,0.5)" }}>Amort. par Composant</div>
-                            <p className="text-[12px] leading-relaxed" style={{ color: "rgba(26,22,18,0.5)" }}>
-                              Méthode optimale recommandée par les experts. Durées distinctes par composant pour maximiser la déduction.
-                            </p>
-                          </div>
-                        </div>
-
-                        {/* Boutons côte à côte pleine largeur */}
-                        <div className="grid grid-cols-2" style={{ borderTop: "1px solid rgba(78,31,18,0.1)" }}>
-                          <button onClick={() => setAmortMode("ensemble")}
-                            className="py-3.5 text-sm font-bold transition-all"
-                            style={amortMode === "ensemble"
-                              ? { background: "#C95B2A", color: "#F5F0E8", borderRight: "1px solid rgba(78,31,18,0.1)" }
-                              : { background: "rgba(26,22,18,0.03)", color: "rgba(26,22,18,0.45)", borderRight: "1px solid rgba(78,31,18,0.1)" }}>
-                            {amortMode === "ensemble" ? "✓ Global Simplifié" : "Global Simplifié"}
-                          </button>
-                          <button onClick={() => setAmortMode("composant")}
-                            className="py-3.5 text-sm font-bold transition-all"
-                            style={amortMode === "composant"
-                              ? { background: "#1A7A52", color: "#F5F0E8" }
-                              : { background: "rgba(26,22,18,0.03)", color: "rgba(26,22,18,0.45)" }}>
-                            {amortMode === "composant" ? "✓ Par Composant" : "Par Composant"}
-                          </button>
-                        </div>
-                      </div>
-
-                      {/* Bien immobilier — note textuelle */}
+                      {/* Bloc unifié : explication + valeur amort + méthodes + boutons */}
                       {(() => {
+                        const prixVal2 = parseFloat(form.prix) || 0;
+                        const valAmort2 = prixVal2 * amortPct / 100;
+                        return (
+                          <div className="rounded-xl overflow-hidden" style={{ border: "1px solid rgba(78,31,18,0.12)" }}>
+                            {/* Explication principale + valeur amortissable */}
+                            <div className="p-5" style={{ background: "rgba(78,31,18,0.05)" }}>
+                              <p className="text-[15px] leading-relaxed font-medium" style={{ color: "#4E1F12" }}>
+                                En LMNP au réel, vous pouvez amortir comptablement votre bien — <strong>hors terrain (~{100 - amortPct}%)</strong> — sur sa durée d&apos;usage. Chaque année, cet amortissement est déduit de vos revenus locatifs, ce qui <strong>réduit la base imposable et donc l&apos;impôt</strong>.
+                              </p>
+                              <p className="text-[13px] mt-2 leading-relaxed" style={{ color: "rgba(26,22,18,0.5)" }}>
+                                Les amortissements sont réintégrés à la plus-value à la revente, mais des abattements pour durée de détention s&apos;appliquent.
+                              </p>
+                              {/* Valeur amortissable inline */}
+                              <div className="mt-3 flex items-center gap-2 flex-wrap">
+                                <span className="text-[13px]" style={{ color: "rgba(26,22,18,0.5)" }}>Valeur amortissable :</span>
+                                <span className="text-[18px] font-bold" style={{ color: "#C95B2A" }}>{formatEuro(valAmort2)}</span>
+                                <span className="text-[12px]" style={{ color: "rgba(26,22,18,0.35)" }}>
+                                  (<input type="number" min={0} max={100} value={amortPct}
+                                    onChange={e => {
+                                      const v = Math.min(100, Math.max(0, parseInt(e.target.value) || 0));
+                                      e.target.value = String(v);
+                                      setAmortPct(v);
+                                    }}
+                                    className="w-10 text-center text-[12px] rounded focus:outline-none focus:ring-1 focus:ring-[#C95B2A]"
+                                    style={{ ...INPUT_STYLE, display: "inline-block", padding: "1px 4px" }} />% hors terrain)
+                                </span>
+                              </div>
+                            </div>
+
+                            {/* Deux colonnes texte séparées par un trait orange */}
+                            <div className="grid grid-cols-2" style={{ borderTop: "2px solid #C95B2A" }}>
+                              <div className="p-4" style={{ borderRight: "2px solid #C95B2A" }}>
+                                <div className="font-bold text-[13px] mb-1.5" style={{ color: amortMode === "ensemble" ? "#4E1F12" : "rgba(26,22,18,0.5)" }}>Amort. Global Simplifié</div>
+                                <p className="text-[12px] leading-relaxed" style={{ color: "rgba(26,22,18,0.5)" }}>
+                                  Tolérée sans comptable. Le bien est amorti en une seule fois sur la durée choisie. Simple, mais moins optimisé.
+                                </p>
+                              </div>
+                              <div className="p-4">
+                                <div className="font-bold text-[13px] mb-1.5" style={{ color: amortMode === "composant" ? "#1A7A52" : "rgba(26,22,18,0.5)" }}>Amort. par Composant</div>
+                                <p className="text-[12px] leading-relaxed" style={{ color: "rgba(26,22,18,0.5)" }}>
+                                  Méthode optimale recommandée par les experts. Durées distinctes par composant pour maximiser la déduction.
+                                </p>
+                              </div>
+                            </div>
+
+                            {/* Boutons côte à côte pleine largeur */}
+                            <div className="grid grid-cols-2" style={{ borderTop: "1px solid rgba(78,31,18,0.1)" }}>
+                              <button onClick={() => setAmortMode("ensemble")}
+                                className="py-3.5 text-sm font-bold transition-all"
+                                style={amortMode === "ensemble"
+                                  ? { background: "#C95B2A", color: "#F5F0E8", borderRight: "1px solid rgba(78,31,18,0.1)" }
+                                  : { background: "rgba(26,22,18,0.03)", color: "rgba(26,22,18,0.45)", borderRight: "1px solid rgba(78,31,18,0.1)" }}>
+                                {amortMode === "ensemble" ? "✓ Global Simplifié" : "Global Simplifié"}
+                              </button>
+                              <button onClick={() => setAmortMode("composant")}
+                                className="py-3.5 text-sm font-bold transition-all"
+                                style={amortMode === "composant"
+                                  ? { background: "#1A7A52", color: "#F5F0E8" }
+                                  : { background: "rgba(26,22,18,0.03)", color: "rgba(26,22,18,0.45)" }}>
+                                {amortMode === "composant" ? "✓ Par Composant" : "Par Composant"}
+                              </button>
+                            </div>
+                          </div>
+                        );
+                      })()}
+
+                      {/* Contenu selon mode choisi — masqué jusqu'au clic */}
+                      {amortMode !== null && (() => {
                         const prixVal = parseFloat(form.prix) || 0;
                         const valAmort = prixVal * amortPct / 100;
                         return (
                           <div className="space-y-4">
-                            {/* Note texte */}
-                            <p className="text-[13px] leading-relaxed" style={{ color: "rgba(26,22,18,0.55)" }}>
-                              La valeur amortissable de votre bien est <strong style={{ color: "#C95B2A" }}>{formatEuro(valAmort)}</strong> — soit{" "}
-                              <span className="inline-flex items-center gap-1">
-                                <input type="number" min={0} max={100} value={amortPct}
-                                  onChange={e => {
-                                    const v = Math.min(100, Math.max(0, parseInt(e.target.value) || 0));
-                                    e.target.value = String(v);
-                                    setAmortPct(v);
-                                  }}
-                                  className="w-12 px-1.5 py-0.5 text-sm rounded text-center text-[#1A1612] focus:outline-none focus:ring-1 focus:ring-[#C95B2A]"
-                                  style={{ ...INPUT_STYLE, display: "inline-block" }} />
-                                <span>% du prix hors terrain</span>
-                              </span>
-                              {" "}(terrain non amortissable : {formatEuro(prixVal - valAmort)}).
-                            </p>
-
                             {/* Slider durée (mode ensemble) */}
                             {amortMode === "ensemble" && (
                               <div className="rounded-lg p-4" style={{ background: "#F5F0E8", border: "0.5px solid rgba(26,22,18,0.08)" }}>
                                 <div className="flex items-center justify-between mb-3">
                                   <div className={LABEL} style={{ marginBottom: 0 }}>Durée d&apos;amortissement</div>
-                                  <div className="flex items-baseline gap-1">
-                                    <span className="text-lg font-semibold" style={{ color: "#C95B2A" }}>{amortDureeEnsemble}</span>
-                                    <span className="text-xs" style={{ color: "rgba(26,22,18,0.45)" }}>ans</span>
+                                  <div className="flex items-baseline gap-3">
+                                    <span className="text-lg font-semibold" style={{ color: "#C95B2A" }}>{amortDureeEnsemble} ans</span>
+                                    <span className="text-[13px] font-semibold" style={{ color: "#4E1F12" }}>{formatEuro(valAmort)}</span>
                                   </div>
                                 </div>
                                 <input
@@ -1663,6 +1675,13 @@ ${annexeTable}
                                   </div>
                                 </div>
                               </div>
+                            )}
+
+                            {/* Rappel valeur amortissable au-dessus du tableau composant */}
+                            {amortMode === "composant" && (
+                              <p className="text-[13px]" style={{ color: "rgba(26,22,18,0.55)" }}>
+                                Valeur à répartir : <strong style={{ color: "#C95B2A" }}>{formatEuro(valAmort)}</strong>
+                              </p>
                             )}
 
                             {/* Mode Par composant */}
@@ -1750,19 +1769,19 @@ ${annexeTable}
                       {/* Récap cards */}
                       <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
                         {[
-                          { label: "Bien", val: amortBienDisplay, sub: amortMode === "ensemble" ? `${amortPct}% prix · ${amortDureeEnsemble} ans` : `${amortPct}% · composants` },
-                          { label: "Mobilier", val: amortMobilierDisplay, sub: "mobilier · 7 ans" },
-                          { label: "Travaux", val: amortTravauxDisplay, sub: "travaux · 15 ans" },
-                          { label: "Notaire", val: amortNotaireDisplay, sub: "notaire · 20 ans" },
-                          { label: "Total", val: amortTotalDisplay, sub: "Déductible/an", accent: true },
-                        ].map(({ label, val, sub, accent }) => (
-                          <div key={label} className="rounded-lg p-3 text-center"
-                            style={{ background: accent ? "rgba(201,91,42,0.1)" : "#F5F0E8", border: accent ? "1px solid rgba(201,91,42,0.25)" : "0.5px solid rgba(26,22,18,0.08)" }}>
-                            <div className="text-[10px] uppercase tracking-[0.1em] mb-1"
-                              style={{ color: accent ? "#C95B2A" : "rgba(26,22,18,0.4)" }}>{label}</div>
-                            <div className="font-bold text-sm"
-                              style={{ color: accent ? "#C95B2A" : "#1A1612" }}>{formatEuro(val)}/an</div>
-                            <div className="text-[10px] mt-0.5" style={{ color: "rgba(26,22,18,0.35)" }}>{sub}</div>
+                          { label: "Bien", val: amortBienDisplay, sub: (amortMode ?? "ensemble") === "ensemble" ? `${amortPct}% prix · ${amortDureeEnsemble} ans` : `${amortPct}% · composants`, color: "#4E1F12" },
+                          { label: "Mobilier", val: amortMobilierDisplay, sub: "mobilier · 7 ans", color: "#6B4226" },
+                          { label: "Travaux", val: amortTravauxDisplay, sub: "travaux · 15 ans", color: "#6B4226" },
+                          { label: "Notaire", val: amortNotaireDisplay, sub: "notaire · 20 ans", color: "#6B4226" },
+                          { label: "Total", val: amortTotalDisplay, sub: "Déductible/an", accent: true, color: "#C95B2A" },
+                        ].map(({ label, val, sub, accent, color }) => (
+                          <div key={label} className="rounded-lg p-3.5 text-center"
+                            style={{ background: accent ? "rgba(201,91,42,0.1)" : "#F5F0E8", border: accent ? "1.5px solid rgba(201,91,42,0.3)" : "0.5px solid rgba(26,22,18,0.1)" }}>
+                            <div className="text-[11px] font-semibold uppercase tracking-[0.1em] mb-1.5"
+                              style={{ color: accent ? "#C95B2A" : "rgba(26,22,18,0.45)" }}>{label}</div>
+                            <div className="font-bold text-[15px]"
+                              style={{ color }}>{formatEuro(val)}/an</div>
+                            <div className="text-[11px] mt-1" style={{ color: "rgba(26,22,18,0.38)" }}>{sub}</div>
                           </div>
                         ))}
                       </div>
@@ -1817,7 +1836,7 @@ ${annexeTable}
           simulationData={{
             form,
             amortPct,
-            amortMode,
+            amortMode: amortMode ?? "ensemble",
             amortDureeEnsemble,
             composants,
             savedAt: Date.now(),
