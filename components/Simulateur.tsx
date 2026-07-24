@@ -303,6 +303,7 @@ export default function Simulateur() {
   };
   const resultsRef = useRef<HTMLDivElement>(null);
   const pdfButtonsRef = useRef<HTMLDivElement>(null);
+  const amortContentRef = useRef<HTMLDivElement>(null);
 
   const updateField = useCallback(<K extends keyof FormState>(key: K, value: FormState[K]) => {
     const stripped = typeof value === "string" ? stripLeadingZeros(value) : value;
@@ -385,7 +386,7 @@ export default function Simulateur() {
       if (loyerMensuel > 0) setSliderMax(Math.max(loyerMensuel * 2, 200));
     }
     setSimulationValidated(true);
-    setTimeout(() => resultsRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }), 50);
+    setTimeout(() => pdfButtonsRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }), 50);
   };
 
   const displayCashflow = resultats
@@ -1579,16 +1580,18 @@ ${annexeTable}
                           </div>
                         )}
 
-                        {/* Recommandation banner — après les tableaux */}
-                        <div className="rounded-xl px-5 py-4 mt-5" style={{ background: bestBg, border: `1.5px solid ${bestBorder}` }}>
-                          <div className="text-xs font-semibold uppercase tracking-[0.14em] mb-1" style={{ color: "rgba(26,22,18,0.45)" }}>Régime le plus adapté à votre situation</div>
-                          <div className="text-2xl font-black" style={{ color: bestColor, letterSpacing: "-0.02em" }}>{bestLabel}</div>
-                          <div className="text-base mt-1.5 font-semibold" style={{ color: reelBetter ? "#1A7A52" : "rgba(26,22,18,0.6)" }}>
-                            {reelBetter
-                              ? `${economy > 0 ? `${formatEuro(economy)}/an d'impôt économisé` : ""}${cfDiff > 0 ? `${economy > 0 ? " · " : ""}Cash-flow supérieur de ${formatEuro(cfDiff)}/mois` : ""}`
-                              : `Micro-BIC suffisant — écart d'impôt de ${formatEuro(Math.abs(economy))}/an`}
+                        {/* Recommandation banner — visible uniquement avant le choix du régime */}
+                        {selectedRegime === null && (
+                          <div className="rounded-xl px-5 py-4 mt-5" style={{ background: bestBg, border: `1.5px solid ${bestBorder}` }}>
+                            <div className="text-xs font-semibold uppercase tracking-[0.14em] mb-1" style={{ color: "rgba(26,22,18,0.45)" }}>Régime le plus adapté à votre situation</div>
+                            <div className="text-2xl font-black" style={{ color: bestColor, letterSpacing: "-0.02em" }}>{bestLabel}</div>
+                            <div className="text-base mt-1.5 font-semibold" style={{ color: reelBetter ? "#1A7A52" : "rgba(26,22,18,0.6)" }}>
+                              {reelBetter
+                                ? `${economy > 0 ? `${formatEuro(economy)}/an d'impôt économisé` : ""}${cfDiff > 0 ? `${economy > 0 ? " · " : ""}Cash-flow supérieur de ${formatEuro(cfDiff)}/mois` : ""}`
+                                : `Micro-BIC suffisant — écart d'impôt de ${formatEuro(Math.abs(economy))}/an`}
+                            </div>
                           </div>
-                        </div>
+                        )}
                       </>
                     );
                   })()}
@@ -1652,7 +1655,7 @@ ${annexeTable}
                             {/* Boutons choix — juste avant les explications */}
                             <div className="grid grid-cols-2 gap-4 px-5 pb-4 pt-4">
                             {/* Global Simplifié */}
-                            <button onClick={() => setAmortMode("ensemble")}
+                            <button onClick={() => { setAmortMode("ensemble"); setTimeout(() => amortContentRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }), 50); }}
                               className="rounded-xl overflow-hidden text-left w-full transition-all hover:shadow-md focus:outline-none group"
                               style={{
                                 border: amortMode === "ensemble" ? "2.5px solid #C95B2A" : "1.5px solid rgba(201,91,42,0.25)",
@@ -1670,7 +1673,7 @@ ${annexeTable}
                             </button>
 
                             {/* Par Composant */}
-                            <button onClick={() => setAmortMode("composant")}
+                            <button onClick={() => { setAmortMode("composant"); setTimeout(() => amortContentRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }), 50); }}
                               className="rounded-xl overflow-hidden text-left w-full transition-all hover:shadow-md focus:outline-none group"
                               style={{
                                 border: amortMode === "composant" ? "2.5px solid #1A7A52" : "1.5px solid rgba(26,122,82,0.25)",
@@ -1713,7 +1716,7 @@ ${annexeTable}
                         const prixVal = parseFloat(form.prix) || 0;
                         const valAmort = prixVal * amortPct / 100;
                         return (
-                          <div className="space-y-4">
+                          <div ref={amortContentRef} className="space-y-4" style={{ scrollMarginTop: "80px" }}>
                             {/* Slider durée (mode ensemble) */}
                             {amortMode === "ensemble" && (
                               <div className="rounded-lg p-4" style={{ background: "#F5F0E8", border: "0.5px solid rgba(26,22,18,0.08)" }}>
