@@ -1210,7 +1210,7 @@ ${annexeTable}
                     <div className="text-xl font-light mt-1" style={{ color: "#1A1612", letterSpacing: "-0.02em" }}>
                       {formatPct(resultats.rendementBrut)}
                     </div>
-                    <div className="text-[11px] mt-0.5" style={{ color: "rgba(26,22,18,0.40)" }}>brut · loyers / investissement</div>
+                    <div className="text-[11px] mt-0.5" style={{ color: "rgba(26,22,18,0.40)" }}>brut</div>
                     <div className="text-base font-light mt-2" style={{ color: "#C95B2A", letterSpacing: "-0.02em" }}>
                       {formatPct(resultats.rendementNet)}
                     </div>
@@ -1223,7 +1223,7 @@ ${annexeTable}
                     <div className="text-xl font-light mt-1" style={{ color: "#1A1612", letterSpacing: "-0.02em" }}>
                       {formatEuro(resultats.loyerAnnuel)}
                     </div>
-                    <div className="text-[11px] mt-1" style={{ color: "rgba(26,22,18,0.40)" }}>loyers encaissés / an</div>
+                    <div className="text-[11px] mt-1" style={{ color: "rgba(26,22,18,0.40)" }}>loyers encaissés HC</div>
                   </div>
 
                   {/* Emprunt annuel */}
@@ -1232,9 +1232,8 @@ ${annexeTable}
                     <div className="text-xl font-light mt-1" style={{ color: "#B03A2A", letterSpacing: "-0.02em" }}>
                       {formatEuro(resultats.creditAnnuel + resultats.assuranceEmprunteurAnnuel)}
                     </div>
-                    <div className="text-[11px] mt-0.5" style={{ color: "rgba(26,22,18,0.40)" }}>mensualités + assurance emprunt</div>
-                    <div className="text-[11px] mt-1.5" style={{ color: "rgba(26,22,18,0.35)" }}>
-                      soit {formatEuro((resultats.creditAnnuel + resultats.assuranceEmprunteurAnnuel) / 12)}/mois
+                    <div className="text-[13px] mt-1" style={{ color: "rgba(26,22,18,0.50)" }}>
+                      soit <span className="font-semibold" style={{ color: "#B03A2A" }}>{formatEuro((resultats.creditAnnuel + resultats.assuranceEmprunteurAnnuel) / 12)}</span>/mois
                     </div>
                   </div>
 
@@ -1244,9 +1243,8 @@ ${annexeTable}
                     <div className="text-xl font-light mt-1" style={{ color: "#B03A2A", letterSpacing: "-0.02em" }}>
                       {formatEuro(resultats.chargesDeductibles)}
                     </div>
-                    <div className="text-[11px] mt-0.5" style={{ color: "rgba(26,22,18,0.40)" }}>charges + intérêts emprunt</div>
-                    <div className="text-[11px] mt-1.5" style={{ color: "rgba(26,22,18,0.35)" }}>
-                      dont {formatEuro(resultats.interetsAnnee1)} d&apos;intérêts
+                    <div className="text-[13px] mt-1" style={{ color: "rgba(26,22,18,0.50)" }}>
+                      dont <span className="font-semibold" style={{ color: "#B03A2A" }}>{formatEuro(resultats.interetsAnnee1)}</span> d&apos;intérêts d&apos;emprunt
                     </div>
                   </div>
 
@@ -1257,10 +1255,9 @@ ${annexeTable}
                       {formatEuro(displayImpot)}
                     </div>
                     <div className="text-[11px] mt-0.5" style={{ color: "rgba(26,22,18,0.40)" }}>TMI {form.tmi}% + PS 18,6%</div>
-                    <div className="text-base font-light mt-2" style={{ color: "rgba(26,22,18,0.45)", letterSpacing: "-0.02em" }}>
-                      {formatEuro(displayImpotMensuel)}
+                    <div className="text-[13px] mt-1.5" style={{ color: "rgba(26,22,18,0.50)" }}>
+                      Soit <span className="font-semibold" style={{ color: "#1A1612" }}>{formatEuro(displayImpotMensuel)}</span>/mois
                     </div>
-                    <div className="text-[11px] mt-0.5" style={{ color: "rgba(26,22,18,0.40)" }}>mensuel · annuel ÷ 12</div>
                   </div>
 
                   {/* Cash-flow mensuel */}
@@ -1273,7 +1270,7 @@ ${annexeTable}
                       {formatEuro(displayCashflow)}
                     </div>
                     <div className="text-[11px] mt-1" style={{ color: "rgba(26,22,18,0.40)" }}>
-                      {selectedRegime === "micro" ? "Micro-BIC" : selectedRegime === "reel" ? "Régime réel" : "Régime réel (par défaut)"}
+                      {selectedRegime === "micro" ? "Au Micro-BIC" : "Au Régime réel"}
                     </div>
                   </div>
                 </div>
