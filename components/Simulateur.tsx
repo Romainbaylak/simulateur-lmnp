@@ -776,28 +776,6 @@ ${annexeTable}
         {/* ─── FORM ─── */}
         <div className="rounded-xl p-6 md:p-8 mb-6" style={sectionStyle}>
 
-          {/* Mode de location */}
-          <div className="mb-6">
-            <div className={LABEL}>Mode de location</div>
-            <button
-              onClick={() => { setIsSaisonnier(!isSaisonnier); setResultatsTriple(null); }}
-              className="flex items-center gap-2.5 px-4 py-2.5 rounded-md text-sm font-medium transition-all"
-              style={{
-                background: isSaisonnier ? "rgba(26,82,122,0.1)" : "#F5F0E8",
-                border: isSaisonnier ? "1.5px solid #26527A" : "0.5px solid rgba(26,22,18,0.18)",
-                color: isSaisonnier ? "#26527A" : "rgba(26,22,18,0.55)",
-              }}>
-              <span className="w-4 h-4 rounded flex items-center justify-center flex-shrink-0"
-                style={{
-                  background: isSaisonnier ? "#26527A" : "transparent",
-                  border: isSaisonnier ? "none" : "1.5px solid rgba(26,22,18,0.3)",
-                }}>
-                {isSaisonnier && <span className="text-white text-[10px] leading-none font-bold">✓</span>}
-              </span>
-              Location Saisonnière
-            </button>
-          </div>
-
           {/* Grid 2 cols */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
 
@@ -921,7 +899,26 @@ ${annexeTable}
 
             {/* ── RIGHT : Loyer ── */}
             <div className="space-y-4">
-              <p className={LABEL} style={{ opacity: 1, color: "#1A1612" }}>Loyer</p>
+              <div className="flex items-center justify-between">
+                <p className={LABEL} style={{ opacity: 1, color: "#1A1612", marginBottom: 0 }}>Loyer</p>
+                <button
+                  onClick={() => { setIsSaisonnier(!isSaisonnier); setResultatsTriple(null); }}
+                  className="flex items-center gap-2 px-3.5 py-2 rounded-md text-sm font-medium transition-all"
+                  style={{
+                    background: isSaisonnier ? "rgba(26,82,122,0.1)" : "#F5F0E8",
+                    border: isSaisonnier ? "1.5px solid #26527A" : "0.5px solid rgba(26,22,18,0.18)",
+                    color: isSaisonnier ? "#26527A" : "rgba(26,22,18,0.55)",
+                  }}>
+                  <span className="w-4 h-4 rounded flex items-center justify-center flex-shrink-0"
+                    style={{
+                      background: isSaisonnier ? "#26527A" : "transparent",
+                      border: isSaisonnier ? "none" : "1.5px solid rgba(26,22,18,0.3)",
+                    }}>
+                    {isSaisonnier && <span className="text-white text-[10px] leading-none font-bold">✓</span>}
+                  </span>
+                  Location Saisonnière
+                </button>
+              </div>
 
               {/* Loyer mensuel ou Saisonnier */}
               {isSaisonnier ? (
