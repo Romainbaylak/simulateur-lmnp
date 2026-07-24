@@ -1191,7 +1191,10 @@ ${annexeTable}
         </div>
 
         {/* ─── RESULTS ─── */}
-        <div ref={resultsRef} style={{ scrollMarginTop: "72px" }}>
+        {/* Ancre invisible : le scroll atterrit ici, 24px au-dessus du bandeau */}
+        <div ref={resultsRef} style={{ scrollMarginTop: "72px" }} />
+        <div style={{ height: 24 }} />
+        <div>
           {showResults && (
             !resultats ? (
               <div className="rounded-xl p-12 text-center" style={cardStyle}>
