@@ -1461,6 +1461,19 @@ ${annexeTable}
 
                     return (
                       <>
+                        {/* Recommandation banner — visible uniquement avant le choix du régime */}
+                        {selectedRegime === null && (
+                          <div className="rounded-xl px-5 py-4 mb-4" style={{ background: bestBg, border: `1.5px solid ${bestBorder}` }}>
+                            <div className="text-xs font-semibold uppercase tracking-[0.14em] mb-1" style={{ color: "rgba(26,22,18,0.45)" }}>Régime le plus adapté à votre situation</div>
+                            <div className="text-2xl font-black" style={{ color: bestColor, letterSpacing: "-0.02em" }}>{bestLabel}</div>
+                            <div className="text-base mt-1.5 font-semibold" style={{ color: reelBetter ? "#1A7A52" : "rgba(26,22,18,0.6)" }}>
+                              {reelBetter
+                                ? `${economy > 0 ? `${formatEuro(economy)}/an d'impôt économisé` : ""}${cfDiff > 0 ? `${economy > 0 ? " · " : ""}Cash-flow supérieur de ${formatEuro(cfDiff)}/mois` : ""}`
+                                : `Micro-BIC suffisant — écart d'impôt de ${formatEuro(Math.abs(economy))}/an`}
+                            </div>
+                          </div>
+                        )}
+
                         {/* "Fais ton choix" + tableaux */}
                         {selectedRegime === null ? (
                           <>
@@ -1603,18 +1616,6 @@ ${annexeTable}
                           </div>
                         )}
 
-                        {/* Recommandation banner — visible uniquement avant le choix du régime */}
-                        {selectedRegime === null && (
-                          <div className="rounded-xl px-5 py-4 mt-5" style={{ background: bestBg, border: `1.5px solid ${bestBorder}` }}>
-                            <div className="text-xs font-semibold uppercase tracking-[0.14em] mb-1" style={{ color: "rgba(26,22,18,0.45)" }}>Régime le plus adapté à votre situation</div>
-                            <div className="text-2xl font-black" style={{ color: bestColor, letterSpacing: "-0.02em" }}>{bestLabel}</div>
-                            <div className="text-base mt-1.5 font-semibold" style={{ color: reelBetter ? "#1A7A52" : "rgba(26,22,18,0.6)" }}>
-                              {reelBetter
-                                ? `${economy > 0 ? `${formatEuro(economy)}/an d'impôt économisé` : ""}${cfDiff > 0 ? `${economy > 0 ? " · " : ""}Cash-flow supérieur de ${formatEuro(cfDiff)}/mois` : ""}`
-                                : `Micro-BIC suffisant — écart d'impôt de ${formatEuro(Math.abs(economy))}/an`}
-                            </div>
-                          </div>
-                        )}
                       </>
                     );
                   })()}
