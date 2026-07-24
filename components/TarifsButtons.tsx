@@ -2,9 +2,13 @@
 
 import { useUser, SignInButton } from "@clerk/nextjs";
 import { useStripeCheckout } from "@/lib/useStripeCheckout";
+import { useEffect, useRef } from "react";
 
 const PRICE_INVESTISSEUR = "price_1Ttn8vRkmRCKEt1coHEDX2yS";
 const PRICE_PRO = "price_1Ttn9rRkmRCKEt1cfdcRt1f7";
+
+// clé sessionStorage pour mémoriser l'abonnement visé avant connexion
+const PENDING_KEY = "lmnp_pending_checkout";
 
 function SubscribeButton({
   priceId,
@@ -21,20 +25,43 @@ function SubscribeButton({
 }) {
   const { isSignedIn, user } = useUser();
   const { redirectToCheckout, loading, error } = useStripeCheckout();
+  const triggered = useRef(false);
+
+  // Après connexion : déclencher le checkout si cet abonnement était en attente
+  useEffect(() => {
+    if (!isSignedIn || !user || triggered.current) return;
+    const raw = sessionStorage.getItem(PENDING_KEY);
+    if (!raw) return;
+    try {
+      const pending = JSON.parse(raw);
+      if (pending.priceId !== priceId) return;
+      triggered.current = true;
+      sessionStorage.removeItem(PENDING_KEY);
+      redirectToCheckout({ priceId, mode: "subscription", userId: user.id, plan });
+    } catch {
+      sessionStorage.removeItem(PENDING_KEY);
+    }
+  }, [isSignedIn, user]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleClick = () => {
-    redirectToCheckout({
-      priceId,
-      mode: "subscription",
-      userId: user?.id,
-      plan,
-    });
+    redirectToCheckout({ priceId, mode: "subscription", userId: user?.id, plan });
+  };
+
+  // Mémoriser le plan visé AVANT d'ouvrir le modal Clerk
+  const savePending = () => {
+    sessionStorage.setItem(PENDING_KEY, JSON.stringify({ priceId, plan }));
   };
 
   if (!isSignedIn) {
     return (
-      <SignInButton mode="modal">
+      <SignInButton
+        mode="modal"
+        // fallback si Clerk redirige la page pendant la vérification par mail
+        fallbackRedirectUrl="/tarifs"
+        signUpFallbackRedirectUrl="/tarifs"
+      >
         <button
+          onClick={savePending}
           className="block w-full text-center py-3 rounded font-medium transition-opacity hover:opacity-[0.88]"
           style={{ ...style, borderRadius: 6 }}
         >
@@ -52,7 +79,7 @@ function SubscribeButton({
         className="block w-full text-center py-3 rounded font-medium transition-opacity hover:opacity-[0.88] disabled:opacity-60"
         style={{ ...style, borderRadius: 6 }}
       >
-        {loading ? "Redirection…" : label}
+        {loading ? "Redirection vers le paiement…" : label}
       </button>
       {error && (
         <p className="text-xs text-center mt-2" style={{ color: "#B03A2A", ...errorStyle }}>
