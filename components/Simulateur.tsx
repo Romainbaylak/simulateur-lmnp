@@ -781,7 +781,9 @@ ${annexeTable}
 
             {/* ── LEFT : Bien & Financement ── */}
             <div className="space-y-4">
-              <p className={LABEL} style={{ opacity: 1, color: "#1A1612" }}>Bien &amp; Financement</p>
+              <div className="flex items-center" style={{ minHeight: 38 }}>
+                <p className={LABEL} style={{ opacity: 1, color: "#1A1612", marginBottom: 0 }}>Bien &amp; Financement</p>
+              </div>
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
