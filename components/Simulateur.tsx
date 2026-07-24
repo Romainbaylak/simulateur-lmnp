@@ -1314,10 +1314,10 @@ ${annexeTable}
                     </div>
                   </div>
                 ) : !isSaisonnier ? (
-                  <div className="rounded-xl p-5" style={cardStyle}>
-                    <div className="flex justify-between items-center mb-3">
-                      <span className="text-sm font-medium" style={{ color: "#1A1612" }}>Ajuster le loyer</span>
-                      <div className="flex items-center gap-1.5">
+                  <div className="rounded-xl px-4 py-2.5" style={cardStyle}>
+                    <div className="flex justify-between items-center mb-1.5">
+                      <span className="text-xs font-medium" style={{ color: "rgba(26,22,18,0.55)" }}>Ajuster le loyer</span>
+                      <div className="flex items-center gap-1">
                         <input
                           type="number"
                           value={loyerEffectif || ""}
@@ -1330,10 +1330,10 @@ ${annexeTable}
                               setResultats(r);
                             }
                           }}
-                          className="w-24 text-right text-xl font-semibold rounded-md px-2 py-1 focus:outline-none [appearance:none] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none [-moz-appearance:textfield]"
+                          className="w-20 text-right text-base font-semibold rounded-md px-2 py-0.5 focus:outline-none [appearance:none] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none [-moz-appearance:textfield]"
                           style={{ color: "#F5F0E8", background: "#C95B2A", border: "none" }}
                         />
-                        <span className="text-base font-medium" style={{ color: "#C95B2A" }}>/mois</span>
+                        <span className="text-sm font-medium" style={{ color: "#C95B2A" }}>/mois</span>
                       </div>
                     </div>
                     <input type="range"
@@ -1434,17 +1434,6 @@ ${annexeTable}
 
                     return (
                       <>
-                        {/* Recommandation banner */}
-                        <div className="rounded-xl px-5 py-4 mb-5" style={{ background: bestBg, border: `1.5px solid ${bestBorder}` }}>
-                          <div className="text-xs font-semibold uppercase tracking-[0.14em] mb-1" style={{ color: "rgba(26,22,18,0.45)" }}>Régime le plus adapté à votre situation</div>
-                          <div className="text-2xl font-black" style={{ color: bestColor, letterSpacing: "-0.02em" }}>{bestLabel}</div>
-                          <div className="text-base mt-1.5 font-semibold" style={{ color: reelBetter ? "#1A7A52" : "rgba(26,22,18,0.6)" }}>
-                            {reelBetter
-                              ? `${economy > 0 ? `${formatEuro(economy)}/an d'impôt économisé` : ""}${cfDiff > 0 ? `${economy > 0 ? " · " : ""}Cash-flow supérieur de ${formatEuro(cfDiff)}/mois` : ""}`
-                              : `Micro-BIC suffisant — écart d'impôt de ${formatEuro(Math.abs(economy))}/an`}
-                          </div>
-                        </div>
-
                         {/* "Fais ton choix" + tableaux */}
                         {selectedRegime === null ? (
                           <>
@@ -1579,6 +1568,17 @@ ${annexeTable}
                             </div>
                           </div>
                         )}
+
+                        {/* Recommandation banner — après les tableaux */}
+                        <div className="rounded-xl px-5 py-4 mt-5" style={{ background: bestBg, border: `1.5px solid ${bestBorder}` }}>
+                          <div className="text-xs font-semibold uppercase tracking-[0.14em] mb-1" style={{ color: "rgba(26,22,18,0.45)" }}>Régime le plus adapté à votre situation</div>
+                          <div className="text-2xl font-black" style={{ color: bestColor, letterSpacing: "-0.02em" }}>{bestLabel}</div>
+                          <div className="text-base mt-1.5 font-semibold" style={{ color: reelBetter ? "#1A7A52" : "rgba(26,22,18,0.6)" }}>
+                            {reelBetter
+                              ? `${economy > 0 ? `${formatEuro(economy)}/an d'impôt économisé` : ""}${cfDiff > 0 ? `${economy > 0 ? " · " : ""}Cash-flow supérieur de ${formatEuro(cfDiff)}/mois` : ""}`
+                              : `Micro-BIC suffisant — écart d'impôt de ${formatEuro(Math.abs(economy))}/an`}
+                          </div>
+                        </div>
                       </>
                     );
                   })()}
@@ -1608,14 +1608,14 @@ ${annexeTable}
                               </p>
 
                               {/* Bloc calcul structuré */}
-                              <div className="mt-4 rounded-lg overflow-hidden" style={{ border: "1px solid rgba(78,31,18,0.15)" }}>
+                              <div className="mt-4 rounded-lg overflow-hidden" style={{ border: "1px solid rgba(26,22,18,0.12)" }}>
                                 {/* Ligne 1 : Prix du bien */}
-                                <div className="flex items-center justify-between px-4 py-3" style={{ background: "rgba(78,31,18,0.04)", borderBottom: "1px solid rgba(78,31,18,0.1)" }}>
+                                <div className="flex items-center justify-between px-4 py-2.5" style={{ borderBottom: "1px solid rgba(26,22,18,0.1)" }}>
                                   <span className="text-[13px] font-semibold" style={{ color: "#4E1F12" }}>Prix du bien</span>
-                                  <span className="text-[15px] font-bold" style={{ color: "#1A1612" }}>{formatEuro(prixVal2)}</span>
+                                  <span className="text-[14px] font-bold" style={{ color: "#1A1612" }}>{formatEuro(prixVal2)}</span>
                                 </div>
                                 {/* Ligne 2 : % amortissable (modifiable) */}
-                                <div className="flex items-center justify-between px-4 py-3" style={{ background: "rgba(78,31,18,0.02)", borderBottom: "1.5px solid #C95B2A" }}>
+                                <div className="flex items-center justify-between px-4 py-2.5" style={{ borderBottom: "1px solid rgba(26,22,18,0.1)" }}>
                                   <span className="text-[13px] font-semibold" style={{ color: "#4E1F12" }}>
                                     Part amortissable <span className="font-normal text-[12px]" style={{ color: "rgba(26,22,18,0.5)" }}>(hors terrain, modifiable)</span>
                                   </span>
@@ -1632,31 +1632,15 @@ ${annexeTable}
                                   </div>
                                 </div>
                                 {/* Ligne 3 : Valeur amortissable — résultat */}
-                                <div className="flex items-center justify-between px-4 py-3.5" style={{ background: "linear-gradient(90deg, rgba(78,31,18,0.08) 0%, rgba(201,91,42,0.06) 100%)" }}>
+                                <div className="flex items-center justify-between px-4 py-3" style={{ background: "rgba(78,31,18,0.05)" }}>
                                   <span className="text-[14px] font-bold" style={{ color: "#4E1F12" }}>Valeur amortissable</span>
                                   <span className="text-[20px] font-black" style={{ color: "#C95B2A", letterSpacing: "-0.02em" }}>{formatEuro(valAmort2)}</span>
                                 </div>
                               </div>
                             </div>
 
-                            {/* Deux colonnes texte — suite naturelle, sans bordure top */}
-                            <div className="grid grid-cols-2 gap-0" style={{ borderTop: "none" }}>
-                              <div className="p-5" style={{ background: "rgba(78,31,18,0.04)", borderRight: "2px solid #C95B2A" }}>
-                                <div className="font-bold text-[14px] mb-2" style={{ color: "#4E1F12" }}>Amort. Global Simplifié</div>
-                                <p className="text-[13px] leading-relaxed" style={{ color: "#4E1F12", opacity: 0.75 }}>
-                                  Tolérée sans comptable. Le bien est amorti en une seule fois sur la durée choisie. Simple, mais moins optimisé.
-                                </p>
-                              </div>
-                              <div className="p-5" style={{ background: "rgba(26,122,82,0.04)" }}>
-                                <div className="font-bold text-[14px] mb-2" style={{ color: "#1A7A52" }}>Amort. par Composant</div>
-                                <p className="text-[13px] leading-relaxed" style={{ color: "#1A7A52", opacity: 0.8 }}>
-                                  Méthode optimale recommandée par les experts. Durées distinctes par composant pour maximiser la déduction.
-                                </p>
-                              </div>
-                            </div>
-                          </div>
-                          {/* Boutons choix — séparés, style radio comme le choix de régime */}
-                          <div className="grid grid-cols-2 gap-4 pt-1">
+                            {/* Boutons choix — juste avant les explications */}
+                            <div className="grid grid-cols-2 gap-4 px-5 pb-4 pt-4">
                             {/* Global Simplifié */}
                             <button onClick={() => setAmortMode("ensemble")}
                               className="rounded-xl overflow-hidden text-left w-full transition-all hover:shadow-md focus:outline-none group"
@@ -1692,6 +1676,23 @@ ${annexeTable}
                                 {amortMode === "composant" && <span className="ml-auto text-[10px] font-bold px-2 py-0.5 rounded" style={{ background: "rgba(245,240,232,0.25)", color: "#F5F0E8" }}>✓ SÉLECTIONNÉ</span>}
                               </div>
                             </button>
+                          </div>
+
+                            {/* Deux colonnes texte explicatives */}
+                            <div className="grid grid-cols-2 gap-0">
+                              <div className="p-5" style={{ background: "rgba(78,31,18,0.04)", borderRight: "2px solid #C95B2A" }}>
+                                <div className="font-bold text-[14px] mb-2" style={{ color: "#4E1F12" }}>Amort. Global Simplifié</div>
+                                <p className="text-[13px] leading-relaxed" style={{ color: "#4E1F12", opacity: 0.75 }}>
+                                  Tolérée sans comptable. Le bien est amorti en une seule fois sur la durée choisie. Simple, mais moins optimisé.
+                                </p>
+                              </div>
+                              <div className="p-5" style={{ background: "rgba(26,122,82,0.04)" }}>
+                                <div className="font-bold text-[14px] mb-2" style={{ color: "#1A7A52" }}>Amort. par Composant</div>
+                                <p className="text-[13px] leading-relaxed" style={{ color: "#1A7A52", opacity: 0.8 }}>
+                                  Méthode optimale recommandée par les experts. Durées distinctes par composant pour maximiser la déduction.
+                                </p>
+                              </div>
+                            </div>
                           </div>
                           </>
                         );
