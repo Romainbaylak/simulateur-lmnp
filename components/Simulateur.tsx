@@ -349,7 +349,7 @@ export default function Simulateur() {
       setShowResults(true);
       setSelectedRegime(null);
       setSimulationValidated(false);
-      setTimeout(() => pdfButtonsRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }), 100);
+      setTimeout(() => resultsRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }), 100);
     } else {
       const loyerMensuel = loyerSlider > 0 ? loyerSlider : parseFloat(form.loyer) || 0;
       const r = computeResultats(form, loyerMensuel, amortPct, amortMode ?? "ensemble", amortDureeEnsemble, composants, false);
@@ -361,7 +361,7 @@ export default function Simulateur() {
       setShowResults(true);
       setSelectedRegime(null);
       setSimulationValidated(false);
-      setTimeout(() => pdfButtonsRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }), 100);
+      setTimeout(() => resultsRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }), 100);
     }
   };
 
@@ -1569,6 +1569,13 @@ ${annexeTable}
                                 ← Changer de régime fiscal
                               </button>
                             </div>
+                          </div>
+                        )}
+
+                        {/* "Fais ton choix" répété sous les tableaux */}
+                        {selectedRegime === null && (
+                          <div className="text-center mt-2">
+                            <span className="text-base font-semibold" style={{ color: "#1A1612" }}>Fais ton choix de régime fiscal</span>
                           </div>
                         )}
 
