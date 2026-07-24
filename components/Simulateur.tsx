@@ -1705,24 +1705,26 @@ ${annexeTable}
                               </button>
                             </div>
 
-                            {/* Deux colonnes texte explicatives */}
-                            <div className="grid grid-cols-2 gap-5 mt-5">
-                              <div>
-                                <div className="font-bold text-[15px] mb-2" style={{ color: "#4E1F12" }}>Méthode Amort. Global Simplifié</div>
-                                <p className="text-[14px] leading-relaxed" style={{ color: "rgba(26,22,18,0.88)" }}>
-                                  Dans ce cas, le bien est amorti dans son ensemble sur la durée choisie (entre 25 et 40 ans). C&apos;est la méthode la plus simple, non conventionnelle mais elle est généralement tolérée lorsqu&apos;il s&apos;agit d&apos;un petit bien seul et que la comptabilité est faite sans expert comptable.
-                                </p>
+                            {/* Textes explicatifs — visibles uniquement avant le choix */}
+                            {amortMode === null && (
+                              <div className="grid grid-cols-2 gap-5 mt-5">
+                                <div>
+                                  <div className="font-bold text-[15px] mb-2" style={{ color: "#4E1F12" }}>Méthode Amort. Global Simplifié</div>
+                                  <p className="text-[14px] leading-relaxed" style={{ color: "rgba(26,22,18,0.88)" }}>
+                                    Dans ce cas, le bien est amorti dans son ensemble sur la durée choisie (entre 25 et 40 ans). C&apos;est la méthode la plus simple, non conventionnelle mais elle est généralement tolérée lorsqu&apos;il s&apos;agit d&apos;un petit bien seul et que la comptabilité est faite sans expert comptable.
+                                  </p>
+                                </div>
+                                <div>
+                                  <div className="font-bold text-[15px] mb-2" style={{ color: "#1A7A52" }}>Méthode Amort. par Composant</div>
+                                  <p className="text-[14px] leading-relaxed" style={{ color: "rgba(26,22,18,0.88)" }}>
+                                    L&apos;Amortissement par composant consiste à décomposer et distribuer la valeur du bien sur plusieurs éléments principaux : gros œuvre, toiture, installations électriques, etc.
+                                  </p>
+                                  <p className="text-[14px] leading-relaxed mt-2" style={{ color: "rgba(26,22,18,0.88)" }}>
+                                    Chaque composant va correspondre à un pourcentage de la valeur du bien et à une durée pour l&apos;amortir bien précise. Lors du choix de ces valeurs, il faut bien veiller à respecter les durées d&apos;utilisation normale de chaque composant, ainsi que leur proportion dans la valeur totale du logement.
+                                  </p>
+                                </div>
                               </div>
-                              <div>
-                                <div className="font-bold text-[15px] mb-2" style={{ color: "#1A7A52" }}>Méthode Amort. par Composant</div>
-                                <p className="text-[14px] leading-relaxed" style={{ color: "rgba(26,22,18,0.88)" }}>
-                                  L&apos;Amortissement par composant consiste à décomposer et distribuer la valeur du bien sur plusieurs éléments principaux : gros œuvre, toiture, installations électriques, etc.
-                                </p>
-                                <p className="text-[14px] leading-relaxed mt-2" style={{ color: "rgba(26,22,18,0.88)" }}>
-                                  Chaque composant va correspondre à un pourcentage de la valeur du bien et à une durée pour l&apos;amortir bien précise. Lors du choix de ces valeurs, il faut bien veiller à respecter les durées d&apos;utilisation normale de chaque composant, ainsi que leur proportion dans la valeur totale du logement.
-                                </p>
-                              </div>
-                            </div>
+                            )}
                           </div>
                           </>
                         );
@@ -1734,33 +1736,43 @@ ${annexeTable}
                         const valAmort = prixVal * amortPct / 100;
                         return (
                           <div ref={amortContentRef} className="space-y-4" style={{ scrollMarginTop: "80px" }}>
-                            {/* Slider durée (mode ensemble) */}
+                            {/* Mode Global Simplifié */}
                             {amortMode === "ensemble" && (
-                              <div className="rounded-lg p-4" style={{ background: "#F5F0E8", border: "0.5px solid rgba(26,22,18,0.08)" }}>
-                                <div className="flex items-center justify-between mb-3">
-                                  <div className={LABEL} style={{ marginBottom: 0 }}>Durée d&apos;amortissement</div>
-                                  <div className="flex items-baseline gap-3">
-                                    <span className="text-lg font-semibold" style={{ color: "#C95B2A" }}>{amortDureeEnsemble} ans</span>
-                                    <span className="text-[13px] font-semibold" style={{ color: "#4E1F12" }}>{formatEuro(valAmort)}</span>
+                              <div className="space-y-3">
+                                {/* Ligne 1 : valeur à gauche + slider à droite */}
+                                <div className="flex gap-4 items-start">
+                                  {/* Valeur amortissable */}
+                                  <div className="rounded-lg px-5 py-4 flex-shrink-0" style={{ background: "linear-gradient(135deg, #4E1F12 0%, #C95B2A 100%)", minWidth: 180 }}>
+                                    <div className="text-[11px] uppercase tracking-wider font-semibold mb-1" style={{ color: "rgba(245,240,232,0.7)" }}>Valeur amortissable</div>
+                                    <div className="text-xl font-bold" style={{ color: "#F5F0E8" }}>{formatEuro(valAmort)}</div>
+                                  </div>
+                                  {/* Slider durée */}
+                                  <div className="flex-1 rounded-lg px-4 py-3" style={{ background: "rgba(26,22,18,0.03)", border: "0.5px solid rgba(26,22,18,0.08)" }}>
+                                    <div className="flex items-baseline justify-between mb-2">
+                                      <span className="text-[12px] uppercase tracking-wider font-semibold" style={{ color: "rgba(26,22,18,0.45)" }}>Durée d&apos;amortissement</span>
+                                      <span className="text-lg font-bold" style={{ color: "#C95B2A" }}>{amortDureeEnsemble} ans</span>
+                                    </div>
+                                    <input
+                                      type="range" min={5} max={50} step={1}
+                                      value={amortDureeEnsemble}
+                                      onChange={e => setAmortDureeEnsemble(parseInt(e.target.value))}
+                                      className="w-full accent-[#C95B2A]"
+                                    />
+                                    <div className="flex justify-between text-[11px] mt-0.5" style={{ color: "rgba(26,22,18,0.3)" }}>
+                                      <span>5 ans</span><span>50 ans</span>
+                                    </div>
                                   </div>
                                 </div>
-                                <input
-                                  type="range" min={5} max={50} step={1}
-                                  value={amortDureeEnsemble}
-                                  onChange={e => setAmortDureeEnsemble(parseInt(e.target.value))}
-                                  className="w-full accent-[#C95B2A]"
-                                />
-                                <div className="flex justify-between text-[10px] mt-0.5" style={{ color: "rgba(26,22,18,0.3)" }}>
-                                  <span>5</span><span>50 ans</span>
-                                </div>
-                                <div className="mt-3 flex gap-3">
-                                  <div className="flex-1 rounded-lg p-3 text-center" style={{ background: "linear-gradient(135deg, #4E1F12 0%, #C95B2A 100%)" }}>
-                                    <div className="text-[10px] uppercase tracking-wider mb-1 font-semibold" style={{ color: "rgba(245,240,232,0.75)" }}>Valeur amortissable</div>
-                                    <div className="text-base font-bold" style={{ color: "#F5F0E8" }}>{formatEuro(valAmort)}</div>
+                                {/* Ligne 2 : case orange amort/an + pendant X ans */}
+                                <div className="rounded-lg px-5 py-4 flex items-center gap-6" style={{ background: "rgba(201,91,42,0.08)", border: "1.5px solid rgba(201,91,42,0.25)" }}>
+                                  <div>
+                                    <div className="text-[11px] uppercase tracking-wider font-semibold mb-1" style={{ color: "#C95B2A" }}>Amortissement / an</div>
+                                    <div className="text-xl font-bold" style={{ color: "#C95B2A" }}>{formatEuro(amortDureeEnsemble > 0 ? valAmort / amortDureeEnsemble : 0)}</div>
                                   </div>
-                                  <div className="flex-1 rounded-lg p-3 text-center" style={{ background: "rgba(201,91,42,0.08)", border: "1px solid rgba(201,91,42,0.2)" }}>
-                                    <div className="text-[10px] uppercase tracking-wider mb-1" style={{ color: "#C95B2A" }}>Amort. / an</div>
-                                    <div className="text-base font-bold" style={{ color: "#C95B2A" }}>{formatEuro(amortDureeEnsemble > 0 ? valAmort / amortDureeEnsemble : 0)}</div>
+                                  <div className="w-px self-stretch" style={{ background: "rgba(201,91,42,0.2)" }} />
+                                  <div>
+                                    <div className="text-[11px] uppercase tracking-wider font-semibold mb-1" style={{ color: "rgba(26,22,18,0.45)" }}>Pendant</div>
+                                    <div className="text-xl font-bold" style={{ color: "#1A1612" }}>{amortDureeEnsemble} ans</div>
                                   </div>
                                 </div>
                               </div>
