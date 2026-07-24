@@ -305,6 +305,26 @@ export default function Simulateur() {
   const pdfButtonsRef = useRef<HTMLDivElement>(null);
   const amortContentRef = useRef<HTMLDivElement>(null);
 
+  // Flags pour déclencher un scroll après le prochain rendu React
+  const scrollToResults = useRef(false);
+  const scrollToPdf = useRef(false);
+  const scrollToAmort = useRef(false);
+
+  useEffect(() => {
+    if (scrollToResults.current) {
+      scrollToResults.current = false;
+      resultsRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+    if (scrollToPdf.current) {
+      scrollToPdf.current = false;
+      pdfButtonsRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+    if (scrollToAmort.current) {
+      scrollToAmort.current = false;
+      amortContentRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+  });
+
   const updateField = useCallback(<K extends keyof FormState>(key: K, value: FormState[K]) => {
     const stripped = typeof value === "string" ? stripLeadingZeros(value) : value;
     setForm(prev => ({ ...prev, [key]: stripped }));
@@ -350,7 +370,7 @@ export default function Simulateur() {
       setShowResults(true);
       setSelectedRegime(null);
       setSimulationValidated(false);
-      setTimeout(() => resultsRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }), 100);
+      scrollToResults.current = true;
     } else {
       const loyerMensuel = loyerSlider > 0 ? loyerSlider : parseFloat(form.loyer) || 0;
       const r = computeResultats(form, loyerMensuel, amortPct, amortMode ?? "ensemble", amortDureeEnsemble, composants, false);
@@ -362,7 +382,7 @@ export default function Simulateur() {
       setShowResults(true);
       setSelectedRegime(null);
       setSimulationValidated(false);
-      setTimeout(() => resultsRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }), 100);
+      scrollToResults.current = true;
     }
   };
 
@@ -386,7 +406,7 @@ export default function Simulateur() {
       if (loyerMensuel > 0) setSliderMax(Math.max(loyerMensuel * 2, 200));
     }
     setSimulationValidated(true);
-    setTimeout(() => pdfButtonsRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }), 50);
+    scrollToPdf.current = true;
   };
 
   const displayCashflow = resultats
@@ -1655,7 +1675,7 @@ ${annexeTable}
                             {/* Boutons choix — juste avant les explications */}
                             <div className="grid grid-cols-2 gap-4 px-5 pb-4 pt-4">
                             {/* Global Simplifié */}
-                            <button onClick={() => { setAmortMode("ensemble"); setTimeout(() => amortContentRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }), 50); }}
+                            <button onClick={() => { setAmortMode("ensemble"); scrollToAmort.current = true; }}
                               className="rounded-xl overflow-hidden text-left w-full transition-all hover:shadow-md focus:outline-none group"
                               style={{
                                 border: amortMode === "ensemble" ? "2.5px solid #C95B2A" : "1.5px solid rgba(201,91,42,0.25)",
@@ -1673,7 +1693,7 @@ ${annexeTable}
                             </button>
 
                             {/* Par Composant */}
-                            <button onClick={() => { setAmortMode("composant"); setTimeout(() => amortContentRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }), 50); }}
+                            <button onClick={() => { setAmortMode("composant"); scrollToAmort.current = true; }}
                               className="rounded-xl overflow-hidden text-left w-full transition-all hover:shadow-md focus:outline-none group"
                               style={{
                                 border: amortMode === "composant" ? "2.5px solid #1A7A52" : "1.5px solid rgba(26,122,82,0.25)",
