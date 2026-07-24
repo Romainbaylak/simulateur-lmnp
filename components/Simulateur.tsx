@@ -112,7 +112,8 @@ function computeResultats(
   amortPct: number,
   amortMode: "ensemble" | "composant",
   amortDureeEnsemble: number,
-  composants: { label: string; pct: number; duree: number }[]
+  composants: { label: string; pct: number; duree: number }[],
+  isSaisonnier = false
 ): Resultats | null {
   const prix = parseFloat(form.prix) || 0;
   const travaux = parseFloat(form.travaux) || 0;
@@ -168,15 +169,16 @@ function computeResultats(
   const amortAReporter = Math.max(0, amortTotal - Math.max(0, resultatAvantAmort));
   const cashflowReelMensuel = (recettesAnnuelles - creditAnnuel - chargesAnnuelles - assuranceEmprunteurAnnuel - impotReel) / 12;
 
-  // Micro-BIC : abattement 30% sur recettes totales (loyer HC + charges récupérées)
-  const baseBIC = recettesAnnuelles * 0.70;
+  // Micro-BIC : abattement 50% LMNP classique, 30% meublé tourisme non classé (saisonnière)
+  const abattementBIC = isSaisonnier ? 0.30 : 0.50;
+  const baseBIC = recettesAnnuelles * (1 - abattementBIC);
   const impotBIC = baseBIC * (form.tmi / 100 + 0.186);
   const cashflowBICMensuel = (recettesAnnuelles - creditAnnuel - chargesAnnuelles - assuranceEmprunteurAnnuel - impotBIC) / 12;
 
-  // Rendement brut : loyer HC uniquement (charges locataires = remboursement de dépense, pas un revenu économique)
+  // Rendement brut : loyer HC / investissement total
   const rendementBrut = (loyerAnnuel / investTotal) * 100;
-  // Rendement net : (recettes totales - charges réelles supportées) / investissement
-  const rendementNet = ((recettesAnnuelles - chargesAnnuelles) / investTotal) * 100;
+  // Rendement net : (loyer HC - charges réelles bailleur) / investissement — charges locataires exclues (pass-through neutre)
+  const rendementNet = ((loyerAnnuel - chargesAnnuelles) / investTotal) * 100;
 
   return {
     investTotal, montantCredit, mensualite, creditAnnuel, interetsAnnee1,
@@ -339,9 +341,9 @@ export default function Simulateur() {
       const lBas   = loyerSaisonnier(nuitee, parseFloat(tauxOccBas)   || 0);
       const lMoyen = loyerSaisonnier(nuitee, parseFloat(tauxOccMoyen) || 0);
       const lHaut  = loyerSaisonnier(nuitee, parseFloat(tauxOccHaut)  || 0);
-      const rBas   = computeResultats(form, lBas,   amortPct, amortMode ?? "ensemble", amortDureeEnsemble, composants);
-      const rMoyen = computeResultats(form, lMoyen, amortPct, amortMode ?? "ensemble", amortDureeEnsemble, composants);
-      const rHaut  = computeResultats(form, lHaut,  amortPct, amortMode ?? "ensemble", amortDureeEnsemble, composants);
+      const rBas   = computeResultats(form, lBas,   amortPct, amortMode ?? "ensemble", amortDureeEnsemble, composants, true);
+      const rMoyen = computeResultats(form, lMoyen, amortPct, amortMode ?? "ensemble", amortDureeEnsemble, composants, true);
+      const rHaut  = computeResultats(form, lHaut,  amortPct, amortMode ?? "ensemble", amortDureeEnsemble, composants, true);
       setResultatsTriple({ bas: rBas, moyen: rMoyen, haut: rHaut });
       setResultats(rMoyen);
       setShowResults(true);
@@ -350,7 +352,7 @@ export default function Simulateur() {
       setTimeout(() => pdfButtonsRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }), 100);
     } else {
       const loyerMensuel = loyerSlider > 0 ? loyerSlider : parseFloat(form.loyer) || 0;
-      const r = computeResultats(form, loyerMensuel, amortPct, amortMode ?? "ensemble", amortDureeEnsemble, composants);
+      const r = computeResultats(form, loyerMensuel, amortPct, amortMode ?? "ensemble", amortDureeEnsemble, composants, false);
       setResultats(r);
       if (loyerMensuel > 0) {
         setLoyerSlider(loyerMensuel);
@@ -371,14 +373,14 @@ export default function Simulateur() {
       const lBas   = loyerSaisonnier(nuitee, parseFloat(tauxOccBas)   || 0);
       const lMoyen = loyerSaisonnier(nuitee, parseFloat(tauxOccMoyen) || 0);
       const lHaut  = loyerSaisonnier(nuitee, parseFloat(tauxOccHaut)  || 0);
-      const rBas   = computeResultats(form, lBas,   amortPct, amortMode ?? "ensemble", amortDureeEnsemble, composants);
-      const rMoyen = computeResultats(form, lMoyen, amortPct, amortMode ?? "ensemble", amortDureeEnsemble, composants);
-      const rHaut  = computeResultats(form, lHaut,  amortPct, amortMode ?? "ensemble", amortDureeEnsemble, composants);
+      const rBas   = computeResultats(form, lBas,   amortPct, amortMode ?? "ensemble", amortDureeEnsemble, composants, true);
+      const rMoyen = computeResultats(form, lMoyen, amortPct, amortMode ?? "ensemble", amortDureeEnsemble, composants, true);
+      const rHaut  = computeResultats(form, lHaut,  amortPct, amortMode ?? "ensemble", amortDureeEnsemble, composants, true);
       setResultatsTriple({ bas: rBas, moyen: rMoyen, haut: rHaut });
       setResultats(rMoyen);
     } else {
       const loyerMensuel = loyerSlider > 0 ? loyerSlider : parseFloat(form.loyer) || 0;
-      const r = computeResultats(form, loyerMensuel, amortPct, amortMode ?? "ensemble", amortDureeEnsemble, composants);
+      const r = computeResultats(form, loyerMensuel, amortPct, amortMode ?? "ensemble", amortDureeEnsemble, composants, false);
       setResultats(r);
       if (loyerMensuel > 0) setSliderMax(Math.max(loyerMensuel * 2, 200));
     }
@@ -510,7 +512,8 @@ export default function Simulateur() {
 
     const zerosYears = rows.filter(ro => ro.baseImposable === 0).length;
     const firstTaxRow = rows.find(ro => ro.baseImposable > 0);
-    const baseBIC = recettesAnnuelles * 0.70;
+    const abattementBICPdf = isSaisonnier ? 0.30 : 0.50;
+    const baseBIC = recettesAnnuelles * (1 - abattementBICPdf);
     const impotBIC = baseBIC * (tmi / 100 + 0.186);
 
     const tableRows = rows.map(ro => {
@@ -593,8 +596,8 @@ export default function Simulateur() {
       : `Dès la 1ère année, la base imposable s'établit à ${fEur(rows[0]?.baseImposable ?? 0)}, générant un impôt de ${fEur(rows[0]?.impot ?? 0)}/an. L'amortissement reste partiellement utilisé — envisagez d'allonger les durées ou d'augmenter la part mobilier.`;
 
     const microbicNote = tmi > 0
-      ? `En Micro-BIC 2025, votre base imposable serait de <strong>${fEur(baseBIC)}</strong> par an (70 % des recettes totales de ${fEur(recettesAnnuelles)}/an, en cas de loyer constant), générant un impôt estimé de <strong>${fEur(impotBIC)}</strong> par an (TMI ${tmi} % + prélèvements sociaux 18,6 %).`
-      : `En Micro-BIC 2025, votre base imposable serait de <strong>${fEur(baseBIC)}</strong> par an (70 % des recettes totales de ${fEur(recettesAnnuelles)}/an, en cas de loyer constant). Renseignez votre TMI pour calculer l'impôt correspondant.`;
+      ? `En Micro-BIC 2025, votre base imposable serait de <strong>${fEur(baseBIC)}</strong> par an (abattement ${isSaisonnier ? "30" : "50"} % sur les recettes totales de ${fEur(recettesAnnuelles)}/an, en cas de loyer constant), générant un impôt estimé de <strong>${fEur(impotBIC)}</strong> par an (TMI ${tmi} % + prélèvements sociaux 18,6 %).`
+      : `En Micro-BIC 2025, votre base imposable serait de <strong>${fEur(baseBIC)}</strong> par an (abattement ${isSaisonnier ? "30" : "50"} % sur les recettes totales de ${fEur(recettesAnnuelles)}/an, en cas de loyer constant). Renseignez votre TMI pour calculer l'impôt correspondant.`;
 
     // Saisonnière: 6-table comparison block
     let saisonniereSummaryHtml = "";
@@ -607,7 +610,7 @@ export default function Simulateur() {
       const makeScenarioCol = (label: string, r: Resultats | null, taux: string, nuits: number) => {
         if (!r) return `<div style="flex:1"></div>`;
         const lr = r.recettesAnnuelles;
-        const bic = lr * 0.70;
+        const bic = lr * 0.70; // saisonnière non classée → abattement 30%
         const impBic = bic * (form.tmi / 100 + 0.186);
         const cfBic = r.cashflowBICMensuel;
         const cfReel = r.cashflowReelMensuel;
@@ -1326,7 +1329,7 @@ ${annexeTable}
                             setLoyerSlider(v);
                             updateField("loyer", e.target.value);
                             if (showResults) {
-                              const r = computeResultats(form, v, amortPct, amortMode ?? "ensemble", amortDureeEnsemble, composants);
+                              const r = computeResultats(form, v, amortPct, amortMode ?? "ensemble", amortDureeEnsemble, composants, false);
                               setResultats(r);
                             }
                           }}
@@ -1344,7 +1347,7 @@ ${annexeTable}
                         setLoyerSlider(v);
                         updateField("loyer", v.toString());
                         if (showResults) {
-                          const r = computeResultats(form, v, amortPct, amortMode ?? "ensemble", amortDureeEnsemble, composants);
+                          const r = computeResultats(form, v, amortPct, amortMode ?? "ensemble", amortDureeEnsemble, composants, false);
                           setResultats(r);
                         }
                       }}
@@ -1480,7 +1483,7 @@ ${annexeTable}
                                     <div className="w-2 h-2 rounded-full opacity-0 group-hover:opacity-40 transition-opacity" style={{ background: "#1A1612" }} />
                                   </div>
                                   <span className="font-bold text-[15px]" style={{ color: "#1A1612" }}>Micro-BIC 2025</span>
-                                  <span className="ml-auto text-[10px] font-semibold px-2.5 py-1 rounded" style={{ background: "rgba(26,22,18,0.1)", color: "rgba(26,22,18,0.55)" }}>ABATTEMENT 30%</span>
+                                  <span className="ml-auto text-[10px] font-semibold px-2.5 py-1 rounded" style={{ background: "rgba(26,22,18,0.1)", color: "rgba(26,22,18,0.55)" }}>{isSaisonnier ? "ABATTEMENT 30%" : "ABATTEMENT 50%"}</span>
                                 </div>
                                 <div className="px-5 pb-2" style={{ background: "#FDFAF6" }}>
                                   <Row label="Loyers annuels" val={formatEuro(resultats.loyerAnnuel)} bold />
@@ -1489,7 +1492,7 @@ ${annexeTable}
                                     <span className="text-[13px] font-medium" style={{ color: "rgba(26,22,18,0.5)" }}>Dont frais d&apos;emprunt : </span>
                                     <span className="text-[13px] font-semibold" style={{ color: "#4E1F12" }}>{formatEuro(resultats.interetsAnnee1)}</span>
                                   </div>
-                                  <Row label="Base imposable (70% loyers)" val={formatEuro(resultats.baseBIC)} bold sep />
+                                  <Row label={isSaisonnier ? "Base imposable (70% recettes)" : "Base imposable (50% recettes)"} val={formatEuro(resultats.baseBIC)} bold sep />
                                   <Row label="Impôt estimé" val={formatEuro(resultats.impotBIC)} color="#B03A2A" />
                                   <Row label="Cash-flow mensuel" val={formatEuro(resultats.cashflowBICMensuel)} bold color={resultats.cashflowBICMensuel >= 0 ? "#1A7A52" : "#B03A2A"} sep />
                                 </div>
@@ -1542,7 +1545,7 @@ ${annexeTable}
                                       <span className="text-[12px]" style={{ color: "rgba(26,22,18,0.45)" }}>Dont frais d&apos;emprunt </span>
                                       <span className="text-[13px] font-semibold" style={{ color: "#B03A2A" }}>{formatEuro(resultats.interetsAnnee1)}</span>
                                     </div>
-                                    <Row label="Base imposable (70% loyers)" val={formatEuro(resultats.baseBIC)} bold sep />
+                                    <Row label={isSaisonnier ? "Base imposable (70% recettes)" : "Base imposable (50% recettes)"} val={formatEuro(resultats.baseBIC)} bold sep />
                                     <Row label="Impôt estimé" val={formatEuro(resultats.impotBIC)} color="#B03A2A" />
                                     <Row label="Cash-flow mensuel" val={formatEuro(resultats.cashflowBICMensuel)} bold color={resultats.cashflowBICMensuel >= 0 ? "#1A7A52" : "#B03A2A"} sep />
                                   </>
