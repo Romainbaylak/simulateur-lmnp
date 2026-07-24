@@ -1643,34 +1643,29 @@ ${annexeTable}
                                 En LMNP au réel, vous pouvez amortir comptablement votre bien — <strong>hors terrain (~{100 - amortPct}%)</strong> — sur sa durée d&apos;usage. Chaque année, cet amortissement est déduit de vos revenus locatifs, ce qui <strong>réduit la base imposable et donc l&apos;impôt</strong>.
                               </p>
 
-                              {/* Bloc calcul structuré */}
-                              <div className="mt-4 rounded-lg overflow-hidden" style={{ border: "1px solid rgba(26,22,18,0.12)" }}>
-                                {/* Ligne 1 : Prix du bien */}
-                                <div className="flex items-center justify-between px-4 py-2.5" style={{ borderBottom: "1px solid rgba(26,22,18,0.1)" }}>
-                                  <span className="text-[13px] font-semibold" style={{ color: "#4E1F12" }}>Prix du bien</span>
+                              {/* Bloc calcul structuré — sans cadre visible */}
+                              <div className="mt-4 space-y-1.5">
+                                <div className="flex items-center gap-3">
+                                  <span className="text-[14px] font-medium" style={{ color: "#4E1F12" }}>Prix du bien</span>
                                   <span className="text-[14px] font-bold" style={{ color: "#1A1612" }}>{formatEuro(prixVal2)}</span>
                                 </div>
-                                {/* Ligne 2 : % amortissable (modifiable) */}
-                                <div className="flex items-center justify-between px-4 py-2.5" style={{ borderBottom: "1px solid rgba(26,22,18,0.1)" }}>
-                                  <span className="text-[13px] font-semibold" style={{ color: "#4E1F12" }}>
-                                    Part amortissable <span className="font-normal text-[12px]" style={{ color: "rgba(26,22,18,0.5)" }}>(hors terrain, modifiable)</span>
-                                  </span>
-                                  <div className="flex items-center gap-1.5">
+                                <div className="flex items-center gap-3">
+                                  <span className="text-[14px] font-medium" style={{ color: "#4E1F12" }}>Part amortissable <span className="font-normal" style={{ color: "rgba(26,22,18,0.45)" }}>(hors terrain)</span></span>
+                                  <div className="flex items-center gap-1">
                                     <input type="number" min={0} max={100} value={amortPct}
                                       onChange={e => {
                                         const v = Math.min(100, Math.max(0, parseInt(e.target.value) || 0));
                                         e.target.value = String(v);
                                         setAmortPct(v);
                                       }}
-                                      className="w-14 text-center text-[15px] font-bold rounded-md focus:outline-none focus:ring-2 focus:ring-[#C95B2A]"
+                                      className="w-12 text-center text-[14px] font-bold rounded-md focus:outline-none focus:ring-2 focus:ring-[#C95B2A]"
                                       style={{ ...INPUT_STYLE, color: "#C95B2A" }} />
-                                    <span className="text-[15px] font-bold" style={{ color: "#C95B2A" }}>%</span>
+                                    <span className="text-[14px] font-bold" style={{ color: "#C95B2A" }}>%</span>
                                   </div>
                                 </div>
-                                {/* Ligne 3 : Valeur amortissable — résultat */}
-                                <div className="flex items-center justify-between px-4 py-3" style={{ background: "rgba(78,31,18,0.05)" }}>
+                                <div className="flex items-center gap-3 pt-1" style={{ borderTop: "1px solid rgba(78,31,18,0.12)" }}>
                                   <span className="text-[14px] font-bold" style={{ color: "#4E1F12" }}>Valeur amortissable</span>
-                                  <span className="text-[20px] font-black" style={{ color: "#C95B2A", letterSpacing: "-0.02em" }}>{formatEuro(valAmort2)}</span>
+                                  <span className="text-[14px] font-black" style={{ color: "#C95B2A", letterSpacing: "-0.02em" }}>{formatEuro(valAmort2)}</span>
                                 </div>
                               </div>
                             </div>
