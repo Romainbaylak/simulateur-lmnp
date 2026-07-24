@@ -1642,7 +1642,8 @@ ${annexeTable}
                               <span className="text-[16px] font-medium" style={{ color: "#4E1F12" }}>Prix du bien</span>
                               <span className="text-[16px] font-bold" style={{ color: "#1A1612" }}>{formatEuro(prixVal2)}</span>
                               <span className="text-[18px] font-light" style={{ color: "rgba(26,22,18,0.35)" }}>×</span>
-                              <div className="flex items-center gap-1">
+                              <div className="flex items-center gap-1.5">
+                                <span className="text-[16px] font-medium" style={{ color: "#4E1F12" }}>Part amortissable</span>
                                 <input type="number" min={0} max={100} value={amortPct}
                                   onChange={e => {
                                     const v = Math.min(100, Math.max(0, parseInt(e.target.value) || 0));
@@ -1654,12 +1655,14 @@ ${annexeTable}
                                 <span className="text-[16px] font-bold" style={{ color: "#C95B2A" }}>%</span>
                               </div>
                               <span className="text-[18px] font-light" style={{ color: "rgba(26,22,18,0.35)" }}>=</span>
-                              <span className="text-[16px] font-medium" style={{ color: "#4E1F12" }}>Valeur amortissable</span>
-                              <span className="text-[16px] font-black" style={{ color: "#C95B2A", letterSpacing: "-0.02em" }}>{formatEuro(valAmort2)}</span>
+                              <div className="flex items-center gap-2 px-3 py-1 rounded-lg" style={{ background: "rgba(201,91,42,0.08)", border: "1.5px solid rgba(201,91,42,0.25)" }}>
+                                <span className="text-[16px] font-medium" style={{ color: "#4E1F12" }}>Valeur amortissable</span>
+                                <span className="text-[16px] font-black" style={{ color: "#C95B2A", letterSpacing: "-0.02em" }}>{formatEuro(valAmort2)}</span>
+                              </div>
                             </div>
 
                             {/* Titre choix type amortissement */}
-                            <div className="text-center mt-7 mb-4">
+                            <div className="text-center mt-14 mb-4">
                               <span className="text-base font-semibold" style={{ color: "#1A1612" }}>Fais ton choix du Type d&apos;Amortissement</span>
                             </div>
 
@@ -1705,17 +1708,17 @@ ${annexeTable}
                             {/* Deux colonnes texte explicatives */}
                             <div className="grid grid-cols-2 gap-5 mt-5">
                               <div>
-                                <div className="font-bold text-[14px] mb-2" style={{ color: "#4E1F12" }}>Méthode Amort. Global Simplifié</div>
-                                <p className="text-[13px] leading-relaxed" style={{ color: "rgba(26,22,18,0.7)" }}>
+                                <div className="font-bold text-[15px] mb-2" style={{ color: "#4E1F12" }}>Méthode Amort. Global Simplifié</div>
+                                <p className="text-[14px] leading-relaxed" style={{ color: "rgba(26,22,18,0.88)" }}>
                                   Dans ce cas, le bien est amorti dans son ensemble sur la durée choisie (entre 25 et 40 ans). C&apos;est la méthode la plus simple, non conventionnelle mais elle est généralement tolérée lorsqu&apos;il s&apos;agit d&apos;un petit bien seul et que la comptabilité est faite sans expert comptable.
                                 </p>
                               </div>
                               <div>
-                                <div className="font-bold text-[14px] mb-2" style={{ color: "#1A7A52" }}>Méthode Amort. par Composant</div>
-                                <p className="text-[13px] leading-relaxed" style={{ color: "rgba(26,22,18,0.7)" }}>
+                                <div className="font-bold text-[15px] mb-2" style={{ color: "#1A7A52" }}>Méthode Amort. par Composant</div>
+                                <p className="text-[14px] leading-relaxed" style={{ color: "rgba(26,22,18,0.88)" }}>
                                   L&apos;Amortissement par composant consiste à décomposer et distribuer la valeur du bien sur plusieurs éléments principaux : gros œuvre, toiture, installations électriques, etc.
                                 </p>
-                                <p className="text-[13px] leading-relaxed mt-2" style={{ color: "rgba(26,22,18,0.7)" }}>
+                                <p className="text-[14px] leading-relaxed mt-2" style={{ color: "rgba(26,22,18,0.88)" }}>
                                   Chaque composant va correspondre à un pourcentage de la valeur du bien et à une durée pour l&apos;amortir bien précise. Lors du choix de ces valeurs, il faut bien veiller à respecter les durées d&apos;utilisation normale de chaque composant, ainsi que leur proportion dans la valeur totale du logement.
                                 </p>
                               </div>
