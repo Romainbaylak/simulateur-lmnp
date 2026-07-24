@@ -1222,73 +1222,73 @@ ${annexeTable}
                 )}
 
                 {/* KPIs */}
-                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
                   {/* Rendement brut + net */}
-                  <div className="rounded-xl p-4" style={cardStyle}>
+                  <div className="rounded-lg px-3 py-2.5" style={cardStyle}>
                     <div className={LABEL}>Rendement</div>
-                    <div className="text-xl font-light mt-1" style={{ color: "#1A1612", letterSpacing: "-0.02em" }}>
+                    <div className="text-lg font-light mt-0.5" style={{ color: "#1A1612", letterSpacing: "-0.02em" }}>
                       {formatPct(resultats.rendementBrut)}
                     </div>
-                    <div className="text-[11px] mt-0.5" style={{ color: "rgba(26,22,18,0.40)" }}>brut</div>
-                    <div className="text-base font-light mt-2" style={{ color: "#C95B2A", letterSpacing: "-0.02em" }}>
+                    <div className="text-[10px] mt-0" style={{ color: "rgba(26,22,18,0.40)" }}>brut</div>
+                    <div className="text-sm font-light mt-1" style={{ color: "#C95B2A", letterSpacing: "-0.02em" }}>
                       {formatPct(resultats.rendementNet)}
                     </div>
-                    <div className="text-[11px] mt-0.5" style={{ color: "rgba(26,22,18,0.40)" }}>net · après charges</div>
+                    <div className="text-[10px] mt-0" style={{ color: "rgba(26,22,18,0.40)" }}>net · après charges</div>
                   </div>
 
                   {/* Revenus annuels */}
-                  <div className="rounded-xl p-4" style={cardStyle}>
+                  <div className="rounded-lg px-3 py-2.5" style={cardStyle}>
                     <div className={LABEL}>Revenus annuels</div>
-                    <div className="text-xl font-light mt-1" style={{ color: "#1A1612", letterSpacing: "-0.02em" }}>
+                    <div className="text-lg font-light mt-0.5" style={{ color: "#1A1612", letterSpacing: "-0.02em" }}>
                       {formatEuro(resultats.loyerAnnuel)}
                     </div>
-                    <div className="text-[11px] mt-1" style={{ color: "rgba(26,22,18,0.40)" }}>loyers encaissés HC</div>
+                    <div className="text-[10px] mt-0.5" style={{ color: "rgba(26,22,18,0.40)" }}>loyers encaissés HC</div>
                   </div>
 
                   {/* Emprunt annuel */}
-                  <div className="rounded-xl p-4" style={cardStyle}>
+                  <div className="rounded-lg px-3 py-2.5" style={cardStyle}>
                     <div className={LABEL}>Emprunt annuel</div>
-                    <div className="text-xl font-light mt-1" style={{ color: "#B03A2A", letterSpacing: "-0.02em" }}>
+                    <div className="text-lg font-light mt-0.5" style={{ color: "#B03A2A", letterSpacing: "-0.02em" }}>
                       {formatEuro(resultats.creditAnnuel + resultats.assuranceEmprunteurAnnuel)}
                     </div>
-                    <div className="text-[13px] mt-1" style={{ color: "rgba(26,22,18,0.50)" }}>
+                    <div className="text-[11px] mt-0.5" style={{ color: "rgba(26,22,18,0.50)" }}>
                       soit <span className="font-semibold" style={{ color: "#B03A2A" }}>{formatEuro((resultats.creditAnnuel + resultats.assuranceEmprunteurAnnuel) / 12)}</span>/mois
                     </div>
                   </div>
 
                   {/* Charges annuelles */}
-                  <div className="rounded-xl p-4" style={cardStyle}>
+                  <div className="rounded-lg px-3 py-2.5" style={cardStyle}>
                     <div className={LABEL}>Charges annuelles</div>
-                    <div className="text-xl font-light mt-1" style={{ color: "#B03A2A", letterSpacing: "-0.02em" }}>
+                    <div className="text-lg font-light mt-0.5" style={{ color: "#B03A2A", letterSpacing: "-0.02em" }}>
                       {formatEuro(resultats.chargesDeductibles)}
                     </div>
-                    <div className="text-[13px] mt-1" style={{ color: "rgba(26,22,18,0.50)" }}>
+                    <div className="text-[11px] mt-0.5" style={{ color: "rgba(26,22,18,0.50)" }}>
                       dont <span className="font-semibold" style={{ color: "#B03A2A" }}>{formatEuro(resultats.interetsAnnee1)}</span> d&apos;intérêts d&apos;emprunt
                     </div>
                   </div>
 
                   {/* Impôt annuel + mensuel */}
-                  <div className="rounded-xl p-4" style={cardStyle}>
+                  <div className="rounded-lg px-3 py-2.5" style={cardStyle}>
                     <div className={LABEL}>Impôt estimé annuel</div>
-                    <div className="text-xl font-light mt-1" style={{ color: "#1A1612", letterSpacing: "-0.02em" }}>
+                    <div className="text-lg font-light mt-0.5" style={{ color: "#1A1612", letterSpacing: "-0.02em" }}>
                       {formatEuro(displayImpot)}
                     </div>
-                    <div className="text-[11px] mt-0.5" style={{ color: "rgba(26,22,18,0.40)" }}>TMI {form.tmi}% + PS 18,6%</div>
-                    <div className="text-[13px] mt-1.5" style={{ color: "rgba(26,22,18,0.50)" }}>
+                    <div className="text-[10px] mt-0" style={{ color: "rgba(26,22,18,0.40)" }}>TMI {form.tmi}% + PS 18,6%</div>
+                    <div className="text-[11px] mt-1" style={{ color: "rgba(26,22,18,0.50)" }}>
                       Soit <span className="font-semibold" style={{ color: "#1A1612" }}>{formatEuro(displayImpotMensuel)}</span>/mois
                     </div>
                   </div>
 
                   {/* Cash-flow mensuel */}
-                  <div className="rounded-xl p-4" style={cardStyle}>
+                  <div className="rounded-lg px-3 py-2.5" style={cardStyle}>
                     <div className={LABEL}>Cash-flow mensuel</div>
-                    <div className="text-xl font-light mt-1" style={{
+                    <div className="text-lg font-light mt-0.5" style={{
                       color: displayCashflow >= 0 ? "#1A7A52" : "#B03A2A",
                       letterSpacing: "-0.02em",
                     }}>
                       {formatEuro(displayCashflow)}
                     </div>
-                    <div className="text-[11px] mt-1" style={{ color: "rgba(26,22,18,0.40)" }}>
+                    <div className="text-[10px] mt-0.5" style={{ color: "rgba(26,22,18,0.40)" }}>
                       {selectedRegime === "micro" ? "Au Micro-BIC" : "Au Régime réel"}
                     </div>
                   </div>
