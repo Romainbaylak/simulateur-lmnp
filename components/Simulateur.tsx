@@ -47,6 +47,8 @@ interface Resultats {
   autresCharges: number;
   assuranceEmprunteurAnnuel: number;
   loyerAnnuel: number;
+  chargesLocatairesAnnuel: number;
+  recettesAnnuelles: number;
   amortBien: number;
   amortMobilier: number;
   amortTravaux: number;
@@ -136,9 +138,16 @@ function computeResultats(
   const interetsAnnee1 = calcInteretsAnnee1(montantCredit, taux, form.duree);
   const loyerAnnuel = loyerMensuel * 12;
 
+  // Charges locataires récupérables (ex. provision copro refacturée au locataire)
+  const chargesLocatairesMensuel = parseFloat(form.chargesLoyer) || 0;
+  const chargesLocatairesAnnuel = chargesLocatairesMensuel * 12;
+  // Recettes fiscales totales = loyer HC + charges récupérables encaissées
+  const recettesAnnuelles = loyerAnnuel + chargesLocatairesAnnuel;
+
   const assurancePNO = loyerAnnuel * (assurancePNOPct / 100);
   const gestionLocative = loyerAnnuel * (gestionLocativePct / 100);
   const autresCharges = assurancePNO + gestionLocative + entretienCourant + comptabilite;
+  // Charges de copropriété conservées en montant brut (charges récupérables non soustraites)
   const chargesAnnuelles = taxeFonciere + chargesCopro + autresCharges;
 
   const valeurAmortissable = prix * (amortPct / 100);
@@ -150,25 +159,30 @@ function computeResultats(
   const amortNotaire = notaire / 20;
   const amortTotal = amortBien + amortMobilier + amortTravaux + amortNotaire;
 
+  // Réel : recettes fiscales incluent les charges locataires encaissées
   const chargesDeductibles = chargesAnnuelles + interetsAnnee1 + assuranceEmprunteurAnnuel;
-  const resultatAvantAmort = loyerAnnuel - chargesDeductibles;
+  const resultatAvantAmort = recettesAnnuelles - chargesDeductibles;
   const baseImposableReel = Math.max(0, resultatAvantAmort - amortTotal);
   const impotReel = baseImposableReel * (form.tmi / 100 + 0.186);
   const impotReelMensuel = impotReel / 12;
   const amortAReporter = Math.max(0, amortTotal - Math.max(0, resultatAvantAmort));
-  const cashflowReelMensuel = (loyerAnnuel - creditAnnuel - chargesAnnuelles - assuranceEmprunteurAnnuel - impotReel) / 12;
+  const cashflowReelMensuel = (recettesAnnuelles - creditAnnuel - chargesAnnuelles - assuranceEmprunteurAnnuel - impotReel) / 12;
 
-  const baseBIC = loyerAnnuel * 0.70;
+  // Micro-BIC : abattement 30% sur recettes totales (loyer HC + charges récupérées)
+  const baseBIC = recettesAnnuelles * 0.70;
   const impotBIC = baseBIC * (form.tmi / 100 + 0.186);
-  const cashflowBICMensuel = (loyerAnnuel - creditAnnuel - chargesAnnuelles - assuranceEmprunteurAnnuel - impotBIC) / 12;
+  const cashflowBICMensuel = (recettesAnnuelles - creditAnnuel - chargesAnnuelles - assuranceEmprunteurAnnuel - impotBIC) / 12;
 
+  // Rendement brut : loyer HC uniquement (charges locataires = remboursement de dépense, pas un revenu économique)
   const rendementBrut = (loyerAnnuel / investTotal) * 100;
-  const rendementNet = ((loyerAnnuel - chargesAnnuelles) / investTotal) * 100;
+  // Rendement net : (recettes totales - charges réelles supportées) / investissement
+  const rendementNet = ((recettesAnnuelles - chargesAnnuelles) / investTotal) * 100;
 
   return {
     investTotal, montantCredit, mensualite, creditAnnuel, interetsAnnee1,
     chargesAnnuelles, autresCharges, assuranceEmprunteurAnnuel,
-    loyerAnnuel, amortBien, amortMobilier, amortTravaux, amortNotaire, amortTotal,
+    loyerAnnuel, chargesLocatairesAnnuel, recettesAnnuelles,
+    amortBien, amortMobilier, amortTravaux, amortNotaire, amortTotal,
     chargesDeductibles, resultatAvantAmort, baseImposableReel, impotReel, impotReelMensuel,
     amortAReporter, cashflowReelMensuel, baseBIC, impotBIC, cashflowBICMensuel,
     rendementBrut, rendementNet,
@@ -413,6 +427,8 @@ export default function Simulateur() {
     const tmi = form.tmi;
     const loyerAnnuel = resultats.loyerAnnuel;
     const chargesLoyer = parseFloat(form.chargesLoyer) || 0;
+    const chargesLocatairesAnnuel = chargesLoyer * 12;
+    const recettesAnnuelles = loyerAnnuel + chargesLocatairesAnnuel;
     const chargesAnnuelles = resultats.chargesAnnuelles;
     const assuranceEmprunteurAnnuel = resultats.assuranceEmprunteurAnnuel;
     const montantCredit = resultats.montantCredit;
@@ -476,13 +492,13 @@ export default function Simulateur() {
       const amortNotaireA = year <= 20 ? notaire / 20 : 0;
       const amortTotalA = amortBienA + amortMobilierA + amortTravauxA + amortNotaireA;
       const chargesDeductibles = chargesAnnuelles + interetsAnnee + assuranceEmprunteurAnnuel;
-      const resultatAvantAmort = loyerAnnuel - chargesDeductibles;
+      const resultatAvantAmort = recettesAnnuelles - chargesDeductibles;
       const reportEntrant = reportN;
       const amortDisponible = amortTotalA + reportEntrant;
       const baseImposable = Math.max(0, resultatAvantAmort - amortDisponible);
       const newReport = Math.max(0, amortDisponible - Math.max(0, resultatAvantAmort));
       const impot = baseImposable * (tmi / 100 + 0.186);
-      const cashflow = (loyerAnnuel - creditAnnuelR - chargesAnnuelles - assuranceEmprunteurAnnuel - impot) / 12;
+      const cashflow = (recettesAnnuelles - creditAnnuelR - chargesAnnuelles - assuranceEmprunteurAnnuel - impot) / 12;
       rows.push({
         year, capitalDebut, creditAnnuelR, interetsAnnee, amortTotalA, amortDisponible,
         reportEntrant, reportNplus1: newReport,
@@ -494,7 +510,7 @@ export default function Simulateur() {
 
     const zerosYears = rows.filter(ro => ro.baseImposable === 0).length;
     const firstTaxRow = rows.find(ro => ro.baseImposable > 0);
-    const baseBIC = loyerAnnuel * 0.70;
+    const baseBIC = recettesAnnuelles * 0.70;
     const impotBIC = baseBIC * (tmi / 100 + 0.186);
 
     const tableRows = rows.map(ro => {
@@ -577,8 +593,8 @@ export default function Simulateur() {
       : `Dès la 1ère année, la base imposable s'établit à ${fEur(rows[0]?.baseImposable ?? 0)}, générant un impôt de ${fEur(rows[0]?.impot ?? 0)}/an. L'amortissement reste partiellement utilisé — envisagez d'allonger les durées ou d'augmenter la part mobilier.`;
 
     const microbicNote = tmi > 0
-      ? `En Micro-BIC 2025, votre base imposable serait de <strong>${fEur(baseBIC)}</strong> par an (70 % des loyers bruts de ${fEur(loyerAnnuel)}/an, en cas de loyer constant), générant un impôt estimé de <strong>${fEur(impotBIC)}</strong> par an (TMI ${tmi} % + prélèvements sociaux 18,6 %).`
-      : `En Micro-BIC 2025, votre base imposable serait de <strong>${fEur(baseBIC)}</strong> par an (70 % des loyers bruts de ${fEur(loyerAnnuel)}/an, en cas de loyer constant). Renseignez votre TMI pour calculer l'impôt correspondant.`;
+      ? `En Micro-BIC 2025, votre base imposable serait de <strong>${fEur(baseBIC)}</strong> par an (70 % des recettes totales de ${fEur(recettesAnnuelles)}/an, en cas de loyer constant), générant un impôt estimé de <strong>${fEur(impotBIC)}</strong> par an (TMI ${tmi} % + prélèvements sociaux 18,6 %).`
+      : `En Micro-BIC 2025, votre base imposable serait de <strong>${fEur(baseBIC)}</strong> par an (70 % des recettes totales de ${fEur(recettesAnnuelles)}/an, en cas de loyer constant). Renseignez votre TMI pour calculer l'impôt correspondant.`;
 
     // Saisonnière: 6-table comparison block
     let saisonniereSummaryHtml = "";
@@ -590,7 +606,7 @@ export default function Simulateur() {
       ];
       const makeScenarioCol = (label: string, r: Resultats | null, taux: string, nuits: number) => {
         if (!r) return `<div style="flex:1"></div>`;
-        const lr = r.loyerAnnuel;
+        const lr = r.recettesAnnuelles;
         const bic = lr * 0.70;
         const impBic = bic * (form.tmi / 100 + 0.186);
         const cfBic = r.cashflowBICMensuel;
@@ -728,7 +744,7 @@ th.col-an,td.col-an{width:18px}
 ${saisonniereSummaryHtml}
 ${!isSaisonnier ? `<h2>Comparaison régimes fiscaux (année 1)</h2>
 <table><thead><tr><th>Indicateur</th><th>Régime réel simplifié</th><th>Micro-BIC 2025</th></tr></thead><tbody>
-<tr><td>Loyers annuels</td><td>${fEur(loyerAnnuel)}</td><td>${fEur(loyerAnnuel)}</td></tr>
+<tr><td>Recettes annuelles</td><td>${fEur(recettesAnnuelles)}</td><td>${fEur(recettesAnnuelles)}</td></tr>
 <tr><td>Charges déductibles</td><td>${fEur(rows[0]?.chargesDeductibles ?? 0)}</td><td>Abattement 30 %</td></tr>
 <tr><td>Amortissements</td><td>${fEur(rows[0]?.amortTotalA ?? 0)}</td><td>—</td></tr>
 <tr><td>Base imposable</td><td style="font-weight:600;color:${(rows[0]?.baseImposable ?? 0) === 0 ? "#1A7A52" : "#B03A2A"}">${fEur(rows[0]?.baseImposable ?? 0)}</td><td>${fEur(baseBIC)}</td></tr>
