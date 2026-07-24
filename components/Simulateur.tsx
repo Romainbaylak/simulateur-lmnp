@@ -1609,12 +1609,6 @@ ${annexeTable}
                           </div>
                         )}
 
-                        {/* "Fais ton choix" répété sous les tableaux */}
-                        {selectedRegime === null && (
-                          <div className="text-center mt-2">
-                            <span className="text-base font-semibold" style={{ color: "#1A1612" }}>Fais ton choix de régime fiscal</span>
-                          </div>
-                        )}
 
                       </>
                     );
