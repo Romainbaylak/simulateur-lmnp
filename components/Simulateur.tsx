@@ -155,9 +155,9 @@ function computeResultats(
   const amortBien = amortMode === "ensemble"
     ? valeurAmortissable / amortDureeEnsemble
     : composants.reduce((sum, c) => sum + (valeurAmortissable * c.pct / 100) / c.duree, 0);
-  const amortMobilier = mobilier / 7;
-  const amortTravaux = travaux / 15;
-  const amortNotaire = notaire / 20;
+  const amortMobilier = mobilier / 10;
+  const amortTravaux = travaux / 20;
+  const amortNotaire = notaire / amortDureeEnsemble;
   const amortTotal = amortBien + amortMobilier + amortTravaux + amortNotaire;
 
   // Réel : recettes fiscales incluent les charges locataires encaissées
@@ -434,9 +434,9 @@ export default function Simulateur() {
   const amortBienDisplay = (amortMode ?? "ensemble") === "ensemble"
     ? (amortDureeEnsemble > 0 ? valAmortDisplay / amortDureeEnsemble : 0)
     : composants.reduce((sum, c) => sum + (valAmortDisplay * c.pct / 100) / (c.duree || 1), 0);
-  const amortMobilierDisplay = (parseFloat(form.mobilier) || 0) / 7;
-  const amortTravauxDisplay = (parseFloat(form.travaux) || 0) / 15;
-  const amortNotaireDisplay = (parseFloat(form.notaire) || 0) / 20;
+  const amortMobilierDisplay = (parseFloat(form.mobilier) || 0) / 10;
+  const amortTravauxDisplay = (parseFloat(form.travaux) || 0) / 20;
+  const amortNotaireDisplay = (parseFloat(form.notaire) || 0) / amortDureeEnsemble;
   const amortTotalDisplay = amortBienDisplay + amortMobilierDisplay + amortTravauxDisplay + amortNotaireDisplay;
 
   const handleGeneratePDF = () => {
@@ -510,9 +510,9 @@ export default function Simulateur() {
           amortParComposant.push(contrib);
         }
       }
-      const amortMobilierA = year <= 7 ? mobilier / 7 : 0;
-      const amortTravauxA = year <= 15 ? travaux / 15 : 0;
-      const amortNotaireA = year <= 20 ? notaire / 20 : 0;
+      const amortMobilierA = year <= 10 ? mobilier / 10 : 0;
+      const amortTravauxA = year <= 20 ? travaux / 20 : 0;
+      const amortNotaireA = year <= amortDureeEnsemble ? notaire / amortDureeEnsemble : 0;
       const amortTotalA = amortBienA + amortMobilierA + amortTravauxA + amortNotaireA;
       const chargesDeductibles = chargesAnnuelles + interetsAnnee + assuranceEmprunteurAnnuel;
       const resultatAvantAmort = recettesAnnuelles - chargesDeductibles;
@@ -566,9 +566,9 @@ export default function Simulateur() {
         if (val > 0) annexeCols.push({ label: c.label.replace("Aménagement intérieur", "Amén.<br>intérieur"), annuel: val / c.duree, duree: c.duree, initial: val });
       }
     }
-    if (mobilier > 0) annexeCols.push({ label: "Mobilier", annuel: mobilier / 7, duree: 7, initial: mobilier });
-    if (travaux > 0) annexeCols.push({ label: "Travaux", annuel: travaux / 15, duree: 15, initial: travaux });
-    if (notaire > 0) annexeCols.push({ label: "Frais notaire", annuel: notaire / 20, duree: 20, initial: notaire });
+    if (mobilier > 0) annexeCols.push({ label: "Mobilier", annuel: mobilier / 10, duree: 10, initial: mobilier });
+    if (travaux > 0) annexeCols.push({ label: "Travaux", annuel: travaux / 20, duree: 20, initial: travaux });
+    if (notaire > 0) annexeCols.push({ label: "Frais notaire", annuel: notaire / amortDureeEnsemble, duree: amortDureeEnsemble, initial: notaire });
     const annexeMaxDuree = annexeCols.length > 0 ? Math.max(...annexeCols.map(c => c.duree)) : 0;
     // 2 sous-colonnes par catégorie + colonne An + colonne Cumul
     const totalSubCols = annexeCols.length * 2 + 2;
@@ -1871,9 +1871,9 @@ ${annexeTable}
                       {amortMode !== null && <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
                         {[
                           { label: "Bien", val: amortBienDisplay, sub: (amortMode ?? "ensemble") === "ensemble" ? `${amortPct}% prix · ${amortDureeEnsemble} ans` : `${amortPct}% · composants`, color: "#4E1F12" },
-                          { label: "Mobilier", val: amortMobilierDisplay, sub: "mobilier · 7 ans", color: "#6B4226" },
-                          { label: "Travaux", val: amortTravauxDisplay, sub: "travaux · 15 ans", color: "#6B4226" },
-                          { label: "Notaire", val: amortNotaireDisplay, sub: "notaire · 20 ans", color: "#6B4226" },
+                          { label: "Mobilier", val: amortMobilierDisplay, sub: "mobilier · 10 ans", color: "#6B4226" },
+                          { label: "Travaux", val: amortTravauxDisplay, sub: "travaux · 20 ans", color: "#6B4226" },
+                          { label: "Notaire", val: amortNotaireDisplay, sub: `notaire · ${amortDureeEnsemble} ans`, color: "#6B4226" },
                           { label: "Total", val: amortTotalDisplay, sub: "Déductible/an", accent: true, color: "#C95B2A" },
                         ].map(({ label, val, sub, accent, color }) => (
                           <div key={label} className="rounded-lg p-3.5 text-center"
