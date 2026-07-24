@@ -1191,7 +1191,7 @@ ${annexeTable}
         </div>
 
         {/* ─── RESULTS ─── */}
-        <div ref={resultsRef} style={{ scrollMarginTop: "72px", paddingTop: "20px" }}>
+        <div ref={resultsRef} style={{ scrollMarginTop: "72px" }}>
           {showResults && (
             !resultats ? (
               <div className="rounded-xl p-12 text-center" style={cardStyle}>
