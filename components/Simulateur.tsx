@@ -1740,14 +1740,14 @@ ${annexeTable}
                             {amortMode === "ensemble" && (
                               <div className="space-y-3">
                                 {/* Ligne 1 : valeur à gauche + slider à droite */}
-                                <div className="flex gap-4 items-start">
+                                <div className="flex gap-4 items-stretch">
                                   {/* Valeur amortissable */}
-                                  <div className="rounded-lg px-5 py-4 flex-shrink-0" style={{ background: "linear-gradient(135deg, #4E1F12 0%, #C95B2A 100%)", minWidth: 180 }}>
+                                  <div className="rounded-lg px-5 py-4 flex-shrink-0 flex flex-col justify-center" style={{ background: "linear-gradient(135deg, #4E1F12 0%, #C95B2A 100%)", minWidth: 180 }}>
                                     <div className="text-[11px] uppercase tracking-wider font-semibold mb-1" style={{ color: "rgba(245,240,232,0.7)" }}>Valeur amortissable</div>
                                     <div className="text-xl font-bold" style={{ color: "#F5F0E8" }}>{formatEuro(valAmort)}</div>
                                   </div>
                                   {/* Slider durée */}
-                                  <div className="flex-1 rounded-lg px-4 py-3" style={{ background: "rgba(26,22,18,0.03)", border: "0.5px solid rgba(26,22,18,0.08)" }}>
+                                  <div className="flex-1 rounded-lg px-4 py-4 flex flex-col justify-center" style={{ background: "rgba(26,22,18,0.03)", border: "0.5px solid rgba(26,22,18,0.08)" }}>
                                     <div className="flex items-baseline justify-between mb-2">
                                       <span className="text-[12px] uppercase tracking-wider font-semibold" style={{ color: "rgba(26,22,18,0.45)" }}>Durée d&apos;amortissement</span>
                                       <span className="text-lg font-bold" style={{ color: "#C95B2A" }}>{amortDureeEnsemble} ans</span>
@@ -1758,9 +1758,6 @@ ${annexeTable}
                                       onChange={e => setAmortDureeEnsemble(parseInt(e.target.value))}
                                       className="w-full accent-[#C95B2A]"
                                     />
-                                    <div className="flex justify-between text-[11px] mt-0.5" style={{ color: "rgba(26,22,18,0.3)" }}>
-                                      <span>5 ans</span><span>50 ans</span>
-                                    </div>
                                   </div>
                                 </div>
                                 {/* Ligne 2 : case orange amort/an + pendant X ans */}
