@@ -1676,23 +1676,35 @@ ${annexeTable}
                                 {amortMode !== "composant" ? (
                                   <div onClick={() => setAmortMode("ensemble")} className="cursor-pointer rounded-xl overflow-hidden transition-all"
                                     style={{
-                                      border: amortMode === "ensemble" ? "2.5px solid #C95B2A" : "1.5px solid rgba(78,31,18,0.15)",
+                                      border: amortMode === "ensemble" ? "2px solid #C95B2A" : "1.5px solid rgba(201,91,42,0.2)",
                                       boxShadow: amortMode === "ensemble" ? "0 0 0 3px rgba(201,91,42,0.1)" : "none",
                                     }}>
-                                    {/* Header — Valeur amortissable */}
-                                    <div className="px-5 py-3.5" style={{ background: "linear-gradient(135deg, #4E1F12 0%, #7A3018 100%)" }}>
-                                      <div className="text-[11px] uppercase tracking-wider font-semibold mb-0.5" style={{ color: "rgba(245,240,232,0.6)" }}>Valeur amortissable</div>
-                                      <div className="text-xl font-bold" style={{ color: "#F5F0E8" }}>{formatEuro(valAmort2)}</div>
+                                    {/* Header — radio + label + valeur amortissable */}
+                                    <div className="px-5 py-3.5 flex items-center gap-3 transition-all"
+                                      style={{ background: amortMode === "ensemble" ? "#C95B2A" : "rgba(201,91,42,0.07)", borderBottom: "1px solid rgba(201,91,42,0.15)" }}>
+                                      <div className="w-5 h-5 rounded-full flex-shrink-0 flex items-center justify-center"
+                                        style={{ border: `2px solid ${amortMode === "ensemble" ? "#F5F0E8" : "#C95B2A"}` }}>
+                                        {amortMode === "ensemble" && <div className="w-2.5 h-2.5 rounded-full" style={{ background: "#F5F0E8" }} />}
+                                      </div>
+                                      <span className="font-bold text-[14px] flex-1" style={{ color: amortMode === "ensemble" ? "#F5F0E8" : "#C95B2A" }}>
+                                        Amortissement Global Simplifié
+                                      </span>
+                                      <div className="text-right">
+                                        <div className="text-[10px] uppercase tracking-wider font-semibold mb-0.5"
+                                          style={{ color: amortMode === "ensemble" ? "rgba(245,240,232,0.65)" : "rgba(201,91,42,0.6)" }}>Val. amortissable</div>
+                                        <div className="text-[15px] font-bold"
+                                          style={{ color: amortMode === "ensemble" ? "#F5F0E8" : "#C95B2A" }}>{formatEuro(valAmort2)}</div>
+                                      </div>
                                     </div>
                                     {/* Content — Amort/an + Pendant */}
-                                    <div className="px-5 py-4 flex items-center gap-6" style={{ background: "rgba(201,91,42,0.05)" }}>
+                                    <div className="px-5 py-4 flex items-center gap-6" style={{ background: "#FDFAF6" }}>
                                       <div>
                                         <div className="text-[11px] uppercase tracking-wider font-semibold mb-1" style={{ color: "#C95B2A" }}>Amortissement / an</div>
                                         <div className="text-xl font-bold" style={{ color: "#C95B2A" }}>{formatEuro(amortDureeEnsemble > 0 ? valAmort2 / amortDureeEnsemble : 0)}</div>
                                       </div>
-                                      <div className="w-px self-stretch" style={{ background: "rgba(201,91,42,0.2)" }} />
+                                      <div className="w-px self-stretch" style={{ background: "rgba(201,91,42,0.15)" }} />
                                       <div>
-                                        <div className="text-[11px] uppercase tracking-wider font-semibold mb-1" style={{ color: "rgba(26,22,18,0.45)" }}>Pendant</div>
+                                        <div className="text-[11px] uppercase tracking-wider font-semibold mb-1" style={{ color: "rgba(26,22,18,0.4)" }}>Pendant</div>
                                         <div className="flex items-baseline gap-1">
                                           <input type="number" min={5} max={50} value={amortDureeEnsemble}
                                             onClick={e => e.stopPropagation()}
@@ -1702,17 +1714,6 @@ ${annexeTable}
                                           <span className="text-[15px] font-bold" style={{ color: "#1A1612" }}>ans</span>
                                         </div>
                                       </div>
-                                    </div>
-                                    {/* Footer — bouton radio sélection */}
-                                    <div className="px-5 py-3 flex items-center gap-3 transition-all"
-                                      style={{ background: amortMode === "ensemble" ? "#C95B2A" : "rgba(201,91,42,0.08)", borderTop: "1px solid rgba(201,91,42,0.15)" }}>
-                                      <div className="w-5 h-5 rounded-full flex-shrink-0 flex items-center justify-center"
-                                        style={{ border: `2px solid ${amortMode === "ensemble" ? "#F5F0E8" : "#C95B2A"}` }}>
-                                        {amortMode === "ensemble" && <div className="w-2.5 h-2.5 rounded-full" style={{ background: "#F5F0E8" }} />}
-                                      </div>
-                                      <span className="font-bold text-[14px]" style={{ color: amortMode === "ensemble" ? "#F5F0E8" : "#4E1F12" }}>
-                                        Amortissement Global Simplifié
-                                      </span>
                                     </div>
                                   </div>
                                 ) : (
@@ -1743,31 +1744,44 @@ ${annexeTable}
                               <div className="space-y-3">
                                 {amortMode !== "ensemble" ? (() => {
                                   const totalPct = composants.reduce((s, c) => s + c.pct, 0);
-                                  const inputCls = "w-14 px-2 py-1.5 text-sm rounded-md text-center text-[#1A1612] focus:outline-none focus:ring-1 focus:ring-[#C95B2A] [appearance:none] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none [-moz-appearance:textfield]";
+                                  const C2 = "#2A7080";
+                                  const inputCls = "w-14 px-2 py-1.5 text-sm rounded-md text-center text-[#1A1612] focus:outline-none focus:ring-1 focus:ring-[#2A7080] [appearance:none] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none [-moz-appearance:textfield]";
                                   return (
                                     <div onClick={() => setAmortMode("composant")} className="cursor-pointer rounded-xl overflow-hidden transition-all"
                                       style={{
-                                        border: amortMode === "composant" ? "2.5px solid #C95B2A" : "1.5px solid rgba(78,31,18,0.15)",
-                                        boxShadow: amortMode === "composant" ? "0 0 0 3px rgba(201,91,42,0.1)" : "none",
+                                        border: amortMode === "composant" ? `2px solid ${C2}` : "1.5px solid rgba(42,112,128,0.2)",
+                                        boxShadow: amortMode === "composant" ? "0 0 0 3px rgba(42,112,128,0.1)" : "none",
                                       }}>
-                                      {/* Header — Valeur amortissable */}
-                                      <div className="px-5 py-3.5" style={{ background: "linear-gradient(135deg, #4E1F12 0%, #7A3018 100%)" }}>
-                                        <div className="text-[11px] uppercase tracking-wider font-semibold mb-0.5" style={{ color: "rgba(245,240,232,0.6)" }}>Valeur amortissable</div>
-                                        <div className="text-xl font-bold" style={{ color: "#F5F0E8" }}>{formatEuro(valAmort2)}</div>
+                                      {/* Header — radio + label + valeur amortissable */}
+                                      <div className="px-5 py-3.5 flex items-center gap-3 transition-all"
+                                        style={{ background: amortMode === "composant" ? C2 : "rgba(42,112,128,0.07)", borderBottom: "1px solid rgba(42,112,128,0.15)" }}>
+                                        <div className="w-5 h-5 rounded-full flex-shrink-0 flex items-center justify-center"
+                                          style={{ border: `2px solid ${amortMode === "composant" ? "#F5F0E8" : C2}` }}>
+                                          {amortMode === "composant" && <div className="w-2.5 h-2.5 rounded-full" style={{ background: "#F5F0E8" }} />}
+                                        </div>
+                                        <span className="font-bold text-[14px] flex-1" style={{ color: amortMode === "composant" ? "#F5F0E8" : C2 }}>
+                                          Amortissement par Composant
+                                        </span>
+                                        <div className="text-right">
+                                          <div className="text-[10px] uppercase tracking-wider font-semibold mb-0.5"
+                                            style={{ color: amortMode === "composant" ? "rgba(245,240,232,0.65)" : "rgba(42,112,128,0.6)" }}>Val. amortissable</div>
+                                          <div className="text-[15px] font-bold"
+                                            style={{ color: amortMode === "composant" ? "#F5F0E8" : C2 }}>{formatEuro(valAmort2)}</div>
+                                        </div>
                                       </div>
-                                      {/* Table header */}
-                                      <div className="px-4 py-2.5 flex items-center gap-2" style={{ background: "#3A1A0A" }}>
-                                        <span className="text-[12px] font-semibold uppercase tracking-wider" style={{ color: "rgba(245,240,232,0.55)", width: 140 }}>Composant</span>
-                                        <span className="text-[12px] font-semibold uppercase tracking-wider" style={{ color: "rgba(245,240,232,0.55)", width: 160 }}>Quote part en %</span>
-                                        <span className="text-[12px] font-semibold uppercase tracking-wider" style={{ color: "rgba(245,240,232,0.55)", width: 85 }}>Durée</span>
-                                        <span className="text-[12px] font-semibold uppercase tracking-wider text-right" style={{ color: "#C95B2A", width: 75 }}>Amort / an</span>
+                                      {/* Table column headers */}
+                                      <div className="px-4 py-2 flex items-center gap-2" style={{ background: "rgba(42,112,128,0.08)", borderBottom: "1px solid rgba(42,112,128,0.12)" }}>
+                                        <span className="text-[11px] font-semibold uppercase tracking-wider" style={{ color: "rgba(42,112,128,0.7)", width: 140 }}>Composant</span>
+                                        <span className="text-[11px] font-semibold uppercase tracking-wider" style={{ color: "rgba(42,112,128,0.7)", width: 160 }}>Quote part en %</span>
+                                        <span className="text-[11px] font-semibold uppercase tracking-wider" style={{ color: "rgba(42,112,128,0.7)", width: 85 }}>Durée</span>
+                                        <span className="text-[11px] font-semibold uppercase tracking-wider text-right" style={{ color: C2, width: 75 }}>Amort / an</span>
                                       </div>
                                       {/* Rows */}
                                       {composants.map((c, i) => {
                                         const val = valAmort2 * c.pct / 100;
                                         return (
                                           <div key={c.label} className="flex items-center gap-2 px-4 py-2.5"
-                                            style={{ borderBottom: "0.5px solid rgba(26,22,18,0.07)", background: i % 2 === 0 ? "#FDFAF6" : "#F5F0E8" }}>
+                                            style={{ borderBottom: "0.5px solid rgba(26,22,18,0.06)", background: i % 2 === 0 ? "#FDFAF6" : "#F8F4EE" }}>
                                             <span className="text-[14px] font-semibold" style={{ color: "#1A1612", width: 140 }}>{c.label}</span>
                                             <div className="flex items-center gap-1" style={{ width: 160 }}>
                                               <input type="number" min={0} max={100} value={c.pct === 0 ? "" : c.pct}
@@ -1780,11 +1794,11 @@ ${annexeTable}
                                                 }}
                                                 className={inputCls} style={INPUT_STYLE} />
                                               <span className="text-[13px] font-medium" style={{ color: "rgba(26,22,18,0.5)" }}>%</span>
-                                              <span className="text-[12px] ml-1" style={{ color: "rgba(26,22,18,0.45)" }}>soit</span>
-                                              <span className="text-[13px] font-bold" style={{ color: "#C95B2A" }}>{formatEuro(val)}</span>
+                                              <span className="text-[12px] ml-1" style={{ color: "rgba(26,22,18,0.4)" }}>soit</span>
+                                              <span className="text-[13px] font-bold" style={{ color: C2 }}>{formatEuro(val)}</span>
                                             </div>
                                             <div className="flex items-center gap-1" style={{ width: 85 }}>
-                                              <span className="text-[12px]" style={{ color: "rgba(26,22,18,0.45)" }}>sur</span>
+                                              <span className="text-[12px]" style={{ color: "rgba(26,22,18,0.4)" }}>sur</span>
                                               <input type="number" min={0} max={100} value={c.duree === 0 ? "" : c.duree}
                                                 placeholder="0"
                                                 onClick={e => e.stopPropagation()}
@@ -1797,52 +1811,40 @@ ${annexeTable}
                                               <span className="text-[13px] font-medium" style={{ color: "rgba(26,22,18,0.5)" }}>ans</span>
                                             </div>
                                             <div className="flex items-center gap-1.5" style={{ width: 75, justifyContent: "flex-end" }}>
-                                              <span className="text-[14px] font-light" style={{ color: "rgba(26,22,18,0.3)" }}>=</span>
-                                              <span className="text-[13px] font-bold" style={{ color: "#C95B2A" }}>{formatEuro(c.duree > 0 ? val / c.duree : 0)}</span>
+                                              <span className="text-[14px] font-light" style={{ color: "rgba(26,22,18,0.25)" }}>=</span>
+                                              <span className="text-[13px] font-bold" style={{ color: C2 }}>{formatEuro(c.duree > 0 ? val / c.duree : 0)}</span>
                                             </div>
                                           </div>
                                         );
                                       })}
                                       {/* Total row */}
-                                      <div className="flex items-center gap-2 px-4 py-3" style={{ background: "#3A1A0A" }}>
-                                        <span className="text-[16px] font-bold" style={{ color: "#F5F0E8", width: 140 }}>Total</span>
+                                      <div className="flex items-center gap-2 px-4 py-3" style={{ background: "rgba(42,112,128,0.1)", borderTop: "1px solid rgba(42,112,128,0.15)" }}>
+                                        <span className="text-[16px] font-bold" style={{ color: "#1A1612", width: 140 }}>Total</span>
                                         <div style={{ width: 160 }}>
-                                          <span className="text-[16px] font-bold" style={{ color: totalPct === 100 ? "#6FCF97" : "#EB5757" }}>
+                                          <span className="text-[16px] font-bold" style={{ color: totalPct === 100 ? "#1A7A52" : "#B03A2A" }}>
                                             {totalPct} %{totalPct !== 100 && " ⚠"}
                                           </span>
                                         </div>
                                         <div style={{ width: 85 }} />
                                         <div className="flex items-center gap-1.5" style={{ width: 75, justifyContent: "flex-end" }}>
-                                          <span className="text-[16px] font-light" style={{ color: "rgba(245,240,232,0.3)" }}>=</span>
-                                          <span className="text-[16px] font-bold" style={{ color: "#C95B2A" }}>{formatEuro(composants.reduce((s, c) => s + (valAmort2 * c.pct / 100) / (c.duree || 1), 0))}/an</span>
+                                          <span className="text-[16px] font-bold" style={{ color: C2 }}>{formatEuro(composants.reduce((s, c) => s + (valAmort2 * c.pct / 100) / (c.duree || 1), 0))}/an</span>
                                         </div>
                                       </div>
                                       {/* Warnings */}
                                       {totalPct !== 100 && (
-                                        <p className="px-4 py-2 text-[13px]" style={{ color: "#B03A2A", background: "rgba(176,58,42,0.06)" }}>
+                                        <p className="px-4 py-2 text-[13px]" style={{ color: "#B03A2A", background: "rgba(176,58,42,0.05)" }}>
                                           ⚠ Les % doivent totaliser 100 % pour couvrir toute la valeur amortissable.
                                         </p>
                                       )}
                                       {composants.some(c => c.duree === 0 && c.pct > 0) && (
-                                        <p className="px-4 py-2 text-[13px]" style={{ color: "#B03A2A", background: "rgba(176,58,42,0.06)" }}>
+                                        <p className="px-4 py-2 text-[13px]" style={{ color: "#B03A2A", background: "rgba(176,58,42,0.05)" }}>
                                           ⚠ La durée d&apos;amortissement ne peut pas être 0 an pour un composant avec un % &gt; 0.
                                         </p>
                                       )}
-                                      {/* Footer — bouton radio sélection */}
-                                      <div className="px-5 py-3 flex items-center gap-3 transition-all"
-                                        style={{ background: amortMode === "composant" ? "#C95B2A" : "rgba(201,91,42,0.08)", borderTop: "1px solid rgba(201,91,42,0.15)" }}>
-                                        <div className="w-5 h-5 rounded-full flex-shrink-0 flex items-center justify-center"
-                                          style={{ border: `2px solid ${amortMode === "composant" ? "#F5F0E8" : "#C95B2A"}` }}>
-                                          {amortMode === "composant" && <div className="w-2.5 h-2.5 rounded-full" style={{ background: "#F5F0E8" }} />}
-                                        </div>
-                                        <span className="font-bold text-[14px]" style={{ color: amortMode === "composant" ? "#F5F0E8" : "#4E1F12" }}>
-                                          Amortissement par Composant
-                                        </span>
-                                      </div>
                                     </div>
                                   );
                                 })() : (
-                                  <button onClick={() => setAmortMode(null)} className="text-[13px] font-medium" style={{ color: "#C95B2A" }}>← Changer de méthode d&apos;amortissement</button>
+                                  <button onClick={() => setAmortMode(null)} className="text-[13px] font-medium" style={{ color: "#2A7080" }}>← Changer de méthode d&apos;amortissement</button>
                                 )}
 
                                 {/* Détails — tout en bas */}
@@ -1850,7 +1852,7 @@ ${annexeTable}
                                   <div className="pt-1">
                                     <button onClick={e => { e.stopPropagation(); setShowDetailsComposant(v => !v); }}
                                       className="text-[11px] font-medium px-1.5 py-0.5 rounded flex items-center gap-1"
-                                      style={{ color: "#C95B2A", background: "rgba(201,91,42,0.08)", border: "1px solid rgba(201,91,42,0.2)" }}>
+                                      style={{ color: "#2A7080", background: "rgba(42,112,128,0.08)", border: "1px solid rgba(42,112,128,0.2)" }}>
                                       {showDetailsComposant ? "▲" : "▼"} Détails
                                     </button>
                                     {showDetailsComposant && (
