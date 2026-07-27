@@ -239,6 +239,8 @@ export default function Simulateur() {
   const [amortPct, setAmortPct] = useState(85);
   const [amortMode, setAmortMode] = useState<"ensemble" | "composant" | null>(null);
   const [amortDureeEnsemble, setAmortDureeEnsemble] = useState(25);
+  const [showDetailsEnsemble, setShowDetailsEnsemble] = useState(false);
+  const [showDetailsComposant, setShowDetailsComposant] = useState(false);
   const [composants, setComposants] = useState([
     { label: "Bâti / Gros œuvre", pct: 45, duree: 40 },
     { label: "Toiture", pct: 15, duree: 25 },
@@ -1662,9 +1664,62 @@ ${annexeTable}
                             </div>
 
                             {/* Titre choix type amortissement */}
-                            <div className="text-center mt-14 mb-4">
+                            <div className="text-center mt-14 mb-3">
                               <span className="text-base font-semibold" style={{ color: "#1A1612" }}>Fais ton choix du Type d&apos;Amortissement</span>
                             </div>
+
+                            {/* Textes explicatifs repliables — sous le titre, avant les boutons */}
+                            {amortMode === null && (
+                              <div className="grid grid-cols-2 gap-6 mb-3">
+                                {/* Détails Global */}
+                                <div>
+                                  <button onClick={() => setShowDetailsEnsemble(v => !v)}
+                                    className="flex items-center gap-2 text-left focus:outline-none group">
+                                    <span className="font-bold text-[14px]" style={{ color: "#4E1F12" }}>Méthode Amort. Global Simplifié</span>
+                                    <span className="text-[11px] font-medium px-1.5 py-0.5 rounded flex items-center gap-1 transition-colors"
+                                      style={{ color: "#C95B2A", background: "rgba(201,91,42,0.08)", border: "1px solid rgba(201,91,42,0.2)" }}>
+                                      {showDetailsEnsemble ? "▲" : "▼"} Détails
+                                    </span>
+                                  </button>
+                                  {showDetailsEnsemble && (
+                                    <div className="mt-2">
+                                      <p className="text-[13px] leading-relaxed" style={{ color: "rgba(26,22,18,0.80)" }}>
+                                        Dans ce cas, le bien est amorti dans son ensemble sur la durée choisie (entre 25 et 40 ans). C&apos;est la méthode la plus simple, non conventionnelle mais elle est généralement tolérée lorsqu&apos;il s&apos;agit d&apos;un petit bien seul et que la comptabilité est faite sans expert comptable.
+                                      </p>
+                                      <button onClick={() => setShowDetailsEnsemble(false)}
+                                        className="mt-1 text-[11px] font-medium flex items-center gap-1" style={{ color: "rgba(26,22,18,0.4)" }}>
+                                        ▲ Réduire
+                                      </button>
+                                    </div>
+                                  )}
+                                </div>
+                                {/* Détails Composant */}
+                                <div>
+                                  <button onClick={() => setShowDetailsComposant(v => !v)}
+                                    className="flex items-center gap-2 text-left focus:outline-none group">
+                                    <span className="font-bold text-[14px]" style={{ color: "#1A7A52" }}>Méthode Amort. par Composant</span>
+                                    <span className="text-[11px] font-medium px-1.5 py-0.5 rounded flex items-center gap-1 transition-colors"
+                                      style={{ color: "#1A7A52", background: "rgba(26,122,82,0.08)", border: "1px solid rgba(26,122,82,0.2)" }}>
+                                      {showDetailsComposant ? "▲" : "▼"} Détails
+                                    </span>
+                                  </button>
+                                  {showDetailsComposant && (
+                                    <div className="mt-2">
+                                      <p className="text-[13px] leading-relaxed" style={{ color: "rgba(26,22,18,0.80)" }}>
+                                        L&apos;Amortissement par composant consiste à décomposer et distribuer la valeur du bien sur plusieurs éléments principaux : gros œuvre, toiture, installations électriques, etc.
+                                      </p>
+                                      <p className="text-[13px] leading-relaxed mt-1.5" style={{ color: "rgba(26,22,18,0.80)" }}>
+                                        Chaque composant va correspondre à un pourcentage de la valeur du bien et à une durée pour l&apos;amortir bien précise. Lors du choix de ces valeurs, il faut bien veiller à respecter les durées d&apos;utilisation normale de chaque composant, ainsi que leur proportion dans la valeur totale du logement.
+                                      </p>
+                                      <button onClick={() => setShowDetailsComposant(false)}
+                                        className="mt-1 text-[11px] font-medium flex items-center gap-1" style={{ color: "rgba(26,22,18,0.4)" }}>
+                                        ▲ Réduire
+                                      </button>
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+                            )}
 
                             {/* Grille 2 colonnes : Global | Composant — toujours visibles */}
                             <div ref={amortContentRef} className="grid grid-cols-2 gap-6" style={{ scrollMarginTop: "80px" }}>
@@ -1690,15 +1745,6 @@ ${annexeTable}
                                   </button>
                                 ) : (
                                   <button onClick={() => setAmortMode(null)} className="text-[13px] font-medium" style={{ color: "#C95B2A" }}>← Changer de méthode d&apos;amortissement</button>
-                                )}
-
-                                {amortMode === null && (
-                                  <div>
-                                    <div className="font-bold text-[15px] mb-2" style={{ color: "#4E1F12" }}>Méthode Amort. Global Simplifié</div>
-                                    <p className="text-[14px] leading-relaxed" style={{ color: "rgba(26,22,18,0.88)" }}>
-                                      Dans ce cas, le bien est amorti dans son ensemble sur la durée choisie (entre 25 et 40 ans). C&apos;est la méthode la plus simple, non conventionnelle mais elle est généralement tolérée lorsqu&apos;il s&apos;agit d&apos;un petit bien seul et que la comptabilité est faite sans expert comptable.
-                                    </p>
-                                  </div>
                                 )}
 
                                 {amortMode !== "composant" && (
@@ -1759,17 +1805,6 @@ ${annexeTable}
                                   <button onClick={() => setAmortMode(null)} className="text-[13px] font-medium" style={{ color: "#1A7A52" }}>← Changer de méthode d&apos;amortissement</button>
                                 )}
 
-                                {amortMode === null && (
-                                  <div>
-                                    <div className="font-bold text-[15px] mb-2" style={{ color: "#1A7A52" }}>Méthode Amort. par Composant</div>
-                                    <p className="text-[14px] leading-relaxed" style={{ color: "rgba(26,22,18,0.88)" }}>
-                                      L&apos;Amortissement par composant consiste à décomposer et distribuer la valeur du bien sur plusieurs éléments principaux : gros œuvre, toiture, installations électriques, etc.
-                                    </p>
-                                    <p className="text-[14px] leading-relaxed mt-2" style={{ color: "rgba(26,22,18,0.88)" }}>
-                                      Chaque composant va correspondre à un pourcentage de la valeur du bien et à une durée pour l&apos;amortir bien précise. Lors du choix de ces valeurs, il faut bien veiller à respecter les durées d&apos;utilisation normale de chaque composant, ainsi que leur proportion dans la valeur totale du logement.
-                                    </p>
-                                  </div>
-                                )}
 
                                 {amortMode !== "ensemble" && (() => {
                                   const totalPct = composants.reduce((s, c) => s + c.pct, 0);
