@@ -1790,22 +1790,22 @@ ${annexeTable}
                               return (
                                 <div className="rounded-xl overflow-hidden" style={{ border: "1px solid rgba(78,31,18,0.18)" }}>
                                   {/* Header */}
-                                  <div className="px-4 py-2.5 flex items-center" style={{ background: "#4E1F12" }}>
+                                  <div className="px-4 py-2.5 flex items-center gap-2" style={{ background: "#4E1F12" }}>
                                     <span className="text-[12px] font-semibold uppercase tracking-wider flex-1" style={{ color: "rgba(245,240,232,0.65)" }}>Composant</span>
-                                    <span className="text-[12px] font-semibold uppercase tracking-wider" style={{ color: "rgba(245,240,232,0.65)", minWidth: 200 }}>% · Soit XX€ à amortir</span>
-                                    <span className="text-[12px] font-semibold uppercase tracking-wider" style={{ color: "rgba(245,240,232,0.65)", minWidth: 110 }}>Durée</span>
-                                    <span className="text-[12px] font-semibold uppercase tracking-wider text-right" style={{ color: "#C95B2A", minWidth: 90 }}>Amort / an</span>
+                                    <span className="text-[12px] font-semibold uppercase tracking-wider" style={{ color: "rgba(245,240,232,0.65)", minWidth: 170 }}>Quote part en %</span>
+                                    <span className="text-[12px] font-semibold uppercase tracking-wider" style={{ color: "rgba(245,240,232,0.65)", minWidth: 90 }}>Durée</span>
+                                    <span className="text-[12px] font-semibold uppercase tracking-wider text-right" style={{ color: "#C95B2A", minWidth: 80 }}>Amort / an</span>
                                   </div>
 
                                   {composants.map((c, i) => {
                                     const val = valAmort * c.pct / 100;
                                     return (
-                                      <div key={c.label} className="flex items-center gap-3 px-4 py-3"
+                                      <div key={c.label} className="flex items-center gap-2 px-4 py-3"
                                         style={{ borderBottom: "0.5px solid rgba(26,22,18,0.07)", background: i % 2 === 0 ? "#FDFAF6" : "#F5F0E8" }}>
                                         {/* Nom */}
                                         <span className="text-[15px] font-semibold flex-1" style={{ color: "#1A1612" }}>{c.label}</span>
                                         {/* % input + soit XX€ */}
-                                        <div className="flex items-center gap-1.5" style={{ minWidth: 200 }}>
+                                        <div className="flex items-center gap-1" style={{ minWidth: 170 }}>
                                           <input type="number" min={0} max={100} value={c.pct === 0 ? "" : c.pct}
                                             placeholder="0"
                                             onChange={e => {
@@ -1819,7 +1819,8 @@ ${annexeTable}
                                           <span className="text-[14px] font-bold" style={{ color: "#C95B2A" }}>{formatEuro(val)}</span>
                                         </div>
                                         {/* Durée input */}
-                                        <div className="flex items-center gap-1.5" style={{ minWidth: 110 }}>
+                                        <div className="flex items-center gap-1" style={{ minWidth: 90 }}>
+                                          <span className="text-[13px]" style={{ color: "rgba(26,22,18,0.45)" }}>sur</span>
                                           <input type="number" min={0} max={100} value={c.duree === 0 ? "" : c.duree}
                                             placeholder="0"
                                             onChange={e => {
@@ -1831,7 +1832,7 @@ ${annexeTable}
                                           <span className="text-[14px] font-medium" style={{ color: "rgba(26,22,18,0.5)" }}>ans</span>
                                         </div>
                                         {/* = amort/an */}
-                                        <div className="flex items-center gap-2" style={{ minWidth: 90, justifyContent: "flex-end" }}>
+                                        <div className="flex items-center gap-1.5" style={{ minWidth: 80, justifyContent: "flex-end" }}>
                                           <span className="text-[16px] font-light" style={{ color: "rgba(26,22,18,0.3)" }}>=</span>
                                           <span className="text-[15px] font-bold" style={{ color: "#C95B2A" }}>
                                             {formatEuro(c.duree > 0 ? val / c.duree : 0)}
@@ -1842,17 +1843,17 @@ ${annexeTable}
                                   })}
 
                                   {/* Total row */}
-                                  <div className="flex items-center gap-3 px-4 py-3" style={{ background: "#4E1F12" }}>
-                                    <span className="text-[15px] font-semibold flex-1" style={{ color: "#F5F0E8" }}>Total</span>
-                                    <div style={{ minWidth: 200 }}>
-                                      <span className="text-[15px] font-semibold" style={{ color: totalPct === 100 ? "#6FCF97" : "#EB5757" }}>
+                                  <div className="flex items-center gap-2 px-4 py-3" style={{ background: "#4E1F12" }}>
+                                    <span className="text-[18px] font-bold flex-1" style={{ color: "#F5F0E8" }}>Total</span>
+                                    <div style={{ minWidth: 170 }}>
+                                      <span className="text-[18px] font-bold" style={{ color: totalPct === 100 ? "#6FCF97" : "#EB5757" }}>
                                         {totalPct} %{totalPct !== 100 && " ⚠"}
                                       </span>
                                     </div>
-                                    <div style={{ minWidth: 110 }} />
-                                    <div className="flex items-center gap-2" style={{ minWidth: 90, justifyContent: "flex-end" }}>
-                                      <span className="text-[16px] font-light" style={{ color: "rgba(245,240,232,0.3)" }}>=</span>
-                                      <span className="text-[15px] font-bold" style={{ color: "#C95B2A" }}>
+                                    <div style={{ minWidth: 90 }} />
+                                    <div className="flex items-center gap-1.5" style={{ minWidth: 80, justifyContent: "flex-end" }}>
+                                      <span className="text-[18px] font-light" style={{ color: "rgba(245,240,232,0.3)" }}>=</span>
+                                      <span className="text-[18px] font-bold" style={{ color: "#C95B2A" }}>
                                         {formatEuro(composants.reduce((s, c) => s + (valAmort * c.pct / 100) / (c.duree || 1), 0))}/an
                                       </span>
                                     </div>
