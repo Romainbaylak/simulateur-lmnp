@@ -1712,8 +1712,11 @@ ${annexeTable}
                                             onChange={e => {
                                               const raw = e.target.value;
                                               if (raw === "") { setAmortDureeEnsemble(0); return; }
-                                              const v = parseInt(raw) || 0;
-                                              if (v >= 5) setAmortDureeEnsemble(Math.min(100, v));
+                                              const v = parseInt(raw);
+                                              if (!isNaN(v)) setAmortDureeEnsemble(Math.min(100, v));
+                                            }}
+                                            onBlur={() => {
+                                              if (amortDureeEnsemble < 5) setAmortDureeEnsemble(5);
                                             }}
                                             className="w-14 text-center text-xl font-bold rounded-md focus:outline-none focus:ring-1 focus:ring-[#C95B2A] [appearance:none] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none [-moz-appearance:textfield]"
                                             style={{ ...INPUT_STYLE, color: "#1A1612" }} />
