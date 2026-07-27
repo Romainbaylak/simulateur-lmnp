@@ -1666,212 +1666,202 @@ ${annexeTable}
                               <span className="text-base font-semibold" style={{ color: "#1A1612" }}>Fais ton choix du Type d&apos;Amortissement</span>
                             </div>
 
-                            {/* Boutons choix */}
-                            <div className="grid grid-cols-2 gap-4">
-                              {/* Global Simplifié */}
-                              <button onClick={() => { setAmortMode("ensemble"); scrollToAmort.current = true; }}
-                                className="rounded-xl overflow-hidden text-left w-full transition-all hover:shadow-md focus:outline-none group"
-                                style={{
-                                  border: amortMode === "ensemble" ? "2.5px solid #C95B2A" : "1.5px solid rgba(201,91,42,0.25)",
-                                  boxShadow: amortMode === "ensemble" ? "0 0 0 3px rgba(201,91,42,0.1)" : "none",
-                                }}>
-                                <div className="flex items-center gap-3 px-4 py-3" style={{ background: amortMode === "ensemble" ? "#C95B2A" : "rgba(201,91,42,0.06)" }}>
-                                  <div className="w-5 h-5 rounded-full flex-shrink-0 flex items-center justify-center" style={{ border: `2px solid ${amortMode === "ensemble" ? "#F5F0E8" : "#C95B2A"}`, background: "transparent" }}>
-                                    {amortMode === "ensemble"
-                                      ? <div className="w-2.5 h-2.5 rounded-full" style={{ background: "#F5F0E8" }} />
-                                      : <div className="w-2 h-2 rounded-full opacity-0 group-hover:opacity-40 transition-opacity" style={{ background: "#C95B2A" }} />}
-                                  </div>
-                                  <span className="font-bold text-[14px]" style={{ color: amortMode === "ensemble" ? "#F5F0E8" : "#4E1F12" }}>Amortissement Global Simplifié</span>
-                                  {amortMode === "ensemble" && <span className="ml-auto text-[10px] font-bold px-2 py-0.5 rounded flex-shrink-0" style={{ background: "rgba(245,240,232,0.25)", color: "#F5F0E8" }}>✓ SÉLECTIONNÉ</span>}
-                                </div>
-                              </button>
+                            {/* Grille 2 colonnes : Global | Composant — toujours visibles */}
+                            <div ref={amortContentRef} className="grid grid-cols-2 gap-6" style={{ scrollMarginTop: "80px" }}>
 
-                              {/* Par Composant */}
-                              <button onClick={() => { setAmortMode("composant"); scrollToAmort.current = true; }}
-                                className="rounded-xl overflow-hidden text-left w-full transition-all hover:shadow-md focus:outline-none group"
-                                style={{
-                                  border: amortMode === "composant" ? "2.5px solid #1A7A52" : "1.5px solid rgba(26,122,82,0.25)",
-                                  boxShadow: amortMode === "composant" ? "0 0 0 3px rgba(26,122,82,0.1)" : "none",
-                                }}>
-                                <div className="flex items-center gap-3 px-4 py-3" style={{ background: amortMode === "composant" ? "#1A7A52" : "rgba(26,122,82,0.06)" }}>
-                                  <div className="w-5 h-5 rounded-full flex-shrink-0 flex items-center justify-center" style={{ border: `2px solid ${amortMode === "composant" ? "#F5F0E8" : "#1A7A52"}`, background: "transparent" }}>
-                                    {amortMode === "composant"
-                                      ? <div className="w-2.5 h-2.5 rounded-full" style={{ background: "#F5F0E8" }} />
-                                      : <div className="w-2 h-2 rounded-full opacity-0 group-hover:opacity-40 transition-opacity" style={{ background: "#1A7A52" }} />}
-                                  </div>
-                                  <span className="font-bold text-[14px]" style={{ color: amortMode === "composant" ? "#F5F0E8" : "#1A7A52" }}>Amortissement par Composant</span>
-                                  {amortMode === "composant" && <span className="ml-auto text-[10px] font-bold px-2 py-0.5 rounded flex-shrink-0" style={{ background: "rgba(245,240,232,0.25)", color: "#F5F0E8" }}>✓ SÉLECTIONNÉ</span>}
-                                </div>
-                              </button>
-                            </div>
-
-                            {/* Textes explicatifs — visibles uniquement avant le choix */}
-                            {amortMode === null && (
-                              <div className="grid grid-cols-2 gap-5 mt-5">
-                                <div>
-                                  <div className="font-bold text-[15px] mb-2" style={{ color: "#4E1F12" }}>Méthode Amort. Global Simplifié</div>
-                                  <p className="text-[14px] leading-relaxed" style={{ color: "rgba(26,22,18,0.88)" }}>
-                                    Dans ce cas, le bien est amorti dans son ensemble sur la durée choisie (entre 25 et 40 ans). C&apos;est la méthode la plus simple, non conventionnelle mais elle est généralement tolérée lorsqu&apos;il s&apos;agit d&apos;un petit bien seul et que la comptabilité est faite sans expert comptable.
-                                  </p>
-                                </div>
-                                <div>
-                                  <div className="font-bold text-[15px] mb-2" style={{ color: "#1A7A52" }}>Méthode Amort. par Composant</div>
-                                  <p className="text-[14px] leading-relaxed" style={{ color: "rgba(26,22,18,0.88)" }}>
-                                    L&apos;Amortissement par composant consiste à décomposer et distribuer la valeur du bien sur plusieurs éléments principaux : gros œuvre, toiture, installations électriques, etc.
-                                  </p>
-                                  <p className="text-[14px] leading-relaxed mt-2" style={{ color: "rgba(26,22,18,0.88)" }}>
-                                    Chaque composant va correspondre à un pourcentage de la valeur du bien et à une durée pour l&apos;amortir bien précise. Lors du choix de ces valeurs, il faut bien veiller à respecter les durées d&apos;utilisation normale de chaque composant, ainsi que leur proportion dans la valeur totale du logement.
-                                  </p>
-                                </div>
-                              </div>
-                            )}
-                          </div>
-                          </>
-                        );
-                      })()}
-
-                      {/* Contenu selon mode choisi — masqué jusqu'au clic */}
-                      {amortMode !== null && (() => {
-                        const prixVal = parseFloat(form.prix) || 0;
-                        const valAmort = prixVal * amortPct / 100;
-                        return (
-                          <div ref={amortContentRef} className="space-y-4" style={{ scrollMarginTop: "80px" }}>
-                            {/* Mode Global Simplifié */}
-                            {amortMode === "ensemble" && (
+                              {/* ── Colonne Global Simplifié ── */}
                               <div className="space-y-3">
-                                {/* Ligne 1 : valeur à gauche + slider à droite */}
-                                <div className="flex gap-4 items-stretch">
-                                  {/* Valeur amortissable */}
-                                  <div className="rounded-lg px-5 py-4 flex-shrink-0 flex flex-col justify-center" style={{ background: "linear-gradient(135deg, #4E1F12 0%, #C95B2A 100%)", minWidth: 180 }}>
-                                    <div className="text-[11px] uppercase tracking-wider font-semibold mb-1" style={{ color: "rgba(245,240,232,0.7)" }}>Valeur amortissable</div>
-                                    <div className="text-xl font-bold" style={{ color: "#F5F0E8" }}>{formatEuro(valAmort)}</div>
-                                  </div>
-                                  {/* Slider durée */}
-                                  <div className="flex-1 rounded-lg px-4 py-4 flex flex-col justify-center" style={{ background: "rgba(26,22,18,0.03)", border: "0.5px solid rgba(26,22,18,0.08)" }}>
-                                    <div className="flex items-baseline justify-between mb-2">
-                                      <span className="text-[12px] uppercase tracking-wider font-semibold" style={{ color: "rgba(26,22,18,0.45)" }}>Durée d&apos;amortissement</span>
-                                      <span className="text-lg font-bold" style={{ color: "#C95B2A" }}>{amortDureeEnsemble} ans</span>
+                                {amortMode !== "composant" ? (
+                                  <button onClick={() => setAmortMode("ensemble")}
+                                    className="rounded-xl overflow-hidden text-left w-full transition-all hover:shadow-md focus:outline-none group"
+                                    style={{
+                                      border: amortMode === "ensemble" ? "2.5px solid #C95B2A" : "1.5px solid rgba(201,91,42,0.25)",
+                                      boxShadow: amortMode === "ensemble" ? "0 0 0 3px rgba(201,91,42,0.1)" : "none",
+                                    }}>
+                                    <div className="flex items-center gap-3 px-4 py-3" style={{ background: amortMode === "ensemble" ? "#C95B2A" : "rgba(201,91,42,0.06)" }}>
+                                      <div className="w-5 h-5 rounded-full flex-shrink-0 flex items-center justify-center" style={{ border: `2px solid ${amortMode === "ensemble" ? "#F5F0E8" : "#C95B2A"}`, background: "transparent" }}>
+                                        {amortMode === "ensemble"
+                                          ? <div className="w-2.5 h-2.5 rounded-full" style={{ background: "#F5F0E8" }} />
+                                          : <div className="w-2 h-2 rounded-full opacity-0 group-hover:opacity-40 transition-opacity" style={{ background: "#C95B2A" }} />}
+                                      </div>
+                                      <span className="font-bold text-[14px]" style={{ color: amortMode === "ensemble" ? "#F5F0E8" : "#4E1F12" }}>Amortissement Global Simplifié</span>
+                                      {amortMode === "ensemble" && <span className="ml-auto text-[10px] font-bold px-2 py-0.5 rounded flex-shrink-0" style={{ background: "rgba(245,240,232,0.25)", color: "#F5F0E8" }}>✓ SÉLECTIONNÉ</span>}
                                     </div>
-                                    <input
-                                      type="range" min={5} max={50} step={1}
-                                      value={amortDureeEnsemble}
-                                      onChange={e => setAmortDureeEnsemble(parseInt(e.target.value))}
-                                      className="w-full accent-[#C95B2A]"
-                                    />
-                                  </div>
-                                </div>
-                                {/* Ligne 2 : case orange amort/an + pendant X ans */}
-                                <div className="rounded-lg px-5 py-4 flex items-center gap-6" style={{ background: "rgba(201,91,42,0.08)", border: "1.5px solid rgba(201,91,42,0.25)" }}>
+                                  </button>
+                                ) : (
+                                  <button onClick={() => setAmortMode(null)} className="text-[13px] font-medium" style={{ color: "#C95B2A" }}>← Changer de méthode d&apos;amortissement</button>
+                                )}
+
+                                {amortMode === null && (
                                   <div>
-                                    <div className="text-[11px] uppercase tracking-wider font-semibold mb-1" style={{ color: "#C95B2A" }}>Amortissement / an</div>
-                                    <div className="text-xl font-bold" style={{ color: "#C95B2A" }}>{formatEuro(amortDureeEnsemble > 0 ? valAmort / amortDureeEnsemble : 0)}</div>
+                                    <div className="font-bold text-[15px] mb-2" style={{ color: "#4E1F12" }}>Méthode Amort. Global Simplifié</div>
+                                    <p className="text-[14px] leading-relaxed" style={{ color: "rgba(26,22,18,0.88)" }}>
+                                      Dans ce cas, le bien est amorti dans son ensemble sur la durée choisie (entre 25 et 40 ans). C&apos;est la méthode la plus simple, non conventionnelle mais elle est généralement tolérée lorsqu&apos;il s&apos;agit d&apos;un petit bien seul et que la comptabilité est faite sans expert comptable.
+                                    </p>
                                   </div>
-                                  <div className="w-px self-stretch" style={{ background: "rgba(201,91,42,0.2)" }} />
-                                  <div>
-                                    <div className="text-[11px] uppercase tracking-wider font-semibold mb-1" style={{ color: "rgba(26,22,18,0.45)" }}>Pendant</div>
-                                    <div className="text-xl font-bold" style={{ color: "#1A1612" }}>{amortDureeEnsemble} ans</div>
-                                  </div>
-                                </div>
-                              </div>
-                            )}
+                                )}
 
-                            {/* Rappel valeur amortissable — même case que Global */}
-                            {amortMode === "composant" && (
-                              <div className="rounded-lg px-5 py-4 mb-4 flex-shrink-0" style={{ background: "linear-gradient(135deg, #4E1F12 0%, #C95B2A 100%)", display: "inline-flex", flexDirection: "column" }}>
-                                <div className="text-[11px] uppercase tracking-wider font-semibold mb-1" style={{ color: "rgba(245,240,232,0.7)" }}>Valeur amortissable</div>
-                                <div className="text-xl font-bold" style={{ color: "#F5F0E8" }}>{formatEuro(valAmort)}</div>
-                              </div>
-                            )}
-
-                            {/* Mode Par composant */}
-                            {amortMode === "composant" && (() => {
-                              const totalPct = composants.reduce((s, c) => s + c.pct, 0);
-                              const inputCls = "w-14 px-2 py-1.5 text-sm rounded-md text-center text-[#1A1612] focus:outline-none focus:ring-1 focus:ring-[#C95B2A] [appearance:none] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none [-moz-appearance:textfield]";
-                              return (
-                                <div className="rounded-xl overflow-hidden" style={{ border: "1px solid rgba(78,31,18,0.18)" }}>
-                                  {/* Header */}
-                                  <div className="px-4 py-2.5 flex items-center gap-2" style={{ background: "#4E1F12" }}>
-                                    <span className="text-[12px] font-semibold uppercase tracking-wider" style={{ color: "rgba(245,240,232,0.65)", width: 160 }}>Composant</span>
-                                    <span className="text-[12px] font-semibold uppercase tracking-wider" style={{ color: "rgba(245,240,232,0.65)", width: 170 }}>Quote part en %</span>
-                                    <span className="text-[12px] font-semibold uppercase tracking-wider" style={{ color: "rgba(245,240,232,0.65)", width: 90 }}>Durée</span>
-                                    <span className="text-[12px] font-semibold uppercase tracking-wider text-right" style={{ color: "#C95B2A", width: 80 }}>Amort / an</span>
-                                  </div>
-
-                                  {composants.map((c, i) => {
-                                    const val = valAmort * c.pct / 100;
-                                    return (
-                                      <div key={c.label} className="flex items-center gap-2 px-4 py-3"
-                                        style={{ borderBottom: "0.5px solid rgba(26,22,18,0.07)", background: i % 2 === 0 ? "#FDFAF6" : "#F5F0E8" }}>
-                                        {/* Nom */}
-                                        <span className="text-[15px] font-semibold" style={{ color: "#1A1612", width: 160 }}>{c.label}</span>
-                                        {/* % input + soit XX€ */}
-                                        <div className="flex items-center gap-1" style={{ width: 170 }}>
-                                          <input type="number" min={0} max={100} value={c.pct === 0 ? "" : c.pct}
-                                            placeholder="0"
-                                            onChange={e => {
-                                              const raw = e.target.value;
-                                              const v = raw === "" ? 0 : Math.min(100, Math.max(0, parseInt(raw) || 0));
-                                              setComposants(prev => prev.map((x, j) => j === i ? { ...x, pct: v } : x));
-                                            }}
-                                            className={inputCls} style={INPUT_STYLE} />
-                                          <span className="text-[14px] font-medium" style={{ color: "rgba(26,22,18,0.5)" }}>%</span>
-                                          <span className="text-[13px] ml-1" style={{ color: "rgba(26,22,18,0.45)" }}>soit</span>
-                                          <span className="text-[14px] font-bold" style={{ color: "#C95B2A" }}>{formatEuro(val)}</span>
-                                        </div>
-                                        {/* Durée input */}
-                                        <div className="flex items-center gap-1" style={{ width: 90 }}>
-                                          <span className="text-[13px]" style={{ color: "rgba(26,22,18,0.45)" }}>sur</span>
-                                          <input type="number" min={0} max={100} value={c.duree === 0 ? "" : c.duree}
-                                            placeholder="0"
-                                            onChange={e => {
-                                              const raw = e.target.value;
-                                              const v = raw === "" ? 0 : Math.min(100, Math.max(0, parseInt(raw) || 0));
-                                              setComposants(prev => prev.map((x, j) => j === i ? { ...x, duree: v } : x));
-                                            }}
-                                            className={inputCls} style={INPUT_STYLE} />
-                                          <span className="text-[14px] font-medium" style={{ color: "rgba(26,22,18,0.5)" }}>ans</span>
-                                        </div>
-                                        {/* = amort/an */}
-                                        <div className="flex items-center gap-1.5" style={{ width: 80, justifyContent: "flex-end" }}>
-                                          <span className="text-[16px] font-light" style={{ color: "rgba(26,22,18,0.3)" }}>=</span>
-                                          <span className="text-[15px] font-bold" style={{ color: "#C95B2A" }}>
-                                            {formatEuro(c.duree > 0 ? val / c.duree : 0)}
-                                          </span>
+                                {amortMode !== "composant" && (
+                                  <div className="space-y-3">
+                                    {/* Valeur amortissable + Durée (deux boxes côte à côte) */}
+                                    <div className="flex gap-3">
+                                      <div className="rounded-lg px-4 py-3 flex flex-col justify-center" style={{ background: "linear-gradient(135deg, #4E1F12 0%, #C95B2A 100%)" }}>
+                                        <div className="text-[11px] uppercase tracking-wider font-semibold mb-1" style={{ color: "rgba(245,240,232,0.7)" }}>Valeur amortissable</div>
+                                        <div className="text-xl font-bold" style={{ color: "#F5F0E8" }}>{formatEuro(valAmort2)}</div>
+                                      </div>
+                                      <div className="rounded-lg px-4 py-3 flex flex-col justify-center" style={{ background: "rgba(201,91,42,0.06)", border: "1.5px solid rgba(201,91,42,0.2)" }}>
+                                        <div className="text-[11px] uppercase tracking-wider font-semibold mb-1" style={{ color: "rgba(26,22,18,0.45)" }}>Durée</div>
+                                        <div className="flex items-baseline gap-1">
+                                          <input type="number" min={5} max={50} value={amortDureeEnsemble}
+                                            onChange={e => setAmortDureeEnsemble(Math.min(50, Math.max(5, parseInt(e.target.value) || 25)))}
+                                            className="w-14 text-center text-xl font-bold rounded-md focus:outline-none focus:ring-1 focus:ring-[#C95B2A] [appearance:none] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none [-moz-appearance:textfield]"
+                                            style={{ ...INPUT_STYLE, color: "#C95B2A" }} />
+                                          <span className="text-[15px] font-bold" style={{ color: "#C95B2A" }}>ans</span>
                                         </div>
                                       </div>
-                                    );
-                                  })}
-
-                                  {/* Total row */}
-                                  <div className="flex items-center gap-2 px-4 py-3" style={{ background: "#4E1F12" }}>
-                                    <span className="text-[18px] font-bold" style={{ color: "#F5F0E8", width: 160 }}>Total</span>
-                                    <div style={{ width: 170 }}>
-                                      <span className="text-[18px] font-bold" style={{ color: totalPct === 100 ? "#6FCF97" : "#EB5757" }}>
-                                        {totalPct} %{totalPct !== 100 && " ⚠"}
-                                      </span>
                                     </div>
-                                    <div style={{ width: 90 }} />
-                                    <div className="flex items-center gap-1.5" style={{ width: 80, justifyContent: "flex-end" }}>
-                                      <span className="text-[18px] font-light" style={{ color: "rgba(245,240,232,0.3)" }}>=</span>
-                                      <span className="text-[18px] font-bold" style={{ color: "#C95B2A" }}>
-                                        {formatEuro(composants.reduce((s, c) => s + (valAmort * c.pct / 100) / (c.duree || 1), 0))}/an
-                                      </span>
+                                    {/* Amort/an + Pendant X ans */}
+                                    <div className="rounded-lg px-5 py-4 flex items-center gap-6" style={{ background: "rgba(201,91,42,0.08)", border: "1.5px solid rgba(201,91,42,0.25)" }}>
+                                      <div>
+                                        <div className="text-[11px] uppercase tracking-wider font-semibold mb-1" style={{ color: "#C95B2A" }}>Amortissement / an</div>
+                                        <div className="text-xl font-bold" style={{ color: "#C95B2A" }}>{formatEuro(amortDureeEnsemble > 0 ? valAmort2 / amortDureeEnsemble : 0)}</div>
+                                      </div>
+                                      <div className="w-px self-stretch" style={{ background: "rgba(201,91,42,0.2)" }} />
+                                      <div>
+                                        <div className="text-[11px] uppercase tracking-wider font-semibold mb-1" style={{ color: "rgba(26,22,18,0.45)" }}>Pendant</div>
+                                        <div className="text-xl font-bold" style={{ color: "#1A1612" }}>{amortDureeEnsemble} ans</div>
+                                      </div>
                                     </div>
                                   </div>
-                                  {totalPct !== 100 && (
-                                    <p className="px-4 py-2 text-[13px]" style={{ color: "#B03A2A", background: "rgba(176,58,42,0.06)" }}>
-                                      ⚠ Les % doivent totaliser 100 % pour couvrir toute la valeur amortissable.
+                                )}
+                              </div>
+
+                              {/* ── Colonne Par Composant ── */}
+                              <div className="space-y-3">
+                                {amortMode !== "ensemble" ? (
+                                  <button onClick={() => setAmortMode("composant")}
+                                    className="rounded-xl overflow-hidden text-left w-full transition-all hover:shadow-md focus:outline-none group"
+                                    style={{
+                                      border: amortMode === "composant" ? "2.5px solid #1A7A52" : "1.5px solid rgba(26,122,82,0.25)",
+                                      boxShadow: amortMode === "composant" ? "0 0 0 3px rgba(26,122,82,0.1)" : "none",
+                                    }}>
+                                    <div className="flex items-center gap-3 px-4 py-3" style={{ background: amortMode === "composant" ? "#1A7A52" : "rgba(26,122,82,0.06)" }}>
+                                      <div className="w-5 h-5 rounded-full flex-shrink-0 flex items-center justify-center" style={{ border: `2px solid ${amortMode === "composant" ? "#F5F0E8" : "#1A7A52"}`, background: "transparent" }}>
+                                        {amortMode === "composant"
+                                          ? <div className="w-2.5 h-2.5 rounded-full" style={{ background: "#F5F0E8" }} />
+                                          : <div className="w-2 h-2 rounded-full opacity-0 group-hover:opacity-40 transition-opacity" style={{ background: "#1A7A52" }} />}
+                                      </div>
+                                      <span className="font-bold text-[14px]" style={{ color: amortMode === "composant" ? "#F5F0E8" : "#1A7A52" }}>Amortissement par Composant</span>
+                                      {amortMode === "composant" && <span className="ml-auto text-[10px] font-bold px-2 py-0.5 rounded flex-shrink-0" style={{ background: "rgba(245,240,232,0.25)", color: "#F5F0E8" }}>✓ SÉLECTIONNÉ</span>}
+                                    </div>
+                                  </button>
+                                ) : (
+                                  <button onClick={() => setAmortMode(null)} className="text-[13px] font-medium" style={{ color: "#1A7A52" }}>← Changer de méthode d&apos;amortissement</button>
+                                )}
+
+                                {amortMode === null && (
+                                  <div>
+                                    <div className="font-bold text-[15px] mb-2" style={{ color: "#1A7A52" }}>Méthode Amort. par Composant</div>
+                                    <p className="text-[14px] leading-relaxed" style={{ color: "rgba(26,22,18,0.88)" }}>
+                                      L&apos;Amortissement par composant consiste à décomposer et distribuer la valeur du bien sur plusieurs éléments principaux : gros œuvre, toiture, installations électriques, etc.
                                     </p>
-                                  )}
-                                  {composants.some(c => c.duree === 0 && c.pct > 0) && (
-                                    <p className="px-4 py-2 text-[13px]" style={{ color: "#B03A2A", background: "rgba(176,58,42,0.06)" }}>
-                                      ⚠ La durée d&apos;amortissement ne peut pas être 0 an pour un composant avec un % &gt; 0.
+                                    <p className="text-[14px] leading-relaxed mt-2" style={{ color: "rgba(26,22,18,0.88)" }}>
+                                      Chaque composant va correspondre à un pourcentage de la valeur du bien et à une durée pour l&apos;amortir bien précise. Lors du choix de ces valeurs, il faut bien veiller à respecter les durées d&apos;utilisation normale de chaque composant, ainsi que leur proportion dans la valeur totale du logement.
                                     </p>
-                                  )}
-                                </div>
-                              );
-                            })()}
+                                  </div>
+                                )}
+
+                                {amortMode !== "ensemble" && (() => {
+                                  const totalPct = composants.reduce((s, c) => s + c.pct, 0);
+                                  const inputCls = "w-14 px-2 py-1.5 text-sm rounded-md text-center text-[#1A1612] focus:outline-none focus:ring-1 focus:ring-[#C95B2A] [appearance:none] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none [-moz-appearance:textfield]";
+                                  return (
+                                    <div className="space-y-3">
+                                      {/* Valeur amortissable */}
+                                      <div className="rounded-lg px-4 py-3 inline-flex flex-col" style={{ background: "linear-gradient(135deg, #4E1F12 0%, #C95B2A 100%)" }}>
+                                        <div className="text-[11px] uppercase tracking-wider font-semibold mb-1" style={{ color: "rgba(245,240,232,0.7)" }}>Valeur amortissable</div>
+                                        <div className="text-xl font-bold" style={{ color: "#F5F0E8" }}>{formatEuro(valAmort2)}</div>
+                                      </div>
+                                      {/* Tableau composants */}
+                                      <div className="rounded-xl overflow-hidden" style={{ border: "1px solid rgba(78,31,18,0.18)" }}>
+                                        <div className="px-4 py-2.5 flex items-center gap-2" style={{ background: "#4E1F12" }}>
+                                          <span className="text-[12px] font-semibold uppercase tracking-wider" style={{ color: "rgba(245,240,232,0.65)", width: 140 }}>Composant</span>
+                                          <span className="text-[12px] font-semibold uppercase tracking-wider" style={{ color: "rgba(245,240,232,0.65)", width: 160 }}>Quote part en %</span>
+                                          <span className="text-[12px] font-semibold uppercase tracking-wider" style={{ color: "rgba(245,240,232,0.65)", width: 85 }}>Durée</span>
+                                          <span className="text-[12px] font-semibold uppercase tracking-wider text-right" style={{ color: "#C95B2A", width: 75 }}>Amort / an</span>
+                                        </div>
+                                        {composants.map((c, i) => {
+                                          const val = valAmort2 * c.pct / 100;
+                                          return (
+                                            <div key={c.label} className="flex items-center gap-2 px-4 py-2.5"
+                                              style={{ borderBottom: "0.5px solid rgba(26,22,18,0.07)", background: i % 2 === 0 ? "#FDFAF6" : "#F5F0E8" }}>
+                                              <span className="text-[14px] font-semibold" style={{ color: "#1A1612", width: 140 }}>{c.label}</span>
+                                              <div className="flex items-center gap-1" style={{ width: 160 }}>
+                                                <input type="number" min={0} max={100} value={c.pct === 0 ? "" : c.pct}
+                                                  placeholder="0"
+                                                  onChange={e => {
+                                                    const raw = e.target.value;
+                                                    const v = raw === "" ? 0 : Math.min(100, Math.max(0, parseInt(raw) || 0));
+                                                    setComposants(prev => prev.map((x, j) => j === i ? { ...x, pct: v } : x));
+                                                  }}
+                                                  className={inputCls} style={INPUT_STYLE} />
+                                                <span className="text-[13px] font-medium" style={{ color: "rgba(26,22,18,0.5)" }}>%</span>
+                                                <span className="text-[12px] ml-1" style={{ color: "rgba(26,22,18,0.45)" }}>soit</span>
+                                                <span className="text-[13px] font-bold" style={{ color: "#C95B2A" }}>{formatEuro(val)}</span>
+                                              </div>
+                                              <div className="flex items-center gap-1" style={{ width: 85 }}>
+                                                <span className="text-[12px]" style={{ color: "rgba(26,22,18,0.45)" }}>sur</span>
+                                                <input type="number" min={0} max={100} value={c.duree === 0 ? "" : c.duree}
+                                                  placeholder="0"
+                                                  onChange={e => {
+                                                    const raw = e.target.value;
+                                                    const v = raw === "" ? 0 : Math.min(100, Math.max(0, parseInt(raw) || 0));
+                                                    setComposants(prev => prev.map((x, j) => j === i ? { ...x, duree: v } : x));
+                                                  }}
+                                                  className={inputCls} style={INPUT_STYLE} />
+                                                <span className="text-[13px] font-medium" style={{ color: "rgba(26,22,18,0.5)" }}>ans</span>
+                                              </div>
+                                              <div className="flex items-center gap-1.5" style={{ width: 75, justifyContent: "flex-end" }}>
+                                                <span className="text-[14px] font-light" style={{ color: "rgba(26,22,18,0.3)" }}>=</span>
+                                                <span className="text-[13px] font-bold" style={{ color: "#C95B2A" }}>
+                                                  {formatEuro(c.duree > 0 ? val / c.duree : 0)}
+                                                </span>
+                                              </div>
+                                            </div>
+                                          );
+                                        })}
+                                        <div className="flex items-center gap-2 px-4 py-3" style={{ background: "#4E1F12" }}>
+                                          <span className="text-[16px] font-bold" style={{ color: "#F5F0E8", width: 140 }}>Total</span>
+                                          <div style={{ width: 160 }}>
+                                            <span className="text-[16px] font-bold" style={{ color: totalPct === 100 ? "#6FCF97" : "#EB5757" }}>
+                                              {totalPct} %{totalPct !== 100 && " ⚠"}
+                                            </span>
+                                          </div>
+                                          <div style={{ width: 85 }} />
+                                          <div className="flex items-center gap-1.5" style={{ width: 75, justifyContent: "flex-end" }}>
+                                            <span className="text-[16px] font-light" style={{ color: "rgba(245,240,232,0.3)" }}>=</span>
+                                            <span className="text-[16px] font-bold" style={{ color: "#C95B2A" }}>
+                                              {formatEuro(composants.reduce((s, c) => s + (valAmort2 * c.pct / 100) / (c.duree || 1), 0))}/an
+                                            </span>
+                                          </div>
+                                        </div>
+                                        {totalPct !== 100 && (
+                                          <p className="px-4 py-2 text-[13px]" style={{ color: "#B03A2A", background: "rgba(176,58,42,0.06)" }}>
+                                            ⚠ Les % doivent totaliser 100 % pour couvrir toute la valeur amortissable.
+                                          </p>
+                                        )}
+                                        {composants.some(c => c.duree === 0 && c.pct > 0) && (
+                                          <p className="px-4 py-2 text-[13px]" style={{ color: "#B03A2A", background: "rgba(176,58,42,0.06)" }}>
+                                            ⚠ La durée d&apos;amortissement ne peut pas être 0 an pour un composant avec un % &gt; 0.
+                                          </p>
+                                        )}
+                                      </div>
+                                    </div>
+                                  );
+                                })()}
+                              </div>
+                            </div>
                           </div>
+                          </>
                         );
                       })()}
 
