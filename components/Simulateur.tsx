@@ -1207,30 +1207,232 @@ ${annexeTable}
               </div>
             ) : (
               <>
-              {/* ─── BOUTONS PDF + SAUVEGARDER — haut de page ─── */}
-              {simulationValidated && <div ref={pdfButtonsRef} className="flex flex-wrap justify-center items-center gap-3 mb-5">
-                <button onClick={() => {
-                  const plan = getPlan();
-                  if (plan === "pro") { setPendingPdfAction("pro"); setShowBienInfoPopup(true); return; }
-                  if (plan === "starter") { setPdfWeekCount(getPdfWeekCount()); setShowPDFStarter(true); return; }
-                  setShowPayPopup(true);
-                }}
-                  className="px-10 py-4 text-base font-medium transition-opacity hover:opacity-[0.88] rounded-lg"
-                  style={{ background: "#4E1F12", color: "#C95B2A", border: "1px solid rgba(201,91,42,0.3)", letterSpacing: "0.02em" }}>
-                  Générer compte rendu PDF
-                </button>
-                <button
-                  onClick={() => setShowSauvegarder(true)}
-                  className="flex items-center gap-2 px-6 py-4 text-base font-medium transition-opacity hover:opacity-[0.88] rounded-lg"
-                  style={{ background: "#EDE7DC", color: "#4E1F12", border: "1px solid rgba(78,31,18,0.2)" }}>
-                  <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/>
-                    <polyline points="17 21 17 13 7 13 7 21"/>
-                    <polyline points="7 3 7 8 15 8"/>
-                  </svg>
-                  Sauvegarder
-                </button>
-              </div>}
+              {simulationValidated ? (
+              /* ─── PAGE FINALE ─── */
+              <div className="space-y-5" ref={pdfButtonsRef}>
+                {/* Bouton retour */}
+                <div>
+                  <button onClick={() => setSimulationValidated(false)}
+                    className="px-5 py-2.5 rounded-xl text-sm font-semibold transition-all hover:opacity-80"
+                    style={{ background: "#EDE7DC", color: "#4E1F12", border: "1px solid rgba(78,31,18,0.2)" }}>
+                    ← Retour à la simulation
+                  </button>
+                </div>
+
+                {/* Verdict */}
+                {verdict && (
+                  <div className="rounded-xl p-4 flex items-center gap-3" style={{ background: verdict.bg, color: "#F5F0E8" }}>
+                    <span className="text-2xl font-bold">{verdict.icon}</span>
+                    <div>
+                      <div className="font-bold text-xl">{verdict.label}</div>
+                      <div className="text-[14px] mt-0.5" style={{ color: "rgba(245,240,232,0.8)" }}>
+                        Rendement net <span className="font-bold" style={{ color: "#F5A623" }}>{formatPct(resultats.rendementNet)}</span>
+                        {" · "}Cash-flow <span className="font-bold" style={{ color: "#F5A623" }}>{formatEuro(displayCashflow)}/mois</span>
+                        {selectedRegime ? <> · <span style={{ color: "rgba(245,240,232,0.65)" }}>{selectedRegime === "reel" ? "Régime réel" : "Micro-BIC"}</span></> : ""}
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* KPIs */}
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
+                  <div className="rounded-lg px-3 py-2.5" style={cardStyle}>
+                    <div className={LABEL}>Rendement</div>
+                    <div className="mt-0.5"><span className="text-lg font-bold" style={{ color: "#1A1612", letterSpacing: "-0.02em" }}>{formatPct(resultats.rendementBrut)}</span><span className="text-[12px] font-medium ml-1" style={{ color: "rgba(26,22,18,0.45)" }}>Brut</span></div>
+                    <div className="mt-1"><span className="text-lg font-bold" style={{ color: "#C95B2A", letterSpacing: "-0.02em" }}>{formatPct(resultats.rendementNet)}</span><span className="text-[12px] font-medium ml-1" style={{ color: "rgba(26,22,18,0.45)" }}>Net</span></div>
+                  </div>
+                  <div className="rounded-lg px-3 py-2.5" style={cardStyle}>
+                    <div className={LABEL}>Revenus annuels</div>
+                    <div className="text-lg font-bold mt-0.5" style={{ color: "#1A1612", letterSpacing: "-0.02em" }}>{formatEuro(resultats.loyerAnnuel)}</div>
+                    <div className="text-[12px] mt-0.5" style={{ color: "rgba(26,22,18,0.40)" }}>loyers encaissés HC</div>
+                  </div>
+                  <div className="rounded-lg px-3 py-2.5" style={cardStyle}>
+                    <div className={LABEL}>Emprunt annuel</div>
+                    <div className="text-lg font-bold mt-0.5" style={{ color: "#B03A2A", letterSpacing: "-0.02em" }}>{formatEuro(resultats.creditAnnuel + resultats.assuranceEmprunteurAnnuel)}</div>
+                    <div className="text-[12px] mt-0.5" style={{ color: "rgba(26,22,18,0.50)" }}>soit <span className="font-semibold" style={{ color: "#B03A2A" }}>{formatEuro((resultats.creditAnnuel + resultats.assuranceEmprunteurAnnuel) / 12)}</span>/mois</div>
+                  </div>
+                  <div className="rounded-lg px-3 py-2.5" style={cardStyle}>
+                    <div className={LABEL}>Charges annuelles</div>
+                    <div className="text-lg font-bold mt-0.5" style={{ color: "#B03A2A", letterSpacing: "-0.02em" }}>{formatEuro(resultats.chargesDeductibles)}</div>
+                    <div className="text-[12px] mt-0.5" style={{ color: "rgba(26,22,18,0.50)" }}>dont <span className="font-semibold" style={{ color: "#B03A2A" }}>{formatEuro(resultats.interetsAnnee1)}</span> d&apos;intérêts d&apos;emprunt</div>
+                  </div>
+                  <div className="rounded-lg px-3 py-2.5" style={cardStyle}>
+                    <div className={LABEL}>Impôt estimé /an</div>
+                    <div className="text-lg font-bold mt-0.5" style={{ color: "#1A1612", letterSpacing: "-0.02em" }}>{formatEuro(displayImpot)}</div>
+                    <div className="text-[12px] mt-0" style={{ color: "rgba(26,22,18,0.40)" }}>TMI {form.tmi}% + PS 18,6%</div>
+                    <div className="text-[12px] mt-1" style={{ color: "rgba(26,22,18,0.50)" }}>Soit <span className="font-semibold" style={{ color: "#1A1612" }}>{formatEuro(displayImpotMensuel)}</span>/mois</div>
+                  </div>
+                  <div className="rounded-lg px-3 py-2.5" style={cardStyle}>
+                    <div className={LABEL}>Cash-flow mensuel</div>
+                    <div className="text-lg font-bold mt-0.5" style={{ color: displayCashflow >= 0 ? "#1A7A52" : "#B03A2A", letterSpacing: "-0.02em" }}>{formatEuro(displayCashflow)}</div>
+                    <div className="text-[12px] mt-0.5" style={{ color: "rgba(26,22,18,0.40)" }}>{selectedRegime === "micro" ? "Au Micro-BIC" : "Au Régime réel"}</div>
+                  </div>
+                </div>
+
+                {/* Régime fiscal + Amortissement côte à côte */}
+                {(() => {
+                  const FRow = ({ label, val, color, bold, sep, indent }: { label: string; val: string; color?: string; bold?: boolean; sep?: boolean; indent?: boolean }) => (
+                    <div className={`flex justify-between items-baseline py-2.5${indent ? " pl-4" : ""}${sep ? " mt-1" : ""}`}
+                      style={{ borderTop: sep ? "1px solid rgba(26,22,18,0.09)" : undefined }}>
+                      <span style={{ color: indent ? "rgba(26,22,18,0.6)" : "rgba(26,22,18,0.78)", fontSize: indent ? 12 : 13 }}>{label}</span>
+                      <span className="whitespace-nowrap" style={{ fontSize: 13, fontWeight: bold ? 600 : 400, color: color ?? "#1A1612" }}>{val}</span>
+                    </div>
+                  );
+                  const prixVal2 = parseFloat(form.prix) || 0;
+                  const valAmort2 = prixVal2 * amortPct / 100;
+                  const C2 = "#2A7080";
+                  return (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-start">
+                      {/* Tableau régime fiscal choisi */}
+                      <div className="rounded-xl overflow-hidden"
+                        style={{ border: selectedRegime === "reel" ? "2.5px solid #C95B2A" : "2.5px solid #1A1612", boxShadow: selectedRegime === "reel" ? "0 0 0 3px rgba(201,91,42,0.12)" : "0 0 0 3px rgba(26,22,18,0.07)" }}>
+                        <div className="flex items-center gap-3 px-5 py-3.5" style={{ background: selectedRegime === "reel" ? "#C95B2A" : "#1A1612" }}>
+                          <div className="w-5 h-5 rounded-full flex-shrink-0 flex items-center justify-center" style={{ border: "2px solid #F5F0E8" }}>
+                            <div className="w-2.5 h-2.5 rounded-full" style={{ background: "#F5F0E8" }} />
+                          </div>
+                          <span className="font-bold text-[15px]" style={{ color: "#F5F0E8" }}>{selectedRegime === "reel" ? "Régime réel simplifié" : "Micro-BIC"}</span>
+                          <span className="ml-auto text-[10px] font-bold px-2.5 py-1 rounded" style={{ background: "rgba(245,240,232,0.2)", color: "#F5F0E8" }}>✓ SÉLECTIONNÉ</span>
+                        </div>
+                        <div className="px-5" style={{ background: "#FDFAF6" }}>
+                          {selectedRegime === "reel" ? (
+                            <>
+                              <FRow label="Loyers annuels" val={formatEuro(resultats.loyerAnnuel)} bold />
+                              <FRow label="Emprunt" val={`−${formatEuro(resultats.creditAnnuel)}`} color="#B03A2A" />
+                              <div className="pl-3 -mt-1 pb-2"><span style={{ fontSize: 12, color: "rgba(26,22,18,0.6)" }}>Dont frais d&apos;emprunt </span><span style={{ fontSize: 13, fontWeight: 600, color: "#B03A2A" }}>{formatEuro(resultats.interetsAnnee1)}</span></div>
+                              <FRow label="Charges déductibles" val={`−${formatEuro(resultats.chargesDeductibles)}`} color="#B03A2A" />
+                              <FRow label="Résultat avant amortissement" val={formatEuro(resultats.resultatAvantAmort)} bold color={resultats.resultatAvantAmort >= 0 ? "#1A7A52" : "#B03A2A"} sep />
+                              <FRow label="Amortissements" val={`−${formatEuro(resultats.amortTotal)}`} color="#B03A2A" />
+                              <FRow label="Base imposable" val={formatEuro(resultats.baseImposableReel)} bold sep />
+                              <FRow label="Impôt estimé" val={formatEuro(resultats.impotReel)} color="#B03A2A" />
+                              <FRow label="Amortissement à reporter N+1" val={formatEuro(resultats.amortAReporter)} color="#B08A2A" />
+                              <FRow label="Cash-flow mensuel" val={formatEuro(resultats.cashflowReelMensuel)} bold color={resultats.cashflowReelMensuel >= 0 ? "#1A7A52" : "#B03A2A"} sep />
+                            </>
+                          ) : (
+                            <>
+                              <FRow label="Loyers annuels" val={formatEuro(resultats.loyerAnnuel)} bold />
+                              <FRow label="Emprunt" val={`−${formatEuro(resultats.creditAnnuel)}`} color="#B03A2A" />
+                              <div className="pl-3 -mt-1 pb-2"><span style={{ fontSize: 12, color: "rgba(26,22,18,0.6)" }}>Dont frais d&apos;emprunt </span><span style={{ fontSize: 13, fontWeight: 600, color: "#B03A2A" }}>{formatEuro(resultats.interetsAnnee1)}</span></div>
+                              <FRow label={isSaisonnier ? "Base imposable (70% recettes)" : "Base imposable (50% recettes)"} val={formatEuro(resultats.baseBIC)} bold sep />
+                              <FRow label="Impôt estimé" val={formatEuro(resultats.impotBIC)} color="#B03A2A" />
+                              <FRow label="Cash-flow mensuel" val={formatEuro(resultats.cashflowBICMensuel)} bold color={resultats.cashflowBICMensuel >= 0 ? "#1A7A52" : "#B03A2A"} sep />
+                            </>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Tableau amortissement choisi — réel uniquement */}
+                      {selectedRegime === "reel" && amortMode !== null && (
+                        <div className="rounded-xl overflow-hidden"
+                          style={{ border: amortMode === "ensemble" ? "2px solid #C95B2A" : `2px solid ${C2}`, boxShadow: amortMode === "ensemble" ? "0 0 0 3px rgba(201,91,42,0.1)" : "0 0 0 3px rgba(42,112,128,0.1)" }}>
+                          <div className="px-5 py-3.5 flex items-center gap-3"
+                            style={{ background: amortMode === "ensemble" ? "#C95B2A" : C2 }}>
+                            <div className="w-5 h-5 rounded-full flex-shrink-0 flex items-center justify-center" style={{ border: "2px solid #F5F0E8" }}>
+                              <div className="w-2.5 h-2.5 rounded-full" style={{ background: "#F5F0E8" }} />
+                            </div>
+                            <span className="font-bold text-[14px] flex-1" style={{ color: "#F5F0E8" }}>
+                              {amortMode === "ensemble" ? "Amortissement Global Simplifié" : "Amortissement par Composant"}
+                            </span>
+                            <span className="ml-auto text-[10px] font-bold px-2.5 py-1 rounded" style={{ background: "rgba(245,240,232,0.2)", color: "#F5F0E8" }}>✓ CHOISI</span>
+                          </div>
+                          {amortMode === "ensemble" ? (
+                            <div className="px-5 py-4 flex items-center gap-6" style={{ background: "#FDFAF6" }}>
+                              <div>
+                                <div className="text-[11px] uppercase tracking-wider font-semibold mb-1" style={{ color: "#C95B2A" }}>Valeur amortissable</div>
+                                <div className="text-xl font-bold" style={{ color: "#C95B2A" }}>{formatEuro(valAmort2)}</div>
+                              </div>
+                              <div className="w-px self-stretch" style={{ background: "rgba(201,91,42,0.15)" }} />
+                              <div>
+                                <div className="text-[11px] uppercase tracking-wider font-semibold mb-1" style={{ color: "#C95B2A" }}>Amortissement / an</div>
+                                <div className="text-xl font-bold" style={{ color: "#C95B2A" }}>{formatEuro(amortDureeEnsemble > 0 ? valAmort2 / amortDureeEnsemble : 0)}</div>
+                              </div>
+                              <div className="w-px self-stretch" style={{ background: "rgba(201,91,42,0.15)" }} />
+                              <div>
+                                <div className="text-[11px] uppercase tracking-wider font-semibold mb-1" style={{ color: "rgba(26,22,18,0.5)" }}>Sur</div>
+                                <div className="text-xl font-bold" style={{ color: "#1A1612" }}>{amortDureeEnsemble} ans</div>
+                              </div>
+                            </div>
+                          ) : (
+                            <div style={{ background: "#FDFAF6" }}>
+                              <div className="px-4 py-2 flex items-center gap-2" style={{ background: "rgba(42,112,128,0.08)", borderBottom: "1px solid rgba(42,112,128,0.12)" }}>
+                                <span className="text-[11px] font-semibold uppercase tracking-wider" style={{ color: "rgba(42,112,128,0.7)", width: 140 }}>Composant</span>
+                                <span className="text-[11px] font-semibold uppercase tracking-wider" style={{ color: "rgba(42,112,128,0.7)", flex: 1 }}>Quote-part</span>
+                                <span className="text-[11px] font-semibold uppercase tracking-wider" style={{ color: "rgba(42,112,128,0.7)", width: 60 }}>Durée</span>
+                                <span className="text-[11px] font-semibold uppercase tracking-wider text-right" style={{ color: C2, width: 75 }}>Amort/an</span>
+                              </div>
+                              {composants.map((c, i) => {
+                                const val = valAmort2 * c.pct / 100;
+                                return (
+                                  <div key={c.label} className="flex items-center gap-2 px-4 py-2.5" style={{ borderBottom: "0.5px solid rgba(26,22,18,0.06)", background: i % 2 === 0 ? "#FDFAF6" : "#F8F4EE" }}>
+                                    <span style={{ color: "#1A1612", fontSize: 13, fontWeight: 600, width: 140 }}>{c.label}</span>
+                                    <span style={{ color: C2, fontSize: 13, fontWeight: 700, flex: 1 }}>{c.pct}% <span style={{ color: "rgba(26,22,18,0.4)", fontWeight: 400, fontSize: 12 }}>soit {formatEuro(val)}</span></span>
+                                    <span style={{ color: "rgba(26,22,18,0.6)", fontSize: 12, width: 60 }}>{c.duree} ans</span>
+                                    <span style={{ color: C2, fontSize: 13, fontWeight: 700, width: 75, textAlign: "right" }}>{formatEuro(c.duree > 0 ? val / c.duree : 0)}</span>
+                                  </div>
+                                );
+                              })}
+                              <div className="flex items-center gap-2 px-4 py-3" style={{ background: "rgba(42,112,128,0.1)", borderTop: "1px solid rgba(42,112,128,0.15)" }}>
+                                <span style={{ fontSize: 14, fontWeight: 700, color: "#1A1612", width: 140 }}>Total</span>
+                                <span style={{ flex: 1, fontSize: 14, fontWeight: 700, color: composants.reduce((s, c) => s + c.pct, 0) === 100 ? "#1A7A52" : "#B03A2A" }}>{composants.reduce((s, c) => s + c.pct, 0)}%</span>
+                                <span style={{ width: 60 }} />
+                                <span style={{ fontSize: 14, fontWeight: 700, color: C2, width: 75, textAlign: "right" }}>{formatEuro(composants.reduce((s, c) => s + (valAmort2 * c.pct / 100) / (c.duree || 1), 0))}/an</span>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })()}
+
+                {/* Amortissements totaux — réel uniquement */}
+                {selectedRegime === "reel" && amortMode !== null && (
+                  <div>
+                    <div className="text-sm font-semibold mb-3" style={{ color: "rgba(26,22,18,0.65)" }}>Amortissements totaux :</div>
+                    <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+                      {[
+                        { label: "Bien", val: amortBienDisplay, sub: amortMode === "ensemble" ? `${amortPct}% du prix · sur ${amortDureeEnsemble} ans` : `${amortPct}% · composants`, color: "#4E1F12" },
+                        { label: "Mobilier", val: amortMobilierDisplay, sub: "sur 10 ans", color: "#6B4226" },
+                        { label: "Travaux", val: amortTravauxDisplay, sub: "sur 20 ans", color: "#6B4226" },
+                        { label: "Notaire", val: amortNotaireDisplay, sub: `sur ${amortDureeEnsemble} ans`, color: "#6B4226" },
+                        { label: "Total", val: amortTotalDisplay, sub: "Déductible première année", accent: true, color: "#C95B2A" },
+                      ].map(({ label, val, sub, accent, color }) => (
+                        <div key={label} className="rounded-lg p-3.5 text-center"
+                          style={{ background: accent ? "rgba(201,91,42,0.1)" : "#F5F0E8", border: accent ? "1.5px solid rgba(201,91,42,0.3)" : "0.5px solid rgba(26,22,18,0.1)" }}>
+                          <div className="text-[11px] font-semibold uppercase tracking-[0.1em] mb-1.5" style={{ color: accent ? "#C95B2A" : "rgba(26,22,18,0.45)" }}>{label}</div>
+                          <div className="font-bold text-[15px]" style={{ color }}>{formatEuro(val)}{accent ? "" : "/an"}</div>
+                          <div className="text-[12px] mt-1" style={{ color: "rgba(26,22,18,0.38)" }}>{sub}</div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Boutons PDF + Sauvegarder */}
+                <div className="flex flex-wrap justify-center items-center gap-3 pt-2">
+                  <button onClick={() => {
+                    const plan = getPlan();
+                    if (plan === "pro") { setPendingPdfAction("pro"); setShowBienInfoPopup(true); return; }
+                    if (plan === "starter") { setPdfWeekCount(getPdfWeekCount()); setShowPDFStarter(true); return; }
+                    setShowPayPopup(true);
+                  }}
+                    className="px-10 py-4 text-base font-medium transition-opacity hover:opacity-[0.88] rounded-lg"
+                    style={{ background: "#4E1F12", color: "#C95B2A", border: "1px solid rgba(201,91,42,0.3)", letterSpacing: "0.02em" }}>
+                    Générer compte rendu PDF
+                  </button>
+                  <button onClick={() => setShowSauvegarder(true)}
+                    className="flex items-center gap-2 px-6 py-4 text-base font-medium transition-opacity hover:opacity-[0.88] rounded-lg"
+                    style={{ background: "#EDE7DC", color: "#4E1F12", border: "1px solid rgba(78,31,18,0.2)" }}>
+                    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/>
+                      <polyline points="17 21 17 13 7 13 7 21"/>
+                      <polyline points="7 3 7 8 15 8"/>
+                    </svg>
+                    Sauvegarder
+                  </button>
+                </div>
+              </div>
+              ) : (
+              /* ─── SIMULATION ─── */
               <div className="space-y-5">
                 {/* Verdict */}
                 {verdict && (
@@ -1910,34 +2112,8 @@ ${annexeTable}
                   </div>
                 </div>}
 
-              </div>{/* end space-y-5 */}
-
-              {/* ─── BOUTONS PDF + SAUVEGARDER — bas de page ─── */}
-              {simulationValidated && <div className="flex flex-wrap justify-center items-center gap-3 mt-6">
-                <button onClick={() => {
-                  const plan = getPlan();
-                  if (plan === "pro") { setPendingPdfAction("pro"); setShowBienInfoPopup(true); return; }
-                  if (plan === "starter") { setPdfWeekCount(getPdfWeekCount()); setShowPDFStarter(true); return; }
-                  setShowPayPopup(true);
-                }}
-                  className="px-10 py-4 text-base font-medium transition-opacity hover:opacity-[0.88] rounded-lg"
-                  style={{ background: "#4E1F12", color: "#C95B2A", border: "1px solid rgba(201,91,42,0.3)", letterSpacing: "0.02em" }}>
-                  Générer compte rendu PDF
-                </button>
-                <button
-                  onClick={() => setShowSauvegarder(true)}
-                  className="flex items-center gap-2 px-6 py-4 text-base font-medium transition-opacity hover:opacity-[0.88] rounded-lg"
-                  style={{ background: "#EDE7DC", color: "#4E1F12", border: "1px solid rgba(78,31,18,0.2)" }}
-                  title="Sauvegarder la simulation"
-                >
-                  <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/>
-                    <polyline points="17 21 17 13 7 13 7 21"/>
-                    <polyline points="7 3 7 8 15 8"/>
-                  </svg>
-                  Sauvegarder
-                </button>
-              </div>}
+              </div>
+              )}
               </>
             )
           )}
