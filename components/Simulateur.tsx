@@ -1594,12 +1594,12 @@ ${annexeTable}
                             </div>
 
                             {/* Bouton changer de régime */}
-                            <div className="flex flex-col items-center justify-center p-6 rounded-xl" style={{ background: "rgba(26,22,18,0.03)", border: "1px dashed rgba(26,22,18,0.15)", minHeight: 180 }}>
+                            <div className="flex items-start pt-1">
                               <button
                                 type="button"
                                 onClick={() => { setSelectedRegime(null); setSimulationValidated(false); }}
                                 className="px-5 py-2.5 rounded-xl text-sm font-semibold transition-all hover:opacity-80"
-                                style={{ background: "#EDE7DC", color: "#4E1F12", border: "1px solid rgba(78,31,18,0.2)" }}>
+                                style={{ background: "#EDE7DC", color: selectedRegime === "reel" ? "#C95B2A" : "#1A1612", border: `1px solid ${selectedRegime === "reel" ? "rgba(201,91,42,0.25)" : "rgba(26,22,18,0.2)"}` }}>
                                 ← Changer de régime fiscal
                               </button>
                             </div>
@@ -1848,7 +1848,7 @@ ${annexeTable}
                                     </div>
                                   );
                                 })() : (
-                                  <button onClick={() => setAmortMode(null)} className="text-[13px] font-medium" style={{ color: "#2A7080" }}>← Changer de méthode d&apos;amortissement</button>
+                                  <button onClick={() => setAmortMode(null)} className="px-5 py-2.5 rounded-xl text-sm font-semibold transition-all hover:opacity-80" style={{ background: "#EDE7DC", color: "#2A7080", border: "1px solid rgba(42,112,128,0.25)" }}>← Changer de méthode d&apos;amortissement</button>
                                 )}
 
                                 {/* Détails — tout en bas */}
