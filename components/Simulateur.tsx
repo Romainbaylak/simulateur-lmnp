@@ -1400,7 +1400,7 @@ ${annexeTable}
                       const impot = isReel ? r.impotReel : r.impotBIC;
                       const Row = ({ label, val, color, bold, separator }: { label: string; val: string; color?: string; bold?: boolean; separator?: boolean }) => (
                         <div className="flex justify-between" style={{ paddingTop: separator ? 6 : 0, marginTop: separator ? 4 : 0, borderTop: separator ? "0.5px solid rgba(26,22,18,0.1)" : "none" }}>
-                          <span style={{ color: "rgba(26,22,18,0.5)", fontSize: 11 }}>{label}</span>
+                          <span style={{ color: "rgba(26,22,18,0.72)", fontSize: 11 }}>{label}</span>
                           <span style={{ color: color ?? "#1A1612", fontWeight: bold ? 600 : 400, fontSize: 11 }}>{val}</span>
                         </div>
                       );
@@ -1457,7 +1457,7 @@ ${annexeTable}
                     const Row = ({ label, val, color, bold, sep, indent }: { label: string; val: string; color?: string; bold?: boolean; sep?: boolean; indent?: boolean }) => (
                       <div className={`flex justify-between items-baseline py-2.5${indent ? " pl-4" : ""}${sep ? " mt-1" : ""}`}
                         style={{ borderTop: sep ? "1px solid rgba(26,22,18,0.09)" : undefined }}>
-                        <span className="text-sm pr-3" style={{ color: indent ? "rgba(26,22,18,0.4)" : "rgba(26,22,18,0.58)", fontSize: indent ? 12 : 13 }}>{label}</span>
+                        <span className="text-sm pr-3" style={{ color: indent ? "rgba(26,22,18,0.6)" : "rgba(26,22,18,0.78)", fontSize: indent ? 12 : 13 }}>{label}</span>
                         <span className="text-sm whitespace-nowrap" style={{ fontSize: 13, fontWeight: bold ? 600 : 400, color: color ?? "#1A1612" }}>{val}</span>
                       </div>
                     );
@@ -1529,9 +1529,10 @@ ${annexeTable}
                                   <Row label="Loyers annuels" val={formatEuro(resultats.loyerAnnuel)} bold />
                                   <Row label="Emprunt" val={`−${formatEuro(resultats.creditAnnuel)}`} color="#B03A2A" />
                                   <div className="pl-3 pb-1.5 -mt-1">
-                                    <span className="text-[13px] font-medium" style={{ color: "rgba(26,22,18,0.5)" }}>Dont frais d&apos;emprunt : </span>
-                                    <span className="text-[13px] font-semibold" style={{ color: "#4E1F12" }}>{formatEuro(resultats.interetsAnnee1)}</span>
+                                    <span className="text-[13px] font-medium" style={{ color: "rgba(26,22,18,0.6)" }}>Dont frais d&apos;emprunt : </span>
+                                    <span className="text-[13px] font-semibold" style={{ color: "#B03A2A" }}>{formatEuro(resultats.interetsAnnee1)}</span>
                                   </div>
+                                  {(() => { const res = resultats.loyerAnnuel - resultats.creditAnnuel; return <Row label="Résultat" val={formatEuro(res)} bold color={res >= 0 ? "#1A7A52" : "#B03A2A"} sep />; })()}
                                   <Row label={isSaisonnier ? "Base imposable (70% recettes)" : "Base imposable (50% recettes)"} val={formatEuro(resultats.baseBIC)} bold sep />
                                   <Row label="Impôt estimé" val={formatEuro(resultats.impotBIC)} color="#B03A2A" />
                                   <Row label="Cash-flow mensuel" val={formatEuro(resultats.cashflowBICMensuel)} bold color={resultats.cashflowBICMensuel >= 0 ? "#1A7A52" : "#B03A2A"} sep />
@@ -1570,7 +1571,7 @@ ${annexeTable}
                                       <span className="text-[13px] font-semibold" style={{ color: "#B03A2A" }}>{formatEuro(resultats.interetsAnnee1)}</span>
                                     </div>
                                     <Row label="Charges déductibles" val={`−${formatEuro(resultats.chargesDeductibles)}`} color="#B03A2A" />
-                                    <Row label="Résultat avant amortissement" val={formatEuro(resultats.resultatAvantAmort)} bold color={resultats.resultatAvantAmort >= 0 ? "#1A1612" : "#B03A2A"} sep />
+                                    <Row label="Résultat avant amortissement" val={formatEuro(resultats.resultatAvantAmort)} bold color={resultats.resultatAvantAmort >= 0 ? "#1A7A52" : "#B03A2A"} sep />
                                     <Row label="Amortissements" val={`−${formatEuro(resultats.amortTotal)}`} color="#B03A2A" />
                                     <Row label="Base imposable" val={formatEuro(resultats.baseImposableReel)} bold sep />
                                     <Row label="Impôt estimé" val={formatEuro(resultats.impotReel)} color="#B03A2A" />
@@ -1582,9 +1583,10 @@ ${annexeTable}
                                     <Row label="Loyers annuels" val={formatEuro(resultats.loyerAnnuel)} bold />
                                     <Row label="Emprunt" val={`−${formatEuro(resultats.creditAnnuel)}`} color="#B03A2A" />
                                     <div className="pl-3 -mt-1 pb-2">
-                                      <span className="text-[12px]" style={{ color: "rgba(26,22,18,0.45)" }}>Dont frais d&apos;emprunt </span>
+                                      <span className="text-[12px]" style={{ color: "rgba(26,22,18,0.6)" }}>Dont frais d&apos;emprunt </span>
                                       <span className="text-[13px] font-semibold" style={{ color: "#B03A2A" }}>{formatEuro(resultats.interetsAnnee1)}</span>
                                     </div>
+                                    {(() => { const res = resultats.loyerAnnuel - resultats.creditAnnuel; return <Row label="Résultat" val={formatEuro(res)} bold color={res >= 0 ? "#1A7A52" : "#B03A2A"} sep />; })()}
                                     <Row label={isSaisonnier ? "Base imposable (70% recettes)" : "Base imposable (50% recettes)"} val={formatEuro(resultats.baseBIC)} bold sep />
                                     <Row label="Impôt estimé" val={formatEuro(resultats.impotBIC)} color="#B03A2A" />
                                     <Row label="Cash-flow mensuel" val={formatEuro(resultats.cashflowBICMensuel)} bold color={resultats.cashflowBICMensuel >= 0 ? "#1A7A52" : "#B03A2A"} sep />
@@ -1594,13 +1596,7 @@ ${annexeTable}
                             </div>
 
                             {/* Bouton changer de régime */}
-                            <div className="flex flex-col items-center justify-center gap-3 p-6 rounded-xl" style={{ background: "rgba(26,22,18,0.03)", border: "1px dashed rgba(26,22,18,0.15)", minHeight: 180 }}>
-                              <div className="text-sm text-center" style={{ color: "rgba(26,22,18,0.45)" }}>
-                                Vous avez choisi le<br />
-                                <strong style={{ color: selectedRegime === "reel" ? "#C95B2A" : "#1A1612" }}>
-                                  {selectedRegime === "reel" ? "Régime réel simplifié" : "Micro-BIC 2025"}
-                                </strong>
-                              </div>
+                            <div className="flex flex-col items-center justify-center p-6 rounded-xl" style={{ background: "rgba(26,22,18,0.03)", border: "1px dashed rgba(26,22,18,0.15)", minHeight: 180 }}>
                               <button
                                 type="button"
                                 onClick={() => { setSelectedRegime(null); setSimulationValidated(false); }}
