@@ -1616,9 +1616,9 @@ ${annexeTable}
                 {/* Amortissement — réel uniquement */}
                 {selectedRegime === "reel" && <div className="rounded-xl overflow-hidden" style={cardStyle}>
                   {/* En-tête L'Amortissement */}
-                  <div className="px-6 py-5" style={{ background: "linear-gradient(90deg, #4E1F12 0%, #7A2E15 100%)", borderBottom: "3px solid #C95B2A" }}>
+                  <div className="px-6 py-4 flex items-center gap-3" style={{ background: "linear-gradient(90deg, #4E1F12 0%, #7A2E15 100%)" }}>
                     <div className="text-xl font-black tracking-tight" style={{ color: "#F5F0E8" }}>L&apos;Amortissement LMNP</div>
-                    <div className="text-sm mt-0.5" style={{ color: "rgba(245,240,232,0.65)" }}>Régime réel simplifié · Optimisation fiscale</div>
+                    <div className="text-sm font-medium" style={{ color: "rgba(245,240,232,0.55)" }}>· Régime réel simplifié</div>
                   </div>
                   <div className="px-5 pt-5 pb-5 space-y-5">
 
@@ -1660,7 +1660,7 @@ ${annexeTable}
 
                             {/* Titre choix type amortissement */}
                             <div className="text-center mt-14 mb-8">
-                              <span className="text-base font-semibold" style={{ color: "#1A1612" }}>Fais ton choix du Type d&apos;Amortissement</span>
+                              <span className="text-base font-semibold" style={{ color: "#1A1612" }}>Fais ton choix de méthode d&apos;Amortissement</span>
                             </div>
 
                             {/* Grille 2 colonnes : Global | Composant */}
@@ -1721,7 +1721,7 @@ ${annexeTable}
                                     </div>
                                   </div>
                                 ) : (
-                                  <button onClick={() => setAmortMode(null)} className="text-[13px] font-medium" style={{ color: "#C95B2A" }}>← Changer de méthode d&apos;amortissement</button>
+                                  <button onClick={() => setAmortMode(null)} className="px-5 py-2.5 rounded-xl text-sm font-semibold transition-all hover:opacity-80" style={{ background: "#EDE7DC", color: "#C95B2A", border: "1px solid rgba(201,91,42,0.25)" }}>← Changer de méthode d&apos;amortissement</button>
                                 )}
 
                                 {/* Détails — tout en bas */}
@@ -1735,7 +1735,7 @@ ${annexeTable}
                                     {showDetailsEnsemble && (
                                       <div className="mt-2">
                                         <p className="text-[13px] leading-relaxed" style={{ color: "rgba(26,22,18,0.75)" }}>
-                                          Dans ce cas, le bien est amorti dans son ensemble sur la durée choisie (entre 25 et 40 ans). C&apos;est la méthode la plus simple, non conventionnelle mais elle est généralement tolérée lorsqu&apos;il s&apos;agit d&apos;un petit bien seul et que la comptabilité est faite sans expert comptable.
+                                          L&apos;amortissement Global Simplifié consiste à amortir le bien dans son ensemble (~85% de sa valeur, hors la valeur terrain) sur la durée choisie, généralement entre 25 et 45 ans. C&apos;est la méthode la plus simple, non conventionnelle mais elle est généralement tolérée lorsqu&apos;il s&apos;agit d&apos;un petit bien seul et que la comptabilité est faite sans expert comptable.
                                         </p>
                                         <button onClick={() => setShowDetailsEnsemble(false)} className="mt-1 text-[11px] font-medium" style={{ color: "rgba(26,22,18,0.4)" }}>▲ Réduire</button>
                                       </div>
@@ -1862,7 +1862,7 @@ ${annexeTable}
                                     {showDetailsComposant && (
                                       <div className="mt-2">
                                         <p className="text-[13px] leading-relaxed" style={{ color: "rgba(26,22,18,0.75)" }}>
-                                          L&apos;Amortissement par composant consiste à décomposer et distribuer la valeur du bien sur plusieurs éléments principaux : gros œuvre, toiture, installations électriques, etc.
+                                          L&apos;Amortissement par Composant consiste à décomposer et distribuer la valeur du bien sur plusieurs éléments principaux : gros œuvre, toiture, installations électriques, etc.
                                         </p>
                                         <p className="text-[13px] leading-relaxed mt-1.5" style={{ color: "rgba(26,22,18,0.75)" }}>
                                           Chaque composant va correspondre à un pourcentage de la valeur du bien et à une durée pour l&apos;amortir bien précise. Lors du choix de ces valeurs, il faut bien veiller à respecter les durées d&apos;utilisation normale de chaque composant, ainsi que leur proportion dans la valeur totale du logement.
