@@ -818,7 +818,7 @@ ${annexeTable}
       <div className="max-w-6xl mx-auto px-4">
 
         {/* ─── FORM ─── */}
-        <div className="rounded-xl p-6 md:p-8 mb-6" style={sectionStyle}>
+        {!simulationValidated && <div className="rounded-xl p-6 md:p-8 mb-6" style={sectionStyle}>
 
           {/* Grid 2 cols */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
@@ -1183,7 +1183,7 @@ ${annexeTable}
               })()}
             </div>
           </div>
-        </div>
+        </div>}
 
         {/* ─── BOUTON SIMULER ─── */}
         {!simulationValidated && <div className="flex justify-end mb-10">
