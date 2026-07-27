@@ -1877,19 +1877,19 @@ ${annexeTable}
                       {/* Récap cards + bouton — visibles uniquement après choix de méthode */}
                       {amortMode !== null && <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
                         {[
-                          { label: "Bien", val: amortBienDisplay, sub: (amortMode ?? "ensemble") === "ensemble" ? `${amortPct}% prix · ${amortDureeEnsemble} ans` : `${amortPct}% · composants`, color: "#4E1F12" },
-                          { label: "Mobilier", val: amortMobilierDisplay, sub: "mobilier · 10 ans", color: "#6B4226" },
-                          { label: "Travaux", val: amortTravauxDisplay, sub: "travaux · 20 ans", color: "#6B4226" },
-                          { label: "Notaire", val: amortNotaireDisplay, sub: `notaire · ${amortDureeEnsemble} ans`, color: "#6B4226" },
-                          { label: "Total", val: amortTotalDisplay, sub: "Déductible/an", accent: true, color: "#C95B2A" },
+                          { label: "Bien", val: amortBienDisplay, sub: (amortMode ?? "ensemble") === "ensemble" ? `${amortPct}% du prix · sur ${amortDureeEnsemble} ans` : `${amortPct}% · composants`, color: "#4E1F12" },
+                          { label: "Mobilier", val: amortMobilierDisplay, sub: "sur 10 ans", color: "#6B4226" },
+                          { label: "Travaux", val: amortTravauxDisplay, sub: "sur 20 ans", color: "#6B4226" },
+                          { label: "Notaire", val: amortNotaireDisplay, sub: `sur ${amortDureeEnsemble} ans`, color: "#6B4226" },
+                          { label: "Total", val: amortTotalDisplay, sub: "Déductible première année", accent: true, color: "#C95B2A" },
                         ].map(({ label, val, sub, accent, color }) => (
                           <div key={label} className="rounded-lg p-3.5 text-center"
                             style={{ background: accent ? "rgba(201,91,42,0.1)" : "#F5F0E8", border: accent ? "1.5px solid rgba(201,91,42,0.3)" : "0.5px solid rgba(26,22,18,0.1)" }}>
                             <div className="text-[11px] font-semibold uppercase tracking-[0.1em] mb-1.5"
                               style={{ color: accent ? "#C95B2A" : "rgba(26,22,18,0.45)" }}>{label}</div>
                             <div className="font-bold text-[15px]"
-                              style={{ color }}>{formatEuro(val)}/an</div>
-                            <div className="text-[11px] mt-1" style={{ color: "rgba(26,22,18,0.38)" }}>{sub}</div>
+                              style={{ color }}>{formatEuro(val)}{accent ? "" : "/an"}</div>
+                            <div className="text-[12px] mt-1" style={{ color: "rgba(26,22,18,0.38)" }}>{sub}</div>
                           </div>
                         ))}
                       </div>}
