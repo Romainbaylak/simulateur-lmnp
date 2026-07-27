@@ -1706,9 +1706,15 @@ ${annexeTable}
                                       <div>
                                         <div className="text-[11px] uppercase tracking-wider font-semibold mb-1" style={{ color: "rgba(26,22,18,0.4)" }}>Pendant</div>
                                         <div className="flex items-baseline gap-1">
-                                          <input type="number" min={5} max={50} value={amortDureeEnsemble}
+                                          <input type="number" min={5} max={100} value={amortDureeEnsemble === 0 ? "" : amortDureeEnsemble}
+                                            placeholder="—"
                                             onClick={e => e.stopPropagation()}
-                                            onChange={e => setAmortDureeEnsemble(Math.min(50, Math.max(5, parseInt(e.target.value) || 25)))}
+                                            onChange={e => {
+                                              const raw = e.target.value;
+                                              if (raw === "") { setAmortDureeEnsemble(0); return; }
+                                              const v = parseInt(raw) || 0;
+                                              if (v >= 5) setAmortDureeEnsemble(Math.min(100, v));
+                                            }}
                                             className="w-14 text-center text-xl font-bold rounded-md focus:outline-none focus:ring-1 focus:ring-[#C95B2A] [appearance:none] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none [-moz-appearance:textfield]"
                                             style={{ ...INPUT_STYLE, color: "#1A1612" }} />
                                           <span className="text-[15px] font-bold" style={{ color: "#1A1612" }}>ans</span>
