@@ -1673,86 +1673,96 @@ ${annexeTable}
 
                               {/* ── Colonne Global Simplifié ── */}
                               <div className="space-y-3">
-                                {/* Valeur amortissable */}
-                                <div className="rounded-lg px-4 py-3 inline-flex flex-col" style={{ background: "linear-gradient(135deg, #4E1F12 0%, #C95B2A 100%)" }}>
-                                  <div className="text-[11px] uppercase tracking-wider font-semibold mb-1" style={{ color: "rgba(245,240,232,0.7)" }}>Valeur amortissable</div>
-                                  <div className="text-xl font-bold" style={{ color: "#F5F0E8" }}>{formatEuro(valAmort2)}</div>
-                                </div>
-
-                                {/* Orange box — cliquable pour sélectionner Global */}
-                                {amortMode !== "composant" && (
-                                  <div onClick={() => setAmortMode("ensemble")} className="cursor-pointer rounded-lg px-5 py-4 flex items-center gap-6 transition-all"
+                                {amortMode !== "composant" ? (
+                                  <div onClick={() => setAmortMode("ensemble")} className="cursor-pointer rounded-xl overflow-hidden transition-all"
                                     style={{
-                                      background: "rgba(201,91,42,0.08)",
-                                      border: amortMode === "ensemble" ? "2.5px solid #C95B2A" : "1.5px solid rgba(201,91,42,0.25)",
+                                      border: amortMode === "ensemble" ? "2.5px solid #C95B2A" : "1.5px solid rgba(78,31,18,0.15)",
                                       boxShadow: amortMode === "ensemble" ? "0 0 0 3px rgba(201,91,42,0.1)" : "none",
                                     }}>
-                                    <div>
-                                      <div className="text-[11px] uppercase tracking-wider font-semibold mb-1" style={{ color: "#C95B2A" }}>Amortissement / an</div>
-                                      <div className="text-xl font-bold" style={{ color: "#C95B2A" }}>{formatEuro(amortDureeEnsemble > 0 ? valAmort2 / amortDureeEnsemble : 0)}</div>
+                                    {/* Header — Valeur amortissable */}
+                                    <div className="px-5 py-3.5" style={{ background: "linear-gradient(135deg, #4E1F12 0%, #7A3018 100%)" }}>
+                                      <div className="text-[11px] uppercase tracking-wider font-semibold mb-0.5" style={{ color: "rgba(245,240,232,0.6)" }}>Valeur amortissable</div>
+                                      <div className="text-xl font-bold" style={{ color: "#F5F0E8" }}>{formatEuro(valAmort2)}</div>
                                     </div>
-                                    <div className="w-px self-stretch" style={{ background: "rgba(201,91,42,0.2)" }} />
-                                    <div>
-                                      <div className="text-[11px] uppercase tracking-wider font-semibold mb-1" style={{ color: "rgba(26,22,18,0.45)" }}>Pendant</div>
-                                      <div className="flex items-baseline gap-1">
-                                        <input type="number" min={5} max={50} value={amortDureeEnsemble}
-                                          onClick={e => e.stopPropagation()}
-                                          onChange={e => setAmortDureeEnsemble(Math.min(50, Math.max(5, parseInt(e.target.value) || 25)))}
-                                          className="w-14 text-center text-xl font-bold rounded-md focus:outline-none focus:ring-1 focus:ring-[#C95B2A] [appearance:none] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none [-moz-appearance:textfield]"
-                                          style={{ ...INPUT_STYLE, color: "#1A1612" }} />
-                                        <span className="text-[15px] font-bold" style={{ color: "#1A1612" }}>ans</span>
+                                    {/* Content — Amort/an + Pendant */}
+                                    <div className="px-5 py-4 flex items-center gap-6" style={{ background: "rgba(201,91,42,0.05)" }}>
+                                      <div>
+                                        <div className="text-[11px] uppercase tracking-wider font-semibold mb-1" style={{ color: "#C95B2A" }}>Amortissement / an</div>
+                                        <div className="text-xl font-bold" style={{ color: "#C95B2A" }}>{formatEuro(amortDureeEnsemble > 0 ? valAmort2 / amortDureeEnsemble : 0)}</div>
+                                      </div>
+                                      <div className="w-px self-stretch" style={{ background: "rgba(201,91,42,0.2)" }} />
+                                      <div>
+                                        <div className="text-[11px] uppercase tracking-wider font-semibold mb-1" style={{ color: "rgba(26,22,18,0.45)" }}>Pendant</div>
+                                        <div className="flex items-baseline gap-1">
+                                          <input type="number" min={5} max={50} value={amortDureeEnsemble}
+                                            onClick={e => e.stopPropagation()}
+                                            onChange={e => setAmortDureeEnsemble(Math.min(50, Math.max(5, parseInt(e.target.value) || 25)))}
+                                            className="w-14 text-center text-xl font-bold rounded-md focus:outline-none focus:ring-1 focus:ring-[#C95B2A] [appearance:none] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none [-moz-appearance:textfield]"
+                                            style={{ ...INPUT_STYLE, color: "#1A1612" }} />
+                                          <span className="text-[15px] font-bold" style={{ color: "#1A1612" }}>ans</span>
+                                        </div>
                                       </div>
                                     </div>
-                                    {amortMode === "ensemble" && <span className="ml-auto text-[10px] font-bold px-2 py-0.5 rounded flex-shrink-0" style={{ background: "rgba(201,91,42,0.15)", color: "#C95B2A", border: "1px solid rgba(201,91,42,0.3)" }}>✓ SÉLECTIONNÉ</span>}
+                                    {/* Footer — bouton radio sélection */}
+                                    <div className="px-5 py-3 flex items-center gap-3 transition-all"
+                                      style={{ background: amortMode === "ensemble" ? "#C95B2A" : "rgba(201,91,42,0.08)", borderTop: "1px solid rgba(201,91,42,0.15)" }}>
+                                      <div className="w-5 h-5 rounded-full flex-shrink-0 flex items-center justify-center"
+                                        style={{ border: `2px solid ${amortMode === "ensemble" ? "#F5F0E8" : "#C95B2A"}` }}>
+                                        {amortMode === "ensemble" && <div className="w-2.5 h-2.5 rounded-full" style={{ background: "#F5F0E8" }} />}
+                                      </div>
+                                      <span className="font-bold text-[14px]" style={{ color: amortMode === "ensemble" ? "#F5F0E8" : "#4E1F12" }}>
+                                        Amortissement Global Simplifié
+                                      </span>
+                                    </div>
                                   </div>
-                                )}
-                                {amortMode === "composant" && (
+                                ) : (
                                   <button onClick={() => setAmortMode(null)} className="text-[13px] font-medium" style={{ color: "#C95B2A" }}>← Changer de méthode d&apos;amortissement</button>
                                 )}
 
                                 {/* Détails — tout en bas */}
-                                <div className="pt-1">
-                                  <button onClick={() => setShowDetailsEnsemble(v => !v)}
-                                    className="text-[11px] font-medium px-1.5 py-0.5 rounded flex items-center gap-1"
-                                    style={{ color: "#C95B2A", background: "rgba(201,91,42,0.08)", border: "1px solid rgba(201,91,42,0.2)" }}>
-                                    {showDetailsEnsemble ? "▲" : "▼"} Détails
-                                  </button>
-                                  {showDetailsEnsemble && (
-                                    <div className="mt-2">
-                                      <p className="text-[13px] leading-relaxed" style={{ color: "rgba(26,22,18,0.75)" }}>
-                                        Dans ce cas, le bien est amorti dans son ensemble sur la durée choisie (entre 25 et 40 ans). C&apos;est la méthode la plus simple, non conventionnelle mais elle est généralement tolérée lorsqu&apos;il s&apos;agit d&apos;un petit bien seul et que la comptabilité est faite sans expert comptable.
-                                      </p>
-                                      <button onClick={() => setShowDetailsEnsemble(false)} className="mt-1 text-[11px] font-medium" style={{ color: "rgba(26,22,18,0.4)" }}>▲ Réduire</button>
-                                    </div>
-                                  )}
-                                </div>
+                                {amortMode !== "composant" && (
+                                  <div className="pt-1">
+                                    <button onClick={e => { e.stopPropagation(); setShowDetailsEnsemble(v => !v); }}
+                                      className="text-[11px] font-medium px-1.5 py-0.5 rounded flex items-center gap-1"
+                                      style={{ color: "#C95B2A", background: "rgba(201,91,42,0.08)", border: "1px solid rgba(201,91,42,0.2)" }}>
+                                      {showDetailsEnsemble ? "▲" : "▼"} Détails
+                                    </button>
+                                    {showDetailsEnsemble && (
+                                      <div className="mt-2">
+                                        <p className="text-[13px] leading-relaxed" style={{ color: "rgba(26,22,18,0.75)" }}>
+                                          Dans ce cas, le bien est amorti dans son ensemble sur la durée choisie (entre 25 et 40 ans). C&apos;est la méthode la plus simple, non conventionnelle mais elle est généralement tolérée lorsqu&apos;il s&apos;agit d&apos;un petit bien seul et que la comptabilité est faite sans expert comptable.
+                                        </p>
+                                        <button onClick={() => setShowDetailsEnsemble(false)} className="mt-1 text-[11px] font-medium" style={{ color: "rgba(26,22,18,0.4)" }}>▲ Réduire</button>
+                                      </div>
+                                    )}
+                                  </div>
+                                )}
                               </div>
 
                               {/* ── Colonne Par Composant ── */}
                               <div className="space-y-3">
-                                {/* Valeur amortissable */}
-                                <div className="rounded-lg px-4 py-3 inline-flex flex-col" style={{ background: "linear-gradient(135deg, #4E1F12 0%, #C95B2A 100%)" }}>
-                                  <div className="text-[11px] uppercase tracking-wider font-semibold mb-1" style={{ color: "rgba(245,240,232,0.7)" }}>Valeur amortissable</div>
-                                  <div className="text-xl font-bold" style={{ color: "#F5F0E8" }}>{formatEuro(valAmort2)}</div>
-                                </div>
-
-                                {/* Tableau — cliquable pour sélectionner Par Composant */}
-                                {amortMode !== "ensemble" && (() => {
+                                {amortMode !== "ensemble" ? (() => {
                                   const totalPct = composants.reduce((s, c) => s + c.pct, 0);
                                   const inputCls = "w-14 px-2 py-1.5 text-sm rounded-md text-center text-[#1A1612] focus:outline-none focus:ring-1 focus:ring-[#C95B2A] [appearance:none] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none [-moz-appearance:textfield]";
                                   return (
                                     <div onClick={() => setAmortMode("composant")} className="cursor-pointer rounded-xl overflow-hidden transition-all"
                                       style={{
-                                        border: amortMode === "composant" ? "2.5px solid #1A7A52" : "1px solid rgba(78,31,18,0.18)",
-                                        boxShadow: amortMode === "composant" ? "0 0 0 3px rgba(26,122,82,0.1)" : "none",
+                                        border: amortMode === "composant" ? "2.5px solid #C95B2A" : "1.5px solid rgba(78,31,18,0.15)",
+                                        boxShadow: amortMode === "composant" ? "0 0 0 3px rgba(201,91,42,0.1)" : "none",
                                       }}>
-                                      <div className="px-4 py-2.5 flex items-center gap-2" style={{ background: "#4E1F12" }}>
-                                        <span className="text-[12px] font-semibold uppercase tracking-wider" style={{ color: "rgba(245,240,232,0.65)", width: 140 }}>Composant</span>
-                                        <span className="text-[12px] font-semibold uppercase tracking-wider" style={{ color: "rgba(245,240,232,0.65)", width: 160 }}>Quote part en %</span>
-                                        <span className="text-[12px] font-semibold uppercase tracking-wider" style={{ color: "rgba(245,240,232,0.65)", width: 85 }}>Durée</span>
-                                        <span className="text-[12px] font-semibold uppercase tracking-wider text-right" style={{ color: "#C95B2A", width: 75 }}>Amort / an</span>
-                                        {amortMode === "composant" && <span className="ml-auto text-[10px] font-bold px-2 py-0.5 rounded flex-shrink-0" style={{ background: "rgba(26,122,82,0.25)", color: "#F5F0E8" }}>✓ SÉLECTIONNÉ</span>}
+                                      {/* Header — Valeur amortissable */}
+                                      <div className="px-5 py-3.5" style={{ background: "linear-gradient(135deg, #4E1F12 0%, #7A3018 100%)" }}>
+                                        <div className="text-[11px] uppercase tracking-wider font-semibold mb-0.5" style={{ color: "rgba(245,240,232,0.6)" }}>Valeur amortissable</div>
+                                        <div className="text-xl font-bold" style={{ color: "#F5F0E8" }}>{formatEuro(valAmort2)}</div>
                                       </div>
+                                      {/* Table header */}
+                                      <div className="px-4 py-2.5 flex items-center gap-2" style={{ background: "#3A1A0A" }}>
+                                        <span className="text-[12px] font-semibold uppercase tracking-wider" style={{ color: "rgba(245,240,232,0.55)", width: 140 }}>Composant</span>
+                                        <span className="text-[12px] font-semibold uppercase tracking-wider" style={{ color: "rgba(245,240,232,0.55)", width: 160 }}>Quote part en %</span>
+                                        <span className="text-[12px] font-semibold uppercase tracking-wider" style={{ color: "rgba(245,240,232,0.55)", width: 85 }}>Durée</span>
+                                        <span className="text-[12px] font-semibold uppercase tracking-wider text-right" style={{ color: "#C95B2A", width: 75 }}>Amort / an</span>
+                                      </div>
+                                      {/* Rows */}
                                       {composants.map((c, i) => {
                                         const val = valAmort2 * c.pct / 100;
                                         return (
@@ -1793,7 +1803,8 @@ ${annexeTable}
                                           </div>
                                         );
                                       })}
-                                      <div className="flex items-center gap-2 px-4 py-3" style={{ background: "#4E1F12" }}>
+                                      {/* Total row */}
+                                      <div className="flex items-center gap-2 px-4 py-3" style={{ background: "#3A1A0A" }}>
                                         <span className="text-[16px] font-bold" style={{ color: "#F5F0E8", width: 140 }}>Total</span>
                                         <div style={{ width: 160 }}>
                                           <span className="text-[16px] font-bold" style={{ color: totalPct === 100 ? "#6FCF97" : "#EB5757" }}>
@@ -1806,6 +1817,7 @@ ${annexeTable}
                                           <span className="text-[16px] font-bold" style={{ color: "#C95B2A" }}>{formatEuro(composants.reduce((s, c) => s + (valAmort2 * c.pct / 100) / (c.duree || 1), 0))}/an</span>
                                         </div>
                                       </div>
+                                      {/* Warnings */}
                                       {totalPct !== 100 && (
                                         <p className="px-4 py-2 text-[13px]" style={{ color: "#B03A2A", background: "rgba(176,58,42,0.06)" }}>
                                           ⚠ Les % doivent totaliser 100 % pour couvrir toute la valeur amortissable.
@@ -1816,32 +1828,44 @@ ${annexeTable}
                                           ⚠ La durée d&apos;amortissement ne peut pas être 0 an pour un composant avec un % &gt; 0.
                                         </p>
                                       )}
+                                      {/* Footer — bouton radio sélection */}
+                                      <div className="px-5 py-3 flex items-center gap-3 transition-all"
+                                        style={{ background: amortMode === "composant" ? "#C95B2A" : "rgba(201,91,42,0.08)", borderTop: "1px solid rgba(201,91,42,0.15)" }}>
+                                        <div className="w-5 h-5 rounded-full flex-shrink-0 flex items-center justify-center"
+                                          style={{ border: `2px solid ${amortMode === "composant" ? "#F5F0E8" : "#C95B2A"}` }}>
+                                          {amortMode === "composant" && <div className="w-2.5 h-2.5 rounded-full" style={{ background: "#F5F0E8" }} />}
+                                        </div>
+                                        <span className="font-bold text-[14px]" style={{ color: amortMode === "composant" ? "#F5F0E8" : "#4E1F12" }}>
+                                          Amortissement par Composant
+                                        </span>
+                                      </div>
                                     </div>
                                   );
-                                })()}
-                                {amortMode === "ensemble" && (
-                                  <button onClick={() => setAmortMode(null)} className="text-[13px] font-medium" style={{ color: "#1A7A52" }}>← Changer de méthode d&apos;amortissement</button>
+                                })() : (
+                                  <button onClick={() => setAmortMode(null)} className="text-[13px] font-medium" style={{ color: "#C95B2A" }}>← Changer de méthode d&apos;amortissement</button>
                                 )}
 
                                 {/* Détails — tout en bas */}
-                                <div className="pt-1">
-                                  <button onClick={() => setShowDetailsComposant(v => !v)}
-                                    className="text-[11px] font-medium px-1.5 py-0.5 rounded flex items-center gap-1"
-                                    style={{ color: "#1A7A52", background: "rgba(26,122,82,0.08)", border: "1px solid rgba(26,122,82,0.2)" }}>
-                                    {showDetailsComposant ? "▲" : "▼"} Détails
-                                  </button>
-                                  {showDetailsComposant && (
-                                    <div className="mt-2">
-                                      <p className="text-[13px] leading-relaxed" style={{ color: "rgba(26,22,18,0.75)" }}>
-                                        L&apos;Amortissement par composant consiste à décomposer et distribuer la valeur du bien sur plusieurs éléments principaux : gros œuvre, toiture, installations électriques, etc.
-                                      </p>
-                                      <p className="text-[13px] leading-relaxed mt-1.5" style={{ color: "rgba(26,22,18,0.75)" }}>
-                                        Chaque composant va correspondre à un pourcentage de la valeur du bien et à une durée pour l&apos;amortir bien précise. Lors du choix de ces valeurs, il faut bien veiller à respecter les durées d&apos;utilisation normale de chaque composant, ainsi que leur proportion dans la valeur totale du logement.
-                                      </p>
-                                      <button onClick={() => setShowDetailsComposant(false)} className="mt-1 text-[11px] font-medium" style={{ color: "rgba(26,22,18,0.4)" }}>▲ Réduire</button>
-                                    </div>
-                                  )}
-                                </div>
+                                {amortMode !== "ensemble" && (
+                                  <div className="pt-1">
+                                    <button onClick={e => { e.stopPropagation(); setShowDetailsComposant(v => !v); }}
+                                      className="text-[11px] font-medium px-1.5 py-0.5 rounded flex items-center gap-1"
+                                      style={{ color: "#C95B2A", background: "rgba(201,91,42,0.08)", border: "1px solid rgba(201,91,42,0.2)" }}>
+                                      {showDetailsComposant ? "▲" : "▼"} Détails
+                                    </button>
+                                    {showDetailsComposant && (
+                                      <div className="mt-2">
+                                        <p className="text-[13px] leading-relaxed" style={{ color: "rgba(26,22,18,0.75)" }}>
+                                          L&apos;Amortissement par composant consiste à décomposer et distribuer la valeur du bien sur plusieurs éléments principaux : gros œuvre, toiture, installations électriques, etc.
+                                        </p>
+                                        <p className="text-[13px] leading-relaxed mt-1.5" style={{ color: "rgba(26,22,18,0.75)" }}>
+                                          Chaque composant va correspondre à un pourcentage de la valeur du bien et à une durée pour l&apos;amortir bien précise. Lors du choix de ces valeurs, il faut bien veiller à respecter les durées d&apos;utilisation normale de chaque composant, ainsi que leur proportion dans la valeur totale du logement.
+                                        </p>
+                                        <button onClick={() => setShowDetailsComposant(false)} className="mt-1 text-[11px] font-medium" style={{ color: "rgba(26,22,18,0.4)" }}>▲ Réduire</button>
+                                      </div>
+                                    )}
+                                  </div>
+                                )}
                               </div>
                             </div>
                           </div>
