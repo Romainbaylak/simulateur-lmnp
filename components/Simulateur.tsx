@@ -1367,10 +1367,10 @@ ${annexeTable}
                       </div>
                     </div>
                     <input type="range"
-                      min={sliderMin} max={sliderMax} step={5}
-                      value={loyerSlider || parseFloat(form.loyer) || 500}
+                      min={sliderMin} max={sliderMax} step={1}
+                      value={parseFloat(form.loyer) || loyerSlider || 500}
                       onChange={e => {
-                        const v = parseFloat(e.target.value);
+                        const v = parseInt(e.target.value, 10);
                         setLoyerSlider(v);
                         updateField("loyer", v.toString());
                         if (showResults) {
