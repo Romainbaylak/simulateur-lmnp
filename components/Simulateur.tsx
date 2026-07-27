@@ -1532,7 +1532,6 @@ ${annexeTable}
                                     <span className="text-[13px] font-medium" style={{ color: "rgba(26,22,18,0.6)" }}>Dont frais d&apos;emprunt : </span>
                                     <span className="text-[13px] font-semibold" style={{ color: "#B03A2A" }}>{formatEuro(resultats.interetsAnnee1)}</span>
                                   </div>
-                                  {(() => { const res = resultats.loyerAnnuel - resultats.creditAnnuel; return <Row label="Résultat" val={formatEuro(res)} bold color={res >= 0 ? "#1A7A52" : "#B03A2A"} sep />; })()}
                                   <Row label={isSaisonnier ? "Base imposable (70% recettes)" : "Base imposable (50% recettes)"} val={formatEuro(resultats.baseBIC)} bold sep />
                                   <Row label="Impôt estimé" val={formatEuro(resultats.impotBIC)} color="#B03A2A" />
                                   <Row label="Cash-flow mensuel" val={formatEuro(resultats.cashflowBICMensuel)} bold color={resultats.cashflowBICMensuel >= 0 ? "#1A7A52" : "#B03A2A"} sep />
@@ -1586,7 +1585,6 @@ ${annexeTable}
                                       <span className="text-[12px]" style={{ color: "rgba(26,22,18,0.6)" }}>Dont frais d&apos;emprunt </span>
                                       <span className="text-[13px] font-semibold" style={{ color: "#B03A2A" }}>{formatEuro(resultats.interetsAnnee1)}</span>
                                     </div>
-                                    {(() => { const res = resultats.loyerAnnuel - resultats.creditAnnuel; return <Row label="Résultat" val={formatEuro(res)} bold color={res >= 0 ? "#1A7A52" : "#B03A2A"} sep />; })()}
                                     <Row label={isSaisonnier ? "Base imposable (70% recettes)" : "Base imposable (50% recettes)"} val={formatEuro(resultats.baseBIC)} bold sep />
                                     <Row label="Impôt estimé" val={formatEuro(resultats.impotBIC)} color="#B03A2A" />
                                     <Row label="Cash-flow mensuel" val={formatEuro(resultats.cashflowBICMensuel)} bold color={resultats.cashflowBICMensuel >= 0 ? "#1A7A52" : "#B03A2A"} sep />
