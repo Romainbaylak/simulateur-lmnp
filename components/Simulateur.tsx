@@ -409,6 +409,7 @@ export default function Simulateur() {
     }
     setSimulationValidated(true);
     scrollToPdf.current = true;
+    window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
   const displayCashflow = resultats
@@ -1720,7 +1721,7 @@ ${annexeTable}
                               </button>
 
                               {/* Micro-BIC — clickable */}
-                              <button type="button" onClick={() => { setSelectedRegime("micro"); setSimulationValidated(true); }}
+                              <button type="button" onClick={() => { setSelectedRegime("micro"); setSimulationValidated(true); window.scrollTo({ top: 0, behavior: "smooth" }); }}
                                 className="rounded-xl overflow-hidden text-left w-full transition-all hover:shadow-md focus:outline-none group"
                                 style={{ border: "1.5px solid rgba(26,22,18,0.15)" }}>
                                 <div className="flex items-center gap-3 px-5 py-3.5" style={{ background: "#EDE7DC", borderBottom: "0.5px solid rgba(26,22,18,0.12)" }}>
