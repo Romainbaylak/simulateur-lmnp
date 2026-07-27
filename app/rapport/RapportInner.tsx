@@ -20,10 +20,11 @@ export default function RapportInner() {
   const params = useSearchParams();
   const router = useRouter();
 
-  const [status, setStatus] = useState<"loading" | "ready" | "generating" | "done" | "expired" | "used">("loading");
+  const [status, setStatus] = useState<"loading" | "ready" | "done" | "expired" | "used">("loading");
   const [simData, setSimData] = useState<SimulationData | null>(null);
   const [form, setForm] = useState<SimulationForm | null>(null);
   const [resultats, setResultats] = useState<Resultats | null>(null);
+  const [pdfHtml, setPdfHtml] = useState<string | null>(null);
 
   const amortPctRef = useRef(85);
   const amortModeRef = useRef<"ensemble" | "composant">("ensemble");
@@ -83,13 +84,21 @@ export default function RapportInner() {
 
   useEffect(() => {
     if (status !== "ready" || !form || !resultats || !simData) return;
-    setStatus("generating");
-    // Small delay to allow "generating" UI to render first
-    setTimeout(() => generateAndOpenPDF(form, resultats, simData), 200);
+    const html = buildPdfHtml(form, resultats);
+    setPdfHtml(html);
+    sessionStorage.setItem(`lmnp_rapport_used_${sessionId}`, "1");
+    sessionStorage.removeItem("lmnp_simulation_data");
+    setStatus("done");
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [status]);
 
-  const generateAndOpenPDF = (f: SimulationForm, res: Resultats, sd: SimulationData) => {
+  const openPdf = () => {
+    if (!pdfHtml) return;
+    const win = window.open("", "_blank");
+    if (win) { win.document.write(pdfHtml); win.document.close(); setTimeout(() => win.print(), 600); }
+  };
+
+  const buildPdfHtml = (f: SimulationForm, res: Resultats): string => {
     const amortPct = amortPctRef.current;
     const amortMode = amortModeRef.current;
     const amortDureeEnsemble = amortDureeEnsembleRef.current;
@@ -443,12 +452,7 @@ ${annexeTable}
 </div>
 </body></html>`;
 
-    const win = window.open("", "_blank");
-    if (win) { win.document.write(html); win.document.close(); setTimeout(() => win.print(), 600); }
-
-    sessionStorage.setItem(`lmnp_rapport_used_${sessionId}`, "1");
-    sessionStorage.removeItem("lmnp_simulation_data");
-    setStatus("done");
+    return html;
   };
 
   // ── Render states ──
@@ -456,23 +460,6 @@ ${annexeTable}
     return (
       <main className="min-h-screen flex items-center justify-center" style={{ backgroundColor: "#F5F0E8" }}>
         <div className="text-sm" style={{ color: "rgba(26,22,18,0.4)" }}>Chargement…</div>
-      </main>
-    );
-  }
-
-  if (status === "generating") {
-    return (
-      <main className="min-h-screen flex flex-col items-center justify-center px-4 text-center" style={{ backgroundColor: "#F5F0E8" }}>
-        <div className="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-6 text-2xl"
-          style={{ background: "rgba(201,91,42,0.1)", color: "#C95B2A" }}>
-          📄
-        </div>
-        <h1 className="font-light text-2xl mb-3" style={{ color: "#4E1F12", letterSpacing: "-0.025em" }}>
-          Génération du PDF en cours…
-        </h1>
-        <p className="text-sm" style={{ color: "rgba(26,22,18,0.45)" }}>
-          Votre rapport s&apos;ouvre dans un nouvel onglet.
-        </p>
       </main>
     );
   }
@@ -523,14 +510,23 @@ ${annexeTable}
         <div className="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-8 text-2xl"
           style={{ background: "rgba(26,122,82,0.1)", color: "#1A7A52" }}>✓</div>
         <h1 className="font-light mb-4" style={{ fontSize: "clamp(1.8rem,4vw,2.5rem)", color: "#4E1F12", letterSpacing: "-0.025em" }}>
-          Rapport PDF généré !
+          Votre rapport est prêt !
         </h1>
-        <p className="text-base mb-2" style={{ color: "rgba(26,22,18,0.6)", lineHeight: 1.75 }}>
-          Votre analyse de rentabilité LMNP s&apos;est ouverte dans un nouvel onglet.
+        <p className="text-base mb-8" style={{ color: "rgba(26,22,18,0.6)", lineHeight: 1.75 }}>
+          Cliquez sur le bouton ci-dessous pour ouvrir votre analyse de rentabilité LMNP et l&apos;imprimer en PDF.
         </p>
-        <p className="text-base mb-10" style={{ color: "rgba(26,22,18,0.6)", lineHeight: 1.75 }}>
-          Si la fenêtre ne s&apos;est pas ouverte, vérifiez que votre navigateur n&apos;a pas bloqué les pop-ups.
-        </p>
+        <button
+          onClick={openPdf}
+          className="inline-block text-base font-medium px-10 py-4 mb-4 transition-opacity hover:opacity-[0.88] rounded-xl"
+          style={{ backgroundColor: "#1A4A35", color: "#F5F0E8" }}
+        >
+          📄 Ouvrir et imprimer le PDF
+        </button>
+        <div className="mb-10">
+          <p className="text-xs" style={{ color: "rgba(26,22,18,0.35)" }}>
+            Si la fenêtre est bloquée, autorisez les pop-ups pour ce site dans votre navigateur puis réessayez.
+          </p>
+        </div>
         <Link href="/#simulateur"
           className="inline-block text-sm font-medium px-8 py-3 transition-opacity hover:opacity-[0.88]"
           style={{ backgroundColor: "#C95B2A", color: "#F5F0E8", borderRadius: 6 }}>
