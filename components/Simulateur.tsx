@@ -620,8 +620,8 @@ export default function Simulateur() {
       : `Dès la 1ère année, la base imposable s'établit à ${fEur(rows[0]?.baseImposable ?? 0)}, générant un impôt de ${fEur(rows[0]?.impot ?? 0)}/an. L'amortissement reste partiellement utilisé — envisagez d'allonger les durées ou d'augmenter la part mobilier.`;
 
     const microbicNote = tmi > 0
-      ? `En Micro-BIC 2025, votre base imposable serait de <strong>${fEur(baseBIC)}</strong> par an (abattement ${isSaisonnier ? "30" : "50"} % sur les recettes totales de ${fEur(recettesAnnuelles)}/an, en cas de loyer constant), générant un impôt estimé de <strong>${fEur(impotBIC)}</strong> par an (TMI ${tmi} % + prélèvements sociaux 18,6 %).`
-      : `En Micro-BIC 2025, votre base imposable serait de <strong>${fEur(baseBIC)}</strong> par an (abattement ${isSaisonnier ? "30" : "50"} % sur les recettes totales de ${fEur(recettesAnnuelles)}/an, en cas de loyer constant). Renseignez votre TMI pour calculer l'impôt correspondant.`;
+      ? `En Micro-BIC, votre base imposable serait de <strong>${fEur(baseBIC)}</strong> par an (abattement ${isSaisonnier ? "30" : "50"} % sur les recettes totales de ${fEur(recettesAnnuelles)}/an, en cas de loyer constant), générant un impôt estimé de <strong>${fEur(impotBIC)}</strong> par an (TMI ${tmi} % + prélèvements sociaux 18,6 %).`
+      : `En Micro-BIC, votre base imposable serait de <strong>${fEur(baseBIC)}</strong> par an (abattement ${isSaisonnier ? "30" : "50"} % sur les recettes totales de ${fEur(recettesAnnuelles)}/an, en cas de loyer constant). Renseignez votre TMI pour calculer l'impôt correspondant.`;
 
     // Saisonnière: 6-table comparison block
     let saisonniereSummaryHtml = "";
@@ -660,7 +660,7 @@ export default function Simulateur() {
             </table>
           </div>
           <div style="background:#F5F0E8;padding:6px 0 6px;border-top:2px solid rgba(26,82,122,.15)">
-            <div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#26527A;padding:4px 6px 2px">Micro-BIC 2025</div>
+            <div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#26527A;padding:4px 6px 2px">Micro-BIC</div>
             <table style="width:100%;border-collapse:collapse">
               ${row("Revenus annuels", fEur(lr), undefined, true)}
               ${row("Abattement 30%", `−${fEur(lr*.30)}`, "#B03A2A")}
@@ -770,7 +770,7 @@ th.col-an,td.col-an{width:18px}
 
 ${saisonniereSummaryHtml}
 ${!isSaisonnier ? `<h2>Comparaison régimes fiscaux (année 1)</h2>
-<table><thead><tr><th>Indicateur</th><th>Régime réel simplifié</th><th>Micro-BIC 2025</th></tr></thead><tbody>
+<table><thead><tr><th>Indicateur</th><th>Régime réel simplifié</th><th>Micro-BIC</th></tr></thead><tbody>
 <tr><td>Recettes annuelles</td><td>${fEur(recettesAnnuelles)}</td><td>${fEur(recettesAnnuelles)}</td></tr>
 <tr><td>Charges déductibles</td><td>${fEur(rows[0]?.chargesDeductibles ?? 0)}</td><td>Abattement 30 %</td></tr>
 <tr><td>Amortissements</td><td>${fEur(rows[0]?.amortTotalA ?? 0)}</td><td>—</td></tr>
@@ -796,7 +796,7 @@ ${!isSaisonnier ? `<h2>Comparaison régimes fiscaux (année 1)</h2>
   <th>Base imposable</th><th>Impôt</th><th>Cash-flow/mois</th>
 </tr></thead><tbody>${tableRows}</tbody></table>
 <div class="conclusion">✓ ${conclusionText}</div>
-<div class="note" style="margin-top:12px"><strong>Micro-BIC 2025 :</strong> ${microbicNote}</div>
+<div class="note" style="margin-top:12px"><strong>Micro-BIC :</strong> ${microbicNote}</div>
 </div>
 
 <div class="page-break">
@@ -1438,7 +1438,7 @@ ${annexeTable}
                               <RegimeRow sc={sc} isReel={true} />
                             </div>
                             <div className="px-3 pt-2 pb-3">
-                              <div className="text-[10px] font-semibold uppercase tracking-[0.1em] mb-2" style={{ color: "rgba(26,22,18,0.5)" }}>Micro-BIC 2025 <span className="px-1.5 py-0.5 rounded text-[9px]" style={{ background: "rgba(26,22,18,0.08)", color: "rgba(26,22,18,0.5)" }}>Abatt. 30%</span></div>
+                              <div className="text-[10px] font-semibold uppercase tracking-[0.1em] mb-2" style={{ color: "rgba(26,22,18,0.5)" }}>Micro-BIC <span className="px-1.5 py-0.5 rounded text-[9px]" style={{ background: "rgba(26,22,18,0.08)", color: "rgba(26,22,18,0.5)" }}>Abatt. 30%</span></div>
                               <RegimeRow sc={sc} isReel={false} />
                             </div>
                           </div>
@@ -1449,7 +1449,7 @@ ${annexeTable}
                     const economy = resultats.impotBIC - resultats.impotReel;
                     const cfDiff = resultats.cashflowReelMensuel - resultats.cashflowBICMensuel;
                     const reelBetter = economy > 0 || (economy === 0 && cfDiff >= 0);
-                    const bestLabel = reelBetter ? "Régime Réel Simplifié" : "Micro-BIC 2025";
+                    const bestLabel = reelBetter ? "Régime Réel Simplifié" : "Micro-BIC";
                     const bestColor = reelBetter ? "#C95B2A" : "#1A1612";
                     const bestBg = reelBetter ? "rgba(201,91,42,0.06)" : "rgba(26,22,18,0.04)";
                     const bestBorder = reelBetter ? "rgba(201,91,42,0.3)" : "rgba(26,22,18,0.2)";
@@ -1522,7 +1522,7 @@ ${annexeTable}
                                   <div className="w-5 h-5 rounded-full flex-shrink-0 flex items-center justify-center" style={{ border: "2px solid rgba(26,22,18,0.35)", background: "#fff" }}>
                                     <div className="w-2 h-2 rounded-full opacity-0 group-hover:opacity-40 transition-opacity" style={{ background: "#1A1612" }} />
                                   </div>
-                                  <span className="font-bold text-[15px]" style={{ color: "#1A1612" }}>Micro-BIC 2025</span>
+                                  <span className="font-bold text-[15px]" style={{ color: "#1A1612" }}>Micro-BIC</span>
                                   <span className="ml-auto text-[10px] font-semibold px-2.5 py-1 rounded" style={{ background: "rgba(26,22,18,0.1)", color: "rgba(26,22,18,0.55)" }}>{isSaisonnier ? "ABATTEMENT 30%" : "ABATTEMENT 50%"}</span>
                                 </div>
                                 <div className="px-5 pb-2" style={{ background: "#FDFAF6" }}>
@@ -1556,7 +1556,7 @@ ${annexeTable}
                                   <div className="w-2.5 h-2.5 rounded-full" style={{ background: "#F5F0E8" }} />
                                 </div>
                                 <span className="font-bold text-[15px]" style={{ color: "#F5F0E8" }}>
-                                  {selectedRegime === "reel" ? "Régime réel simplifié" : "Micro-BIC 2025"}
+                                  {selectedRegime === "reel" ? "Régime réel simplifié" : "Micro-BIC"}
                                 </span>
                                 <span className="ml-auto text-[10px] font-bold px-2.5 py-1 rounded" style={{ background: "rgba(245,240,232,0.2)", color: "#F5F0E8" }}>✓ SÉLECTIONNÉ</span>
                               </div>
