@@ -352,7 +352,7 @@ export default function Simulateur() {
 
   useEffect(() => {
     const l = parseFloat(form.loyer) || 0;
-    if (l > 0 && loyerSlider === 0) setLoyerSlider(l);
+    if (l > 0) setLoyerSlider(l);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [form.loyer]);
 
@@ -450,7 +450,8 @@ export default function Simulateur() {
     const taux = parseFloat(form.taux) / 100 || 0;
     const duree = form.duree;
     const tmi = form.tmi;
-    const loyerAnnuel = resultats.loyerAnnuel;
+    const loyerMensuelExact = parseFloat(form.loyer) || loyerEffectif;
+    const loyerAnnuel = loyerMensuelExact * 12;
     const chargesLoyer = parseFloat(form.chargesLoyer) || 0;
     const chargesLocatairesAnnuel = chargesLoyer * 12;
     const recettesAnnuelles = loyerAnnuel + chargesLocatairesAnnuel;
