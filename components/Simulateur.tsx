@@ -1185,13 +1185,13 @@ ${annexeTable}
         </div>
 
         {/* ─── BOUTON SIMULER ─── */}
-        <div className="flex justify-end mb-10">
+        {!simulationValidated && <div className="flex justify-end mb-10">
           <button onClick={handleSimuler}
             className="px-10 py-4 text-base font-medium transition-opacity hover:opacity-[0.88]"
             style={{ backgroundColor: "#C95B2A", color: "#F5F0E8", borderRadius: 8, letterSpacing: "0.02em" }}>
             Lancer la simulation →
           </button>
-        </div>
+        </div>}
 
         {/* ─── RESULTS ─── */}
         {/* Ancre invisible : le scroll atterrit ici, 24px au-dessus du bandeau */}
@@ -1323,9 +1323,8 @@ ${annexeTable}
                       {/* Tableau amortissement choisi — réel uniquement */}
                       {selectedRegime === "reel" && amortMode !== null && (
                         <div className="rounded-xl overflow-hidden"
-                          style={{ border: amortMode === "ensemble" ? "2px solid #C95B2A" : `2px solid ${C2}`, boxShadow: amortMode === "ensemble" ? "0 0 0 3px rgba(201,91,42,0.1)" : "0 0 0 3px rgba(42,112,128,0.1)" }}>
-                          <div className="px-5 py-3.5 flex items-center gap-3"
-                            style={{ background: amortMode === "ensemble" ? "#C95B2A" : C2 }}>
+                          style={{ border: `2px solid ${C2}`, boxShadow: "0 0 0 3px rgba(42,112,128,0.1)" }}>
+                          <div className="px-5 py-3.5 flex items-center gap-3" style={{ background: C2 }}>
                             <div className="w-5 h-5 rounded-full flex-shrink-0 flex items-center justify-center" style={{ border: "2px solid #F5F0E8" }}>
                               <div className="w-2.5 h-2.5 rounded-full" style={{ background: "#F5F0E8" }} />
                             </div>
@@ -1337,17 +1336,17 @@ ${annexeTable}
                           {amortMode === "ensemble" ? (
                             <div className="px-5 py-4 flex items-center gap-6" style={{ background: "#FDFAF6" }}>
                               <div>
-                                <div className="text-[11px] uppercase tracking-wider font-semibold mb-1" style={{ color: "#C95B2A" }}>Valeur amortissable</div>
-                                <div className="text-xl font-bold" style={{ color: "#C95B2A" }}>{formatEuro(valAmort2)}</div>
+                                <div className="text-[11px] uppercase tracking-wider font-semibold mb-1" style={{ color: C2 }}>Valeur amortissable</div>
+                                <div className="text-xl font-bold" style={{ color: C2 }}>{formatEuro(valAmort2)}</div>
                               </div>
-                              <div className="w-px self-stretch" style={{ background: "rgba(201,91,42,0.15)" }} />
+                              <div className="w-px self-stretch" style={{ background: "rgba(42,112,128,0.2)" }} />
                               <div>
-                                <div className="text-[11px] uppercase tracking-wider font-semibold mb-1" style={{ color: "#C95B2A" }}>Amortissement / an</div>
-                                <div className="text-xl font-bold" style={{ color: "#C95B2A" }}>{formatEuro(amortDureeEnsemble > 0 ? valAmort2 / amortDureeEnsemble : 0)}</div>
+                                <div className="text-[11px] uppercase tracking-wider font-semibold mb-1" style={{ color: C2 }}>Amortissement / an</div>
+                                <div className="text-xl font-bold" style={{ color: C2 }}>{formatEuro(amortDureeEnsemble > 0 ? valAmort2 / amortDureeEnsemble : 0)}</div>
                               </div>
-                              <div className="w-px self-stretch" style={{ background: "rgba(201,91,42,0.15)" }} />
+                              <div className="w-px self-stretch" style={{ background: "rgba(42,112,128,0.2)" }} />
                               <div>
-                                <div className="text-[11px] uppercase tracking-wider font-semibold mb-1" style={{ color: "rgba(26,22,18,0.5)" }}>Sur</div>
+                                <div className="text-[11px] uppercase tracking-wider font-semibold mb-1" style={{ color: "rgba(42,112,128,0.6)" }}>Sur</div>
                                 <div className="text-xl font-bold" style={{ color: "#1A1612" }}>{amortDureeEnsemble} ans</div>
                               </div>
                             </div>
@@ -1390,17 +1389,21 @@ ${annexeTable}
                     <div className="text-sm font-semibold mb-3" style={{ color: "rgba(26,22,18,0.65)" }}>Amortissements totaux :</div>
                     <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
                       {[
-                        { label: "Bien", val: amortBienDisplay, sub: amortMode === "ensemble" ? `${amortPct}% du prix · sur ${amortDureeEnsemble} ans` : `${amortPct}% · composants`, color: "#4E1F12" },
-                        { label: "Mobilier", val: amortMobilierDisplay, sub: "sur 10 ans", color: "#6B4226" },
-                        { label: "Travaux", val: amortTravauxDisplay, sub: "sur 20 ans", color: "#6B4226" },
-                        { label: "Notaire", val: amortNotaireDisplay, sub: `sur ${amortDureeEnsemble} ans`, color: "#6B4226" },
-                        { label: "Total", val: amortTotalDisplay, sub: "Déductible première année", accent: true, color: "#C95B2A" },
+                        { label: "Bien", val: amortBienDisplay, sub: amortMode === "ensemble" ? `${amortPct}% du prix · sur ${amortDureeEnsemble} ans` : `${amortPct}% · composants`, color: "#2A7080" },
+                        { label: "Mobilier", val: amortMobilierDisplay, sub: "sur 10 ans", color: "#2A7080" },
+                        { label: "Travaux", val: amortTravauxDisplay, sub: "sur 20 ans", color: "#2A7080" },
+                        { label: "Notaire", val: amortNotaireDisplay, sub: `sur ${amortDureeEnsemble} ans`, color: "#2A7080" },
+                        { label: "Total", val: amortTotalDisplay, sub: "Déductible première année", accent: true, color: "#F5F0E8" },
                       ].map(({ label, val, sub, accent, color }) => (
                         <div key={label} className="rounded-lg p-3.5 text-center"
-                          style={{ background: accent ? "rgba(201,91,42,0.1)" : "#F5F0E8", border: accent ? "1.5px solid rgba(201,91,42,0.3)" : "0.5px solid rgba(26,22,18,0.1)" }}>
-                          <div className="text-[11px] font-semibold uppercase tracking-[0.1em] mb-1.5" style={{ color: accent ? "#C95B2A" : "rgba(26,22,18,0.45)" }}>{label}</div>
+                          style={{
+                            background: accent ? "#C95B2A" : "#fff",
+                            border: accent ? "none" : "1px solid rgba(42,112,128,0.2)",
+                            boxShadow: accent ? "0 2px 8px rgba(201,91,42,0.25)" : "0 1px 3px rgba(26,22,18,0.06)",
+                          }}>
+                          <div className="text-[11px] font-semibold uppercase tracking-[0.1em] mb-1.5" style={{ color: accent ? "rgba(245,240,232,0.65)" : "rgba(42,112,128,0.6)" }}>{label}</div>
                           <div className="font-bold text-[15px]" style={{ color }}>{formatEuro(val)}{accent ? "" : "/an"}</div>
-                          <div className="text-[12px] mt-1" style={{ color: "rgba(26,22,18,0.38)" }}>{sub}</div>
+                          <div className="text-[12px] mt-1" style={{ color: accent ? "rgba(245,240,232,0.6)" : "rgba(26,22,18,0.4)" }}>{sub}</div>
                         </div>
                       ))}
                     </div>
@@ -1416,7 +1419,7 @@ ${annexeTable}
                     setShowPayPopup(true);
                   }}
                     className="px-10 py-4 text-base font-medium transition-opacity hover:opacity-[0.88] rounded-lg"
-                    style={{ background: "#4E1F12", color: "#C95B2A", border: "1px solid rgba(201,91,42,0.3)", letterSpacing: "0.02em" }}>
+                    style={{ background: "#1A4A35", color: "#F5F0E8", letterSpacing: "0.02em" }}>
                     Générer compte rendu PDF
                   </button>
                   <button onClick={() => setShowSauvegarder(true)}
