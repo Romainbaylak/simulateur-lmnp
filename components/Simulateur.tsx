@@ -433,7 +433,7 @@ export default function Simulateur() {
     ? resultats.rendementNet > 5 && displayCashflow > 0
       ? { label: "Excellent investissement", bg: "#1A7A52", icon: "✓" }
       : resultats.rendementNet > 3
-      ? { label: "Investissement correct", bg: "#B08A2A", icon: "~" }
+      ? { label: "Investissement correct", bg: "#2A9060", icon: "~" }
       : { label: "Rentabilité faible", bg: "#B03A2A", icon: "✗" }
     : null;
 
