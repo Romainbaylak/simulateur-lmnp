@@ -1265,12 +1265,13 @@ ${annexeTable}
                       borderTop: "1px solid rgba(26,22,18,0.1)",
                       borderBottom: "1px solid rgba(26,22,18,0.1)",
                       padding: "12px 0",
-                      marginTop: 8,
+                      marginTop: 24,
+                      marginBottom: -12,
                     }}>
                       {items.map((it, i) => (
                         <div key={it.label} style={{ display: "flex", alignItems: "center" }}>
                           <div style={{ padding: "2px 18px", borderRight: i < items.length - 1 ? "1px solid rgba(26,22,18,0.12)" : "none" }}>
-                            <span style={{ fontSize: 10, fontWeight: 500, color: "rgba(26,22,18,0.38)", letterSpacing: "0.06em", textTransform: "uppercase" as const, marginRight: 7 }}>{it.label}</span>
+                            <span style={{ fontSize: 10, fontWeight: 500, color: "#1A1612", letterSpacing: "0.06em", textTransform: "uppercase" as const, marginRight: 7 }}>{it.label}</span>
                             <span style={{ fontSize: 13, fontWeight: 800, color: "#1A1612", letterSpacing: "-0.01em" }}>{it.value}</span>
                             {it.note && <span style={{ fontSize: 11, color: "rgba(26,22,18,0.5)", marginLeft: 5 }}>{it.note}</span>}
                           </div>
