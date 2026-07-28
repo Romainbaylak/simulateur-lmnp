@@ -268,6 +268,48 @@ export default function Simulateur() {
   const [pendingPdfAction, setPendingPdfAction] = useState<"pro" | "starter" | "pay" | null>(null);
   const bienInfoRef = useRef<BienInfo>(defaultBienInfo);
 
+  // ── Persistance formulaire dans sessionStorage ────────────────────────────
+  const FORM_KEY = "lmnp_form_draft";
+
+  useEffect(() => {
+    // Restauration au montage (back navigateur, rechargement)
+    try {
+      const raw = sessionStorage.getItem(FORM_KEY);
+      if (!raw) return;
+      const d = JSON.parse(raw);
+      if (d.form) setForm(d.form);
+      if (d.isSaisonnier != null) setIsSaisonnier(d.isSaisonnier);
+      if (d.prixNuitee != null) setPrixNuitee(d.prixNuitee);
+      if (d.tauxOccBas != null) setTauxOccBas(d.tauxOccBas);
+      if (d.tauxOccMoyen != null) setTauxOccMoyen(d.tauxOccMoyen);
+      if (d.tauxOccHaut != null) setTauxOccHaut(d.tauxOccHaut);
+      if (d.amortPct != null) setAmortPct(d.amortPct);
+      if (d.amortMode != null) setAmortMode(d.amortMode);
+      if (d.amortDureeEnsemble != null) setAmortDureeEnsemble(d.amortDureeEnsemble);
+      if (d.amortDureeMobilier != null) { setAmortDureeMobilier(d.amortDureeMobilier); setInputMobilier(String(d.amortDureeMobilier)); }
+      if (d.amortDureeTravaux != null) { setAmortDureeTravaux(d.amortDureeTravaux); setInputTravaux(String(d.amortDureeTravaux)); }
+      if (d.amortDureeNotaire != null) { setAmortDureeNotaire(d.amortDureeNotaire); setInputNotaire(String(d.amortDureeNotaire)); }
+      if (d.composants?.length) setComposants(d.composants);
+      if (d.selectedRegime != null) setSelectedRegime(d.selectedRegime);
+    } catch { /* ignore */ }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  useEffect(() => {
+    // Sauvegarde automatique à chaque changement
+    try {
+      sessionStorage.setItem(FORM_KEY, JSON.stringify({
+        form, isSaisonnier, prixNuitee, tauxOccBas, tauxOccMoyen, tauxOccHaut,
+        amortPct, amortMode, amortDureeEnsemble,
+        amortDureeMobilier, amortDureeTravaux, amortDureeNotaire,
+        composants, selectedRegime,
+      }));
+    } catch { /* ignore */ }
+  }, [form, isSaisonnier, prixNuitee, tauxOccBas, tauxOccMoyen, tauxOccHaut,
+      amortPct, amortMode, amortDureeEnsemble,
+      amortDureeMobilier, amortDureeTravaux, amortDureeNotaire,
+      composants, selectedRegime]);
+
   // Helpers pour lire le plan et les compteurs localStorage
   const getPlan = () => (typeof window !== "undefined" ? localStorage.getItem("lmnp_plan") : null);
 
