@@ -2252,6 +2252,7 @@ ${annexeTable}
             tauxOccMoyen,
             tauxOccHaut,
             resultatsTriple,
+            selectedRegime,
           }}
         />
       )}
@@ -2259,7 +2260,7 @@ ${annexeTable}
       {showSauvegarder && (
         <PopupSauvegarder
           isPro={getPlan() === "starter" || getPlan() === "pro"}
-          simulationData={{ form, amortPct, amortMode, amortDureeEnsemble, amortDureeMobilier, amortDureeTravaux, amortDureeNotaire, composants, savedAt: Date.now(), isSaisonnier, prixNuitee, tauxOccBas, tauxOccMoyen, tauxOccHaut, resultatsTriple }}
+          simulationData={{ form, amortPct, amortMode, amortDureeEnsemble, amortDureeMobilier, amortDureeTravaux, amortDureeNotaire, composants, savedAt: Date.now(), isSaisonnier, prixNuitee, tauxOccBas, tauxOccMoyen, tauxOccHaut, resultatsTriple, selectedRegime }}
           onClose={() => setShowSauvegarder(false)}
           onSaved={() => setShowSauvegarder(false)}
         />
