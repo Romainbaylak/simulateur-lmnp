@@ -113,7 +113,10 @@ function computeResultats(
   amortMode: "ensemble" | "composant",
   amortDureeEnsemble: number,
   composants: { label: string; pct: number; duree: number }[],
-  isSaisonnier = false
+  isSaisonnier = false,
+  dureeMobilier = 10,
+  dureeTravaux = 20,
+  dureeNotaire = 25
 ): Resultats | null {
   const prix = parseFloat(form.prix) || 0;
   const travaux = parseFloat(form.travaux) || 0;
@@ -155,9 +158,9 @@ function computeResultats(
   const amortBien = amortMode === "ensemble"
     ? valeurAmortissable / amortDureeEnsemble
     : composants.reduce((sum, c) => sum + (valeurAmortissable * c.pct / 100) / c.duree, 0);
-  const amortMobilier = mobilier / 10;
-  const amortTravaux = travaux / 20;
-  const amortNotaire = notaire / amortDureeEnsemble;
+  const amortMobilier = dureeMobilier > 0 ? mobilier / dureeMobilier : 0;
+  const amortTravaux = dureeTravaux > 0 ? travaux / dureeTravaux : 0;
+  const amortNotaire = dureeNotaire > 0 ? notaire / dureeNotaire : 0;
   const amortTotal = amortBien + amortMobilier + amortTravaux + amortNotaire;
 
   // Réel : recettes fiscales incluent les charges locataires encaissées
@@ -239,6 +242,9 @@ export default function Simulateur() {
   const [amortPct, setAmortPct] = useState(85);
   const [amortMode, setAmortMode] = useState<"ensemble" | "composant" | null>(null);
   const [amortDureeEnsemble, setAmortDureeEnsemble] = useState(25);
+  const [amortDureeMobilier, setAmortDureeMobilier] = useState(10);
+  const [amortDureeTravaux, setAmortDureeTravaux] = useState(20);
+  const [amortDureeNotaire, setAmortDureeNotaire] = useState(25);
   const [showDetailsEnsemble, setShowDetailsEnsemble] = useState(false);
   const [showDetailsComposant, setShowDetailsComposant] = useState(false);
   const [composants, setComposants] = useState([
@@ -364,9 +370,9 @@ export default function Simulateur() {
       const lBas   = loyerSaisonnier(nuitee, parseFloat(tauxOccBas)   || 0);
       const lMoyen = loyerSaisonnier(nuitee, parseFloat(tauxOccMoyen) || 0);
       const lHaut  = loyerSaisonnier(nuitee, parseFloat(tauxOccHaut)  || 0);
-      const rBas   = computeResultats(form, lBas,   amortPct, amortMode ?? "ensemble", amortDureeEnsemble, composants, true);
-      const rMoyen = computeResultats(form, lMoyen, amortPct, amortMode ?? "ensemble", amortDureeEnsemble, composants, true);
-      const rHaut  = computeResultats(form, lHaut,  amortPct, amortMode ?? "ensemble", amortDureeEnsemble, composants, true);
+      const rBas   = computeResultats(form, lBas,   amortPct, amortMode ?? "ensemble", amortDureeEnsemble, composants, true,  amortDureeMobilier, amortDureeTravaux, amortDureeNotaire);
+      const rMoyen = computeResultats(form, lMoyen, amortPct, amortMode ?? "ensemble", amortDureeEnsemble, composants, true,  amortDureeMobilier, amortDureeTravaux, amortDureeNotaire);
+      const rHaut  = computeResultats(form, lHaut,  amortPct, amortMode ?? "ensemble", amortDureeEnsemble, composants, true,  amortDureeMobilier, amortDureeTravaux, amortDureeNotaire);
       setResultatsTriple({ bas: rBas, moyen: rMoyen, haut: rHaut });
       setResultats(rMoyen);
       setShowResults(true);
@@ -375,7 +381,7 @@ export default function Simulateur() {
       scrollToResults.current = true;
     } else {
       const loyerMensuel = loyerSlider > 0 ? loyerSlider : parseFloat(form.loyer) || 0;
-      const r = computeResultats(form, loyerMensuel, amortPct, amortMode ?? "ensemble", amortDureeEnsemble, composants, false);
+      const r = computeResultats(form, loyerMensuel, amortPct, amortMode ?? "ensemble", amortDureeEnsemble, composants, false, amortDureeMobilier, amortDureeTravaux, amortDureeNotaire);
       setResultats(r);
       if (loyerMensuel > 0) {
         setLoyerSlider(loyerMensuel);
@@ -396,14 +402,14 @@ export default function Simulateur() {
       const lBas   = loyerSaisonnier(nuitee, parseFloat(tauxOccBas)   || 0);
       const lMoyen = loyerSaisonnier(nuitee, parseFloat(tauxOccMoyen) || 0);
       const lHaut  = loyerSaisonnier(nuitee, parseFloat(tauxOccHaut)  || 0);
-      const rBas   = computeResultats(form, lBas,   amortPct, amortMode ?? "ensemble", amortDureeEnsemble, composants, true);
-      const rMoyen = computeResultats(form, lMoyen, amortPct, amortMode ?? "ensemble", amortDureeEnsemble, composants, true);
-      const rHaut  = computeResultats(form, lHaut,  amortPct, amortMode ?? "ensemble", amortDureeEnsemble, composants, true);
+      const rBas   = computeResultats(form, lBas,   amortPct, amortMode ?? "ensemble", amortDureeEnsemble, composants, true,  amortDureeMobilier, amortDureeTravaux, amortDureeNotaire);
+      const rMoyen = computeResultats(form, lMoyen, amortPct, amortMode ?? "ensemble", amortDureeEnsemble, composants, true,  amortDureeMobilier, amortDureeTravaux, amortDureeNotaire);
+      const rHaut  = computeResultats(form, lHaut,  amortPct, amortMode ?? "ensemble", amortDureeEnsemble, composants, true,  amortDureeMobilier, amortDureeTravaux, amortDureeNotaire);
       setResultatsTriple({ bas: rBas, moyen: rMoyen, haut: rHaut });
       setResultats(rMoyen);
     } else {
       const loyerMensuel = loyerSlider > 0 ? loyerSlider : parseFloat(form.loyer) || 0;
-      const r = computeResultats(form, loyerMensuel, amortPct, amortMode ?? "ensemble", amortDureeEnsemble, composants, false);
+      const r = computeResultats(form, loyerMensuel, amortPct, amortMode ?? "ensemble", amortDureeEnsemble, composants, false, amortDureeMobilier, amortDureeTravaux, amortDureeNotaire);
       setResultats(r);
       if (loyerMensuel > 0) setSliderMax(Math.max(loyerMensuel * 2, 200));
     }
@@ -437,9 +443,9 @@ export default function Simulateur() {
   const amortBienDisplay = (amortMode ?? "ensemble") === "ensemble"
     ? (amortDureeEnsemble > 0 ? valAmortDisplay / amortDureeEnsemble : 0)
     : composants.reduce((sum, c) => sum + (valAmortDisplay * c.pct / 100) / (c.duree || 1), 0);
-  const amortMobilierDisplay = (parseFloat(form.mobilier) || 0) / 10;
-  const amortTravauxDisplay = (parseFloat(form.travaux) || 0) / 20;
-  const amortNotaireDisplay = (parseFloat(form.notaire) || 0) / amortDureeEnsemble;
+  const amortMobilierDisplay = amortDureeMobilier > 0 ? (parseFloat(form.mobilier) || 0) / amortDureeMobilier : 0;
+  const amortTravauxDisplay = amortDureeTravaux > 0 ? (parseFloat(form.travaux) || 0) / amortDureeTravaux : 0;
+  const amortNotaireDisplay = amortDureeNotaire > 0 ? (parseFloat(form.notaire) || 0) / amortDureeNotaire : 0;
   const amortTotalDisplay = amortBienDisplay + amortMobilierDisplay + amortTravauxDisplay + amortNotaireDisplay;
 
   const handleGeneratePDF = () => {
@@ -469,7 +475,7 @@ export default function Simulateur() {
     const amortBienMaxDuree = (amortMode ?? "ensemble") === "ensemble"
       ? amortDureeEnsemble
       : Math.max(...composants.map(c => c.duree));
-    const maxAmortDuree = Math.max(amortBienMaxDuree, 20, 15, 7);
+    const maxAmortDuree = Math.max(amortBienMaxDuree, amortDureeMobilier, amortDureeTravaux, amortDureeNotaire);
     const totalYears = Math.max(duree, maxAmortDuree) + 5;
 
     const valeurAmortissable = prix * amortPct / 100;
@@ -514,9 +520,9 @@ export default function Simulateur() {
           amortParComposant.push(contrib);
         }
       }
-      const amortMobilierA = year <= 10 ? mobilier / 10 : 0;
-      const amortTravauxA = year <= 20 ? travaux / 20 : 0;
-      const amortNotaireA = year <= amortDureeEnsemble ? notaire / amortDureeEnsemble : 0;
+      const amortMobilierA = (amortDureeMobilier > 0 && year <= amortDureeMobilier) ? mobilier / amortDureeMobilier : 0;
+      const amortTravauxA = (amortDureeTravaux > 0 && year <= amortDureeTravaux) ? travaux / amortDureeTravaux : 0;
+      const amortNotaireA = (amortDureeNotaire > 0 && year <= amortDureeNotaire) ? notaire / amortDureeNotaire : 0;
       const amortTotalA = amortBienA + amortMobilierA + amortTravauxA + amortNotaireA;
       const chargesDeductibles = chargesAnnuelles + interetsAnnee + assuranceEmprunteurAnnuel;
       const resultatAvantAmort = recettesAnnuelles - chargesDeductibles;
@@ -570,9 +576,9 @@ export default function Simulateur() {
         if (val > 0) annexeCols.push({ label: c.label.replace("Aménagement intérieur", "Amén.<br>intérieur"), annuel: val / c.duree, duree: c.duree, initial: val });
       }
     }
-    if (mobilier > 0) annexeCols.push({ label: "Mobilier", annuel: mobilier / 10, duree: 10, initial: mobilier });
-    if (travaux > 0) annexeCols.push({ label: "Travaux", annuel: travaux / 20, duree: 20, initial: travaux });
-    if (notaire > 0) annexeCols.push({ label: "Frais notaire", annuel: notaire / amortDureeEnsemble, duree: amortDureeEnsemble, initial: notaire });
+    if (mobilier > 0) annexeCols.push({ label: "Mobilier", annuel: amortDureeMobilier > 0 ? mobilier / amortDureeMobilier : 0, duree: amortDureeMobilier, initial: mobilier });
+    if (travaux > 0) annexeCols.push({ label: "Travaux", annuel: amortDureeTravaux > 0 ? travaux / amortDureeTravaux : 0, duree: amortDureeTravaux, initial: travaux });
+    if (notaire > 0) annexeCols.push({ label: "Frais notaire", annuel: amortDureeNotaire > 0 ? notaire / amortDureeNotaire : 0, duree: amortDureeNotaire, initial: notaire });
     const annexeMaxDuree = annexeCols.length > 0 ? Math.max(...annexeCols.map(c => c.duree)) : 0;
     // 2 sous-colonnes par catégorie + colonne An + colonne Cumul
     const totalSubCols = annexeCols.length * 2 + 2;
@@ -1391,9 +1397,9 @@ ${annexeTable}
                     <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
                       {[
                         { label: "Bien", val: amortBienDisplay, sub: amortMode === "ensemble" ? `${amortPct}% du prix · sur ${amortDureeEnsemble} ans` : `${amortPct}% · composants`, color: "#2A7080" },
-                        { label: "Mobilier", val: amortMobilierDisplay, sub: "sur 10 ans", color: "#2A7080" },
-                        { label: "Travaux", val: amortTravauxDisplay, sub: "sur 20 ans", color: "#2A7080" },
-                        { label: "Notaire", val: amortNotaireDisplay, sub: `sur ${amortDureeEnsemble} ans`, color: "#2A7080" },
+                        { label: "Mobilier", val: amortMobilierDisplay, sub: `sur ${amortDureeMobilier} ans`, color: "#2A7080" },
+                        { label: "Travaux", val: amortTravauxDisplay, sub: `sur ${amortDureeTravaux} ans`, color: "#2A7080" },
+                        { label: "Notaire", val: amortNotaireDisplay, sub: `sur ${amortDureeNotaire} ans`, color: "#2A7080" },
                         { label: "Total", val: amortTotalDisplay, sub: "Déductible première année", accent: true, color: "#F5F0E8" },
                       ].map(({ label, val, sub, accent, color }) => (
                         <div key={label} className="rounded-lg p-3.5 text-center"
@@ -1562,7 +1568,7 @@ ${annexeTable}
                             setLoyerSlider(v);
                             updateField("loyer", e.target.value);
                             if (showResults) {
-                              const r = computeResultats(form, v, amortPct, amortMode ?? "ensemble", amortDureeEnsemble, composants, false);
+                              const r = computeResultats(form, v, amortPct, amortMode ?? "ensemble", amortDureeEnsemble, composants, false, amortDureeMobilier, amortDureeTravaux, amortDureeNotaire);
                               setResultats(r);
                             }
                           }}
@@ -1580,7 +1586,7 @@ ${annexeTable}
                         setLoyerSlider(v);
                         updateField("loyer", v.toString());
                         if (showResults) {
-                          const r = computeResultats(form, v, amortPct, amortMode ?? "ensemble", amortDureeEnsemble, composants, false);
+                          const r = computeResultats(form, v, amortPct, amortMode ?? "ensemble", amortDureeEnsemble, composants, false, amortDureeMobilier, amortDureeTravaux, amortDureeNotaire);
                           setResultats(r);
                         }
                       }}
@@ -2087,22 +2093,66 @@ ${annexeTable}
 
                       {/* Récap cards — toujours visibles dans la section amort */}
                       <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
-                        {[
-                          { label: "Bien", val: amortBienDisplay, sub: (amortMode ?? "ensemble") === "ensemble" ? `${amortPct}% du prix · sur ${amortDureeEnsemble} ans` : `${amortPct}% · composants`, color: "#4E1F12" },
-                          { label: "Mobilier", val: amortMobilierDisplay, sub: "sur 10 ans", color: "#6B4226" },
-                          { label: "Travaux", val: amortTravauxDisplay, sub: "sur 20 ans", color: "#6B4226" },
-                          { label: "Notaire", val: amortNotaireDisplay, sub: `sur ${amortDureeEnsemble} ans`, color: "#6B4226" },
-                          { label: "Total", val: amortTotalDisplay, sub: "Déductible première année", accent: true, color: "#C95B2A" },
-                        ].map(({ label, val, sub, accent, color }) => (
-                          <div key={label} className="rounded-lg p-3.5 text-center"
-                            style={{ background: accent ? "rgba(201,91,42,0.1)" : "#F5F0E8", border: accent ? "1.5px solid rgba(201,91,42,0.3)" : "0.5px solid rgba(26,22,18,0.1)" }}>
-                            <div className="text-[11px] font-semibold uppercase tracking-[0.1em] mb-1.5"
-                              style={{ color: accent ? "#C95B2A" : "rgba(26,22,18,0.45)" }}>{label}</div>
-                            <div className="font-bold text-[15px]"
-                              style={{ color }}>{formatEuro(val)}{accent ? "" : "/an"}</div>
-                            <div className="text-[12px] mt-1" style={{ color: "rgba(26,22,18,0.38)" }}>{sub}</div>
+                        {/* Bien */}
+                        <div className="rounded-lg p-3.5 text-center" style={{ background: "#F5F0E8", border: "0.5px solid rgba(26,22,18,0.1)" }}>
+                          <div className="text-[11px] font-semibold uppercase tracking-[0.1em] mb-1.5" style={{ color: "rgba(26,22,18,0.45)" }}>Bien</div>
+                          <div className="font-bold text-[15px]" style={{ color: "#4E1F12" }}>{formatEuro(amortBienDisplay)}/an</div>
+                          <div className="text-[12px] mt-1" style={{ color: "rgba(26,22,18,0.38)" }}>{(amortMode ?? "ensemble") === "ensemble" ? `${amortPct}% du prix · sur ${amortDureeEnsemble} ans` : `${amortPct}% · composants`}</div>
+                        </div>
+                        {/* Mobilier — éditable */}
+                        <div className="rounded-lg p-3.5 text-center" style={{ background: "#F5F0E8", border: "1px solid rgba(201,91,42,0.25)" }}>
+                          <div className="text-[11px] font-semibold uppercase tracking-[0.1em] mb-1.5" style={{ color: "rgba(26,22,18,0.45)" }}>Mobilier</div>
+                          <div className="font-bold text-[15px] mb-1" style={{ color: "#6B4226" }}>{formatEuro(amortMobilierDisplay)}/an</div>
+                          <div className="flex items-center justify-center gap-1">
+                            <span className="text-[11px]" style={{ color: "rgba(26,22,18,0.45)" }}>sur</span>
+                            <input
+                              type="number" min={3} max={100}
+                              value={amortDureeMobilier}
+                              onChange={e => { const v = Math.min(100, Math.max(3, parseInt(e.target.value) || 3)); setAmortDureeMobilier(v); }}
+                              className="w-12 text-center text-[13px] font-bold rounded px-1 py-0.5 focus:outline-none focus:ring-1 focus:ring-[#C95B2A]"
+                              style={{ background: "rgba(201,91,42,0.12)", border: "1px solid rgba(201,91,42,0.4)", color: "#C95B2A" }}
+                            />
+                            <span className="text-[11px]" style={{ color: "rgba(26,22,18,0.45)" }}>ans</span>
                           </div>
-                        ))}
+                        </div>
+                        {/* Travaux — éditable */}
+                        <div className="rounded-lg p-3.5 text-center" style={{ background: "#F5F0E8", border: "1px solid rgba(201,91,42,0.25)" }}>
+                          <div className="text-[11px] font-semibold uppercase tracking-[0.1em] mb-1.5" style={{ color: "rgba(26,22,18,0.45)" }}>Travaux</div>
+                          <div className="font-bold text-[15px] mb-1" style={{ color: "#6B4226" }}>{formatEuro(amortTravauxDisplay)}/an</div>
+                          <div className="flex items-center justify-center gap-1">
+                            <span className="text-[11px]" style={{ color: "rgba(26,22,18,0.45)" }}>sur</span>
+                            <input
+                              type="number" min={3} max={100}
+                              value={amortDureeTravaux}
+                              onChange={e => { const v = Math.min(100, Math.max(3, parseInt(e.target.value) || 3)); setAmortDureeTravaux(v); }}
+                              className="w-12 text-center text-[13px] font-bold rounded px-1 py-0.5 focus:outline-none focus:ring-1 focus:ring-[#C95B2A]"
+                              style={{ background: "rgba(201,91,42,0.12)", border: "1px solid rgba(201,91,42,0.4)", color: "#C95B2A" }}
+                            />
+                            <span className="text-[11px]" style={{ color: "rgba(26,22,18,0.45)" }}>ans</span>
+                          </div>
+                        </div>
+                        {/* Notaire — éditable */}
+                        <div className="rounded-lg p-3.5 text-center" style={{ background: "#F5F0E8", border: "1px solid rgba(201,91,42,0.25)" }}>
+                          <div className="text-[11px] font-semibold uppercase tracking-[0.1em] mb-1.5" style={{ color: "rgba(26,22,18,0.45)" }}>Notaire</div>
+                          <div className="font-bold text-[15px] mb-1" style={{ color: "#6B4226" }}>{formatEuro(amortNotaireDisplay)}/an</div>
+                          <div className="flex items-center justify-center gap-1">
+                            <span className="text-[11px]" style={{ color: "rgba(26,22,18,0.45)" }}>sur</span>
+                            <input
+                              type="number" min={3} max={100}
+                              value={amortDureeNotaire}
+                              onChange={e => { const v = Math.min(100, Math.max(3, parseInt(e.target.value) || 3)); setAmortDureeNotaire(v); }}
+                              className="w-12 text-center text-[13px] font-bold rounded px-1 py-0.5 focus:outline-none focus:ring-1 focus:ring-[#C95B2A]"
+                              style={{ background: "rgba(201,91,42,0.12)", border: "1px solid rgba(201,91,42,0.4)", color: "#C95B2A" }}
+                            />
+                            <span className="text-[11px]" style={{ color: "rgba(26,22,18,0.45)" }}>ans</span>
+                          </div>
+                        </div>
+                        {/* Total */}
+                        <div className="rounded-lg p-3.5 text-center" style={{ background: "rgba(201,91,42,0.1)", border: "1.5px solid rgba(201,91,42,0.3)" }}>
+                          <div className="text-[11px] font-semibold uppercase tracking-[0.1em] mb-1.5" style={{ color: "#C95B2A" }}>Total</div>
+                          <div className="font-bold text-[15px]" style={{ color: "#C95B2A" }}>{formatEuro(amortTotalDisplay)}</div>
+                          <div className="text-[12px] mt-1" style={{ color: "rgba(26,22,18,0.38)" }}>Déductible première année</div>
+                        </div>
                       </div>
 
                       {/* Bouton Valider — toujours visible dans la section amort */}
@@ -2131,6 +2181,9 @@ ${annexeTable}
             amortPct,
             amortMode: amortMode ?? "ensemble",
             amortDureeEnsemble,
+            amortDureeMobilier,
+            amortDureeTravaux,
+            amortDureeNotaire,
             composants,
             savedAt: Date.now(),
             isSaisonnier,
@@ -2146,7 +2199,7 @@ ${annexeTable}
       {showSauvegarder && (
         <PopupSauvegarder
           isPro={getPlan() === "starter" || getPlan() === "pro"}
-          simulationData={{ form, amortPct, amortMode, amortDureeEnsemble, composants, savedAt: Date.now(), isSaisonnier, prixNuitee, tauxOccBas, tauxOccMoyen, tauxOccHaut, resultatsTriple }}
+          simulationData={{ form, amortPct, amortMode, amortDureeEnsemble, amortDureeMobilier, amortDureeTravaux, amortDureeNotaire, composants, savedAt: Date.now(), isSaisonnier, prixNuitee, tauxOccBas, tauxOccMoyen, tauxOccHaut, resultatsTriple }}
           onClose={() => setShowSauvegarder(false)}
           onSaved={() => setShowSauvegarder(false)}
         />
