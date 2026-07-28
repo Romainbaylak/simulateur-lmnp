@@ -63,6 +63,9 @@ export interface SimulationData {
   amortDureeEnsemble: number;
   composants: { label: string; pct: number; duree: number }[];
   savedAt: number;
+  amortDureeMobilier?: number;
+  amortDureeTravaux?: number;
+  amortDureeNotaire?: number;
   isSaisonnier?: boolean;
   prixNuitee?: string;
   tauxOccBas?: string;
