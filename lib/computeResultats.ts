@@ -73,6 +73,7 @@ export interface SimulationData {
   tauxOccHaut?: string;
   resultatsTriple?: { bas: Resultats | null; moyen: Resultats | null; haut: Resultats | null } | null;
   bienInfo?: { type?: "ap" | "ma"; ville?: string; surface?: string; description?: string };
+  selectedRegime?: "micro" | "reel" | null;
 }
 
 export function calcMensualite(capital: number, tauxAnnuel: number, dureeAns: number): number {

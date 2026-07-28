@@ -43,6 +43,7 @@ export default function RapportInner() {
   const tauxOccMoyenRef = useRef("35");
   const tauxOccHautRef = useRef("45");
   const resultatsTripleRef = useRef<{ bas: Resultats | null; moyen: Resultats | null; haut: Resultats | null } | null>(null);
+  const selectedRegimeRef = useRef<"micro" | "reel" | null>(null);
 
   const sessionId = params.get("session_id") ?? "";
 
@@ -69,6 +70,7 @@ export default function RapportInner() {
         if (data.tauxOccHaut) tauxOccHautRef.current = data.tauxOccHaut;
         if (data.resultatsTriple) resultatsTripleRef.current = data.resultatsTriple;
       }
+      if (data.selectedRegime) selectedRegimeRef.current = data.selectedRegime;
 
       const loyer = parseFloat(data.form.loyer) || 0;
       const res = computeResultats(data.form, loyer, data.amortPct, data.amortMode, data.amortDureeEnsemble, composantsRef.current);
@@ -108,6 +110,8 @@ export default function RapportInner() {
     const tauxOccMoyen = tauxOccMoyenRef.current;
     const tauxOccHaut = tauxOccHautRef.current;
     const resultatsTriple = resultatsTripleRef.current;
+    const selectedRegime = selectedRegimeRef.current;
+    const isMicro = selectedRegime === "micro";
 
     const fE = (v: number) => new Intl.NumberFormat("fr-FR", { style: "currency", currency: "EUR", maximumFractionDigits: 0 }).format(v);
     const fP = (v: number, d = 2) => v.toFixed(d).replace(".", ",") + " %";
@@ -700,6 +704,24 @@ ${saisonnierHtml}
 <div class="hdr"><div><div class="hdr-brand"><span class="hdr-light">tout</span><span class="hdr-bold">lmnp</span></div><div class="hdr-sub">Rapport Client · Simulation LMNP</div></div><div class="hdr-right">${today}</div></div>
 <h2 class="ch"><span class="num">3.</span>Fiscalité : calcul de l'impôt estimé</h2>
 
+${isMicro ? `
+<div class="section-label" style="margin-bottom:6px">Calcul fiscal – année 1 (Micro-BIC)</div>
+<table class="tbl" style="margin-bottom:14px">
+  <thead><tr><th>Étape</th><th class="r">Montant</th></tr></thead>
+  <tbody>
+    <tr><td class="lbl">Revenus locatifs annuels (HC)</td><td class="r">${fE(loyerAnnuel)}</td></tr>
+    <tr><td class="lbl">− Abattement forfaitaire (30 %)</td><td class="r red">−${fE(loyerAnnuel * 0.30)}</td></tr>
+    <tr class="sep"><td class="lbl">= Base imposable</td><td class="r">${fE(baseBIC)}</td></tr>
+    <tr><td class="lbl">Impôt IR estimé (TMI ${tmi} %)</td><td class="r">${fE(impotBIC * (tmi / (tmi + 18.6)))}</td></tr>
+    <tr><td class="lbl">Prélèvements sociaux (18,6 %)</td><td class="r">${fE(impotBIC * (18.6 / (tmi + 18.6)))}</td></tr>
+    <tr class="total"><td>= Fiscalité totale estimée</td><td class="r" style="color:${impotBIC === 0 ? "#1A7A52" : "#B03A2A"}">${fE(impotBIC)}</td></tr>
+    <tr class="total"><td>Cash-flow mensuel</td><td class="r" style="color:${cashflowBICMensuel >= 0 ? "#1A7A52" : "#B03A2A"}">${fE(cashflowBICMensuel)}/mois</td></tr>
+  </tbody>
+</table>
+<div class="note">
+  <strong>Comment est calculé l'impôt ?</strong> En Micro-BIC, un abattement forfaitaire de <strong>30 %</strong> est appliqué sur vos revenus. La base imposable restante est taxée au taux global TMI + PS = <strong>${(tmi + 18.6).toFixed(1)} %</strong>. Ce régime est simple mais ne permet pas de déduire les charges réelles ni les amortissements.
+</div>
+` : `
 <div class="section-label" style="margin-bottom:6px">Calcul fiscal – année 1 (régime réel simplifié)</div>
 <table class="tbl">
   <thead><tr><th>Étape</th><th class="r">Montant</th></tr></thead>
@@ -755,13 +777,14 @@ ${saisonnierHtml}
   <strong>Comment est calculé l'impôt ?</strong> TMI (Tranche Marginale d'Imposition) : taux appliqué à votre dernière tranche de revenus — ici <strong>${tmi} %</strong>. Prélèvements Sociaux : <strong>18,6 %</strong> prélevés sur les revenus du patrimoine. Impôt total = base imposable × (TMI + PS) = base × <strong>${(tmi + 18.6).toFixed(1)} %</strong>.
   ${firstTaxRow ? ` En régime réel, vous commencez à payer de l'impôt à partir de l'année <strong>${firstTaxRow.year}</strong> avec une base imposable de ${fE(firstTaxRow.baseImposable)}.` : zerosYears >= totalYears ? " Sur toute la période analysée, la base imposable reste à 0 € grâce aux amortissements reportables." : ""}
 </div>
+`}
 </div>
 
 
 <!-- ═══════════════════════════════════════════════════════
-     PAGE 5 — CHAPITRE 4 : AMORTISSEMENT
+     PAGE 5 — CHAPITRE 4 : AMORTISSEMENT (réel uniquement)
 ═══════════════════════════════════════════════════════ -->
-<div class="pb">
+${!isMicro ? `<div class="pb">
 <div class="hdr"><div><div class="hdr-brand"><span class="hdr-light">tout</span><span class="hdr-bold">lmnp</span></div><div class="hdr-sub">Rapport Client · Simulation LMNP</div></div><div class="hdr-right">${today}</div></div>
 <h2 class="ch"><span class="num">4.</span>L'amortissement, expliqué simplement</h2>
 
@@ -788,7 +811,7 @@ ${makeAmortBarChart()}
 <div class="note" style="margin-top:10px;font-size:9px">
   Le graphique représente l'amortissement annuel cumulé (bien + mobilier + travaux + notaire) par année fiscale. Les années sans colonne correspondent à la période post-amortissement. L'amortissement non absorbé une année est reporté gratuitement sur les années suivantes — aucune perte fiscale.
 </div>
-</div>
+</div>` : ""}
 
 
 <!-- ═══════════════════════════════════════════════════════
@@ -848,80 +871,65 @@ ${(() => {
 
   const reventeYears = [10, 25, 35];
   const growthScenarios = [
-    { label: "Valeur stable", pct: 0, color: "#6B4226" },
-    { label: "+1 %/an", pct: 0.01, color: "#2A7080" },
-    { label: "+3 %/an", pct: 0.03, color: "#1A7A52" },
+    { label: "Valeur stable (0 %/an)", pct: 0, color: "#6B4226" },
+    { label: "Revalorisation +1 %/an", pct: 0.01, color: "#2A7080" },
   ];
 
   const getRow = (year: number) => rows.find(ro => ro.year === year) ?? rows[rows.length - 1];
 
-  const simCells = reventeYears.map(yr => {
+  // Build 3 year-cards, each with 2 scenario rows
+  const yearCards = reventeYears.map(yr => {
+    const abIR = abattIR(yr);
+    const abPS = abattPS(yr);
+    const exoIRTag = abIR >= 1 ? `<span style="display:inline-block;font-size:7.5px;background:#1A7A52;color:#fff;border-radius:3px;padding:1px 5px;margin-left:6px;font-weight:600">IR exonéré</span>` : abIR > 0 ? `<span style="display:inline-block;font-size:7.5px;background:rgba(176,138,42,0.18);color:#B08A2A;border-radius:3px;padding:1px 5px;margin-left:6px">Abatt. IR ${Math.round(abIR*100)} %</span>` : "";
+    const exoPSTag = abPS >= 1 ? `<span style="display:inline-block;font-size:7.5px;background:#1A7A52;color:#fff;border-radius:3px;padding:1px 5px;margin-left:4px;font-weight:600">PS exonérés</span>` : "";
     const row = getRow(yr);
     const crd = yr <= duree ? (row?.capitalFin ?? 0) : 0;
-    return growthScenarios.map(sc => {
+    const scenRows = growthScenarios.map((sc, si) => {
       const prixVente = investTotal * Math.pow(1 + sc.pct, yr);
       const pvBrute = Math.max(0, prixVente - investTotal);
       const taxIR = pvBrute * (1 - abattIR(yr)) * 0.19;
       const taxPS = pvBrute * (1 - abattPS(yr)) * 0.172;
       const impotPV = taxIR + taxPS;
       const net = prixVente - crd - impotPV;
-      return { prixVente, pvBrute, impotPV, crd, net, abIR: abattIR(yr), abPS: abattPS(yr) };
-    });
-  });
-
-  const colHeaders = reventeYears.map((yr, i) => {
-    const abIR = abattIR(yr);
-    const abPS = abattPS(yr);
-    const exoTag = abIR >= 1 ? `<div style="font-size:8px;color:#1A7A52;margin-top:2px;font-weight:600">✓ IR exonéré</div>` : "";
-    const exoPS = abPS >= 1 ? `<div style="font-size:8px;color:#1A7A52;margin-top:1px;font-weight:600">✓ PS exonérés</div>` : "";
-    const abTag = abIR > 0 && abIR < 1 ? `<div style="font-size:8px;color:#B08A2A;margin-top:2px">Abatt. IR ${Math.round(abIR*100)} %</div>` : "";
-    return `<th style="text-align:center;padding:9px 6px;background:#4E1F12;color:#F5F0E8;font-size:11px;font-weight:700;border-right:1px solid rgba(255,255,255,0.1)">
-      Revente an ${yr}${exoTag}${abTag}${exoPS}
-    </th>`;
-  }).join("");
-
-  const bodyRows = growthScenarios.map((sc, si) => {
-    const cells = simCells.map((yearCells, yi) => {
-      const c = yearCells[si];
-      const netColor = c.net >= investTotal ? "#1A7A52" : c.net >= 0 ? "#B08A2A" : "#B03A2A";
-      return `<td style="padding:8px 6px;border-right:1px solid rgba(26,22,18,0.07);vertical-align:top">
-        <div style="font-size:9.5px;color:rgba(26,22,18,0.5);margin-bottom:3px">Prix de vente</div>
-        <div style="font-size:11px;font-weight:700;color:#1A1612;margin-bottom:6px">${fE(c.prixVente)}</div>
-        ${c.crd > 0 ? `<div style="font-size:8.5px;color:rgba(26,22,18,0.5)">− CRD crédit : <span style="color:#B03A2A">${fE(c.crd)}</span></div>` : ""}
-        ${c.pvBrute > 0 ? `<div style="font-size:8.5px;color:rgba(26,22,18,0.5)">Plus-value brute : ${fE(c.pvBrute)}</div>` : `<div style="font-size:8.5px;color:rgba(26,22,18,0.5)">Pas de plus-value</div>`}
-        ${c.impotPV > 0 ? `<div style="font-size:8.5px;color:rgba(26,22,18,0.5)">− Impôt PV : <span style="color:#B03A2A">${fE(c.impotPV)}</span></div>` : `<div style="font-size:8.5px;color:#1A7A52">Impôt PV : 0 € ✓</div>`}
-        <div style="margin-top:7px;padding-top:7px;border-top:1px solid rgba(26,22,18,0.1)">
-          <div style="font-size:9px;color:rgba(26,22,18,0.45);margin-bottom:2px">Net dans la poche</div>
-          <div style="font-size:14px;font-weight:800;color:${netColor}">${fE(c.net)}</div>
-        </div>
-      </td>`;
+      const netColor = net >= investTotal ? "#1A7A52" : net >= 0 ? "#B08A2A" : "#B03A2A";
+      return `<tr style="background:${si === 0 ? "#F5F0E8" : "#EDE7DC"}">
+        <td style="padding:7px 10px;font-size:9px;font-weight:600;color:${sc.color};border-right:1px solid rgba(26,22,18,0.08);white-space:nowrap">${sc.label}</td>
+        <td style="padding:7px 8px;font-size:9px;text-align:right;color:#1A1612;border-right:1px solid rgba(26,22,18,0.08)">${fE(prixVente)}</td>
+        <td style="padding:7px 8px;font-size:9px;text-align:right;color:${crd > 0 ? "#B03A2A" : "rgba(26,22,18,0.3)"};border-right:1px solid rgba(26,22,18,0.08)">${crd > 0 ? `−${fE(crd)}` : "—"}</td>
+        <td style="padding:7px 8px;font-size:9px;text-align:right;color:${impotPV > 0 ? "#B03A2A" : "#1A7A52"};border-right:1px solid rgba(26,22,18,0.08)">${impotPV > 0 ? `−${fE(impotPV)}` : "0 € ✓"}</td>
+        <td style="padding:7px 10px;text-align:right"><span style="font-size:12px;font-weight:800;color:${netColor}">${fE(net)}</span></td>
+      </tr>`;
     }).join("");
-    return `<tr style="background:${si % 2 === 0 ? "#F5F0E8" : "#EDE7DC"}">
-      <td style="padding:8px 10px;font-size:10px;font-weight:700;color:${sc.color};border-right:1px solid rgba(26,22,18,0.1);white-space:nowrap;vertical-align:middle">${sc.label}</td>
-      ${cells}
-    </tr>`;
+    return `<div style="margin-bottom:14px;border-radius:8px;overflow:hidden;border:0.5px solid rgba(26,22,18,0.12)">
+      <div style="background:#4E1F12;padding:9px 12px;display:flex;align-items:center">
+        <span style="color:#F5F0E8;font-size:12px;font-weight:700">Revente à ${yr} ans</span>
+        ${exoIRTag}${exoPSTag}
+      </div>
+      <table style="width:100%;border-collapse:collapse">
+        <thead><tr style="background:rgba(26,22,18,0.04)">
+          <th style="padding:6px 10px;font-size:8.5px;font-weight:500;color:rgba(26,22,18,0.45);text-align:left;border-right:1px solid rgba(26,22,18,0.08)">Scénario</th>
+          <th style="padding:6px 8px;font-size:8.5px;font-weight:500;color:rgba(26,22,18,0.45);text-align:right;border-right:1px solid rgba(26,22,18,0.08)">Prix de vente</th>
+          <th style="padding:6px 8px;font-size:8.5px;font-weight:500;color:rgba(26,22,18,0.45);text-align:right;border-right:1px solid rgba(26,22,18,0.08)">CRD crédit</th>
+          <th style="padding:6px 8px;font-size:8.5px;font-weight:500;color:rgba(26,22,18,0.45);text-align:right;border-right:1px solid rgba(26,22,18,0.08)">Impôt PV</th>
+          <th style="padding:6px 10px;font-size:8.5px;font-weight:600;color:#4E1F12;text-align:right">Net dans la poche</th>
+        </tr></thead>
+        <tbody>${scenRows}</tbody>
+      </table>
+    </div>`;
   }).join("");
 
   return `<div class="pb">
 <div class="hdr"><div><div class="hdr-brand"><span class="hdr-light">tout</span><span class="hdr-bold">lmnp</span></div><div class="hdr-sub">Rapport Client · Simulation LMNP</div></div><div class="hdr-right">${today}</div></div>
 <h2 class="ch"><span class="num">6.</span>Scénarios de revente</h2>
 
-<div style="font-size:10px;line-height:1.7;color:rgba(26,22,18,.65);margin-bottom:14px;background:#EDE7DC;border-radius:7px;padding:12px 14px">
-  <strong>Avantage fiscal LMNP :</strong> la plus-value est calculée sur la différence entre le prix de vente et le <strong>prix d'acquisition initial</strong> (sans réintégration des amortissements déduits, contrairement à la SCI à l'IS). Les abattements pour durée de détention s'appliquent progressivement dès la 6<sup>e</sup> année — <strong>exonération IR totale à 22 ans, PS totale à 30 ans</strong>.
+<div style="font-size:10px;line-height:1.7;color:rgba(26,22,18,.65);margin-bottom:16px;background:#EDE7DC;border-radius:7px;padding:12px 14px">
+  <strong>Avantage LMNP :</strong> la plus-value est calculée sur la différence entre le prix de vente et le <strong>prix d'acquisition initial</strong> (sans réintégration des amortissements déduits). Les abattements pour durée de détention s'appliquent dès la 6<sup>e</sup> année — <strong>exonération IR totale à 22 ans, PS totale à 30 ans</strong>.
 </div>
 
-<div class="section-label">Simulations — base d'acquisition : ${fE(investTotal)}</div>
-<table style="width:100%;border-collapse:collapse;margin-bottom:14px;border-radius:8px;overflow:hidden;border:0.5px solid rgba(26,22,18,0.12)">
-  <thead>
-    <tr>
-      <th style="padding:9px 10px;background:#4E1F12;color:rgba(245,240,232,0.6);font-size:9px;font-weight:500;text-align:left;border-right:1px solid rgba(255,255,255,0.1)">Revalorisation</th>
-      ${colHeaders}
-    </tr>
-  </thead>
-  <tbody>${bodyRows}</tbody>
-</table>
+${yearCards}
 
-<div style="font-size:9px;color:rgba(26,22,18,0.45);line-height:1.7;margin-bottom:14px;display:grid;grid-template-columns:1fr 1fr;gap:8px">
+<div style="font-size:9px;color:rgba(26,22,18,0.45);line-height:1.7;margin-bottom:12px;display:grid;grid-template-columns:1fr 1fr;gap:8px">
   <div style="background:#EDE7DC;border-radius:6px;padding:9px 11px">
     <div style="font-weight:700;color:#4E1F12;margin-bottom:4px">Abattements IR (taux : 19 %)</div>
     <div>Ans 1–5 : 0 %</div>
@@ -937,23 +945,16 @@ ${(() => {
 </div>
 
 <div class="beige-note">
-  <strong>Hypothèses de cette page.</strong> Le prix d'acquisition retenu est le coût global (bien + travaux + notaire : ${fE(investTotal)}). La revalorisation s'applique uniformément sur ce montant. Le capital restant dû (CRD) est déduit si la revente intervient avant la fin du crédit (${duree} ans). Simulation indicative — consulter un expert-comptable spécialisé LMNP.
+  <strong>Hypothèses.</strong> Base d'acquisition : ${fE(investTotal)} (bien + travaux + notaire). La revalorisation s'applique uniformément. Le CRD est déduit si la revente intervient avant la fin du crédit (${duree} ans). Simulation indicative — consulter un expert-comptable LMNP.
 </div>
-
-<div class="section-label" style="margin-top:14px">Références réglementaires</div>
-<ul style="font-size:9px;color:rgba(26,22,18,.5);line-height:1.8;margin-left:16px;list-style:disc">
-  <li>Articles 150 U à 150 VH du CGI — Plus-values immobilières des particuliers</li>
-  <li>Arrêt CE n°317024 — Non-réintégration des amortissements en LMNP</li>
-  <li>Article 39 du CGI — Déductibilité des amortissements en BIC</li>
-</ul>
 </div>`;
 })()}
 
 
 <!-- ═══════════════════════════════════════════════════════
-     ANNEXE A — PROJECTION DÉTAILLÉE (TOUTES LES ANNÉES)
+     ANNEXE A — PROJECTION DÉTAILLÉE (réel uniquement)
 ═══════════════════════════════════════════════════════ -->
-<div class="pb">
+${!isMicro ? `<div class="pb">
 <div class="hdr"><div><div class="hdr-brand"><span class="hdr-light">tout</span><span class="hdr-bold">lmnp</span></div><div class="hdr-sub">Rapport Client · Simulation LMNP</div></div><div class="hdr-right">${today}</div></div>
 <h2 class="ch">Annexe A — Projection détaillée sur ${totalYears} ans</h2>
 <p style="font-size:9px;color:rgba(26,22,18,.4);margin-bottom:8px">Régime réel simplifié · Loyers et charges constants · Amortissement variable selon les durées</p>
@@ -988,13 +989,13 @@ ${(() => {
     </tr>`).join("")}
   </tbody>
 </table>
-</div>
+</div>` : ""}
 
 
 <!-- ═══════════════════════════════════════════════════════
-     ANNEXE B — AMORTISSEMENT DÉTAILLÉ PAR COMPOSANT
+     ANNEXE B — AMORTISSEMENT DÉTAILLÉ (réel uniquement)
 ═══════════════════════════════════════════════════════ -->
-${annexeCols.length > 0 ? `<div class="pb">
+${!isMicro && annexeCols.length > 0 ? `<div class="pb">
 <div class="hdr"><div><div class="hdr-brand"><span class="hdr-light">tout</span><span class="hdr-bold">lmnp</span></div><div class="hdr-sub">Rapport Client · Simulation LMNP</div></div><div class="hdr-right">${today}</div></div>
 <h2 class="ch">Annexe B — Amortissement détaillé par composant</h2>
 
