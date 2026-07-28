@@ -49,7 +49,7 @@ export default function PopupPaiementUnite({ onClose, simulationData }: Props) {
         <ul className="space-y-2.5 mb-6">
           {[
             "7 pages de rapport complet",
-            "Tableaux x d'emprunt & d'amortissement",
+            "Tableaux d'emprunt & d'amortissement",
             "Export PDF du rapport complet",
             "+ Second rapport financier pour la banque",
           ].map((f) => (
