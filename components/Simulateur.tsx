@@ -1229,6 +1229,48 @@ ${annexeTable}
                   </button>
                 </div>
 
+                {/* Récap données client */}
+                {(() => {
+                  const chips: { label: string; value: string }[] = [];
+                  const p = parseFloat(form.prix) || 0;
+                  const ap = parseFloat(form.apport) || 0;
+                  const tr = parseFloat(form.travaux) || 0;
+                  const mob = parseFloat(form.mobilier) || 0;
+                  const not = parseFloat(form.notaire) || 0;
+                  const loyer = parseFloat(form.loyer) || loyerEffectif || 0;
+                  const chargesLoc = parseFloat(form.chargesLoyer) || 0;
+                  const taux = parseFloat(form.taux) || 0;
+
+                  if (p > 0) chips.push({ label: "Prix d'achat", value: formatEuro(p) });
+                  if (ap > 0) chips.push({ label: "Apport", value: formatEuro(ap) });
+                  if (taux > 0) chips.push({ label: "Taux emprunt", value: `${taux} % · ${form.duree} ans` });
+                  if (!isSaisonnier) {
+                    if (loyer > 0) chips.push({ label: "Loyer HC", value: `${formatEuro(loyer)}/mois` });
+                    if (chargesLoc > 0) chips.push({ label: "Charges locataire", value: `${formatEuro(chargesLoc)}/mois` });
+                  } else {
+                    const nuitee = parseFloat(prixNuitee) || 0;
+                    if (nuitee > 0) chips.push({ label: "Prix/nuitée", value: formatEuro(nuitee) });
+                    chips.push({ label: "Taux occup.", value: `${tauxOccBas}% / ${tauxOccMoyen}% / ${tauxOccHaut}%` });
+                  }
+                  if (tr > 0) chips.push({ label: "Travaux", value: formatEuro(tr) });
+                  if (mob > 0) chips.push({ label: "Mobilier", value: formatEuro(mob) });
+                  if (not > 0) chips.push({ label: "Frais notaire", value: formatEuro(not) });
+                  chips.push({ label: "TMI", value: `${form.tmi} %` });
+
+                  return (
+                    <div className="flex flex-wrap gap-2">
+                      {chips.map(({ label, value }) => (
+                        <div key={label}
+                          className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs"
+                          style={{ background: "#EDE7DC", border: "0.5px solid rgba(26,22,18,0.12)" }}>
+                          <span style={{ color: "rgba(26,22,18,0.45)", fontWeight: 500 }}>{label}</span>
+                          <span style={{ color: "#1A1612", fontWeight: 700 }}>{value}</span>
+                        </div>
+                      ))}
+                    </div>
+                  );
+                })()}
+
                 {/* Verdict */}
                 {verdict && (
                   <div className="rounded-xl p-4 flex items-center gap-3" style={{ background: verdict.bg, color: "#F5F0E8" }}>
