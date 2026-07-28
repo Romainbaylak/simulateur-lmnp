@@ -834,53 +834,120 @@ ${makeCashflowChart()}
 
 
 <!-- ═══════════════════════════════════════════════════════
-     PAGE 7 — CHAPITRE 6 : REVENTE, HYPOTHÈSES, PORTÉE
+     PAGE 7 — CHAPITRE 6 : SCÉNARIOS DE REVENTE
 ═══════════════════════════════════════════════════════ -->
-<div class="pb">
-<div class="hdr"><div><div class="hdr-brand"><span class="hdr-light">tout</span><span class="hdr-bold">lmnp</span></div><div class="hdr-sub">Rapport Client · Simulation LMNP</div></div><div class="hdr-right">${today}</div></div>
-<h2 class="ch"><span class="num">6.</span>Revente, hypothèses et portée de la simulation</h2>
+${(() => {
+  // Abattements plus-value immobilière (particuliers LMNP)
+  const abattIR = (N: number) => N < 6 ? 0 : N >= 22 ? 1 : (N - 5) * 0.06;
+  const abattPS = (N: number) => {
+    if (N < 6) return 0;
+    if (N >= 30) return 1;
+    if (N >= 22) return 0.28 + (N - 22) * 0.09;
+    return (N - 5) * 0.0165;
+  };
 
-<div class="section-label">Fiscalité à la revente</div>
+  const reventeYears = [10, 25, 35];
+  const growthScenarios = [
+    { label: "Valeur stable", pct: 0, color: "#6B4226" },
+    { label: "+1 %/an", pct: 0.01, color: "#2A7080" },
+    { label: "+3 %/an", pct: 0.03, color: "#1A7A52" },
+  ];
+
+  const getRow = (year: number) => rows.find(ro => ro.year === year) ?? rows[rows.length - 1];
+
+  const simCells = reventeYears.map(yr => {
+    const row = getRow(yr);
+    const crd = yr <= duree ? (row?.capitalFin ?? 0) : 0;
+    return growthScenarios.map(sc => {
+      const prixVente = investTotal * Math.pow(1 + sc.pct, yr);
+      const pvBrute = Math.max(0, prixVente - investTotal);
+      const taxIR = pvBrute * (1 - abattIR(yr)) * 0.19;
+      const taxPS = pvBrute * (1 - abattPS(yr)) * 0.172;
+      const impotPV = taxIR + taxPS;
+      const net = prixVente - crd - impotPV;
+      return { prixVente, pvBrute, impotPV, crd, net, abIR: abattIR(yr), abPS: abattPS(yr) };
+    });
+  });
+
+  const colHeaders = reventeYears.map((yr, i) => {
+    const abIR = abattIR(yr);
+    const abPS = abattPS(yr);
+    const exoTag = abIR >= 1 ? `<div style="font-size:8px;color:#1A7A52;margin-top:2px;font-weight:600">✓ IR exonéré</div>` : "";
+    const exoPS = abPS >= 1 ? `<div style="font-size:8px;color:#1A7A52;margin-top:1px;font-weight:600">✓ PS exonérés</div>` : "";
+    const abTag = abIR > 0 && abIR < 1 ? `<div style="font-size:8px;color:#B08A2A;margin-top:2px">Abatt. IR ${Math.round(abIR*100)} %</div>` : "";
+    return `<th style="text-align:center;padding:9px 6px;background:#4E1F12;color:#F5F0E8;font-size:11px;font-weight:700;border-right:1px solid rgba(255,255,255,0.1)">
+      Revente an ${yr}${exoTag}${abTag}${exoPS}
+    </th>`;
+  }).join("");
+
+  const bodyRows = growthScenarios.map((sc, si) => {
+    const cells = simCells.map((yearCells, yi) => {
+      const c = yearCells[si];
+      const netColor = c.net >= investTotal ? "#1A7A52" : c.net >= 0 ? "#B08A2A" : "#B03A2A";
+      return `<td style="padding:8px 6px;border-right:1px solid rgba(26,22,18,0.07);vertical-align:top">
+        <div style="font-size:9.5px;color:rgba(26,22,18,0.5);margin-bottom:3px">Prix de vente</div>
+        <div style="font-size:11px;font-weight:700;color:#1A1612;margin-bottom:6px">${fE(c.prixVente)}</div>
+        ${c.crd > 0 ? `<div style="font-size:8.5px;color:rgba(26,22,18,0.5)">− CRD crédit : <span style="color:#B03A2A">${fE(c.crd)}</span></div>` : ""}
+        ${c.pvBrute > 0 ? `<div style="font-size:8.5px;color:rgba(26,22,18,0.5)">Plus-value brute : ${fE(c.pvBrute)}</div>` : `<div style="font-size:8.5px;color:rgba(26,22,18,0.5)">Pas de plus-value</div>`}
+        ${c.impotPV > 0 ? `<div style="font-size:8.5px;color:rgba(26,22,18,0.5)">− Impôt PV : <span style="color:#B03A2A">${fE(c.impotPV)}</span></div>` : `<div style="font-size:8.5px;color:#1A7A52">Impôt PV : 0 € ✓</div>`}
+        <div style="margin-top:7px;padding-top:7px;border-top:1px solid rgba(26,22,18,0.1)">
+          <div style="font-size:9px;color:rgba(26,22,18,0.45);margin-bottom:2px">Net dans la poche</div>
+          <div style="font-size:14px;font-weight:800;color:${netColor}">${fE(c.net)}</div>
+        </div>
+      </td>`;
+    }).join("");
+    return `<tr style="background:${si % 2 === 0 ? "#F5F0E8" : "#EDE7DC"}">
+      <td style="padding:8px 10px;font-size:10px;font-weight:700;color:${sc.color};border-right:1px solid rgba(26,22,18,0.1);white-space:nowrap;vertical-align:middle">${sc.label}</td>
+      ${cells}
+    </tr>`;
+  }).join("");
+
+  return `<div class="pb">
+<div class="hdr"><div><div class="hdr-brand"><span class="hdr-light">tout</span><span class="hdr-bold">lmnp</span></div><div class="hdr-sub">Rapport Client · Simulation LMNP</div></div><div class="hdr-right">${today}</div></div>
+<h2 class="ch"><span class="num">6.</span>Scénarios de revente</h2>
+
 <div style="font-size:10px;line-height:1.7;color:rgba(26,22,18,.65);margin-bottom:14px;background:#EDE7DC;border-radius:7px;padding:12px 14px">
-  En LMNP, la plus-value à la revente est calculée sur la <strong>différence entre le prix de vente et le prix d'achat initial</strong> (sans réintégration des amortissements, contrairement à la SCI à l'IS). C'est un avantage majeur du statut. Cette plus-value bénéficie des <strong>abattements pour durée de détention</strong> :
-  <ul style="margin-top:6px;margin-left:16px;list-style:disc">
-    <li style="margin-bottom:3px">Exonération totale d'<strong>IR après 22 ans</strong> de détention</li>
-    <li style="margin-bottom:3px">Exonération totale des <strong>prélèvements sociaux après 30 ans</strong></li>
-    <li>Le taux réduit progresse graduellement dès la 6ème année</li>
-  </ul>
+  <strong>Avantage fiscal LMNP :</strong> la plus-value est calculée sur la différence entre le prix de vente et le <strong>prix d'acquisition initial</strong> (sans réintégration des amortissements déduits, contrairement à la SCI à l'IS). Les abattements pour durée de détention s'appliquent progressivement dès la 6<sup>e</sup> année — <strong>exonération IR totale à 22 ans, PS totale à 30 ans</strong>.
 </div>
 
-<div class="section-label">Hypothèses de simulation</div>
-<table class="tbl" style="margin-bottom:14px">
-  <thead><tr><th>Paramètre</th><th class="r">Valeur retenue</th></tr></thead>
-  <tbody>
-    <tr><td class="lbl">Type de location</td><td class="r">${isSaisonnier ? "Saisonnière (estimation moyenne)" : "Longue durée"}</td></tr>
-    <tr><td class="lbl">Loyer annuel (base)</td><td class="r">${fE(loyerAnnuel)}</td></tr>
-    <tr><td class="lbl">Charges annuelles</td><td class="r">${fE(chargesAnnuelles)}</td></tr>
-    <tr><td class="lbl">Vacance locative</td><td class="r">Non modélisée</td></tr>
-    <tr><td class="lbl">Évolution des loyers / charges</td><td class="r">0 % (constants)</td></tr>
-    <tr><td class="lbl">Évolution de la valeur du bien</td><td class="r">0 % (non prise en compte)</td></tr>
-    <tr><td class="lbl">Durée de projection</td><td class="r">${totalYears} ans</td></tr>
-    <tr><td class="lbl">TMI (Tranche Marginale d'Imposition)</td><td class="r">${tmi} %</td></tr>
-    <tr><td class="lbl">Prélèvements sociaux</td><td class="r">18,6 %</td></tr>
-    <tr><td class="lbl">Part amortissable du bien</td><td class="r">${amortPct} % du prix d'achat</td></tr>
-    <tr><td class="lbl">Mode d'amortissement</td><td class="r">${amortMode === "ensemble" ? `Par ensemble (${amortDureeEnsemble} ans)` : "Par composants"}</td></tr>
-  </tbody>
+<div class="section-label">Simulations — base d'acquisition : ${fE(investTotal)}</div>
+<table style="width:100%;border-collapse:collapse;margin-bottom:14px;border-radius:8px;overflow:hidden;border:0.5px solid rgba(26,22,18,0.12)">
+  <thead>
+    <tr>
+      <th style="padding:9px 10px;background:#4E1F12;color:rgba(245,240,232,0.6);font-size:9px;font-weight:500;text-align:left;border-right:1px solid rgba(255,255,255,0.1)">Revalorisation</th>
+      ${colHeaders}
+    </tr>
+  </thead>
+  <tbody>${bodyRows}</tbody>
 </table>
 
-<div class="beige-note">
-  <strong>Portée de la simulation.</strong> Cette simulation est réalisée à titre indicatif à partir des données saisies. Elle ne constitue pas un conseil fiscal, juridique ou patrimonial. Les résultats peuvent varier en fonction de votre situation fiscale personnelle, de l'évolution des loyers, des charges réelles, de la vacance locative et de la législation applicable. Nous vous recommandons de consulter un expert-comptable spécialisé en LMNP pour valider vos hypothèses.
+<div style="font-size:9px;color:rgba(26,22,18,0.45);line-height:1.7;margin-bottom:14px;display:grid;grid-template-columns:1fr 1fr;gap:8px">
+  <div style="background:#EDE7DC;border-radius:6px;padding:9px 11px">
+    <div style="font-weight:700;color:#4E1F12;margin-bottom:4px">Abattements IR (taux : 19 %)</div>
+    <div>Ans 1–5 : 0 %</div>
+    <div>Ans 6–21 : 6 % par an (max 96 %)</div>
+    <div>An 22 : + 4 % → <strong>100 % exonéré</strong></div>
+  </div>
+  <div style="background:#EDE7DC;border-radius:6px;padding:9px 11px">
+    <div style="font-weight:700;color:#4E1F12;margin-bottom:4px">Abattements PS (taux : 17,2 %)</div>
+    <div>Ans 1–5 : 0 %</div>
+    <div>Ans 6–21 : 1,65 % / an · An 22 : 1,6 %</div>
+    <div>Ans 23–30 : 9 % / an → <strong>100 % à 30 ans</strong></div>
+  </div>
 </div>
 
-<div class="section-label" style="margin-top:16px">Références réglementaires</div>
-<ul style="font-size:9.5px;color:rgba(26,22,18,.55);line-height:1.8;margin-left:16px;list-style:disc">
-  <li>Article 39 du CGI — Déductibilité des amortissements en BIC</li>
-  <li>Article 151 septies du CGI — Exonérations de plus-values professionnelles</li>
-  <li>BOI-BIC-AMT-10 — Doctrine administrative sur les amortissements LMNP</li>
-  <li>Arrêt CE n°317024 — Confirmant la non-réintégration des amortissements en LMNP</li>
-  <li>Articles 150 U à 150 VH du CGI — Plus-values immobilières des particuliers</li>
-</ul>
+<div class="beige-note">
+  <strong>Hypothèses de cette page.</strong> Le prix d'acquisition retenu est le coût global (bien + travaux + notaire : ${fE(investTotal)}). La revalorisation s'applique uniformément sur ce montant. Le capital restant dû (CRD) est déduit si la revente intervient avant la fin du crédit (${duree} ans). Simulation indicative — consulter un expert-comptable spécialisé LMNP.
 </div>
+
+<div class="section-label" style="margin-top:14px">Références réglementaires</div>
+<ul style="font-size:9px;color:rgba(26,22,18,.5);line-height:1.8;margin-left:16px;list-style:disc">
+  <li>Articles 150 U à 150 VH du CGI — Plus-values immobilières des particuliers</li>
+  <li>Arrêt CE n°317024 — Non-réintégration des amortissements en LMNP</li>
+  <li>Article 39 du CGI — Déductibilité des amortissements en BIC</li>
+</ul>
+</div>`;
+})()}
 
 
 <!-- ═══════════════════════════════════════════════════════
