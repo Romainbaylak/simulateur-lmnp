@@ -1231,7 +1231,6 @@ ${annexeTable}
 
                 {/* Récap données client */}
                 {(() => {
-                  const chips: { label: string; value: string }[] = [];
                   const p = parseFloat(form.prix) || 0;
                   const ap = parseFloat(form.apport) || 0;
                   const tr = parseFloat(form.travaux) || 0;
@@ -1240,33 +1239,71 @@ ${annexeTable}
                   const loyer = parseFloat(form.loyer) || loyerEffectif || 0;
                   const chargesLoc = parseFloat(form.chargesLoyer) || 0;
                   const taux = parseFloat(form.taux) || 0;
+                  const nuitee = parseFloat(prixNuitee) || 0;
 
-                  if (p > 0) chips.push({ label: "Prix d'achat", value: formatEuro(p) });
-                  if (ap > 0) chips.push({ label: "Apport", value: formatEuro(ap) });
-                  if (taux > 0) chips.push({ label: "Taux emprunt", value: `${taux} % · ${form.duree} ans` });
+                  const LBL = { fontSize: 10, fontWeight: 500, letterSpacing: "0.08em", textTransform: "uppercase" as const, color: "rgba(26,22,18,0.4)", marginBottom: 3 };
+                  const VAL = { fontSize: 15, fontWeight: 700, color: "#1A1612", letterSpacing: "-0.02em", lineHeight: 1.2 };
+                  const SUB = { fontSize: 11, color: "rgba(26,22,18,0.45)", marginTop: 1 };
+                  const DIV = { width: 1, background: "rgba(26,22,18,0.1)", alignSelf: "stretch" as const, margin: "0 2px" };
+
+                  const Cell = ({ label, value, sub }: { label: string; value: string; sub?: string }) => (
+                    <div style={{ flex: "1 1 0", minWidth: 0, padding: "0 16px" }}>
+                      <div style={LBL}>{label}</div>
+                      <div style={VAL}>{value}</div>
+                      {sub && <div style={SUB}>{sub}</div>}
+                    </div>
+                  );
+
+                  // Groupes : Bien / Financement / Revenus / Fiscalité
+                  const bien: { label: string; value: string; sub?: string }[] = [];
+                  const financement: { label: string; value: string; sub?: string }[] = [];
+                  const revenus: { label: string; value: string; sub?: string }[] = [];
+                  const fiscal: { label: string; value: string; sub?: string }[] = [];
+
+                  if (p > 0) bien.push({ label: "Prix d'achat", value: formatEuro(p) });
+                  if (tr > 0) bien.push({ label: "Travaux", value: formatEuro(tr) });
+                  if (mob > 0) bien.push({ label: "Mobilier", value: formatEuro(mob) });
+                  if (not > 0) bien.push({ label: "Frais de notaire", value: formatEuro(not) });
+
+                  if (ap > 0) financement.push({ label: "Apport personnel", value: formatEuro(ap) });
+                  if (taux > 0) financement.push({ label: "Taux d'emprunt", value: `${taux} %`, sub: `sur ${form.duree} ans` });
+
                   if (!isSaisonnier) {
-                    if (loyer > 0) chips.push({ label: "Loyer HC", value: `${formatEuro(loyer)}/mois` });
-                    if (chargesLoc > 0) chips.push({ label: "Charges locataire", value: `${formatEuro(chargesLoc)}/mois` });
+                    if (loyer > 0) revenus.push({ label: "Loyer mensuel", value: formatEuro(loyer), sub: "hors charges" });
+                    if (chargesLoc > 0) revenus.push({ label: "Charges locataire", value: `${formatEuro(chargesLoc)}/mois` });
                   } else {
-                    const nuitee = parseFloat(prixNuitee) || 0;
-                    if (nuitee > 0) chips.push({ label: "Prix/nuitée", value: formatEuro(nuitee) });
-                    chips.push({ label: "Taux occup.", value: `${tauxOccBas}% / ${tauxOccMoyen}% / ${tauxOccHaut}%` });
+                    if (nuitee > 0) revenus.push({ label: "Prix par nuitée", value: formatEuro(nuitee) });
+                    revenus.push({ label: "Occupation estimée", value: `${tauxOccBas} – ${tauxOccHaut} %`, sub: `moy. ${tauxOccMoyen} %` });
                   }
-                  if (tr > 0) chips.push({ label: "Travaux", value: formatEuro(tr) });
-                  if (mob > 0) chips.push({ label: "Mobilier", value: formatEuro(mob) });
-                  if (not > 0) chips.push({ label: "Frais notaire", value: formatEuro(not) });
-                  chips.push({ label: "TMI", value: `${form.tmi} %` });
+
+                  fiscal.push({ label: "Tranche marginale", value: `${form.tmi} %` });
+
+                  const Section = ({ title, items }: { title: string; items: { label: string; value: string; sub?: string }[] }) => items.length === 0 ? null : (
+                    <div style={{ flex: "1 1 0", minWidth: 120 }}>
+                      <div style={{ fontSize: 9, fontWeight: 600, letterSpacing: "0.14em", textTransform: "uppercase" as const, color: "rgba(26,22,18,0.3)", marginBottom: 10 }}>{title}</div>
+                      <div style={{ display: "flex", flexDirection: "column" as const, gap: 8 }}>
+                        {items.map(it => (
+                          <div key={it.label}>
+                            <div style={LBL}>{it.label}</div>
+                            <div style={VAL}>{it.value}</div>
+                            {it.sub && <div style={SUB}>{it.sub}</div>}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  );
 
                   return (
-                    <div className="flex flex-wrap gap-2">
-                      {chips.map(({ label, value }) => (
-                        <div key={label}
-                          className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs"
-                          style={{ background: "#EDE7DC", border: "0.5px solid rgba(26,22,18,0.12)" }}>
-                          <span style={{ color: "rgba(26,22,18,0.45)", fontWeight: 500 }}>{label}</span>
-                          <span style={{ color: "#1A1612", fontWeight: 700 }}>{value}</span>
-                        </div>
-                      ))}
+                    <div className="rounded-xl px-6 py-5" style={{ background: "#EDE7DC", border: "0.5px solid rgba(26,22,18,0.1)" }}>
+                      <div style={{ display: "flex", gap: 0, alignItems: "flex-start" }}>
+                        <Section title="Le bien" items={bien} />
+                        <div style={DIV} />
+                        <Section title="Financement" items={financement} />
+                        <div style={DIV} />
+                        <Section title={isSaisonnier ? "Location saisonnière" : "Revenus locatifs"} items={revenus} />
+                        <div style={DIV} />
+                        <Section title="Fiscalité" items={fiscal} />
+                      </div>
                     </div>
                   );
                 })()}
