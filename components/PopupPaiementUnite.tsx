@@ -40,20 +40,18 @@ export default function PopupPaiementUnite({ onClose, simulationData }: Props) {
 
         {/* Header */}
         <div className="text-center mb-6">
-          <h2 className="font-medium text-xl mb-1" style={{ color: "#4E1F12", letterSpacing: "-0.02em" }}>
+          <h2 className="font-medium text-xl" style={{ color: "#4E1F12", letterSpacing: "-0.02em" }}>
             Débloquer ce rapport
           </h2>
-          <p className="text-sm" style={{ color: "rgba(26,22,18,0.5)" }}>
-            Accès complet au tableau d&apos;amortissement et export PDF
-          </p>
         </div>
 
         {/* Features */}
         <ul className="space-y-2.5 mb-6">
           {[
-            "7 pages d'étude et de développement du projet",
-            "Tableau d'emprunt & d'amortissement",
+            "7 pages de rapport complet",
+            "Tableaux x d'emprunt & d'amortissement",
             "Export PDF du rapport complet",
+            "+ Second rapport financier pour la banque",
           ].map((f) => (
             <li key={f} className="flex items-center gap-3 text-sm" style={{ color: "rgba(26,22,18,0.75)" }}>
               <span className="w-4 h-4 rounded-full flex items-center justify-center text-[10px] flex-shrink-0"
