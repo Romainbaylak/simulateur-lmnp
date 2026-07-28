@@ -1206,7 +1206,7 @@ ${annexeTable}
         {/* ─── RESULTS ─── */}
         {/* Ancre invisible : le scroll atterrit ici, 24px au-dessus du bandeau */}
         <div ref={resultsRef} style={{ scrollMarginTop: "72px" }} />
-        <div style={{ height: 24 }} />
+        <div style={{ height: 8 }} />
         <div>
           {showResults && (
             !resultats ? (
@@ -1241,69 +1241,40 @@ ${annexeTable}
                   const taux = parseFloat(form.taux) || 0;
                   const nuitee = parseFloat(prixNuitee) || 0;
 
-                  const LBL = { fontSize: 10, fontWeight: 500, letterSpacing: "0.08em", textTransform: "uppercase" as const, color: "rgba(26,22,18,0.4)", marginBottom: 3 };
-                  const VAL = { fontSize: 15, fontWeight: 700, color: "#1A1612", letterSpacing: "-0.02em", lineHeight: 1.2 };
-                  const SUB = { fontSize: 11, color: "rgba(26,22,18,0.45)", marginTop: 1 };
-                  const DIV = { width: 1, background: "rgba(26,22,18,0.1)", alignSelf: "stretch" as const, margin: "0 2px" };
+                  type Item = { label: string; value: string; note?: string };
+                  const items: Item[] = [];
 
-                  const Cell = ({ label, value, sub }: { label: string; value: string; sub?: string }) => (
-                    <div style={{ flex: "1 1 0", minWidth: 0, padding: "0 16px" }}>
-                      <div style={LBL}>{label}</div>
-                      <div style={VAL}>{value}</div>
-                      {sub && <div style={SUB}>{sub}</div>}
-                    </div>
-                  );
-
-                  // Groupes : Bien / Financement / Revenus / Fiscalité
-                  const bien: { label: string; value: string; sub?: string }[] = [];
-                  const financement: { label: string; value: string; sub?: string }[] = [];
-                  const revenus: { label: string; value: string; sub?: string }[] = [];
-                  const fiscal: { label: string; value: string; sub?: string }[] = [];
-
-                  if (p > 0) bien.push({ label: "Prix d'achat", value: formatEuro(p) });
-                  if (tr > 0) bien.push({ label: "Travaux", value: formatEuro(tr) });
-                  if (mob > 0) bien.push({ label: "Mobilier", value: formatEuro(mob) });
-                  if (not > 0) bien.push({ label: "Frais de notaire", value: formatEuro(not) });
-
-                  if (ap > 0) financement.push({ label: "Apport personnel", value: formatEuro(ap) });
-                  if (taux > 0) financement.push({ label: "Taux d'emprunt", value: `${taux} %`, sub: `sur ${form.duree} ans` });
-
+                  if (p > 0) items.push({ label: "Prix d'achat", value: formatEuro(p) });
+                  if (ap > 0) items.push({ label: "Apport personnel", value: formatEuro(ap) });
+                  if (taux > 0) items.push({ label: "Emprunt", value: `${taux} %`, note: `sur ${form.duree} ans` });
                   if (!isSaisonnier) {
-                    if (loyer > 0) revenus.push({ label: "Loyer mensuel", value: formatEuro(loyer), sub: "hors charges" });
-                    if (chargesLoc > 0) revenus.push({ label: "Charges locataire", value: `${formatEuro(chargesLoc)}/mois` });
+                    if (loyer > 0) items.push({ label: "Loyer mensuel", value: formatEuro(loyer), note: "hors charges" });
+                    if (chargesLoc > 0) items.push({ label: "Charges locataire", value: `+ ${formatEuro(chargesLoc)}/mois` });
                   } else {
-                    if (nuitee > 0) revenus.push({ label: "Prix par nuitée", value: formatEuro(nuitee) });
-                    revenus.push({ label: "Occupation estimée", value: `${tauxOccBas} – ${tauxOccHaut} %`, sub: `moy. ${tauxOccMoyen} %` });
+                    if (nuitee > 0) items.push({ label: "Prix par nuitée", value: formatEuro(nuitee) });
+                    items.push({ label: "Taux d'occupation", value: `${tauxOccBas} – ${tauxOccHaut} %`, note: `moy. ${tauxOccMoyen} %` });
                   }
-
-                  fiscal.push({ label: "Tranche marginale", value: `${form.tmi} %` });
-
-                  const Section = ({ title, items }: { title: string; items: { label: string; value: string; sub?: string }[] }) => items.length === 0 ? null : (
-                    <div style={{ flex: "1 1 0", minWidth: 120 }}>
-                      <div style={{ fontSize: 9, fontWeight: 600, letterSpacing: "0.14em", textTransform: "uppercase" as const, color: "rgba(26,22,18,0.3)", marginBottom: 10 }}>{title}</div>
-                      <div style={{ display: "flex", flexDirection: "column" as const, gap: 8 }}>
-                        {items.map(it => (
-                          <div key={it.label}>
-                            <div style={LBL}>{it.label}</div>
-                            <div style={VAL}>{it.value}</div>
-                            {it.sub && <div style={SUB}>{it.sub}</div>}
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  );
+                  if (tr > 0) items.push({ label: "Travaux", value: formatEuro(tr) });
+                  if (mob > 0) items.push({ label: "Mobilier", value: formatEuro(mob) });
+                  if (not > 0) items.push({ label: "Frais de notaire", value: formatEuro(not) });
+                  items.push({ label: "Tranche marginale", value: `${form.tmi} %` });
 
                   return (
-                    <div className="rounded-xl px-6 py-5" style={{ background: "#EDE7DC", border: "0.5px solid rgba(26,22,18,0.1)" }}>
-                      <div style={{ display: "flex", gap: 0, alignItems: "flex-start" }}>
-                        <Section title="Le bien" items={bien} />
-                        <div style={DIV} />
-                        <Section title="Financement" items={financement} />
-                        <div style={DIV} />
-                        <Section title={isSaisonnier ? "Location saisonnière" : "Revenus locatifs"} items={revenus} />
-                        <div style={DIV} />
-                        <Section title="Fiscalité" items={fiscal} />
-                      </div>
+                    <div style={{
+                      display: "flex", alignItems: "center", flexWrap: "wrap" as const, gap: "0",
+                      borderTop: "1px solid rgba(26,22,18,0.1)",
+                      borderBottom: "1px solid rgba(26,22,18,0.1)",
+                      padding: "10px 0",
+                    }}>
+                      {items.map((it, i) => (
+                        <div key={it.label} style={{ display: "flex", alignItems: "center" }}>
+                          <div style={{ padding: "2px 18px", borderRight: i < items.length - 1 ? "1px solid rgba(26,22,18,0.12)" : "none" }}>
+                            <span style={{ fontSize: 10, fontWeight: 500, color: "rgba(26,22,18,0.38)", letterSpacing: "0.06em", textTransform: "uppercase" as const, marginRight: 7 }}>{it.label}</span>
+                            <span style={{ fontSize: 13, fontWeight: 700, color: "#4E1F12", letterSpacing: "-0.01em" }}>{it.value}</span>
+                            {it.note && <span style={{ fontSize: 11, color: "rgba(26,22,18,0.4)", marginLeft: 5 }}>{it.note}</span>}
+                          </div>
+                        </div>
+                      ))}
                     </div>
                   );
                 })()}
