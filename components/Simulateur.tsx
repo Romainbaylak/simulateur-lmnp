@@ -245,6 +245,9 @@ export default function Simulateur() {
   const [amortDureeMobilier, setAmortDureeMobilier] = useState(10);
   const [amortDureeTravaux, setAmortDureeTravaux] = useState(20);
   const [amortDureeNotaire, setAmortDureeNotaire] = useState(25);
+  const [inputMobilier, setInputMobilier] = useState("10");
+  const [inputTravaux, setInputTravaux] = useState("20");
+  const [inputNotaire, setInputNotaire] = useState("25");
   const [showDetailsEnsemble, setShowDetailsEnsemble] = useState(false);
   const [showDetailsComposant, setShowDetailsComposant] = useState(false);
   const [composants, setComposants] = useState([
@@ -2106,9 +2109,11 @@ ${annexeTable}
                           <div className="flex items-center justify-center gap-1">
                             <span className="text-[11px]" style={{ color: "rgba(26,22,18,0.45)" }}>sur</span>
                             <input
-                              type="number" min={3} max={100}
-                              value={amortDureeMobilier}
-                              onChange={e => { const v = Math.min(100, Math.max(3, parseInt(e.target.value) || 3)); setAmortDureeMobilier(v); }}
+                              type="text" inputMode="numeric"
+                              value={inputMobilier}
+                              onChange={e => setInputMobilier(e.target.value.replace(/[^0-9]/g, ""))}
+                              onBlur={() => { const v = Math.min(100, Math.max(3, parseInt(inputMobilier) || 3)); setAmortDureeMobilier(v); setInputMobilier(String(v)); }}
+                              onFocus={e => e.target.select()}
                               className="w-12 text-center text-[13px] font-bold rounded px-1 py-0.5 focus:outline-none focus:ring-1 focus:ring-[#C95B2A]"
                               style={{ background: "rgba(201,91,42,0.12)", border: "1px solid rgba(201,91,42,0.4)", color: "#C95B2A" }}
                             />
@@ -2122,9 +2127,11 @@ ${annexeTable}
                           <div className="flex items-center justify-center gap-1">
                             <span className="text-[11px]" style={{ color: "rgba(26,22,18,0.45)" }}>sur</span>
                             <input
-                              type="number" min={3} max={100}
-                              value={amortDureeTravaux}
-                              onChange={e => { const v = Math.min(100, Math.max(3, parseInt(e.target.value) || 3)); setAmortDureeTravaux(v); }}
+                              type="text" inputMode="numeric"
+                              value={inputTravaux}
+                              onChange={e => setInputTravaux(e.target.value.replace(/[^0-9]/g, ""))}
+                              onBlur={() => { const v = Math.min(100, Math.max(3, parseInt(inputTravaux) || 3)); setAmortDureeTravaux(v); setInputTravaux(String(v)); }}
+                              onFocus={e => e.target.select()}
                               className="w-12 text-center text-[13px] font-bold rounded px-1 py-0.5 focus:outline-none focus:ring-1 focus:ring-[#C95B2A]"
                               style={{ background: "rgba(201,91,42,0.12)", border: "1px solid rgba(201,91,42,0.4)", color: "#C95B2A" }}
                             />
@@ -2138,9 +2145,11 @@ ${annexeTable}
                           <div className="flex items-center justify-center gap-1">
                             <span className="text-[11px]" style={{ color: "rgba(26,22,18,0.45)" }}>sur</span>
                             <input
-                              type="number" min={3} max={100}
-                              value={amortDureeNotaire}
-                              onChange={e => { const v = Math.min(100, Math.max(3, parseInt(e.target.value) || 3)); setAmortDureeNotaire(v); }}
+                              type="text" inputMode="numeric"
+                              value={inputNotaire}
+                              onChange={e => setInputNotaire(e.target.value.replace(/[^0-9]/g, ""))}
+                              onBlur={() => { const v = Math.min(100, Math.max(3, parseInt(inputNotaire) || 3)); setAmortDureeNotaire(v); setInputNotaire(String(v)); }}
+                              onFocus={e => e.target.select()}
                               className="w-12 text-center text-[13px] font-bold rounded px-1 py-0.5 focus:outline-none focus:ring-1 focus:ring-[#C95B2A]"
                               style={{ background: "rgba(201,91,42,0.12)", border: "1px solid rgba(201,91,42,0.4)", color: "#C95B2A" }}
                             />
