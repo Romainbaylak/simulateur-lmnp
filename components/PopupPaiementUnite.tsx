@@ -48,18 +48,12 @@ export default function PopupPaiementUnite({ onClose, simulationData }: Props) {
           </p>
         </div>
 
-        {/* Price */}
-        <div className="text-center mb-6 py-4 rounded-xl" style={{ background: "rgba(201,91,42,0.07)", border: "0.5px solid rgba(201,91,42,0.18)" }}>
-          <div className="text-5xl font-light mb-1" style={{ color: "#C95B2A", letterSpacing: "-0.04em" }}>1,99 €</div>
-          <div className="text-xs uppercase tracking-widest" style={{ color: "rgba(26,22,18,0.4)" }}>paiement unique</div>
-        </div>
-
         {/* Features */}
         <ul className="space-y-2.5 mb-6">
           {[
-            "Tableau d'amortissement par composants",
+            "7 pages d'étude et de développement du projet",
+            "Tableau d'emprunt & d'amortissement",
             "Export PDF du rapport complet",
-            "Valable pour cette simulation uniquement",
           ].map((f) => (
             <li key={f} className="flex items-center gap-3 text-sm" style={{ color: "rgba(26,22,18,0.75)" }}>
               <span className="w-4 h-4 rounded-full flex items-center justify-center text-[10px] flex-shrink-0"
@@ -69,38 +63,35 @@ export default function PopupPaiementUnite({ onClose, simulationData }: Props) {
           ))}
         </ul>
 
-        {/* CTA */}
+        {/* CTA paiement unique */}
         <button
           onClick={handlePay}
           disabled={loading}
-          className="w-full py-3 rounded-lg font-medium text-sm transition-opacity hover:opacity-[0.88] disabled:opacity-60 mb-3"
+          className="w-full py-4 rounded-xl font-semibold text-base transition-opacity hover:opacity-[0.88] disabled:opacity-60 mb-3"
           style={{ backgroundColor: "#C95B2A", color: "#F5F0E8" }}
         >
-          {loading ? "Redirection…" : "Payer 1,99 € et télécharger"}
+          {loading ? "Redirection…" : (
+            <>
+              <div>Payer 1,99 €</div>
+              <div className="text-xs font-normal opacity-80 mt-0.5">paiement unique · accès immédiat</div>
+            </>
+          )}
         </button>
 
         {error && (
           <p className="text-xs text-center mb-3" style={{ color: "#B03A2A" }}>{error}</p>
         )}
 
-        {/* Divider */}
-        <div className="flex items-center gap-3 mb-3">
-          <div className="flex-1 h-px" style={{ background: "rgba(26,22,18,0.1)" }} />
-          <span className="text-xs" style={{ color: "rgba(26,22,18,0.35)" }}>ou</span>
-          <div className="flex-1 h-px" style={{ background: "rgba(26,22,18,0.1)" }} />
-        </div>
-
-        {/* Subscription link */}
-        <div className="text-center">
-          <Link
-            href="/tarifs"
-            onClick={onClose}
-            className="text-sm transition-opacity hover:opacity-70"
-            style={{ color: "#C95B2A" }}
-          >
-            Voir les abonnements →
-          </Link>
-        </div>
+        {/* CTA abonnement */}
+        <Link
+          href="/tarifs"
+          onClick={onClose}
+          className="w-full py-4 rounded-xl font-semibold text-base transition-opacity hover:opacity-[0.88] flex flex-col items-center"
+          style={{ backgroundColor: "#1A1612", color: "#F5F0E8", display: "flex" }}
+        >
+          <span>Abonnement à partir de 4,99 €</span>
+          <span className="text-xs font-normal opacity-60 mt-0.5">simulations illimitées + PDF inclus</span>
+        </Link>
       </div>
     </div>
   );
