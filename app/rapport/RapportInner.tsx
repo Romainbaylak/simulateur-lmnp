@@ -28,6 +28,7 @@ export default function RapportInner() {
   const [showBienPopup, setShowBienPopup] = useState(false);
   const [initialBienInfo, setInitialBienInfo] = useState<BienInfo>(defaultBienInfo);
 
+  const choixPdfRef = useRef<"synthese-pdf" | "banque-pdf">("synthese-pdf");
   const amortPctRef = useRef(85);
   const amortModeRef = useRef<"ensemble" | "composant">("ensemble");
   const amortDureeEnsembleRef = useRef(25);
@@ -92,7 +93,8 @@ export default function RapportInner() {
 
   const handleOpenPdf = () => setShowChoixPopup(true);
 
-  const handleChoixPDF = (_choix: "synthese-pdf" | "banque-pdf") => {
+  const handleChoixPDF = (choix: "synthese-pdf" | "banque-pdf") => {
+    choixPdfRef.current = choix;
     setShowChoixPopup(false);
     setShowBienPopup(true);
   };
@@ -100,7 +102,9 @@ export default function RapportInner() {
   const openPdfWithInfo = (bienInfo: BienInfo) => {
     setShowBienPopup(false);
     if (!form || !resultats) return;
-    const html = buildPdfHtml(form, resultats, bienInfo);
+    const html = choixPdfRef.current === "banque-pdf"
+      ? buildBanquePdfHtml(form, resultats, bienInfo)
+      : buildPdfHtml(form, resultats, bienInfo);
     const win = window.open("", "_blank");
     if (win) { win.document.write(html); win.document.close(); }
   };
@@ -1098,6 +1102,1054 @@ ${!isMicro && annexeCols.length > 0 ? `<div class="page landscape">
     <thead><tr><th>Composant</th><th class="r">Valeur initiale</th><th class="r">Durée</th><th class="r">Dotation annuelle</th></tr></thead>
     <tbody>
       ${annexeCols.map(c => `<tr><td class="lbl">${c.label}</td><td class="r">${fE(c.initial)}</td><td class="r">${c.duree} ans</td><td class="r"><strong>${fE(c.annuel)}</strong></td></tr>`).join("")}
+      <tr class="total"><td>Total an. 1</td><td class="r">${fE(annexeCols.reduce((s, c) => s + c.initial, 0))}</td><td></td><td class="r">${fE(amortTotalAn1)}</td></tr>
+    </tbody>
+  </table>
+</div>
+</div>` : ""}
+
+</body></html>`;
+  };
+
+  // ─── BANQUE PDF BUILDER ────────────────────────────────────────────────────
+  const buildBanquePdfHtml = (f: SimulationForm, res: Resultats, bienInfo: BienInfo): string => {
+    const amortPct = amortPctRef.current;
+    const amortMode = amortModeRef.current;
+    const amortDureeEnsemble = amortDureeEnsembleRef.current;
+    const composants = composantsRef.current;
+    const selectedRegime = selectedRegimeRef.current;
+    const isMicro = selectedRegime === "micro";
+
+    const fE = (v: number) => new Intl.NumberFormat("fr-FR", { style: "currency", currency: "EUR", maximumFractionDigits: 0 }).format(v);
+    const fP = (v: number, d = 2) => v.toFixed(d).replace(".", ",") + " %";
+    const fX = (v: number, d = 2) => v.toFixed(d).replace(".", ",");
+
+    const prix = parseFloat(f.prix) || 0;
+    const travaux = parseFloat(f.travaux) || 0;
+    const notaire = parseFloat(f.notaire) || 0;
+    const mobilier = parseFloat(f.mobilier) || 0;
+    const apport = parseFloat(f.apport) || 0;
+    const taux = parseFloat(f.taux) / 100 || 0;
+    const duree = f.duree;
+    const tmi = f.tmi;
+
+    const investTotal = res.investTotal;
+    const montantCredit = res.montantCredit;
+    const mensualite = res.mensualite;
+    const creditAnnuel = res.creditAnnuel;
+    const interetsAnnee1 = res.interetsAnnee1;
+    const capitalRembourseAn1 = Math.max(0, creditAnnuel - interetsAnnee1);
+    const chargesAnnuelles = res.chargesAnnuelles;
+    const assuranceEmprunteurAnnuel = res.assuranceEmprunteurAnnuel ?? 0;
+    const loyerAnnuel = res.loyerAnnuel;
+    const amortTotalAn1 = res.amortTotal;
+    const chargesDeductibles = res.chargesDeductibles;
+    const resultatAvantAmort = res.resultatAvantAmort;
+    const baseImposableReel = res.baseImposableReel;
+    const impotReel = res.impotReel;
+    const baseBIC = res.baseBIC;
+    const impotBIC = res.impotBIC;
+    const rendementBrut = res.rendementBrut;
+
+    // Banking metrics
+    const noi = loyerAnnuel - chargesAnnuelles;
+    const serviceDebt = creditAnnuel + assuranceEmprunteurAnnuel;
+    const dscr = serviceDebt > 0 ? noi / serviceDebt : 0;
+    const debtYield = montantCredit > 0 ? (noi / montantCredit) * 100 : 0;
+    const ltc = investTotal > 0 ? (montantCredit / investTotal) * 100 : 0;
+    const detteSurPrix = prix > 0 ? (montantCredit / prix) * 100 : 0;
+    const cfAvantImpot = loyerAnnuel - chargesAnnuelles - serviceDebt;
+    const cfApresImpot = cfAvantImpot - (isMicro ? impotBIC : impotReel);
+    const coutTotalInteret = montantCredit > 0 && taux > 0
+      ? (mensualite * duree * 12) - montantCredit : 0;
+
+    const valeurAmortissable = prix * amortPct / 100;
+    const terrainVal = prix * (1 - amortPct / 100);
+    const r = taux / 12;
+    const n = duree * 12;
+    const M = montantCredit > 0 && taux > 0
+      ? montantCredit * r * Math.pow(1 + r, n) / (Math.pow(1 + r, n) - 1)
+      : (duree > 0 ? montantCredit / n : 0);
+
+    const amortBienMaxDuree = amortMode === "ensemble"
+      ? amortDureeEnsemble
+      : Math.max(...composants.map((c: { label: string; pct: number; duree: number }) => c.duree));
+    const maxAmortDuree = Math.max(amortBienMaxDuree, 20);
+    const totalYears = Math.max(duree, maxAmortDuree) + 5;
+
+    interface PdfRow {
+      year: number; capitalDebut: number; capitalFin: number; creditAnnuelR: number;
+      interetsAnnee: number; capitalRembourse: number; amortTotalA: number;
+      amortDisponible: number; reportEntrant: number; reportNplus1: number;
+      resultatAvantAmort: number; chargesDeductibles: number;
+      baseImposable: number; impot: number; cashflow: number;
+    }
+    const rows: PdfRow[] = [];
+    let capitalRestant = montantCredit;
+    let reportN = 0;
+
+    for (let year = 1; year <= totalYears; year++) {
+      const capitalDebut = Math.max(0, capitalRestant);
+      let interetsAnnee = 0;
+      let creditAnnuelR = 0;
+      let capitalRembAn = 0;
+
+      if (year <= duree && montantCredit > 0 && taux > 0) {
+        for (let m = 0; m < 12; m++) {
+          const im = capitalRestant * r;
+          interetsAnnee += im;
+          capitalRestant -= (M - im);
+        }
+        capitalRestant = Math.max(0, capitalRestant);
+        creditAnnuelR = M * 12;
+        capitalRembAn = creditAnnuelR - interetsAnnee;
+      } else if (year <= duree && montantCredit > 0) {
+        creditAnnuelR = montantCredit / n * 12;
+        capitalRembAn = creditAnnuelR;
+      }
+
+      let amortBienA = 0;
+      if (amortMode === "ensemble") {
+        amortBienA = year <= amortDureeEnsemble ? valeurAmortissable / amortDureeEnsemble : 0;
+      } else {
+        for (const c of composants) {
+          amortBienA += year <= c.duree ? (valeurAmortissable * c.pct / 100) / c.duree : 0;
+        }
+      }
+      const amortMobilierA = year <= 7 ? mobilier / 7 : 0;
+      const amortTravauxA = year <= 15 ? travaux / 15 : 0;
+      const amortNotaireA = year <= 20 ? notaire / 20 : 0;
+      const amortTotalA = amortBienA + amortMobilierA + amortTravauxA + amortNotaireA;
+      const chargesDed = chargesAnnuelles + interetsAnnee + assuranceEmprunteurAnnuel;
+      const resAvAmort = loyerAnnuel - chargesDed;
+      const reportEntrant = reportN;
+      const amortDisponible = amortTotalA + reportEntrant;
+      const baseImposable = Math.max(0, resAvAmort - amortDisponible);
+      const newReport = Math.max(0, amortDisponible - Math.max(0, resAvAmort));
+      const impot = baseImposable * (tmi / 100 + 0.186);
+      const cfAnnee = loyerAnnuel - (year <= duree ? creditAnnuelR + assuranceEmprunteurAnnuel : 0) - chargesAnnuelles - impot;
+
+      rows.push({
+        year, capitalDebut, capitalFin: Math.max(0, capitalRestant),
+        creditAnnuelR, interetsAnnee, capitalRembourse: capitalRembAn,
+        amortTotalA, amortDisponible, reportEntrant, reportNplus1: newReport,
+        resultatAvantAmort: resAvAmort, chargesDeductibles: chargesDed,
+        baseImposable, impot, cashflow: cfAnnee / 12,
+      });
+      reportN = newReport;
+    }
+
+    const annexeCols: { label: string; annuel: number; duree: number; initial: number }[] = [];
+    if (amortMode === "ensemble") {
+      if (valeurAmortissable > 0) annexeCols.push({ label: "Bien immobilier", annuel: valeurAmortissable / amortDureeEnsemble, duree: amortDureeEnsemble, initial: valeurAmortissable });
+    } else {
+      for (const c of composants) {
+        const val = valeurAmortissable * c.pct / 100;
+        if (val > 0) annexeCols.push({ label: c.label, annuel: val / c.duree, duree: c.duree, initial: val });
+      }
+    }
+    if (mobilier > 0) annexeCols.push({ label: "Mobilier", annuel: mobilier / 7, duree: 7, initial: mobilier });
+    if (travaux > 0) annexeCols.push({ label: "Travaux", annuel: travaux / 15, duree: 15, initial: travaux });
+    if (notaire > 0) annexeCols.push({ label: "Frais notaire", annuel: notaire / 20, duree: 20, initial: notaire });
+
+    const chargesLoyer = parseFloat(f.chargesLoyer ?? "0") || 0;
+    const taxeFonciere = parseFloat(f.taxeFonciere) || 0;
+    const chargesCopro = parseFloat(f.chargesCopro ?? "0") || 0;
+    const today = new Date().toLocaleDateString("fr-FR");
+
+    const keyYears = [1, 5, 10, 15, 20, 25].filter(y => y <= totalYears);
+
+    const dscrColor = dscr >= 1.3 ? "#1A7A52" : dscr >= 1.0 ? "#B08A2A" : "#B03A2A";
+    const dscrLabel = dscr >= 1.3 ? "Solide" : dscr >= 1.0 ? "Acceptable" : "Insuffisant";
+
+    // Annexe B rows
+    const annexeMaxDuree = annexeCols.length > 0 ? Math.max(...annexeCols.map(c => c.duree)) : 0;
+    const afs = 9;
+    const annexeBRows = Array.from({ length: annexeMaxDuree }, (_, i) => {
+      const year = i + 1;
+      let total = 0;
+      const cells = annexeCols.map(c => {
+        if (year <= c.duree) {
+          const reste = Math.max(0, c.initial - year * c.annuel);
+          total += c.annuel;
+          return `<td style="font-size:${afs}px;padding:5px 6px">${fE(c.annuel)}</td>
+<td style="font-size:${afs}px;padding:5px 6px;color:${reste <= 0.01 ? "#1A7A52" : "rgba(26,22,18,0.45)"};border-right:1px solid rgba(26,22,18,0.07)">${fE(reste)}</td>`;
+        }
+        return `<td style="font-size:${afs}px;padding:5px 6px;color:#1A1612">—</td><td style="border-right:1px solid rgba(26,22,18,0.07)"></td>`;
+      }).join("");
+      return `<tr><td class="can" style="font-size:${afs}px">${year}</td>${cells}<td style="font-weight:700;color:#C95B2A;font-size:${afs}px;padding:5px 6px">${fE(total)}</td></tr>`;
+    }).join("");
+    const annexeBHeaderCols = annexeCols.map(c =>
+      `<th colspan="2" style="text-align:center;font-size:9px;padding:6px 5px;border-right:1px solid rgba(255,255,255,0.12)">
+        <div style="font-weight:700">${c.label}</div>
+        <div style="font-weight:400;opacity:.7;font-size:8px;margin-top:2px">${fE(c.initial)} · ${c.duree} ans · ${fE(c.annuel)}/an</div>
+      </th>`).join("");
+    const annexeBHeaderSub = annexeCols.map(() =>
+      `<th style="font-size:8px;background:#3a1509;padding:4px 5px">Amort.</th><th style="font-size:8px;background:#3a1509;padding:4px 5px;border-right:1px solid rgba(255,255,255,0.1)">Reste</th>`
+    ).join("");
+
+    const bienLabel = bienInfo.type === "ap" ? "Appartement" : bienInfo.type === "ma" ? "Maison" : "Immeuble";
+    const regimeLabel = isMicro ? "Micro-BIC" : "Régime réel simplifié";
+
+    const css = `
+@page{size:A4;margin:0}
+@page landscape{size:A4 landscape;margin:0}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{background:#4a4a4a;margin:0;padding:0;font-family:'Helvetica Neue',Arial,sans-serif;color:#1A1612;font-size:11px;line-height:1.5;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+body{padding:24px 0 32px}
+.page{width:210mm;min-height:297mm;background:#F5F0E8;margin:0 auto 24px;padding:13mm 14mm;box-shadow:0 8px 40px rgba(0,0,0,0.5);position:relative}
+.page.landscape{width:297mm;min-height:210mm;page:landscape}
+.no-print{position:sticky;top:0;z-index:100;background:#1A2D45;padding:10px 20px;display:flex;align-items:center;justify-content:space-between;margin-bottom:24px}
+.hdr{display:flex;align-items:center;justify-content:space-between;background:#1A2D45;color:#F5F0E8;padding:10px 16px;border-radius:6px;margin-bottom:16px}
+.hdr-brand{display:flex;align-items:baseline}
+.hdr-light{font-weight:300;font-size:16px}.hdr-bold{font-weight:700;font-size:16px;color:#4A9FCA}
+.hdr-sub{font-size:8px;letter-spacing:.12em;opacity:.5;text-transform:uppercase;margin-top:2px}
+.hdr-right{font-size:9px;opacity:.55;text-align:right;line-height:1.6}
+h2.ch{font-size:12px;font-weight:700;color:#1A2D45;border-bottom:2px solid #4A9FCA;padding-bottom:4px;margin:18px 0 10px;letter-spacing:-.01em}
+h2.ch .num{color:#4A9FCA;margin-right:5px}
+.kpi-row{display:flex;gap:8px;margin-bottom:14px}
+.kpi{flex:1;background:#1A2D45;color:#F5F0E8;border-radius:7px;padding:11px 10px;text-align:center}
+.kpi-lbl{font-size:7px;text-transform:uppercase;letter-spacing:.1em;opacity:.6;margin-bottom:5px;line-height:1.4}
+.kpi-val{font-size:16px;font-weight:700;color:#4A9FCA;letter-spacing:-.02em}
+.kpi-sub{font-size:7.5px;opacity:.5;margin-top:2px}
+table.tbl{width:100%;border-collapse:collapse;font-size:10px;margin-bottom:6px}
+table.tbl th{background:#1A2D45;color:#F5F0E8;padding:6px 8px;text-align:left;font-weight:500;font-size:9px}
+table.tbl th.r{text-align:right}
+table.tbl td{padding:5px 8px;border-bottom:.5px solid rgba(26,22,18,.07);vertical-align:middle}
+table.tbl td.r{text-align:right}
+table.tbl td.lbl{color:#1A1612;font-size:9.5px}
+table.tbl tr:nth-child(even){background:rgba(74,159,202,.04)}
+table.tbl tr.sep td{border-top:1.5px solid rgba(26,22,18,.12);font-weight:700}
+table.tbl tr.total td{background:rgba(26,45,69,.07);font-weight:700}
+.can{text-align:left!important;font-weight:600;width:24px;white-space:nowrap}
+.green{color:#1A7A52}.red{color:#B03A2A}.blue{color:#1A2D45}.teal{color:#4A9FCA}
+.note{background:rgba(74,159,202,.07);border:1px solid rgba(74,159,202,.2);border-radius:6px;padding:9px 12px;font-size:9px;line-height:1.6;color:#1A1612;margin-top:8px}
+.beige-note{background:#EDE7DC;border-radius:6px;padding:9px 12px;font-size:9px;line-height:1.6;color:#1A1612;margin-top:8px}
+.two-col{display:flex;gap:12px}
+.two-col>div{flex:1}
+.section-label{font-size:8px;font-weight:700;text-transform:uppercase;letter-spacing:.12em;color:#4A9FCA;margin-bottom:5px}
+.ratio-card{background:#EDE7DC;border-radius:8px;padding:10px 12px;flex:1}
+.ratio-card .val{font-size:18px;font-weight:700;margin:3px 0}
+.ratio-card .lbl{font-size:8px;text-transform:uppercase;letter-spacing:.1em;color:#1A1612}
+.ratio-card .sub{font-size:8px;color:#1A1612;margin-top:2px}
+.pl-row{display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:.5px solid rgba(26,22,18,.07)}
+.pl-row:last-child{border-bottom:none}
+.pl-lbl{font-size:10px;color:#1A1612}
+.pl-val{font-size:10px;font-weight:600}
+.pl-subtotal{background:#EDE7DC;border-radius:4px;padding:6px 10px;display:flex;justify-content:space-between;margin:4px 0;font-weight:700}
+.pl-total{background:#1A2D45;color:#F5F0E8;border-radius:4px;padding:7px 10px;display:flex;justify-content:space-between;font-weight:700;margin-top:4px}
+@media print{
+  html,body{background:none;padding:0;margin:0}
+  body{padding:0}
+  .no-print{display:none}
+  .page{margin:0;box-shadow:none;padding:13mm 14mm;page-break-after:always;min-height:0;width:100%}
+  .page.landscape{padding:11mm 13mm}
+  .page:last-child{page-break-after:avoid}
+}`;
+
+    return `<!DOCTYPE html><html lang="fr"><head><meta charset="UTF-8">
+<title>Dossier de Financement LMNP – toutlmnp</title>
+<style>${css}</style></head><body>
+<div class="no-print">
+  <div style="font-size:12px;font-weight:600;color:#F5F0E8;letter-spacing:.02em">Dossier Banque LMNP – <span style="color:#4A9FCA">toutlmnp</span></div>
+  <button onclick="window.print()" style="background:#4A9FCA;color:#1A2D45;border:none;border-radius:6px;padding:8px 20px;font-size:12px;font-weight:700;cursor:pointer">⬇ Imprimer / Enregistrer en PDF</button>
+</div>
+
+<!-- PAGE 1 — COUVERTURE -->
+<div class="page">
+<div class="hdr">
+  <div>
+    <div class="hdr-brand"><span class="hdr-light">tout</span><span class="hdr-bold">lmnp</span></div>
+    <div class="hdr-sub">Dossier de Financement · LMNP</div>
+  </div>
+  <div class="hdr-right">Généré le ${today}<br>${regimeLabel}</div>
+</div>
+
+<div style="text-align:center;margin:10px 0 18px">
+  <div style="font-size:9px;text-transform:uppercase;letter-spacing:.18em;color:#4A9FCA;font-weight:600;margin-bottom:6px">Dossier de Financement</div>
+  <h1 style="font-size:24px;font-weight:700;color:#1A2D45;letter-spacing:-.025em;margin-bottom:4px">Investissement LMNP</h1>
+  <div style="font-size:10px;color:#1A1612">${bienInfo.ville ? bienInfo.ville + " · " : ""}${bienLabel}${bienInfo.surface ? " · " + bienInfo.surface + " m²" : ""}</div>
+  ${bienInfo.description ? `<div style="font-size:9px;color:#1A1612;margin-top:4px;font-style:italic">${bienInfo.description}</div>` : ""}
+</div>
+
+<div style="display:flex;gap:10px;margin-bottom:14px">
+  <div style="flex:1;background:#EDE7DC;border-radius:8px;padding:12px 14px">
+    <div style="font-size:8px;font-weight:700;text-transform:uppercase;letter-spacing:.12em;color:#4A9FCA;margin-bottom:8px">L'actif</div>
+    <div style="margin-bottom:5px"><div style="font-size:8px;text-transform:uppercase;letter-spacing:.08em;color:#1A1612">Type</div><div style="font-size:11px;font-weight:600">${bienLabel}</div></div>
+    <div style="margin-bottom:5px"><div style="font-size:8px;text-transform:uppercase;letter-spacing:.08em;color:#1A1612">Prix d'achat</div><div style="font-size:11px;font-weight:600">${fE(prix)}</div></div>
+    ${travaux > 0 ? `<div style="margin-bottom:5px"><div style="font-size:8px;text-transform:uppercase;letter-spacing:.08em;color:#1A1612">Travaux</div><div style="font-size:11px;font-weight:600">${fE(travaux)}</div></div>` : ""}
+    <div><div style="font-size:8px;text-transform:uppercase;letter-spacing:.08em;color:#1A1612">Coût total</div><div style="font-size:13px;font-weight:700;color:#1A2D45">${fE(investTotal)}</div></div>
+  </div>
+  <div style="flex:1;background:#EDE7DC;border-radius:8px;padding:12px 14px">
+    <div style="font-size:8px;font-weight:700;text-transform:uppercase;letter-spacing:.12em;color:#4A9FCA;margin-bottom:8px">Montage financier</div>
+    <div style="margin-bottom:5px"><div style="font-size:8px;text-transform:uppercase;letter-spacing:.08em;color:#1A1612">Apport</div><div style="font-size:11px;font-weight:600">${fE(apport)}</div></div>
+    <div style="margin-bottom:5px"><div style="font-size:8px;text-transform:uppercase;letter-spacing:.08em;color:#1A1612">Crédit</div><div style="font-size:11px;font-weight:600">${fE(montantCredit)}</div></div>
+    <div style="margin-bottom:5px"><div style="font-size:8px;text-transform:uppercase;letter-spacing:.08em;color:#1A1612">Taux · Durée</div><div style="font-size:11px;font-weight:600">${f.taux} % · ${duree} ans</div></div>
+    <div><div style="font-size:8px;text-transform:uppercase;letter-spacing:.08em;color:#1A1612">Mensualité</div><div style="font-size:13px;font-weight:700;color:#1A2D45">${fE(mensualite)}/mois</div></div>
+  </div>
+  <div style="flex:1;background:#EDE7DC;border-radius:8px;padding:12px 14px">
+    <div style="font-size:8px;font-weight:700;text-transform:uppercase;letter-spacing:.12em;color:#4A9FCA;margin-bottom:8px">Exploitation</div>
+    <div style="margin-bottom:5px"><div style="font-size:8px;text-transform:uppercase;letter-spacing:.08em;color:#1A1612">Régime fiscal</div><div style="font-size:11px;font-weight:600">${regimeLabel}</div></div>
+    <div style="margin-bottom:5px"><div style="font-size:8px;text-transform:uppercase;letter-spacing:.08em;color:#1A1612">Loyers annuels</div><div style="font-size:11px;font-weight:600">${fE(loyerAnnuel)}</div></div>
+    <div style="margin-bottom:5px"><div style="font-size:8px;text-transform:uppercase;letter-spacing:.08em;color:#1A1612">Charges annuelles</div><div style="font-size:11px;font-weight:600">${fE(chargesAnnuelles)}</div></div>
+    <div><div style="font-size:8px;text-transform:uppercase;letter-spacing:.08em;color:#1A1612">NOI</div><div style="font-size:13px;font-weight:700;color:#1A2D45">${fE(noi)}</div></div>
+  </div>
+</div>
+
+<div class="kpi-row">
+  <div class="kpi">
+    <div class="kpi-lbl">Coût total du projet</div>
+    <div class="kpi-val">${fE(investTotal)}</div>
+    <div class="kpi-sub">acquisition + frais</div>
+  </div>
+  <div class="kpi">
+    <div class="kpi-lbl">Financement / Coût</div>
+    <div class="kpi-val">${fP(ltc, 1)}</div>
+    <div class="kpi-sub">LTC — loan-to-cost</div>
+  </div>
+  <div class="kpi">
+    <div class="kpi-lbl">DSCR — Couverture dette</div>
+    <div class="kpi-val" style="color:${dscrColor}">${fX(dscr, 2)}x</div>
+    <div class="kpi-sub">${dscrLabel} · NOI / service dette</div>
+  </div>
+  <div class="kpi">
+    <div class="kpi-lbl">Cash-flow après fiscalité</div>
+    <div class="kpi-val" style="color:${cfApresImpot >= 0 ? "#4ADE80" : "#FCA5A5"}">${fE(cfApresImpot / 12)}/mois</div>
+    <div class="kpi-sub">année 1 · ${regimeLabel}</div>
+  </div>
+</div>
+
+<div class="beige-note" style="margin-top:4px">
+  <strong>Objet du dossier :</strong> Ce document présente l'analyse financière de l'investissement locatif meublé (LMNP) soumis à financement bancaire. Les projections sont réalisées en <strong>${regimeLabel}</strong> sur ${totalYears} ans. Loyers, charges et valeur du bien supposés constants. TMI : <strong>${tmi} %</strong> + prélèvements sociaux <strong>18,6 %</strong>. Simulation indicative — ne constitue pas un conseil fiscal ou financier.
+</div>
+</div>
+
+<!-- PAGE 2 — RÉSUMÉ EXÉCUTIF -->
+<div class="page">
+<div class="hdr"><div><div class="hdr-brand"><span class="hdr-light">tout</span><span class="hdr-bold">lmnp</span></div><div class="hdr-sub">Dossier de Financement · LMNP</div></div><div class="hdr-right">${today} · ${regimeLabel}</div></div>
+<h2 class="ch"><span class="num">1.</span>Résumé exécutif</h2>
+
+<div class="two-col" style="margin-bottom:12px">
+  <div>
+    <div class="section-label">Acquisition et financement</div>
+    <table class="tbl">
+      <tbody>
+        <tr><td class="lbl">Prix d'achat</td><td class="r">${fE(prix)}</td></tr>
+        ${travaux > 0 ? `<tr><td class="lbl">Travaux</td><td class="r">${fE(travaux)}</td></tr>` : ""}
+        ${mobilier > 0 ? `<tr><td class="lbl">Mobilier</td><td class="r">${fE(mobilier)}</td></tr>` : ""}
+        <tr><td class="lbl">Frais de notaire</td><td class="r">${fE(notaire)}</td></tr>
+        <tr class="total"><td>Coût total projet</td><td class="r">${fE(investTotal)}</td></tr>
+        <tr><td class="lbl">Apport personnel</td><td class="r">${fE(apport)}</td></tr>
+        <tr class="total"><td>Crédit sollicité</td><td class="r">${fE(montantCredit)}</td></tr>
+        <tr><td class="lbl">Taux · Durée</td><td class="r">${f.taux} % · ${duree} ans</td></tr>
+        <tr><td class="lbl">Mensualité hors assurance</td><td class="r">${fE(mensualite)}/mois</td></tr>
+        ${assuranceEmprunteurAnnuel > 0 ? `<tr><td class="lbl">Assurance emprunteur</td><td class="r">${fE(assuranceEmprunteurAnnuel / 12)}/mois</td></tr>` : ""}
+      </tbody>
+    </table>
+  </div>
+  <div>
+    <div class="section-label">Exploitation locative</div>
+    <table class="tbl">
+      <tbody>
+        <tr><td class="lbl">Loyers annuels HC</td><td class="r">${fE(loyerAnnuel)}</td></tr>
+        ${chargesLoyer > 0 ? `<tr><td class="lbl">Charges récupérables</td><td class="r">${fE(chargesLoyer * 12)}/an</td></tr>` : ""}
+        ${taxeFonciere > 0 ? `<tr><td class="lbl">Taxe foncière</td><td class="r">${fE(taxeFonciere)}</td></tr>` : ""}
+        ${chargesCopro > 0 ? `<tr><td class="lbl">Charges de copropriété</td><td class="r">${fE(chargesCopro)}</td></tr>` : ""}
+        <tr><td class="lbl">Total charges propriétaire</td><td class="r">${fE(chargesAnnuelles)}</td></tr>
+        <tr class="total"><td>NOI (Net Operating Income)</td><td class="r">${fE(noi)}</td></tr>
+        <tr><td class="lbl">Service de la dette</td><td class="r">${fE(serviceDebt)}</td></tr>
+        <tr class="sep"><td class="lbl">Cash-flow avant impôt</td><td class="r" style="color:${cfAvantImpot >= 0 ? "#1A7A52" : "#B03A2A"}">${fE(cfAvantImpot)}</td></tr>
+        <tr><td class="lbl">Fiscalité estimée (an. 1)</td><td class="r">${fE(isMicro ? impotBIC : impotReel)}</td></tr>
+        <tr class="total"><td>Cash-flow après impôt</td><td class="r" style="color:${cfApresImpot >= 0 ? "#1A7A52" : "#B03A2A"}">${fE(cfApresImpot)}/an · ${fE(cfApresImpot / 12)}/mois</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<div class="section-label">Indicateurs bancaires clés</div>
+<div style="display:flex;gap:8px">
+  <div class="ratio-card">
+    <div class="lbl">DSCR</div>
+    <div class="val" style="color:${dscrColor}">${fX(dscr, 2)}x</div>
+    <div class="sub">${dscrLabel} · seuil bancaire : 1,20x</div>
+  </div>
+  <div class="ratio-card">
+    <div class="lbl">Debt Yield</div>
+    <div class="val" style="color:#1A2D45">${fP(debtYield, 2)}</div>
+    <div class="sub">NOI / montant crédit</div>
+  </div>
+  <div class="ratio-card">
+    <div class="lbl">LTC (Loan-to-Cost)</div>
+    <div class="val" style="color:#1A2D45">${fP(ltc, 1)}</div>
+    <div class="sub">Crédit / coût total projet</div>
+  </div>
+  <div class="ratio-card">
+    <div class="lbl">Dette / Prix achat</div>
+    <div class="val" style="color:#1A2D45">${fP(detteSurPrix, 1)}</div>
+    <div class="sub">Crédit / prix d'achat</div>
+  </div>
+  <div class="ratio-card">
+    <div class="lbl">Rentabilité brute</div>
+    <div class="val" style="color:#1A2D45">${fP(rendementBrut, 2)}</div>
+    <div class="sub">Loyers / coût total</div>
+  </div>
+</div>
+</div>
+
+<!-- PAGE 3 — DESCRIPTION ET HYPOTHÈSES -->
+<div class="page">
+<div class="hdr"><div><div class="hdr-brand"><span class="hdr-light">tout</span><span class="hdr-bold">lmnp</span></div><div class="hdr-sub">Dossier de Financement · LMNP</div></div><div class="hdr-right">${today} · ${regimeLabel}</div></div>
+<h2 class="ch"><span class="num">2.</span>Description, montage et hypothèses</h2>
+
+<div class="two-col" style="margin-bottom:14px">
+  <div>
+    <div class="section-label">Caractéristiques du bien</div>
+    <table class="tbl">
+      <tbody>
+        <tr><td class="lbl">Type d'actif</td><td class="r">${bienLabel}</td></tr>
+        ${bienInfo.ville ? `<tr><td class="lbl">Localisation</td><td class="r">${bienInfo.ville}</td></tr>` : ""}
+        ${bienInfo.surface ? `<tr><td class="lbl">Surface</td><td class="r">${bienInfo.surface} m²</td></tr>` : ""}
+        <tr><td class="lbl">Mode d'exploitation</td><td class="r">Location meublée (LMNP)</td></tr>
+        <tr><td class="lbl">Régime fiscal retenu</td><td class="r">${regimeLabel}</td></tr>
+        <tr><td class="lbl">TMI investisseur</td><td class="r">${tmi} %</td></tr>
+      </tbody>
+    </table>
+    ${bienInfo.description ? `<div class="beige-note" style="margin-top:8px;font-size:9px"><strong>Commentaires :</strong> ${bienInfo.description}</div>` : ""}
+  </div>
+  <div>
+    <div class="section-label">Hypothèses de projection</div>
+    <table class="tbl">
+      <tbody>
+        <tr><td class="lbl">Loyer mensuel HC retenu</td><td class="r">${fE(loyerAnnuel / 12)}</td></tr>
+        <tr><td class="lbl">Loyer annuel HC</td><td class="r">${fE(loyerAnnuel)}</td></tr>
+        <tr><td class="lbl">Charges annuelles totales</td><td class="r">${fE(chargesAnnuelles)}</td></tr>
+        <tr><td class="lbl">Vacance locative supposée</td><td class="r">0 % (loyers constants)</td></tr>
+        <tr><td class="lbl">Revalorisation loyers/bien</td><td class="r">Non appliquée</td></tr>
+        <tr><td class="lbl">Horizon d'analyse</td><td class="r">${totalYears} ans</td></tr>
+        ${!isMicro ? `<tr><td class="lbl">Amortissement bien (${amortPct} %)</td><td class="r">${amortMode === "ensemble" ? amortDureeEnsemble + " ans linéaire" : "Par composants"}</td></tr>` : ""}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<div class="section-label">Pièces et documents du dossier</div>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+  ${[
+    "Pièce d'identité (recto-verso)",
+    "3 derniers avis d'imposition",
+    "3 derniers bulletins de salaire",
+    "Justificatif de domicile < 3 mois",
+    "Compromis ou promesse de vente",
+    "Tableau d'amortissement estimatif",
+    "Bail signé ou projet de bail",
+    "Extrait du plan cadastral (si dispo.)",
+  ].map(doc => `<div style="display:flex;align-items:center;gap:6px;background:#EDE7DC;border-radius:5px;padding:6px 10px;font-size:9px">
+    <span style="width:14px;height:14px;border:1px solid rgba(26,45,69,.3);border-radius:3px;flex-shrink:0;display:inline-block"></span>
+    <span>${doc}</span>
+  </div>`).join("")}
+</div>
+
+<div class="note" style="margin-top:14px">
+  <strong>Note :</strong> Les projections présentées dans ce dossier sont établies sur la base des données renseignées par l'investisseur. Elles ont une valeur indicative et ne sauraient constituer une garantie de rentabilité. Le dossier doit être complété des pièces justificatives mentionnées ci-dessus.
+</div>
+</div>
+
+<!-- PAGE 4 — PLAN DE FINANCEMENT -->
+<div class="page">
+<div class="hdr"><div><div class="hdr-brand"><span class="hdr-light">tout</span><span class="hdr-bold">lmnp</span></div><div class="hdr-sub">Dossier de Financement · LMNP</div></div><div class="hdr-right">${today} · ${regimeLabel}</div></div>
+<h2 class="ch"><span class="num">3.</span>Plan de financement</h2>
+
+<div class="two-col" style="margin-bottom:14px">
+  <div>
+    <div class="section-label">Emplois</div>
+    <table class="tbl">
+      <thead><tr><th>Poste</th><th class="r">Montant</th><th class="r">% coût total</th></tr></thead>
+      <tbody>
+        <tr><td class="lbl">Prix d'achat</td><td class="r">${fE(prix)}</td><td class="r">${fP(investTotal > 0 ? (prix / investTotal) * 100 : 0, 1)}</td></tr>
+        ${travaux > 0 ? `<tr><td class="lbl">Travaux</td><td class="r">${fE(travaux)}</td><td class="r">${fP((travaux / investTotal) * 100, 1)}</td></tr>` : ""}
+        ${mobilier > 0 ? `<tr><td class="lbl">Mobilier</td><td class="r">${fE(mobilier)}</td><td class="r">${fP((mobilier / investTotal) * 100, 1)}</td></tr>` : ""}
+        <tr><td class="lbl">Frais de notaire</td><td class="r">${fE(notaire)}</td><td class="r">${fP((notaire / investTotal) * 100, 1)}</td></tr>
+        <tr class="total"><td>Total emplois</td><td class="r">${fE(investTotal)}</td><td class="r">100 %</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div>
+    <div class="section-label">Ressources</div>
+    <table class="tbl">
+      <thead><tr><th>Source</th><th class="r">Montant</th><th class="r">% coût total</th></tr></thead>
+      <tbody>
+        <tr><td class="lbl">Apport personnel</td><td class="r">${fE(apport)}</td><td class="r">${fP(investTotal > 0 ? (apport / investTotal) * 100 : 0, 1)}</td></tr>
+        <tr><td class="lbl">Crédit immobilier</td><td class="r">${fE(montantCredit)}</td><td class="r">${fP(ltc, 1)}</td></tr>
+        <tr class="total"><td>Total ressources</td><td class="r">${fE(investTotal)}</td><td class="r">100 %</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<div class="section-label">Ratios de financement</div>
+<div style="display:flex;gap:8px;margin-bottom:14px">
+  <div style="flex:1;background:#EDE7DC;border-radius:8px;padding:12px">
+    <div style="font-size:8px;text-transform:uppercase;letter-spacing:.1em;color:#1A1612;margin-bottom:4px">LTC · Loan-to-Cost</div>
+    <div style="font-size:20px;font-weight:700;color:#1A2D45">${fP(ltc, 1)}</div>
+    <div style="font-size:8px;color:#1A1612;margin-top:2px">Crédit / coût total · Idéal &lt; 80 %</div>
+  </div>
+  <div style="flex:1;background:#EDE7DC;border-radius:8px;padding:12px">
+    <div style="font-size:8px;text-transform:uppercase;letter-spacing:.1em;color:#1A1612;margin-bottom:4px">Dette / Prix d'achat</div>
+    <div style="font-size:20px;font-weight:700;color:#1A2D45">${fP(detteSurPrix, 1)}</div>
+    <div style="font-size:8px;color:#1A1612;margin-top:2px">Crédit / prix d'achat</div>
+  </div>
+  <div style="flex:1;background:#EDE7DC;border-radius:8px;padding:12px">
+    <div style="font-size:8px;text-transform:uppercase;letter-spacing:.1em;color:#1A1612;margin-bottom:4px">Effort mensuel net</div>
+    <div style="font-size:20px;font-weight:700;color:${cfAvantImpot >= 0 ? "#1A7A52" : "#B03A2A"}">${fE(cfAvantImpot / 12)}</div>
+    <div style="font-size:8px;color:#1A1612;margin-top:2px">Cash-flow avant impôt / mois</div>
+  </div>
+  <div style="flex:1;background:#EDE7DC;border-radius:8px;padding:12px">
+    <div style="font-size:8px;text-transform:uppercase;letter-spacing:.1em;color:#1A1612;margin-bottom:4px">Capital constitué an. 1</div>
+    <div style="font-size:20px;font-weight:700;color:#1A2D45">${fE(capitalRembourseAn1)}</div>
+    <div style="font-size:8px;color:#1A1612;margin-top:2px">Capital remboursé en 1re année</div>
+  </div>
+</div>
+
+<div class="beige-note">
+  <strong>Lecture :</strong> Le LTC de <strong>${fP(ltc, 1)}</strong> indique que <strong>${fP(100 - ltc, 1)}</strong> du projet sont financés sur fonds propres (apport : ${fE(apport)}). Ce ratio est l'un des premiers critères d'analyse bancaire. Le capital remboursé dès la 1re année (${fE(capitalRembourseAn1)}) représente un enrichissement patrimonial immédiat, indépendant du cash-flow.
+</div>
+</div>
+
+<!-- PAGE 5 — COMPTE D'EXPLOITATION -->
+<div class="page">
+<div class="hdr"><div><div class="hdr-brand"><span class="hdr-light">tout</span><span class="hdr-bold">lmnp</span></div><div class="hdr-sub">Dossier de Financement · LMNP</div></div><div class="hdr-right">${today} · ${regimeLabel}</div></div>
+<h2 class="ch"><span class="num">4.</span>Compte d'exploitation — Année 1</h2>
+
+<div style="max-width:480px;margin:0 auto">
+  <div style="background:#1A2D45;color:#F5F0E8;border-radius:8px 8px 0 0;padding:10px 16px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.1em">Compte de résultat simplifié</div>
+  <div style="background:#EDE7DC;border-radius:0 0 8px 8px;padding:14px 16px">
+    <div class="pl-row">
+      <span class="pl-lbl" style="color:#1A7A52;font-weight:600">+ Revenus locatifs (HC)</span>
+      <span class="pl-val" style="color:#1A7A52">${fE(loyerAnnuel)}</span>
+    </div>
+    <div class="pl-row">
+      <span class="pl-lbl">− Charges d'exploitation</span>
+      <span class="pl-val" style="color:#B03A2A">−${fE(chargesAnnuelles)}</span>
+    </div>
+    <div class="pl-subtotal">
+      <span>= NOI (Net Operating Income)</span>
+      <span style="color:${noi >= 0 ? "#1A7A52" : "#B03A2A"}">${fE(noi)}</span>
+    </div>
+    <div class="pl-row" style="margin-top:8px">
+      <span class="pl-lbl">− Mensualités de crédit</span>
+      <span class="pl-val" style="color:#B03A2A">−${fE(creditAnnuel)}</span>
+    </div>
+    ${assuranceEmprunteurAnnuel > 0 ? `<div class="pl-row">
+      <span class="pl-lbl">− Assurance emprunteur</span>
+      <span class="pl-val" style="color:#B03A2A">−${fE(assuranceEmprunteurAnnuel)}</span>
+    </div>` : ""}
+    <div class="pl-subtotal">
+      <span>= Cash-flow avant impôt</span>
+      <span style="color:${cfAvantImpot >= 0 ? "#1A7A52" : "#B03A2A"}">${fE(cfAvantImpot)}</span>
+    </div>
+    <div class="pl-row" style="margin-top:8px">
+      <span class="pl-lbl">− Fiscalité estimée (${regimeLabel})</span>
+      <span class="pl-val" style="color:#B03A2A">−${fE(isMicro ? impotBIC : impotReel)}</span>
+    </div>
+    <div class="pl-total">
+      <span>= Cash-flow après impôt</span>
+      <span style="color:${cfApresImpot >= 0 ? "#4ADE80" : "#FCA5A5"}">${fE(cfApresImpot)}/an · ${fE(cfApresImpot / 12)}/mois</span>
+    </div>
+  </div>
+</div>
+
+<div style="display:flex;gap:10px;margin-top:14px">
+  <div style="flex:1">
+    <div class="section-label">Décomposition des charges (an. 1)</div>
+    <table class="tbl">
+      <tbody>
+        ${taxeFonciere > 0 ? `<tr><td class="lbl">Taxe foncière</td><td class="r">${fE(taxeFonciere)}</td></tr>` : ""}
+        ${chargesCopro > 0 ? `<tr><td class="lbl">Charges copropriété</td><td class="r">${fE(chargesCopro)}</td></tr>` : ""}
+        <tr class="total"><td>Total charges</td><td class="r">${fE(chargesAnnuelles)}</td></tr>
+        <tr><td class="lbl">Service de la dette</td><td class="r">${fE(serviceDebt)}</td></tr>
+        <tr><td class="lbl">Dont intérêts an. 1</td><td class="r">${fE(interetsAnnee1)}</td></tr>
+        <tr><td class="lbl">Dont capital remboursé an. 1</td><td class="r">${fE(capitalRembourseAn1)}</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div style="flex:1">
+    <div class="section-label">Détail de la fiscalité (an. 1)</div>
+    <table class="tbl">
+      <tbody>
+        ${isMicro ? `
+        <tr><td class="lbl">Loyers imposables</td><td class="r">${fE(loyerAnnuel)}</td></tr>
+        <tr><td class="lbl">Abattement forfaitaire 50 %</td><td class="r" style="color:#B03A2A">−${fE(loyerAnnuel * 0.5)}</td></tr>
+        <tr class="sep"><td class="lbl">Base imposable BIC</td><td class="r">${fE(baseBIC)}</td></tr>
+        <tr class="total"><td>Fiscalité totale</td><td class="r" style="color:${impotBIC === 0 ? "#1A7A52" : "#B03A2A"}">${fE(impotBIC)}</td></tr>
+        ` : `
+        <tr><td class="lbl">Résultat avant amortissement</td><td class="r">${fE(resultatAvantAmort)}</td></tr>
+        <tr><td class="lbl">Amortissement déduit</td><td class="r" style="color:#B03A2A">−${fE(amortTotalAn1)}</td></tr>
+        <tr class="sep"><td class="lbl">Base imposable</td><td class="r" style="color:${baseImposableReel === 0 ? "#1A7A52" : "#B03A2A"}">${fE(baseImposableReel)}</td></tr>
+        <tr class="total"><td>Fiscalité totale</td><td class="r" style="color:${impotReel === 0 ? "#1A7A52" : "#B03A2A"}">${fE(impotReel)}</td></tr>
+        `}
+      </tbody>
+    </table>
+  </div>
+</div>
+</div>
+
+<!-- PAGE 6 — STRUCTURE DE LA DETTE -->
+<div class="page">
+<div class="hdr"><div><div class="hdr-brand"><span class="hdr-light">tout</span><span class="hdr-bold">lmnp</span></div><div class="hdr-sub">Dossier de Financement · LMNP</div></div><div class="hdr-right">${today} · ${regimeLabel}</div></div>
+<h2 class="ch"><span class="num">5.</span>Structure de la dette</h2>
+
+<div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap">
+  ${[
+    { lbl: "Montant emprunté", val: fE(montantCredit) },
+    { lbl: "Taux nominal", val: fP(taux * 100, 2) },
+    { lbl: "Durée", val: duree + " ans" },
+    { lbl: "Mensualité (hors ass.)", val: fE(mensualite) },
+    { lbl: "Annuité totale", val: fE(serviceDebt) },
+    { lbl: "Intérêts an. 1", val: fE(interetsAnnee1) },
+    { lbl: "Capital remb. an. 1", val: fE(capitalRembourseAn1) },
+    { lbl: "Coût total intérêts", val: coutTotalInteret > 0 ? fE(coutTotalInteret) : "—" },
+  ].map(item => `<div style="flex:1;min-width:100px;background:#EDE7DC;border-radius:7px;padding:9px 11px">
+    <div style="font-size:8px;text-transform:uppercase;letter-spacing:.08em;color:#1A1612;margin-bottom:3px">${item.lbl}</div>
+    <div style="font-size:13px;font-weight:700;color:#1A2D45">${item.val}</div>
+  </div>`).join("")}
+</div>
+
+<div class="section-label">Évolution du crédit — jalons clés</div>
+<table class="tbl">
+  <thead><tr>
+    <th>Année</th>
+    <th class="r">Capital restant dû</th>
+    <th class="r">Intérêts cumulés</th>
+    <th class="r">Capital remboursé</th>
+    <th class="r">Annuité</th>
+    <th class="r">NOI</th>
+    <th class="r">DSCR</th>
+  </tr></thead>
+  <tbody>
+    ${keyYears.map(yr => {
+      const ro = rows.find(r => r.year === yr);
+      if (!ro) return "";
+      const dscrYr = serviceDebt > 0 ? noi / serviceDebt : 0;
+      const dscrC = dscrYr >= 1.3 ? "#1A7A52" : dscrYr >= 1.0 ? "#B08A2A" : "#B03A2A";
+      const capitalCumul = montantCredit - (yr <= duree ? ro.capitalFin : 0);
+      const interetsCumul = rows.filter(r => r.year <= yr && r.year <= duree).reduce((s, r) => s + r.interetsAnnee, 0);
+      return `<tr>
+        <td class="can">An ${yr}</td>
+        <td class="r">${yr <= duree ? fE(ro.capitalFin) : "—"}</td>
+        <td class="r">${yr <= duree ? fE(interetsCumul) : "—"}</td>
+        <td class="r">${yr <= duree ? fE(capitalCumul) : "—"}</td>
+        <td class="r">${yr <= duree ? fE(serviceDebt) : "—"}</td>
+        <td class="r">${fE(noi)}</td>
+        <td class="r" style="color:${dscrC};font-weight:700">${yr <= duree ? fX(dscrYr, 2) + "x" : "—"}</td>
+      </tr>`;
+    }).join("")}
+  </tbody>
+</table>
+
+<div class="note" style="margin-top:8px">
+  <strong>DSCR constant :</strong> En l'absence de revalorisation des loyers et des charges, le NOI et la dette restent fixes, donc le DSCR demeure stable sur toute la durée du crédit. Le DSCR ici calculé est de <strong style="color:${dscrColor}">${fX(dscr, 2)}x</strong> (${dscrLabel}). Un DSCR &gt; 1,20x est généralement requis par les établissements bancaires.
+</div>
+</div>
+
+<!-- PAGE 7 — RATIOS BANCAIRES -->
+<div class="page">
+<div class="hdr"><div><div class="hdr-brand"><span class="hdr-light">tout</span><span class="hdr-bold">lmnp</span></div><div class="hdr-sub">Dossier de Financement · LMNP</div></div><div class="hdr-right">${today} · ${regimeLabel}</div></div>
+<h2 class="ch"><span class="num">6.</span>Ratios bancaires et indicateurs financiers</h2>
+
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px">
+  ${[
+    {
+      lbl: "DSCR — Couverture du service de la dette",
+      val: fX(dscr, 2) + "x",
+      formula: "NOI / service de la dette",
+      detail: `NOI ${fE(noi)} / Service ${fE(serviceDebt)}`,
+      note: dscr >= 1.3 ? "Solide — capacité de remboursement confortable" : dscr >= 1.0 ? "Acceptable — surveillance recommandée" : "Insuffisant — risque de défaut",
+      color: dscrColor,
+    },
+    {
+      lbl: "Debt Yield",
+      val: fP(debtYield, 2),
+      formula: "NOI / montant du crédit",
+      detail: `NOI ${fE(noi)} / Crédit ${fE(montantCredit)}`,
+      note: debtYield >= 8 ? "Bon — rendement net supérieur au coût de la dette" : debtYield >= 5 ? "Correct" : "Faible — attention au coût de la dette",
+      color: debtYield >= 8 ? "#1A7A52" : debtYield >= 5 ? "#B08A2A" : "#B03A2A",
+    },
+    {
+      lbl: "LTC — Loan-to-Cost",
+      val: fP(ltc, 1),
+      formula: "Crédit / coût total projet",
+      detail: `Crédit ${fE(montantCredit)} / Coût ${fE(investTotal)}`,
+      note: ltc <= 80 ? "Sain — apport personnel significatif" : ltc <= 90 ? "Acceptable" : "Élevé — apport faible",
+      color: ltc <= 80 ? "#1A7A52" : ltc <= 90 ? "#B08A2A" : "#B03A2A",
+    },
+    {
+      lbl: "Dette / Prix d'achat",
+      val: fP(detteSurPrix, 1),
+      formula: "Crédit / prix d'achat",
+      detail: `Crédit ${fE(montantCredit)} / Prix ${fE(prix)}`,
+      note: detteSurPrix <= 100 ? "Normal — dette inférieure ou égale au prix" : "Attention — crédit supérieur au prix d'achat",
+      color: detteSurPrix <= 100 ? "#1A7A52" : "#B03A2A",
+    },
+    {
+      lbl: "Cash-flow avant impôt",
+      val: fE(cfAvantImpot / 12) + "/mois",
+      formula: "NOI − service de la dette",
+      detail: `NOI ${fE(noi)} − Service ${fE(serviceDebt)}`,
+      note: cfAvantImpot >= 0 ? "Positif — effort d'épargne nul" : "Négatif — effort mensuel de " + fE(-cfAvantImpot / 12),
+      color: cfAvantImpot >= 0 ? "#1A7A52" : "#B03A2A",
+    },
+    {
+      lbl: "Cash-flow après impôt",
+      val: fE(cfApresImpot / 12) + "/mois",
+      formula: "CF avant impôt − fiscalité",
+      detail: `CF ${fE(cfAvantImpot / 12)} − Impôt ${fE((isMicro ? impotBIC : impotReel) / 12)}`,
+      note: cfApresImpot >= 0 ? "Positif — flux net après impôt favorable" : "Négatif — coût de portage de " + fE(-cfApresImpot / 12) + "/mois",
+      color: cfApresImpot >= 0 ? "#1A7A52" : "#B03A2A",
+    },
+  ].map(item => `<div style="background:#EDE7DC;border-radius:8px;padding:12px 14px;border-left:3px solid ${item.color}">
+    <div style="font-size:8px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:#1A2D45;margin-bottom:5px">${item.lbl}</div>
+    <div style="font-size:20px;font-weight:800;color:${item.color};margin-bottom:4px">${item.val}</div>
+    <div style="font-size:8px;color:#1A1612;margin-bottom:2px">${item.formula}</div>
+    <div style="font-size:8px;color:#1A1612;margin-bottom:4px">${item.detail}</div>
+    <div style="font-size:8px;font-style:italic;color:${item.color}">${item.note}</div>
+  </div>`).join("")}
+</div>
+
+<div class="beige-note">
+  <strong>Grilles d'analyse bancaires (indicatif) :</strong> DSCR &gt; 1,20x (solide &gt; 1,30x) · Debt Yield &gt; 6–8 % · LTC &lt; 80 % recommandé · CF avant impôt &gt; 0. Ces seuils varient selon les établissements prêteurs. La solidité globale du dossier dépend aussi du profil de l'emprunteur (revenus, endettement global, patrimoine).
+</div>
+</div>
+
+<!-- PAGE 8 — FISCALITÉ -->
+<div class="page">
+<div class="hdr"><div><div class="hdr-brand"><span class="hdr-light">tout</span><span class="hdr-bold">lmnp</span></div><div class="hdr-sub">Dossier de Financement · LMNP</div></div><div class="hdr-right">${today} · ${regimeLabel}</div></div>
+<h2 class="ch"><span class="num">7.</span>Fiscalité — ${regimeLabel}</h2>
+
+${isMicro ? `
+<div style="background:#EDE7DC;border-radius:8px;padding:14px;margin-bottom:14px">
+  <div style="font-size:10px;font-weight:700;color:#1A2D45;margin-bottom:6px">Principe du Micro-BIC</div>
+  <div style="font-size:9.5px;line-height:1.7;color:#1A1612">En Micro-BIC, un <strong>abattement forfaitaire de 50 %</strong> est appliqué sur l'ensemble des loyers perçus. La base imposable est taxée au taux global TMI + Prélèvements Sociaux. Ce régime ne permet pas de déduire les charges réelles ni les amortissements, mais offre une grande simplicité déclarative.</div>
+</div>
+
+<div class="section-label">Calcul fiscal — Année 1</div>
+<table class="tbl" style="margin-bottom:14px;max-width:400px">
+  <tbody>
+    <tr><td class="lbl">Loyers imposables bruts</td><td class="r">${fE(loyerAnnuel)}</td></tr>
+    <tr><td class="lbl">− Abattement forfaitaire 50 %</td><td class="r" style="color:#B03A2A">−${fE(loyerAnnuel * 0.5)}</td></tr>
+    <tr class="sep"><td class="lbl">= Base imposable</td><td class="r">${fE(baseBIC)}</td></tr>
+    <tr><td class="lbl">Impôt IR (TMI ${tmi} %)</td><td class="r">${fE(impotBIC * tmi / (tmi + 18.6))}</td></tr>
+    <tr><td class="lbl">Prélèvements sociaux (18,6 %)</td><td class="r">${fE(impotBIC * 18.6 / (tmi + 18.6))}</td></tr>
+    <tr class="total"><td>= Fiscalité totale</td><td class="r" style="color:${impotBIC === 0 ? "#1A7A52" : "#B03A2A"}">${fE(impotBIC)}/an · ${fE(impotBIC / 12)}/mois</td></tr>
+  </tbody>
+</table>
+` : `
+<div style="background:#EDE7DC;border-radius:8px;padding:14px;margin-bottom:14px">
+  <div style="font-size:10px;font-weight:700;color:#1A2D45;margin-bottom:6px">Principe du régime réel simplifié</div>
+  <div style="font-size:9.5px;line-height:1.7;color:#1A1612">Au régime réel, les <strong>charges réelles</strong> (intérêts, assurance, charges locatives) sont déductibles, ainsi que les <strong>amortissements</strong> par composants. Le résultat net peut être <strong>reporté sans limitation</strong> en cas de déficit imputable sur les loyers. L'avantage fiscal majeur : les amortissements réduisent la base imposable pendant de nombreuses années sans sortie de trésorerie.</div>
+</div>
+
+<div class="two-col">
+  <div>
+    <div class="section-label">Calcul fiscal — Année 1</div>
+    <table class="tbl">
+      <tbody>
+        <tr><td class="lbl">Loyers imposables</td><td class="r">${fE(loyerAnnuel)}</td></tr>
+        <tr><td class="lbl">− Charges déductibles</td><td class="r" style="color:#B03A2A">−${fE(chargesAnnuelles)}</td></tr>
+        <tr><td class="lbl">− Intérêts d'emprunt</td><td class="r" style="color:#B03A2A">−${fE(interetsAnnee1)}</td></tr>
+        ${assuranceEmprunteurAnnuel > 0 ? `<tr><td class="lbl">− Assurance emprunteur</td><td class="r" style="color:#B03A2A">−${fE(assuranceEmprunteurAnnuel)}</td></tr>` : ""}
+        <tr class="sep"><td class="lbl">= Résultat avant amort.</td><td class="r">${fE(resultatAvantAmort)}</td></tr>
+        <tr><td class="lbl">− Amortissements an. 1</td><td class="r" style="color:#B03A2A">−${fE(amortTotalAn1)}</td></tr>
+        <tr class="total"><td>= Base imposable</td><td class="r" style="color:${baseImposableReel === 0 ? "#1A7A52" : "#B03A2A"}">${fE(baseImposableReel)}</td></tr>
+        <tr><td class="lbl">Impôt IR (TMI ${tmi} %)</td><td class="r">${fE(impotReel * tmi / (tmi + 18.6))}</td></tr>
+        <tr><td class="lbl">Prélèvements sociaux (18,6 %)</td><td class="r">${fE(impotReel * 18.6 / (tmi + 18.6))}</td></tr>
+        <tr class="total"><td>= Fiscalité totale</td><td class="r" style="color:${impotReel === 0 ? "#1A7A52" : "#B03A2A"}">${fE(impotReel)}/an</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div>
+    <div class="section-label">Plan d'amortissement — Composants</div>
+    <table class="tbl">
+      <thead><tr><th>Composant</th><th class="r">Valeur</th><th class="r">Durée</th><th class="r">Amort./an</th></tr></thead>
+      <tbody>
+        ${annexeCols.map(c => `<tr><td class="lbl">${c.label}</td><td class="r">${fE(c.initial)}</td><td class="r">${c.duree} ans</td><td class="r"><strong>${fE(c.annuel)}</strong></td></tr>`).join("")}
+        <tr><td class="lbl" style="color:#1A1612">Terrain (non amort.)</td><td class="r" style="color:#1A1612">${fE(terrainVal)}</td><td class="r">—</td><td class="r">0 €</td></tr>
+        <tr class="total"><td>Total an. 1</td><td class="r">${fE(prix)}</td><td></td><td class="r">${fE(amortTotalAn1)}/an</td></tr>
+      </tbody>
+    </table>
+    <div class="beige-note" style="margin-top:8px">
+      <strong>Part amortissable :</strong> ${amortPct} % du prix (${fE(valeurAmortissable)}). Les ${100 - amortPct} % restants (${fE(terrainVal)}) représentent le terrain.
+    </div>
+  </div>
+</div>
+`}
+</div>
+
+<!-- PAGE 9 — PROJECTION ET STRESS TEST -->
+<div class="page">
+<div class="hdr"><div><div class="hdr-brand"><span class="hdr-light">tout</span><span class="hdr-bold">lmnp</span></div><div class="hdr-sub">Dossier de Financement · LMNP</div></div><div class="hdr-right">${today} · ${regimeLabel}</div></div>
+<h2 class="ch"><span class="num">8.</span>Projection synthétique et scénarios de stress</h2>
+
+<div class="section-label" style="margin-bottom:6px">Projection aux jalons clés</div>
+<table class="tbl" style="margin-bottom:14px">
+  <thead><tr>
+    <th>Année</th>
+    <th class="r">CRD fin</th>
+    <th class="r">Capital remb. cumulé</th>
+    ${!isMicro ? `<th class="r">Amortissement</th>` : ""}
+    <th class="r">Base imposable</th>
+    <th class="r">Impôt</th>
+    <th class="r">CF avant impôt/mois</th>
+    <th class="r">CF après impôt/mois</th>
+  </tr></thead>
+  <tbody>
+    ${keyYears.map(yr => {
+      const ro = rows.find(r => r.year === yr);
+      if (!ro) return "";
+      const bicBase = loyerAnnuel * 0.50;
+      const bicImpot = bicBase * (tmi / 100 + 0.186);
+      const impotYr = isMicro ? bicImpot : ro.impot;
+      const cfAv = (noi - (yr <= duree ? serviceDebt : 0)) / 12;
+      const cfAp = cfAv - impotYr / 12;
+      const capitalCumul = montantCredit - (yr <= duree ? ro.capitalFin : 0);
+      return `<tr>
+        <td class="can">An ${yr}</td>
+        <td class="r">${yr <= duree ? fE(ro.capitalFin) : "—"}</td>
+        <td class="r">${yr <= duree ? fE(capitalCumul) : fE(montantCredit)}</td>
+        ${!isMicro ? `<td class="r">${fE(ro.amortTotalA)}</td>` : ""}
+        <td class="r" style="color:${(isMicro ? bicBase : ro.baseImposable) === 0 ? "#1A7A52" : "#B03A2A"}">${fE(isMicro ? bicBase : ro.baseImposable)}</td>
+        <td class="r" style="color:${impotYr === 0 ? "#1A7A52" : "#B03A2A"}">${fE(impotYr)}</td>
+        <td class="r" style="color:${cfAv >= 0 ? "#1A7A52" : "#B03A2A"}">${fE(cfAv)}</td>
+        <td class="r" style="color:${cfAp >= 0 ? "#1A7A52" : "#B03A2A"};font-weight:700">${fE(cfAp)}</td>
+      </tr>`;
+    }).join("")}
+  </tbody>
+</table>
+
+<div class="section-label" style="margin-bottom:6px">Scénarios de stress — impact d'une baisse des loyers</div>
+<table class="tbl">
+  <thead><tr>
+    <th>Scénario</th>
+    <th class="r">Loyers annuels</th>
+    <th class="r">NOI</th>
+    <th class="r">DSCR</th>
+    <th class="r">CF avant impôt/mois</th>
+    <th class="r">Fiscalité</th>
+    <th class="r">CF après impôt/mois</th>
+  </tr></thead>
+  <tbody>
+    ${[
+      { label: "Base (100 %)", pct: 1.00, color: "#1A2D45" },
+      { label: "Stress −5 % (95 %)", pct: 0.95, color: "#B08A2A" },
+      { label: "Stress −10 % (90 %)", pct: 0.90, color: "#B03A2A" },
+      { label: "Stress −20 % (80 %)", pct: 0.80, color: "#B03A2A" },
+    ].map((sc, i) => {
+      const loyerSc = loyerAnnuel * sc.pct;
+      const noiSc = loyerSc - chargesAnnuelles;
+      const dscrSc = serviceDebt > 0 ? noiSc / serviceDebt : 0;
+      const dscrScC = dscrSc >= 1.3 ? "#1A7A52" : dscrSc >= 1.0 ? "#B08A2A" : "#B03A2A";
+      const cfAvSc = (noiSc - serviceDebt) / 12;
+      let fiscSc = 0;
+      if (isMicro) {
+        fiscSc = loyerSc * 0.5 * (tmi / 100 + 0.186);
+      } else {
+        const resAvAmortSc = loyerSc - chargesDeductibles;
+        const baseImposSc = Math.max(0, resAvAmortSc - amortTotalAn1);
+        fiscSc = baseImposSc * (tmi / 100 + 0.186);
+      }
+      const cfApSc = cfAvSc - fiscSc / 12;
+      return `<tr style="background:${i % 2 === 0 ? "transparent" : "rgba(74,159,202,.04)"}">
+        <td class="lbl" style="font-weight:600;color:${sc.color}">${sc.label}</td>
+        <td class="r">${fE(loyerSc)}</td>
+        <td class="r" style="color:${noiSc >= 0 ? "#1A7A52" : "#B03A2A"}">${fE(noiSc)}</td>
+        <td class="r" style="color:${dscrScC};font-weight:700">${fX(dscrSc, 2)}x</td>
+        <td class="r" style="color:${cfAvSc >= 0 ? "#1A7A52" : "#B03A2A"}">${fE(cfAvSc)}</td>
+        <td class="r">${fE(fiscSc)}</td>
+        <td class="r" style="color:${cfApSc >= 0 ? "#1A7A52" : "#B03A2A"};font-weight:700">${fE(cfApSc)}</td>
+      </tr>`;
+    }).join("")}
+  </tbody>
+</table>
+
+<div class="note" style="margin-top:8px">
+  <strong>Lecture des stress tests :</strong> Ces scénarios simulent l'impact d'une vacance locative partielle ou d'une baisse des loyers de marché. Le DSCR en dessous de 1,00x indique que le NOI ne couvre plus le service de la dette. Le seuil de rupture du DSCR est atteint lorsque les loyers baissent de ${serviceDebt > 0 && loyerAnnuel > 0 ? fP(Math.max(0, (1 - (serviceDebt + chargesAnnuelles) / loyerAnnuel) * 100), 1) : "—"}.
+</div>
+</div>
+
+<!-- PAGE 10 — REVENTE ET RÉFÉRENCES -->
+<div class="page">
+<div class="hdr"><div><div class="hdr-brand"><span class="hdr-light">tout</span><span class="hdr-bold">lmnp</span></div><div class="hdr-sub">Dossier de Financement · LMNP</div></div><div class="hdr-right">${today} · ${regimeLabel}</div></div>
+<h2 class="ch"><span class="num">9.</span>Scénario de revente et cadre fiscal</h2>
+
+<div style="background:#EDE7DC;border-radius:8px;padding:12px 14px;margin-bottom:14px;font-size:9.5px;line-height:1.7">
+  ${isMicro
+    ? `<strong>Avantage LMNP Micro-BIC :</strong> La plus-value immobilière est calculée sur la différence entre le prix de vente et le <strong>prix d'acquisition initial</strong>. Contrairement au régime réel, aucun amortissement n'est réintégré dans l'assiette de plus-value. Les abattements pour durée de détention s'appliquent dès la 6e année — exonération IR totale à 22 ans, PS à 30 ans.`
+    : `<strong>Avantage LMNP réel :</strong> La plus-value est calculée sur la différence entre le prix de vente et le <strong>prix d'acquisition initial</strong>, <em>sans réintégration des amortissements</em> déduits fiscalement (spécificité LMNP vs LMP). Les abattements pour durée de détention s'appliquent dès la 6e année — exonération IR totale à 22 ans, PS à 30 ans.`
+  }
+</div>
+
+${(() => {
+  const abattIR = (N: number) => N < 6 ? 0 : N >= 22 ? 1 : (N - 5) * 0.06;
+  const abattPS = (N: number) => {
+    if (N < 6) return 0;
+    if (N >= 30) return 1;
+    if (N >= 22) return 0.28 + (N - 22) * 0.09;
+    return (N - 5) * 0.0165;
+  };
+  const reventeYears = [10, 20, 30];
+  return `<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:14px">
+    ${reventeYears.map(yr => {
+      const abIR = abattIR(yr);
+      const abPS = abattPS(yr);
+      const ro = rows.find(r => r.year === yr) ?? rows[rows.length - 1];
+      const crd = yr <= duree ? (ro?.capitalFin ?? 0) : 0;
+      const prixVente = investTotal;
+      const pvBrute = Math.max(0, prixVente - investTotal);
+      const prixVentePlus = investTotal * 1.01 ** yr;
+      const pvBrutePlus = Math.max(0, prixVentePlus - investTotal);
+      const taxIR = pvBrutePlus * (1 - abIR) * 0.19;
+      const taxPS = pvBrutePlus * (1 - abPS) * 0.172;
+      const net = prixVentePlus - crd - taxIR - taxPS;
+      return `<div style="background:#EDE7DC;border-radius:8px;overflow:hidden">
+        <div style="background:#1A2D45;color:#F5F0E8;padding:8px 12px;font-size:11px;font-weight:700">Revente à ${yr} ans</div>
+        <div style="padding:10px 12px;font-size:9px">
+          <div style="display:flex;justify-content:space-between;margin-bottom:4px"><span>Abatt. IR</span><span style="font-weight:700">${Math.round(abIR * 100)} %${abIR >= 1 ? " ✓" : ""}</span></div>
+          <div style="display:flex;justify-content:space-between;margin-bottom:6px"><span>Abatt. PS</span><span style="font-weight:700">${Math.round(abPS * 100)} %${abPS >= 1 ? " ✓" : ""}</span></div>
+          <div style="font-size:8px;color:#1A1612;margin-bottom:4px;font-style:italic">Scénario +1 %/an :</div>
+          <div style="display:flex;justify-content:space-between;margin-bottom:3px"><span>Prix de vente</span><span>${fE(prixVentePlus)}</span></div>
+          ${crd > 0 ? `<div style="display:flex;justify-content:space-between;margin-bottom:3px"><span>− CRD crédit</span><span style="color:#B03A2A">−${fE(crd)}</span></div>` : ""}
+          <div style="display:flex;justify-content:space-between;margin-bottom:3px"><span>− Impôt PV</span><span style="color:${taxIR + taxPS > 0 ? "#B03A2A" : "#1A7A52"}">${taxIR + taxPS > 0 ? "−" + fE(taxIR + taxPS) : "0 € ✓"}</span></div>
+          <div style="display:flex;justify-content:space-between;background:#1A2D45;color:#F5F0E8;padding:5px 7px;border-radius:4px;margin-top:4px;font-weight:700"><span>Net dans la poche</span><span style="color:${net >= 0 ? "#4ADE80" : "#FCA5A5"}">${fE(net)}</span></div>
+        </div>
+      </div>`;
+    }).join("")}
+  </div>`;
+})()}
+
+<div class="section-label" style="margin-bottom:6px">Paramètres de la simulation</div>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:9px">
+  ${[
+    ["Régime fiscal", regimeLabel],
+    ["TMI investisseur", tmi + " %"],
+    ["Prix d'achat", fE(prix)],
+    ["Coût total projet", fE(investTotal)],
+    ["Loyer mensuel HC", fE(loyerAnnuel / 12)],
+    ["Taux d'emprunt", f.taux + " %"],
+    ["Durée crédit", duree + " ans"],
+    ["Mensualité", fE(mensualite) + "/mois"],
+    !isMicro ? ["Amortissement bien", amortPct + " % sur " + (amortMode === "ensemble" ? amortDureeEnsemble + " ans" : "composants")] : ["Abattement forfaitaire", "50 %"],
+    ["Horizon de projection", totalYears + " ans"],
+  ].filter(Boolean).map(([k, v]) => `<div style="background:#EDE7DC;border-radius:5px;padding:6px 10px;display:flex;justify-content:space-between"><span style="color:#1A1612">${k}</span><span style="font-weight:600">${v}</span></div>`).join("")}
+</div>
+
+<div class="beige-note" style="margin-top:12px;font-size:8.5px">
+  <strong>Références réglementaires :</strong> LMNP — Art. 35 bis et 156 I bis CGI · Abattements plus-value : Art. 150 VC CGI · Amortissements : Art. 39 C CGI et jurisprudence BOFiP · Micro-BIC : Art. 50-0 CGI (seuil 77 700 €/an 2025) · Prélèvements sociaux : Art. L136-6 CSS (17,2 % sur revenus du patrimoine depuis 2018). Simulation établie le ${today} — indicative uniquement.
+</div>
+</div>
+
+<!-- ANNEXE A — PROJECTION DÉTAILLÉE (paysage) -->
+<div class="page landscape">
+<div class="hdr"><div><div class="hdr-brand"><span class="hdr-light">tout</span><span class="hdr-bold">lmnp</span></div><div class="hdr-sub">Dossier de Financement · LMNP</div></div><div class="hdr-right">${today} · ${regimeLabel}</div></div>
+<h2 class="ch">Annexe A — Projection détaillée sur ${totalYears} ans</h2>
+<p style="font-size:9px;color:#1A1612;margin-bottom:8px">${isMicro ? "Micro-BIC · Abattement 50 % constant · Loyers et charges supposés constants" : "Régime réel simplifié · Amortissement variable · Loyers et charges constants"}</p>
+
+${isMicro ? (() => {
+  const bicBase = loyerAnnuel * 0.50;
+  const bicImpot = bicBase * (tmi / 100 + 0.186);
+  return `<table class="tbl">
+  <thead><tr>
+    <th class="can">An</th>
+    <th class="r" style="font-size:8px">CRD fin</th>
+    <th class="r" style="font-size:8px">Annuité</th>
+    <th class="r" style="font-size:8px">Intérêts</th>
+    <th class="r" style="font-size:8px">Capital remb.</th>
+    <th class="r" style="font-size:8px">Charges</th>
+    <th class="r" style="font-size:8px">Base BIC</th>
+    <th class="r" style="font-size:8px">Impôt</th>
+    <th class="r" style="font-size:8px">CF av. impôt/mois</th>
+    <th class="r" style="font-size:8px">CF ap. impôt/mois</th>
+  </tr></thead>
+  <tbody>
+    ${rows.map(ro => {
+      const cfAv = (noi - (ro.year <= duree ? serviceDebt : 0)) / 12;
+      const cfAp = cfAv - bicImpot / 12;
+      return `<tr>
+        <td class="can" style="font-size:8.5px">${ro.year}</td>
+        <td class="r" style="font-size:8.5px">${ro.year <= duree ? fE(ro.capitalFin) : "—"}</td>
+        <td class="r" style="font-size:8.5px">${ro.year <= duree ? fE(ro.creditAnnuelR) : "—"}</td>
+        <td class="r" style="font-size:8.5px">${ro.year <= duree ? fE(ro.interetsAnnee) : "—"}</td>
+        <td class="r" style="font-size:8.5px">${ro.year <= duree ? fE(ro.capitalRembourse) : "—"}</td>
+        <td class="r" style="font-size:8.5px">${fE(chargesAnnuelles)}</td>
+        <td class="r" style="font-size:8.5px;color:#B03A2A">${fE(bicBase)}</td>
+        <td class="r" style="font-size:8.5px;color:${bicImpot === 0 ? "#1A7A52" : "#B03A2A"}">${fE(bicImpot)}</td>
+        <td class="r" style="font-size:8.5px;color:${cfAv >= 0 ? "#1A7A52" : "#B03A2A"}">${fE(cfAv)}</td>
+        <td class="r" style="font-size:8.5px;color:${cfAp >= 0 ? "#1A7A52" : "#B03A2A"};font-weight:600">${fE(cfAp)}</td>
+      </tr>`;
+    }).join("")}
+  </tbody>
+</table>`;
+})() : `<table class="tbl">
+  <thead><tr>
+    <th class="can">An</th>
+    <th class="r" style="font-size:8px">CRD fin</th>
+    <th class="r" style="font-size:8px">Annuité</th>
+    <th class="r" style="font-size:8px">Intérêts</th>
+    <th class="r" style="font-size:8px">Capital remb.</th>
+    <th class="r" style="font-size:8px">Charges</th>
+    <th class="r" style="font-size:8px">Résultat av. amort.</th>
+    <th class="r" style="font-size:8px">Amort. déduit</th>
+    <th class="r" style="font-size:8px">Base imposable</th>
+    <th class="r" style="font-size:8px">Impôt</th>
+    <th class="r" style="font-size:8px">CF av./mois</th>
+    <th class="r" style="font-size:8px">CF ap./mois</th>
+  </tr></thead>
+  <tbody>
+    ${rows.map(ro => {
+      const cfAv = (noi - (ro.year <= duree ? serviceDebt : 0)) / 12;
+      const cfAp = cfAv - ro.impot / 12;
+      return `<tr>
+        <td class="can" style="font-size:8.5px">${ro.year}</td>
+        <td class="r" style="font-size:8.5px">${ro.year <= duree ? fE(ro.capitalFin) : "—"}</td>
+        <td class="r" style="font-size:8.5px">${ro.year <= duree ? fE(ro.creditAnnuelR) : "—"}</td>
+        <td class="r" style="font-size:8.5px">${ro.year <= duree ? fE(ro.interetsAnnee) : "—"}</td>
+        <td class="r" style="font-size:8.5px">${ro.year <= duree ? fE(ro.capitalRembourse) : "—"}</td>
+        <td class="r" style="font-size:8.5px">${fE(chargesAnnuelles)}</td>
+        <td class="r" style="font-size:8.5px">${fE(ro.resultatAvantAmort)}</td>
+        <td class="r" style="font-size:8.5px;font-weight:600">${fE(ro.amortDisponible)}${ro.reportNplus1 > 0 ? `<div style="font-size:7px;color:#B08A2A">→N+1:${fE(ro.reportNplus1)}</div>` : ""}</td>
+        <td class="r" style="font-size:8.5px;color:${ro.baseImposable === 0 ? "#1A7A52" : "#B03A2A"};font-weight:600">${fE(ro.baseImposable)}</td>
+        <td class="r" style="font-size:8.5px;color:${ro.impot === 0 ? "#1A7A52" : "#B03A2A"}">${fE(ro.impot)}</td>
+        <td class="r" style="font-size:8.5px;color:${cfAv >= 0 ? "#1A7A52" : "#B03A2A"}">${fE(cfAv)}</td>
+        <td class="r" style="font-size:8.5px;color:${cfAp >= 0 ? "#1A7A52" : "#B03A2A"};font-weight:600">${fE(cfAp)}</td>
+      </tr>`;
+    }).join("")}
+  </tbody>
+</table>`}
+</div>
+
+${!isMicro && annexeCols.length > 0 ? `
+<!-- ANNEXE B — AMORTISSEMENT DÉTAILLÉ (paysage, réel uniquement) -->
+<div class="page landscape">
+<div class="hdr"><div><div class="hdr-brand"><span class="hdr-light">tout</span><span class="hdr-bold">lmnp</span></div><div class="hdr-sub">Dossier de Financement · LMNP</div></div><div class="hdr-right">${today} · ${regimeLabel}</div></div>
+<h2 class="ch">Annexe B — Plan d'amortissement détaillé par composant</h2>
+
+<table class="tbl" style="font-size:${afs}px">
+  <thead>
+    <tr>
+      <th class="can" rowspan="2" style="font-size:8.5px">An</th>
+      ${annexeBHeaderCols}
+      <th rowspan="2" style="background:#4A9FCA;color:#1A2D45;font-size:8.5px;text-align:center;padding:5px">Total<br>/an</th>
+    </tr>
+    <tr>${annexeBHeaderSub}</tr>
+  </thead>
+  <tbody>${annexeBRows}</tbody>
+</table>
+
+<div class="beige-note" style="margin-top:10px">
+  <strong>Récapitulatif des composants :</strong>
+  <table class="tbl" style="margin-top:6px">
+    <thead><tr><th>Composant</th><th class="r">Valeur initiale</th><th class="r">Durée</th><th class="r">Dotation annuelle</th></tr></thead>
+    <tbody>
+      ${annexeCols.map(c => `<tr><td class="lbl">${c.label}</td><td class="r">${fE(c.initial)}</td><td class="r">${c.duree} ans</td><td class="r"><strong>${fE(c.annuel)}</strong></td></tr>`).join("")}
+      <tr><td class="lbl" style="color:#1A1612">Terrain (non amortissable)</td><td class="r" style="color:#1A1612">${fE(terrainVal)}</td><td class="r">—</td><td class="r">0 €</td></tr>
       <tr class="total"><td>Total an. 1</td><td class="r">${fE(annexeCols.reduce((s, c) => s + c.initial, 0))}</td><td></td><td class="r">${fE(amortTotalAn1)}</td></tr>
     </tbody>
   </table>
