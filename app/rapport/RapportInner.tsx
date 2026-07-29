@@ -1092,9 +1092,6 @@ ${!isMicro && annexeCols.length > 0 ? `<div class="pb">
         <h1 className="font-light mb-4" style={{ fontSize: "clamp(1.8rem,4vw,2.5rem)", color: "#4E1F12", letterSpacing: "-0.025em" }}>
           Votre rapport est prêt !
         </h1>
-        <p className="text-base mb-8" style={{ color: "rgba(26,22,18,0.6)", lineHeight: 1.75 }}>
-          Cliquez ci-dessous pour personnaliser votre rapport avec les informations du bien, puis l&apos;ouvrir et l&apos;imprimer en PDF.
-        </p>
         <button
           onClick={handleOpenPdf}
           className="inline-block text-base font-medium px-10 py-4 mb-4 transition-opacity hover:opacity-[0.88] rounded-xl"
