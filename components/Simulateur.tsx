@@ -348,6 +348,30 @@ export default function Simulateur() {
     localStorage.setItem("lmnp_pdf_week_count", JSON.stringify({ count, weekStart: getWeekStart() }));
   };
 
+  const SIM_LIMIT = 6;
+  const getSimDayCount = (): number => {
+    if (typeof window === "undefined") return 0;
+    try {
+      const stored = localStorage.getItem("lmnp_sim_day_count");
+      if (!stored) return 0;
+      const { count, date } = JSON.parse(stored);
+      const today = new Date().toISOString().slice(0, 10);
+      if (date !== today) return 0;
+      return count ?? 0;
+    } catch { return 0; }
+  };
+  const incrementSimDayCount = () => {
+    if (typeof window === "undefined") return;
+    const today = new Date().toISOString().slice(0, 10);
+    localStorage.setItem("lmnp_sim_day_count", JSON.stringify({ count: getSimDayCount() + 1, date: today }));
+  };
+  const isSimBlocked = (): boolean => {
+    if (typeof window === "undefined") return false;
+    const plan = getPlan();
+    if (plan === "starter" || plan === "pro") return false;
+    return getSimDayCount() >= SIM_LIMIT;
+  };
+
   const getWeekStart = (): string => {
     const d = new Date();
     const day = d.getDay();
@@ -410,6 +434,8 @@ export default function Simulateur() {
   const loyerSaisonnier = (nuitee: number, taux: number) => nuitee * (taux / 100) * 365 / 12;
 
   const handleSimuler = () => {
+    if (isSimBlocked()) { setShowPayPopup(true); return; }
+    incrementSimDayCount();
     if (isSaisonnier) {
       const nuitee = parseFloat(prixNuitee) || 0;
       const lBas   = loyerSaisonnier(nuitee, parseFloat(tauxOccBas)   || 0);
@@ -1316,12 +1342,23 @@ ${annexeTable}
         </div>}
 
         {/* ─── BOUTON SIMULER ─── */}
-        {!simulationValidated && <div className="flex justify-end mb-10">
-          <button onClick={handleSimuler}
-            className="px-10 py-4 text-base font-medium transition-opacity hover:opacity-[0.88]"
-            style={{ backgroundColor: "#C95B2A", color: "#F5F0E8", borderRadius: 8, letterSpacing: "0.02em" }}>
-            Lancer la simulation →
-          </button>
+        {!simulationValidated && <div className="flex justify-end items-center gap-3 mb-10">
+          {(() => {
+            const remaining = Math.max(0, SIM_LIMIT - getSimDayCount());
+            const blocked = isSimBlocked();
+            return <>
+              {!blocked && remaining <= 3 && (
+                <span style={{ fontSize: 11, color: "rgba(26,22,18,0.45)" }}>
+                  {remaining} simulation{remaining > 1 ? "s" : ""} gratuite{remaining > 1 ? "s" : ""} restante{remaining > 1 ? "s" : ""}
+                </span>
+              )}
+              <button onClick={handleSimuler}
+                className="px-10 py-4 text-base font-medium transition-opacity hover:opacity-[0.88]"
+                style={{ backgroundColor: "#C95B2A", color: "#F5F0E8", borderRadius: 8, letterSpacing: "0.02em", opacity: blocked ? 0.5 : 1 }}>
+                {blocked ? "Limite atteinte" : "Lancer la simulation →"}
+              </button>
+            </>;
+          })()}
         </div>}
 
         {/* ─── RESULTS ─── */}
