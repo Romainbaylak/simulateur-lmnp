@@ -657,15 +657,18 @@ ${saisonnierHtml}
     <tr><td class="lbl">Taux nominal · durée</td><td class="r">${f.taux} % · ${duree} ans</td><td></td></tr>
     <tr><td class="lbl">Mensualité hors assurance</td><td class="r">${fE(mensualite)}/mois</td><td style="font-size:9px;color:rgba(26,22,18,.45)">Déduite du cash-flow mais pas fiscalement</td></tr>
     <tr><td class="lbl">Annuité de crédit</td><td class="r">${fE(creditAnnuel)}</td><td style="font-size:9px;color:rgba(26,22,18,.45)">Capital + intérêts annuels</td></tr>
-    <tr><td class="lbl">Intérêts année 1</td><td class="r">${fE(interetsAnnee1)}</td><td style="font-size:9px;color:rgba(26,22,18,.45)">Déductibles des revenus locatifs</td></tr>
+    <tr><td class="lbl">Intérêts année 1</td><td class="r">${fE(interetsAnnee1)}</td><td style="font-size:9px;color:rgba(26,22,18,.45)">${isMicro ? "Non déductibles en Micro-BIC (abattement forfaitaire)" : "Déductibles des revenus locatifs"}</td></tr>
     <tr><td class="lbl">Capital remboursé année 1</td><td class="r">${fE(capitalRembourseAn1)}</td><td style="font-size:9px;color:rgba(26,22,18,.45)">Non déductible · enrichissement net</td></tr>
     ${coutTotalInteret > 0 ? `<tr><td class="lbl">Coût total estimé des intérêts</td><td class="r">${fE(coutTotalInteret)}</td><td style="font-size:9px;color:rgba(26,22,18,.45)">Sur ${duree} ans</td></tr>` : ""}
-    ${assuranceEmprunteurAnnuel > 0 ? `<tr><td class="lbl">Assurance emprunteur</td><td class="r">${fE(assuranceEmprunteurAnnuel)}/an</td><td style="font-size:9px;color:rgba(26,22,18,.45)">Déductible des revenus locatifs</td></tr>` : ""}
+    ${assuranceEmprunteurAnnuel > 0 ? `<tr><td class="lbl">Assurance emprunteur</td><td class="r">${fE(assuranceEmprunteurAnnuel)}/an</td><td style="font-size:9px;color:rgba(26,22,18,.45)">${isMicro ? "Non déductible en Micro-BIC" : "Déductible des revenus locatifs"}</td></tr>` : ""}
   </tbody>
 </table>
 
 <div class="note">
-  <strong>À retenir :</strong> Seuls les <strong>intérêts d'emprunt</strong> et l'<strong>assurance emprunteur</strong> sont déductibles fiscalement. Le remboursement du capital (${fE(capitalRembourseAn1)}/an en année 1) constitue un enrichissement patrimonial : vous reconstituez votre capital tout au long du crédit.
+  ${isMicro
+    ? `<strong>À retenir :</strong> En <strong>Micro-BIC</strong>, un abattement forfaitaire de <strong>50 %</strong> remplace toutes les déductions (charges réelles, intérêts, amortissements). Le remboursement du capital (${fE(capitalRembourseAn1)}/an en année 1) constitue un enrichissement patrimonial : vous reconstituez votre capital tout au long du crédit.`
+    : `<strong>À retenir :</strong> Seuls les <strong>intérêts d'emprunt</strong> et l'<strong>assurance emprunteur</strong> sont déductibles fiscalement. Le remboursement du capital (${fE(capitalRembourseAn1)}/an en année 1) constitue un enrichissement patrimonial : vous reconstituez votre capital tout au long du crédit.`
+  }
 </div>
 </div>
 
@@ -702,8 +705,8 @@ ${saisonnierHtml}
     </tr>
     <tr>
       <td class="lbl">Cash-flow après impôt (an. 1)</td>
-      <td style="font-size:9px;color:rgba(26,22,18,.45)">Cash-flow av. impôt − impôt estimé (${fE(impotReel / 12)}/mois)</td>
-      <td class="r" style="color:${cashflowReelMensuel >= 0 ? "#1A7A52" : "#B03A2A"}"><strong>${fE(cashflowReelMensuel)}/mois</strong></td>
+      <td style="font-size:9px;color:rgba(26,22,18,.45)">Cash-flow av. impôt − impôt estimé (${fE((isMicro ? impotBIC : impotReel) / 12)}/mois)</td>
+      <td class="r" style="color:${(isMicro ? cashflowBICMensuel : cashflowReelMensuel) >= 0 ? "#1A7A52" : "#B03A2A"}"><strong>${fE(isMicro ? cashflowBICMensuel : cashflowReelMensuel)}/mois</strong></td>
     </tr>
   </tbody>
 </table>
@@ -716,16 +719,16 @@ ${saisonnierHtml}
     <tr><td class="lbl">− Charges propriétaire</td><td class="r red">−${fE(chargesAnnuelles)}</td><td class="r red">−${fE(chargesAnnuelles / 12)}</td></tr>
     ${assuranceEmprunteurAnnuel > 0 ? `<tr><td class="lbl">− Assurance emprunteur</td><td class="r red">−${fE(assuranceEmprunteurAnnuel)}</td><td class="r red">−${fE(assuranceEmprunteurAnnuel / 12)}</td></tr>` : ""}
     <tr><td class="lbl">− Mensualités de crédit</td><td class="r red">−${fE(creditAnnuel)}</td><td class="r red">−${fE(mensualite)}</td></tr>
-    <tr><td class="lbl">− Impôt estimé (année 1)</td><td class="r red">−${fE(impotReel)}</td><td class="r red">−${fE(impotReel / 12)}</td></tr>
+    <tr><td class="lbl">− Impôt estimé (année 1)</td><td class="r red">−${fE(isMicro ? impotBIC : impotReel)}</td><td class="r red">−${fE((isMicro ? impotBIC : impotReel) / 12)}</td></tr>
     <tr class="total"><td>= Trésorerie nette</td>
-      <td class="r" style="color:${cashflowReelMensuel >= 0 ? "#1A7A52" : "#B03A2A"}">${fE(cashflowReelMensuel * 12)}</td>
-      <td class="r" style="color:${cashflowReelMensuel >= 0 ? "#1A7A52" : "#B03A2A"}">${fE(cashflowReelMensuel)}/mois</td>
+      <td class="r" style="color:${(isMicro ? cashflowBICMensuel : cashflowReelMensuel) >= 0 ? "#1A7A52" : "#B03A2A"}">${fE((isMicro ? cashflowBICMensuel : cashflowReelMensuel) * 12)}</td>
+      <td class="r" style="color:${(isMicro ? cashflowBICMensuel : cashflowReelMensuel) >= 0 ? "#1A7A52" : "#B03A2A"}">${fE(isMicro ? cashflowBICMensuel : cashflowReelMensuel)}/mois</td>
     </tr>
   </tbody>
 </table>
 
 <div class="note" style="margin-top:12px">
-  <strong>Bon à savoir :</strong> Un cash-flow négatif n'est pas nécessairement rédhibitoire. Il mesure la trésorerie mensuelle nette, mais votre investissement crée simultanément de la <strong>valeur patrimoniale</strong> : remboursement de capital (${fE(capitalRembourseAn1)}/an en an. 1), potentielle valorisation du bien et économies fiscales liées aux amortissements. La rentabilité globale s'apprécie sur l'ensemble de la durée de détention.
+  <strong>Bon à savoir :</strong> Un cash-flow négatif n'est pas nécessairement rédhibitoire. Il mesure la trésorerie mensuelle nette, mais votre investissement crée simultanément de la <strong>valeur patrimoniale</strong> : remboursement de capital (${fE(capitalRembourseAn1)}/an en an. 1) et potentielle valorisation du bien.${!isMicro ? " Les amortissements génèrent également une économie fiscale qui ne ressort pas dans le cash-flow mais dans la fiscalité." : ""} La rentabilité globale s'apprécie sur l'ensemble de la durée de détention.
 </div>
 </div>
 
@@ -820,7 +823,37 @@ ${makeAmortBarChart()}
 <div class="hdr"><div><div class="hdr-brand"><span class="hdr-light">tout</span><span class="hdr-bold">lmnp</span></div><div class="hdr-sub">Rapport Client · Simulation LMNP</div></div><div class="hdr-right">${today}</div></div>
 <h2 class="ch"><span class="num">5.</span>Évolution de l'investissement dans le temps</h2>
 
-<table class="tbl" style="margin-bottom:14px">
+${(() => {
+  if (isMicro) {
+    const bicBase = loyerAnnuel * 0.50;
+    const bicImpot = bicBase * (tmi / 100 + 0.186);
+    return `<table class="tbl" style="margin-bottom:14px">
+  <thead><tr>
+    <th>Année</th>
+    <th class="r">Capital restant dû</th>
+    <th class="r">Intérêts</th>
+    <th class="r">Base imposable BIC</th>
+    <th class="r">Impôt</th>
+    <th class="r">Cash-flow/mois</th>
+  </tr></thead>
+  <tbody>
+    ${keyYears.map(yr => {
+      const ro = rows.find(r => r.year === yr);
+      if (!ro) return "";
+      const cfBic = (loyerAnnuel - ro.creditAnnuelR - chargesAnnuelles - assuranceEmprunteurAnnuel - bicImpot) / 12;
+      return `<tr>
+        <td class="can">An ${yr}</td>
+        <td class="r">${yr <= duree ? fE(ro.capitalDebut) : "—"}</td>
+        <td class="r">${yr <= duree ? fE(ro.interetsAnnee) : "—"}</td>
+        <td class="r" style="color:#B03A2A">${fE(bicBase)}</td>
+        <td class="r" style="color:${bicImpot === 0 ? "#1A7A52" : "#B03A2A"}">${fE(bicImpot)}</td>
+        <td class="r" style="color:${cfBic >= 0 ? "#1A7A52" : "#B03A2A"}"><strong>${fE(cfBic)}/mois</strong></td>
+      </tr>`;
+    }).join("")}
+  </tbody>
+</table>`;
+  }
+  return `<table class="tbl" style="margin-bottom:14px">
   <thead><tr>
     <th>Année</th>
     <th class="r">Capital restant dû</th>
@@ -845,7 +878,8 @@ ${makeAmortBarChart()}
       </tr>`;
     }).join("")}
   </tbody>
-</table>
+</table>`;
+})()}
 
 <div class="chart-title">Capital restant dû en fin d'année (€)</div>
 ${makeCapitalChart()}
