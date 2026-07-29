@@ -3,7 +3,7 @@
 import { useState } from "react";
 
 export interface BienInfo {
-  type: "ap" | "ma";
+  type: "ap" | "ma" | "im";
   ville: string;
   surface: string;
   description: string;
@@ -23,8 +23,14 @@ const FIELD_STYLE = { background: "#EDE7DC", border: "0.5px solid rgba(26,22,18,
 const LBL = "block text-[11px] font-medium uppercase tracking-[0.14em] mb-1.5";
 const LBL_STYLE = { color: "rgba(26,22,18,0.45)" };
 
+const TYPES: { id: "ap" | "ma" | "im"; label: string }[] = [
+  { id: "ap", label: "Appartement" },
+  { id: "ma", label: "Maison" },
+  { id: "im", label: "Immeuble" },
+];
+
 export default function PopupBienInfo({ initial, onConfirm, onClose, ctaLabel = "Continuer vers le PDF" }: Props) {
-  const [type, setType] = useState<"ap" | "ma">(initial.type);
+  const [type, setType] = useState<"ap" | "ma" | "im">(initial.type ?? "ap");
   const [ville, setVille] = useState(initial.ville);
   const [surface, setSurface] = useState(initial.surface);
   const [description, setDescription] = useState(initial.description);
@@ -48,13 +54,11 @@ export default function PopupBienInfo({ initial, onConfirm, onClose, ctaLabel = 
         >×</button>
 
         <div className="mb-6">
-          <div className="w-10 h-10 rounded-full flex items-center justify-center mb-3 text-lg"
-            style={{ background: "rgba(201,91,42,0.1)", color: "#C95B2A" }}>🏠</div>
           <h2 className="font-medium text-xl mb-1" style={{ color: "#4E1F12", letterSpacing: "-0.02em" }}>
-            Informations sur le bien
+            Complète ces informations sur ton bien
           </h2>
           <p className="text-xs leading-relaxed" style={{ color: "rgba(26,22,18,0.45)" }}>
-            Ces informations apparaîtront dans votre rapport PDF. Aucune n&apos;est obligatoire.
+            Non obligatoire
           </p>
         </div>
 
@@ -62,15 +66,16 @@ export default function PopupBienInfo({ initial, onConfirm, onClose, ctaLabel = 
           {/* Type */}
           <div>
             <label className={LBL} style={LBL_STYLE}>Type de bien</label>
-            <div className="flex rounded-md overflow-hidden" style={{ border: "0.5px solid rgba(26,22,18,0.15)", width: "fit-content" }}>
-              {(["ap", "ma"] as const).map(t => (
-                <button key={t} onClick={() => setType(t)}
-                  className="px-5 py-2 text-sm font-medium transition-colors"
+            <div className="flex rounded-md overflow-hidden w-full" style={{ border: "0.5px solid rgba(26,22,18,0.15)" }}>
+              {TYPES.map(t => (
+                <button key={t.id} onClick={() => setType(t.id)}
+                  className="flex-1 py-2 text-sm font-medium transition-colors"
                   style={{
-                    background: type === t ? "#1A1612" : "#EDE7DC",
-                    color: type === t ? "#F5F0E8" : "rgba(26,22,18,0.55)",
+                    background: type === t.id ? "#1A1612" : "#EDE7DC",
+                    color: type === t.id ? "#F5F0E8" : "rgba(26,22,18,0.55)",
+                    borderRight: t.id !== "im" ? "0.5px solid rgba(26,22,18,0.15)" : "none",
                   }}>
-                  {t === "ap" ? "Appartement" : "Maison"}
+                  {t.label}
                 </button>
               ))}
             </div>
@@ -116,7 +121,7 @@ export default function PopupBienInfo({ initial, onConfirm, onClose, ctaLabel = 
           </div>
         </div>
 
-        <div className="mt-6 space-y-2">
+        <div className="mt-6">
           <button
             onClick={confirm}
             className="w-full py-3 rounded-lg font-medium text-sm transition-opacity hover:opacity-[0.88]"

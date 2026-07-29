@@ -13,6 +13,7 @@ import {
   type Resultats,
 } from "@/lib/computeResultats";
 import PopupBienInfo, { defaultBienInfo, type BienInfo } from "@/components/PopupBienInfo";
+import PopupChoixPDF from "@/components/PopupChoixPDF";
 
 const SESSION_TTL_MS = 2 * 60 * 60 * 1000;
 
@@ -23,6 +24,7 @@ export default function RapportInner() {
   const [status, setStatus] = useState<"loading" | "ready" | "done" | "expired" | "used">("loading");
   const [form, setForm] = useState<SimulationForm | null>(null);
   const [resultats, setResultats] = useState<Resultats | null>(null);
+  const [showChoixPopup, setShowChoixPopup] = useState(false);
   const [showBienPopup, setShowBienPopup] = useState(false);
   const [initialBienInfo, setInitialBienInfo] = useState<BienInfo>(defaultBienInfo);
 
@@ -88,7 +90,12 @@ export default function RapportInner() {
     } catch { setStatus("expired"); }
   }, [sessionId, router]);
 
-  const handleOpenPdf = () => setShowBienPopup(true);
+  const handleOpenPdf = () => setShowChoixPopup(true);
+
+  const handleChoixPDF = (_choix: "synthese-pdf" | "banque-pdf") => {
+    setShowChoixPopup(false);
+    setShowBienPopup(true);
+  };
 
   const openPdfWithInfo = (bienInfo: BienInfo) => {
     setShowBienPopup(false);
@@ -499,7 +506,7 @@ table.tbl tr.total td{background:rgba(78,31,18,.07);font-weight:700}
 </div>
 
 <div style="background:#EDE7DC;border-radius:7px;padding:10px 14px;margin-bottom:14px;display:flex;gap:16px;flex-wrap:wrap">
-  ${bienInfo.type ? `<span class="bien-badge">${bienInfo.type === "ap" ? "Appartement" : "Maison"}</span>` : ""}
+  ${bienInfo.type ? `<span class="bien-badge">${bienInfo.type === "ap" ? "Appartement" : bienInfo.type === "ma" ? "Maison" : "Immeuble"}</span>` : ""}
   ${bienInfo.ville ? `<span class="bien-badge">📍 ${bienInfo.ville}</span>` : ""}
   ${bienInfo.surface ? `<span class="bien-badge">📐 ${bienInfo.surface} m²</span>` : ""}
   ${bienInfo.description ? `<span style="font-size:10px;color:#1A1612">${bienInfo.description}</span>` : ""}
@@ -1132,6 +1139,12 @@ ${!isMicro && annexeCols.length > 0 ? `<div class="page landscape">
   // status === "done"
   return (
     <main className="min-h-screen" style={{ backgroundColor: "#F5F0E8" }}>
+      {showChoixPopup && (
+        <PopupChoixPDF
+          onChoix={handleChoixPDF}
+          onClose={() => setShowChoixPopup(false)}
+        />
+      )}
       {showBienPopup && (
         <PopupBienInfo
           initial={initialBienInfo}
