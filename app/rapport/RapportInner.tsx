@@ -499,7 +499,7 @@ table.tbl tr.total td{background:rgba(78,31,18,.07);font-weight:700}
 </div>
 
 <div style="background:#EDE7DC;border-radius:7px;padding:10px 14px;margin-bottom:14px;display:flex;gap:16px;flex-wrap:wrap">
-  ${bienInfo.type ? `<span class="bien-badge">${bienInfo.type === "ap" ? "🏢 Appartement" : "🏠 Maison"}</span>` : ""}
+  ${bienInfo.type ? `<span class="bien-badge">${bienInfo.type === "ap" ? "Appartement" : "Maison"}</span>` : ""}
   ${bienInfo.ville ? `<span class="bien-badge">📍 ${bienInfo.ville}</span>` : ""}
   ${bienInfo.surface ? `<span class="bien-badge">📐 ${bienInfo.surface} m²</span>` : ""}
   ${bienInfo.description ? `<span style="font-size:10px;color:#1A1612">${bienInfo.description}</span>` : ""}
