@@ -475,8 +475,6 @@ export default function Simulateur() {
   };
 
   const handleAjuster = () => {
-    if (isAmortBlocked()) { setShowPayPopup(true); return; }
-    markAmortUsed();
     if (isSaisonnier) {
       const nuitee = parseFloat(prixNuitee) || 0;
       const lBas   = loyerSaisonnier(nuitee, parseFloat(tauxOccBas)   || 0);
