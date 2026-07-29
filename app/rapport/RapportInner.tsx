@@ -352,7 +352,7 @@ ${yr % 5 === 0 || yr === 1 ? `<text x="${(bx + bW / 2).toFixed(1)}" y="${(H - 6)
       const cols = scenarios.map(({ label, sr, taux: t }) => {
         if (!sr) return `<td></td>`;
         const nuits = Math.round(parseFloat(t) / 100 * 365);
-        const bic = sr.loyerAnnuel * 0.70;
+        const bic = sr.loyerAnnuel * 0.50;
         const ibic = bic * (tmi / 100 + 0.186);
         return `<td style="padding:10px;background:#EDE7DC;border-radius:6px;vertical-align:top">
           <div style="font-weight:700;font-size:11px;color:#4E1F12;margin-bottom:4px">${label}</div>
@@ -535,8 +535,8 @@ table.tbl tr.total td{background:rgba(78,31,18,.07);font-weight:700}
   </div>
   <div class="kpi">
     <div class="kpi-lbl">Cash-flow mensuel après fiscalité</div>
-    <div class="kpi-val" style="color:${cashflowReelMensuel >= 0 ? "#4ADE80" : "#FCA5A5"}">${fE(cashflowReelMensuel)}</div>
-    <div class="kpi-unit">année 1 · régime réel</div>
+    <div class="kpi-val" style="color:${(isMicro ? cashflowBICMensuel : cashflowReelMensuel) >= 0 ? "#4ADE80" : "#FCA5A5"}">${fE(isMicro ? cashflowBICMensuel : cashflowReelMensuel)}</div>
+    <div class="kpi-unit">année 1 · ${isMicro ? "Micro-BIC" : "régime réel"}</div>
   </div>
   <div class="kpi">
     <div class="kpi-lbl">Capital remboursé année 1</div>
@@ -556,7 +556,7 @@ ${saisonnierHtml}
   </tr></thead>
   <tbody>
     <tr><td class="lbl">Loyers imposables</td><td class="r">${fE(loyerAnnuel)}</td><td class="r">${fE(loyerAnnuel)}</td></tr>
-    <tr><td class="lbl">Charges / abattement</td><td class="r">Charges réelles : ${fE(chargesDeductibles)}</td><td class="r">Abattement 30 % : ${fE(loyerAnnuel * 0.30)}</td></tr>
+    <tr><td class="lbl">Charges / abattement</td><td class="r">Charges réelles : ${fE(chargesDeductibles)}</td><td class="r">Abattement 50 % : ${fE(loyerAnnuel * 0.50)}</td></tr>
     <tr><td class="lbl">Amortissements déduits</td><td class="r">${fE(amortTotalAn1)}</td><td class="r">—</td></tr>
     <tr class="sep"><td class="lbl">Base imposable</td>
       <td class="r" style="color:${baseImposableReel === 0 ? "#1A7A52" : "#B03A2A"}">${fE(baseImposableReel)}</td>
@@ -603,7 +603,7 @@ ${saisonnierHtml}
   <div>
     <div style="font-size:13px;font-weight:700;margin-bottom:4px">${isMicro ? "Micro-BIC" : "Régime réel simplifié"}</div>
     <div style="font-size:9px;opacity:.85;line-height:1.6">${isMicro
-      ? "Abattement forfaitaire 30 % · Déclaration simplifiée · Aucune comptabilité obligatoire · Idéal si charges réelles inférieures à l'abattement"
+      ? "Abattement forfaitaire 50 % · Déclaration simplifiée · Aucune comptabilité obligatoire · Idéal si charges réelles inférieures à l'abattement"
       : "Déduction des charges réelles · Amortissement du bien, mobilier, travaux et notaire · Report illimité du déficit · Optimisation fiscale sur le long terme"
     }</div>
   </div>
@@ -743,7 +743,7 @@ ${isMicro ? `
   <thead><tr><th>Étape</th><th class="r">Montant</th></tr></thead>
   <tbody>
     <tr><td class="lbl">Revenus locatifs annuels (HC)</td><td class="r">${fE(loyerAnnuel)}</td></tr>
-    <tr><td class="lbl">− Abattement forfaitaire (30 %)</td><td class="r red">−${fE(loyerAnnuel * 0.30)}</td></tr>
+    <tr><td class="lbl">− Abattement forfaitaire (50 %)</td><td class="r red">−${fE(loyerAnnuel * 0.50)}</td></tr>
     <tr class="sep"><td class="lbl">= Base imposable</td><td class="r">${fE(baseBIC)}</td></tr>
     <tr><td class="lbl">Impôt IR estimé (TMI ${tmi} %)</td><td class="r">${fE(impotBIC * (tmi / (tmi + 18.6)))}</td></tr>
     <tr><td class="lbl">Prélèvements sociaux (18,6 %)</td><td class="r">${fE(impotBIC * (18.6 / (tmi + 18.6)))}</td></tr>
@@ -752,7 +752,7 @@ ${isMicro ? `
   </tbody>
 </table>
 <div class="note">
-  <strong>Comment est calculé l'impôt ?</strong> En Micro-BIC, un abattement forfaitaire de <strong>30 %</strong> est appliqué sur vos revenus. La base imposable restante est taxée au taux global TMI + PS = <strong>${(tmi + 18.6).toFixed(1)} %</strong>. Ce régime est simple mais ne permet pas de déduire les charges réelles ni les amortissements.
+  <strong>Comment est calculé l'impôt ?</strong> En Micro-BIC, un abattement forfaitaire de <strong>50 %</strong> est appliqué sur vos revenus. La base imposable restante est taxée au taux global TMI + PS = <strong>${(tmi + 18.6).toFixed(1)} %</strong>. Ce régime est simple mais ne permet pas de déduire les charges réelles ni les amortissements.
 </div>
 ` : `
 <div class="section-label" style="margin-bottom:6px">Calcul fiscal – année 1 (régime réel simplifié)</div>
