@@ -172,8 +172,8 @@ function computeResultats(
   const amortAReporter = Math.max(0, amortTotal - Math.max(0, resultatAvantAmort));
   const cashflowReelMensuel = (recettesAnnuelles - creditAnnuel - chargesAnnuelles - assuranceEmprunteurAnnuel - impotReel) / 12;
 
-  // Micro-BIC : abattement 50% LMNP classique, 30% meublé tourisme non classé (saisonnière)
-  const abattementBIC = isSaisonnier ? 0.30 : 0.50;
+  // Micro-BIC : abattement 50%
+  const abattementBIC = 0.50;
   const baseBIC = recettesAnnuelles * (1 - abattementBIC);
   const impotBIC = baseBIC * (form.tmi / 100 + 0.186);
   const cashflowBICMensuel = (recettesAnnuelles - creditAnnuel - chargesAnnuelles - assuranceEmprunteurAnnuel - impotBIC) / 12;
@@ -621,7 +621,7 @@ export default function Simulateur() {
 
     const zerosYears = rows.filter(ro => ro.baseImposable === 0).length;
     const firstTaxRow = rows.find(ro => ro.baseImposable > 0);
-    const abattementBICPdf = isSaisonnier ? 0.30 : 0.50;
+    const abattementBICPdf = 0.50;
     const baseBIC = recettesAnnuelles * (1 - abattementBICPdf);
     const impotBIC = baseBIC * (tmi / 100 + 0.186);
 
@@ -687,8 +687,8 @@ export default function Simulateur() {
       : `Dès la 1ère année, la base imposable s'établit à ${fEur(rows[0]?.baseImposable ?? 0)}, générant un impôt de ${fEur(rows[0]?.impot ?? 0)}/an. L'amortissement reste partiellement utilisé — envisagez d'allonger les durées ou d'augmenter la part mobilier.`;
 
     const microbicNote = tmi > 0
-      ? `En Micro-BIC, votre base imposable serait de <strong>${fEur(baseBIC)}</strong> par an (abattement ${isSaisonnier ? "30" : "50"} % sur les recettes totales de ${fEur(recettesAnnuelles)}/an, en cas de loyer constant), générant un impôt estimé de <strong>${fEur(impotBIC)}</strong> par an (TMI ${tmi} % + prélèvements sociaux 18,6 %).`
-      : `En Micro-BIC, votre base imposable serait de <strong>${fEur(baseBIC)}</strong> par an (abattement ${isSaisonnier ? "30" : "50"} % sur les recettes totales de ${fEur(recettesAnnuelles)}/an, en cas de loyer constant). Renseignez votre TMI pour calculer l'impôt correspondant.`;
+      ? `En Micro-BIC, votre base imposable serait de <strong>${fEur(baseBIC)}</strong> par an (abattement ${"50"} % sur les recettes totales de ${fEur(recettesAnnuelles)}/an, en cas de loyer constant), générant un impôt estimé de <strong>${fEur(impotBIC)}</strong> par an (TMI ${tmi} % + prélèvements sociaux 18,6 %).`
+      : `En Micro-BIC, votre base imposable serait de <strong>${fEur(baseBIC)}</strong> par an (abattement ${"50"} % sur les recettes totales de ${fEur(recettesAnnuelles)}/an, en cas de loyer constant). Renseignez votre TMI pour calculer l'impôt correspondant.`;
 
     // Saisonnière: 6-table comparison block
     let saisonniereSummaryHtml = "";
@@ -701,7 +701,7 @@ export default function Simulateur() {
       const makeScenarioCol = (label: string, r: Resultats | null, taux: string, nuits: number) => {
         if (!r) return `<div style="flex:1"></div>`;
         const lr = r.recettesAnnuelles;
-        const bic = lr * 0.70; // saisonnière non classée → abattement 30%
+        const bic = lr * 0.50; // abattement 50% Micro-BIC
         const impBic = bic * (form.tmi / 100 + 0.186);
         const cfBic = r.cashflowBICMensuel;
         const cfReel = r.cashflowReelMensuel;
@@ -730,7 +730,7 @@ export default function Simulateur() {
             <div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#26527A;padding:4px 6px 2px">Micro-BIC</div>
             <table style="width:100%;border-collapse:collapse">
               ${row("Revenus annuels", fEur(lr), undefined, true)}
-              ${row("Abattement 30%", `−${fEur(lr*.30)}`, "#B03A2A")}
+              ${row("Abattement 50%", `−${fEur(lr*.50)}`, "#B03A2A")}
               ${row("Base imposable", fEur(bic), "#1A1612", true, true)}
               ${row("Impôt estimé", fEur(impBic), "#B03A2A")}
               ${row("Cash-flow/mois", `${fEur(cfBic)}/mois`, cfBic>=0?"#1A7A52":"#B03A2A", true, true)}
@@ -1847,7 +1847,7 @@ ${annexeTable}
                                 <Row label="Amortissements" val={`−${formatEuro(r.amortTotal)}`} color="#B03A2A" />
                               </>
                             ) : (
-                              <Row label="Abattement 30%" val={`−${formatEuro(r.loyerAnnuel * 0.30)}`} color="#B03A2A" />
+                              <Row label="Abattement 50%" val={`−${formatEuro(r.loyerAnnuel * 0.50)}`} color="#B03A2A" />
                             )}
                             <Row label="Base imposable" val={formatEuro(base)} color={base === 0 ? "#1A7A52" : "#1A1612"} bold separator />
                             <Row label="Impôt estimé" val={formatEuro(impot)} color="#B03A2A" />
