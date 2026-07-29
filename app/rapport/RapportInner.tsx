@@ -576,6 +576,39 @@ ${saisonnierHtml}
   <strong>Hypothèse :</strong> Simulation sur ${totalYears} ans en régime réel simplifié. Loyers, charges et valeur du bien supposés constants. L'amortissement est calculé selon les durées fiscalement reconnues. TMI appliquée : <strong>${tmi} %</strong> + prélèvements sociaux <strong>18,6 %</strong>. Cette simulation est indicative et ne constitue pas un conseil fiscal.
 </div>
 
+<!-- Recap fiscal + barre régime choisi -->
+<div style="margin-top:18px;background:#EDE7DC;border-radius:10px;padding:16px 20px;display:flex;gap:0;align-items:stretch">
+  <div style="text-align:center;flex:1;padding:0 16px">
+    <div style="font-size:9px;font-weight:600;text-transform:uppercase;letter-spacing:.12em;color:rgba(26,22,18,.45);margin-bottom:6px">Impôt Micro-BIC</div>
+    <div style="font-size:20px;font-weight:700;color:#B03A2A">${fE(impotBIC)}</div>
+    <div style="font-size:9px;color:rgba(26,22,18,.45);margin-top:2px">par an</div>
+  </div>
+  <div style="width:1px;background:rgba(26,22,18,.12)"></div>
+  <div style="text-align:center;flex:1;padding:0 16px">
+    <div style="font-size:9px;font-weight:600;text-transform:uppercase;letter-spacing:.12em;color:rgba(26,22,18,.45);margin-bottom:6px">Impôt Régime réel</div>
+    <div style="font-size:20px;font-weight:700;color:${impotReel === 0 ? "#1A7A52" : "#C95B2A"}">${fE(impotReel)}</div>
+    <div style="font-size:9px;color:rgba(26,22,18,.45);margin-top:2px">par an</div>
+  </div>
+  <div style="width:1px;background:rgba(26,22,18,.12)"></div>
+  <div style="text-align:center;flex:1;padding:0 16px">
+    <div style="font-size:9px;font-weight:600;text-transform:uppercase;letter-spacing:.12em;color:rgba(26,22,18,.45);margin-bottom:6px">Économie fiscale an. 1</div>
+    <div style="font-size:22px;font-weight:700;color:#1A7A52">${fE(Math.max(0, impotBIC - impotReel))}</div>
+    <div style="font-size:9px;color:rgba(26,22,18,.45);margin-top:2px">en faveur du réel</div>
+  </div>
+</div>
+
+<div style="margin-top:12px;background:${isMicro ? "#2A5C8A" : "#1A6644"};border-radius:10px;padding:14px 20px;color:#fff;display:flex;align-items:center;gap:16px">
+  <div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.14em;white-space:nowrap;opacity:.7;flex-shrink:0">Régime<br>choisi</div>
+  <div style="width:1px;background:rgba(255,255,255,.25);align-self:stretch"></div>
+  <div>
+    <div style="font-size:13px;font-weight:700;margin-bottom:4px">${isMicro ? "Micro-BIC" : "Régime réel simplifié"}</div>
+    <div style="font-size:9px;opacity:.85;line-height:1.6">${isMicro
+      ? "Abattement forfaitaire 30 % · Déclaration simplifiée · Aucune comptabilité obligatoire · Idéal si charges réelles inférieures à l'abattement"
+      : "Déduction des charges réelles · Amortissement du bien, mobilier, travaux et notaire · Report illimité du déficit · Optimisation fiscale sur le long terme"
+    }</div>
+  </div>
+</div>
+
 
 <!-- ═══════════════════════════════════════════════════════
      PAGE 2 — CHAPITRE 1 : PROJET ET FINANCEMENT
@@ -739,41 +772,7 @@ ${isMicro ? `
   </tbody>
 </table>
 
-<div class="two-col" style="margin-top:14px">
-  <div>
-    <div class="section-label">Comparaison Micro-BIC</div>
-    <table class="tbl">
-      <thead><tr><th>Micro-BIC</th><th class="r">Montant</th></tr></thead>
-      <tbody>
-        <tr><td class="lbl">Revenus annuels</td><td class="r">${fE(loyerAnnuel)}</td></tr>
-        <tr><td class="lbl">− Abattement forfaitaire (30 %)</td><td class="r red">−${fE(loyerAnnuel * 0.30)}</td></tr>
-        <tr class="total"><td>= Base imposable</td><td class="r">${fE(baseBIC)}</td></tr>
-        <tr><td class="lbl">Fiscalité totale</td><td class="r">${fE(impotBIC)}</td></tr>
-        <tr class="total"><td>Cash-flow mensuel</td><td class="r" style="color:${cashflowBICMensuel >= 0 ? "#1A7A52" : "#B03A2A"}">${fE(cashflowBICMensuel)}/mois</td></tr>
-      </tbody>
-    </table>
-  </div>
-  <div>
-    <div class="section-label">Économie fiscale du régime réel</div>
-    <div style="background:#EDE7DC;border-radius:7px;padding:14px">
-      <div style="margin-bottom:10px">
-        <div class="ir-lbl">Impôt Micro-BIC</div>
-        <div style="font-size:14px;font-weight:700;color:#B03A2A">${fE(impotBIC)}/an</div>
-      </div>
-      <div style="margin-bottom:10px">
-        <div class="ir-lbl">Impôt Régime réel (an. 1)</div>
-        <div style="font-size:14px;font-weight:700;color:${impotReel === 0 ? "#1A7A52" : "#C95B2A"}">${fE(impotReel)}/an</div>
-      </div>
-      <div style="border-top:1.5px solid rgba(26,22,18,.12);padding-top:10px">
-        <div class="ir-lbl">Économie fiscale an. 1</div>
-        <div style="font-size:16px;font-weight:700;color:#1A7A52">${fE(impotBIC - impotReel)}</div>
-      </div>
-      ${zerosYears > 0 ? `<div style="margin-top:8px;font-size:9px;color:rgba(26,22,18,.55);line-height:1.5">Base imposable à 0 € pendant <strong>${zerosYears} an${zerosYears > 1 ? "s" : ""}</strong> grâce aux amortissements.</div>` : ""}
-    </div>
-  </div>
-</div>
-
-<div class="note" style="margin-top:12px">
+<div class="note" style="margin-top:14px">
   <strong>Comment est calculé l'impôt ?</strong> TMI (Tranche Marginale d'Imposition) : taux appliqué à votre dernière tranche de revenus — ici <strong>${tmi} %</strong>. Prélèvements Sociaux : <strong>18,6 %</strong> prélevés sur les revenus du patrimoine. Impôt total = base imposable × (TMI + PS) = base × <strong>${(tmi + 18.6).toFixed(1)} %</strong>.
   ${firstTaxRow ? ` En régime réel, vous commencez à payer de l'impôt à partir de l'année <strong>${firstTaxRow.year}</strong> avec une base imposable de ${fE(firstTaxRow.baseImposable)}.` : zerosYears >= totalYears ? " Sur toute la période analysée, la base imposable reste à 0 € grâce aux amortissements reportables." : ""}
 </div>
