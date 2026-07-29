@@ -953,12 +953,44 @@ ${yearCards}
 <!-- ═══════════════════════════════════════════════════════
      ANNEXE A — PROJECTION DÉTAILLÉE (réel uniquement)
 ═══════════════════════════════════════════════════════ -->
-${!isMicro ? `<div class="pb">
+<div class="pb">
 <div class="hdr"><div><div class="hdr-brand"><span class="hdr-light">tout</span><span class="hdr-bold">lmnp</span></div><div class="hdr-sub">Rapport Client · Simulation LMNP</div></div><div class="hdr-right">${today}</div></div>
 <h2 class="ch">Annexe A — Projection détaillée sur ${totalYears} ans</h2>
-<p style="font-size:9px;color:rgba(26,22,18,.4);margin-bottom:8px">Régime réel simplifié · Loyers et charges constants · Amortissement variable selon les durées</p>
+<p style="font-size:9px;color:rgba(26,22,18,.4);margin-bottom:8px">${isMicro ? "Micro-BIC · Abattement 50 % constant · Loyers et charges supposés constants" : "Régime réel simplifié · Loyers et charges constants · Amortissement variable selon les durées"}</p>
 
-<table class="tbl">
+${isMicro ? (() => {
+  const bicBase = loyerAnnuel * 0.50;
+  const bicImpot = bicBase * (tmi / 100 + 0.186);
+  return `<table class="tbl">
+  <thead><tr>
+    <th class="can">An</th>
+    <th class="r" style="font-size:8.5px">CRD fin</th>
+    <th class="r" style="font-size:8.5px">Annuité</th>
+    <th class="r" style="font-size:8.5px">Intérêts</th>
+    <th class="r" style="font-size:8.5px">Capital remb.</th>
+    <th class="r" style="font-size:8.5px">Charges</th>
+    <th class="r" style="font-size:8.5px">Base impos. BIC</th>
+    <th class="r" style="font-size:8.5px">Impôt</th>
+    <th class="r" style="font-size:8.5px">CF/mois</th>
+  </tr></thead>
+  <tbody>
+    ${rows.map(ro => {
+      const cfBic = (loyerAnnuel - ro.creditAnnuelR - chargesAnnuelles - assuranceEmprunteurAnnuel - bicImpot) / 12;
+      return `<tr>
+        <td class="can" style="font-size:9px">${ro.year}</td>
+        <td class="r" style="font-size:9px">${ro.year <= duree ? fE(ro.capitalFin) : "—"}</td>
+        <td class="r" style="font-size:9px">${ro.year <= duree ? fE(ro.creditAnnuelR) : "—"}</td>
+        <td class="r" style="font-size:9px">${ro.year <= duree ? fE(ro.interetsAnnee) : "—"}</td>
+        <td class="r" style="font-size:9px">${ro.year <= duree ? fE(ro.capitalRembourse) : "—"}</td>
+        <td class="r" style="font-size:9px">${fE(chargesAnnuelles)}</td>
+        <td class="r" style="font-size:9px;color:#B03A2A">${fE(bicBase)}</td>
+        <td class="r" style="font-size:9px;color:${bicImpot === 0 ? "#1A7A52" : "#B03A2A"}">${fE(bicImpot)}</td>
+        <td class="r" style="font-size:9px;color:${cfBic >= 0 ? "#1A7A52" : "#B03A2A"};font-weight:600">${fE(cfBic)}</td>
+      </tr>`;
+    }).join("")}
+  </tbody>
+</table>`;
+})() : `<table class="tbl">
   <thead><tr>
     <th class="can">An</th>
     <th class="r" style="font-size:8.5px">CRD fin</th>
@@ -987,8 +1019,8 @@ ${!isMicro ? `<div class="pb">
       <td class="r" style="font-size:9px;color:${ro.cashflow >= 0 ? "#1A7A52" : "#B03A2A"};font-weight:600">${fE(ro.cashflow)}</td>
     </tr>`).join("")}
   </tbody>
-</table>
-</div>` : ""}
+</table>`}
+</div>
 
 
 <!-- ═══════════════════════════════════════════════════════
