@@ -124,13 +124,6 @@ export default function PopupBienInfo({ initial, onConfirm, onClose, ctaLabel = 
           >
             {ctaLabel}
           </button>
-          <button
-            onClick={confirm}
-            className="w-full py-2 text-sm text-center transition-opacity hover:opacity-70"
-            style={{ color: "rgba(26,22,18,0.45)" }}
-          >
-            Passer cette étape →
-          </button>
         </div>
       </div>
     </div>
