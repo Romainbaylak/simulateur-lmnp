@@ -95,7 +95,7 @@ export default function RapportInner() {
     if (!form || !resultats) return;
     const html = buildPdfHtml(form, resultats, bienInfo);
     const win = window.open("", "_blank");
-    if (win) { win.document.write(html); win.document.close(); setTimeout(() => win.print(), 800); }
+    if (win) { win.document.write(html); win.document.close(); }
   };
 
   // ─── PDF BUILDER ────────────────────────────────────────────────────────────
@@ -412,13 +412,14 @@ ${yr % 5 === 0 || yr === 1 ? `<text x="${(bx + bW / 2).toFixed(1)}" y="${(H - 6)
     return `<!DOCTYPE html><html lang="fr"><head><meta charset="UTF-8">
 <title>Rapport LMNP – toutlmnp</title>
 <style>
-@page{size:A4;margin:14mm 15mm}
+@page{size:A4;margin:0}
+@page landscape{size:A4 landscape;margin:0}
 *{box-sizing:border-box;margin:0;padding:0}
-html{background:#5a5a5a;min-height:100%}
-body{font-family:'Helvetica Neue',Arial,sans-serif;color:#1A1612;background:#F5F0E8;
-  width:794px;min-height:1123px;margin:20px auto;padding:14mm 15mm;font-size:11px;line-height:1.55;
-  box-shadow:0 8px 40px rgba(0,0,0,0.5);-webkit-print-color-adjust:exact;print-color-adjust:exact}
-.pb{page-break-before:always;padding-top:4px}
+html,body{background:#5a5a5a;margin:0;padding:0;font-family:'Helvetica Neue',Arial,sans-serif;color:#1A1612;font-size:11px;line-height:1.55;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+body{padding:24px 0 32px}
+.page{width:210mm;min-height:297mm;background:#F5F0E8;margin:0 auto 24px;padding:14mm 15mm;box-shadow:0 8px 40px rgba(0,0,0,0.5);position:relative}
+.page.landscape{width:297mm;min-height:210mm;page:landscape}
+.no-print{position:sticky;top:0;z-index:100;background:#3a1509;padding:10px 20px;display:flex;align-items:center;justify-content:space-between;margin-bottom:24px}
 .hdr{display:flex;align-items:center;justify-content:space-between;background:#4E1F12;color:#F5F0E8;
   padding:10px 16px;border-radius:6px;margin-bottom:18px}
 .hdr-brand{display:flex;align-items:baseline;gap:0}
@@ -467,15 +468,23 @@ table.tbl tr.total td{background:rgba(78,31,18,.07);font-weight:700}
 .big-result .val{font-size:16px;font-weight:700;color:#C95B2A}
 .bien-badge{display:inline-block;background:#EDE7DC;border-radius:4px;padding:2px 7px;font-size:9px;color:#1A1612;margin-right:6px}
 @media print{
-  html{background:none;padding:0}
-  body{width:100%;margin:0;padding:14mm 15mm;box-shadow:none}
-  .pb{page-break-before:always}
+  html,body{background:none;padding:0;margin:0}
+  body{padding:0}
+  .no-print{display:none}
+  .page{margin:0;box-shadow:none;padding:14mm 15mm;page-break-after:always;min-height:0;width:100%}
+  .page.landscape{padding:12mm 14mm}
+  .page:last-child{page-break-after:avoid}
 }
 </style></head><body>
+<div class="no-print">
+  <div style="font-size:12px;font-weight:600;color:#F5F0E8;letter-spacing:.02em">Rapport LMNP – <span style="color:#C95B2A">toutlmnp</span></div>
+  <button onclick="window.print()" style="background:#C95B2A;color:#F5F0E8;border:none;border-radius:6px;padding:8px 20px;font-size:12px;font-weight:600;cursor:pointer;letter-spacing:.02em">⬇ Imprimer / Enregistrer en PDF</button>
+</div>
 
 <!-- ═══════════════════════════════════════════════════════
      PAGE 1 — COUVERTURE / SYNTHÈSE
 ═══════════════════════════════════════════════════════ -->
+<div class="page">
 <div class="hdr">
   <div>
     <div class="hdr-brand"><span class="hdr-light">tout</span><span class="hdr-bold">lmnp</span></div>
@@ -613,7 +622,7 @@ ${saisonnierHtml}
 <!-- ═══════════════════════════════════════════════════════
      PAGE 2 — CHAPITRE 1 : PROJET ET FINANCEMENT
 ═══════════════════════════════════════════════════════ -->
-<div class="pb">
+</div><div class="page">
 <div class="hdr"><div><div class="hdr-brand"><span class="hdr-light">tout</span><span class="hdr-bold">lmnp</span></div><div class="hdr-sub">Rapport Client · Simulation LMNP</div></div><div class="hdr-right">${today}</div></div>
 <h2 class="ch"><span class="num">1.</span>Votre projet et son financement</h2>
 
@@ -676,7 +685,7 @@ ${saisonnierHtml}
 <!-- ═══════════════════════════════════════════════════════
      PAGE 3 — CHAPITRE 2 : RENTABILITÉ ET CASH-FLOW
 ═══════════════════════════════════════════════════════ -->
-<div class="pb">
+</div><div class="page">
 <div class="hdr"><div><div class="hdr-brand"><span class="hdr-light">tout</span><span class="hdr-bold">lmnp</span></div><div class="hdr-sub">Rapport Client · Simulation LMNP</div></div><div class="hdr-right">${today}</div></div>
 <h2 class="ch"><span class="num">2.</span>Rentabilité et calcul du cash-flow</h2>
 
@@ -736,7 +745,7 @@ ${saisonnierHtml}
 <!-- ═══════════════════════════════════════════════════════
      PAGE 4 — CHAPITRE 3 : FISCALITÉ
 ═══════════════════════════════════════════════════════ -->
-<div class="pb">
+</div><div class="page">
 <div class="hdr"><div><div class="hdr-brand"><span class="hdr-light">tout</span><span class="hdr-bold">lmnp</span></div><div class="hdr-sub">Rapport Client · Simulation LMNP</div></div><div class="hdr-right">${today}</div></div>
 <h2 class="ch"><span class="num">3.</span>Fiscalité : calcul de l'impôt estimé</h2>
 
@@ -786,7 +795,7 @@ ${isMicro ? `
 <!-- ═══════════════════════════════════════════════════════
      PAGE 5 — CHAPITRE 4 : AMORTISSEMENT (réel uniquement)
 ═══════════════════════════════════════════════════════ -->
-${!isMicro ? `<div class="pb">
+${!isMicro ? `</div><div class="page">
 <div class="hdr"><div><div class="hdr-brand"><span class="hdr-light">tout</span><span class="hdr-bold">lmnp</span></div><div class="hdr-sub">Rapport Client · Simulation LMNP</div></div><div class="hdr-right">${today}</div></div>
 <h2 class="ch"><span class="num">4.</span>L'amortissement, expliqué simplement</h2>
 
@@ -819,7 +828,7 @@ ${makeAmortBarChart()}
 <!-- ═══════════════════════════════════════════════════════
      PAGE 6 — CHAPITRE 5 : ÉVOLUTION DANS LE TEMPS
 ═══════════════════════════════════════════════════════ -->
-<div class="pb">
+</div><div class="page">
 <div class="hdr"><div><div class="hdr-brand"><span class="hdr-light">tout</span><span class="hdr-bold">lmnp</span></div><div class="hdr-sub">Rapport Client · Simulation LMNP</div></div><div class="hdr-right">${today}</div></div>
 <h2 class="ch"><span class="num">5.</span>Évolution de l'investissement dans le temps</h2>
 
@@ -952,7 +961,7 @@ ${(() => {
     </div>`;
   }).join("");
 
-  return `<div class="pb">
+  return `<div class="page">
 <div class="hdr"><div><div class="hdr-brand"><span class="hdr-light">tout</span><span class="hdr-bold">lmnp</span></div><div class="hdr-sub">Rapport Client · Simulation LMNP</div></div><div class="hdr-right">${today}</div></div>
 <h2 class="ch"><span class="num">6.</span>Scénarios de revente</h2>
 
@@ -987,7 +996,7 @@ ${yearCards}
 <!-- ═══════════════════════════════════════════════════════
      ANNEXE A — PROJECTION DÉTAILLÉE (réel uniquement)
 ═══════════════════════════════════════════════════════ -->
-<div class="pb">
+<div class="page landscape">
 <div class="hdr"><div><div class="hdr-brand"><span class="hdr-light">tout</span><span class="hdr-bold">lmnp</span></div><div class="hdr-sub">Rapport Client · Simulation LMNP</div></div><div class="hdr-right">${today}</div></div>
 <h2 class="ch">Annexe A — Projection détaillée sur ${totalYears} ans</h2>
 <p style="font-size:9px;color:#1A1612;margin-bottom:8px">${isMicro ? "Micro-BIC · Abattement 50 % constant · Loyers et charges supposés constants" : "Régime réel simplifié · Loyers et charges constants · Amortissement variable selon les durées"}</p>
@@ -1060,7 +1069,7 @@ ${isMicro ? (() => {
 <!-- ═══════════════════════════════════════════════════════
      ANNEXE B — AMORTISSEMENT DÉTAILLÉ (réel uniquement)
 ═══════════════════════════════════════════════════════ -->
-${!isMicro && annexeCols.length > 0 ? `<div class="pb">
+${!isMicro && annexeCols.length > 0 ? `<div class="page landscape">
 <div class="hdr"><div><div class="hdr-brand"><span class="hdr-light">tout</span><span class="hdr-bold">lmnp</span></div><div class="hdr-sub">Rapport Client · Simulation LMNP</div></div><div class="hdr-right">${today}</div></div>
 <h2 class="ch">Annexe B — Amortissement détaillé par composant</h2>
 
