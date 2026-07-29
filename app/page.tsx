@@ -12,7 +12,7 @@ export default function Home() {
         className="sticky top-0 z-50">
         {/* Desktop */}
         <div className="hidden md:flex max-w-6xl mx-auto px-4 py-3 items-center justify-between">
-          <Link href="/"><Logo variant="light" /></Link>
+          <Link href="/?reset=1"><Logo variant="light" /></Link>
           <nav className="flex items-center gap-6 text-base font-normal" style={{ color: "#F5F0E8" }}>
             <Link href="/comment-ca-marche" className="hover:text-[#F5F0E8] transition-colors">LMNP</Link>
             <Link href="/blog" className="hover:text-[#F5F0E8] transition-colors">Articles</Link>
@@ -20,7 +20,7 @@ export default function Home() {
           </nav>
           <div className="flex items-center gap-2">
             <HeaderAuth dark={true} />
-            <a href="#simulateur"
+            <a href="/?reset=1#simulateur"
               className="text-sm font-medium px-4 py-2 rounded transition-opacity hover:opacity-[0.88]"
               style={{ backgroundColor: "#C95B2A", color: "#F5F0E8", borderRadius: 6 }}>
               Simuler maintenant
@@ -28,7 +28,7 @@ export default function Home() {
           </div>
         </div>
         {/* Mobile */}
-        <MobileHeader simulerHref="#simulateur" />
+        <MobileHeader simulerHref="/?reset=1#simulateur" />
       </header>
 
       {/* ─── Hero ─── */}

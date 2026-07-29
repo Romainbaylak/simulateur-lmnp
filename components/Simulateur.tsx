@@ -274,6 +274,15 @@ export default function Simulateur() {
   useEffect(() => {
     // Restauration au montage (back navigateur, rechargement)
     try {
+      // ?reset=1 : nouvelle simulation demandée depuis le header
+      const params = new URLSearchParams(window.location.search);
+      if (params.get("reset") === "1") {
+        sessionStorage.removeItem(FORM_KEY);
+        const url = new URL(window.location.href);
+        url.searchParams.delete("reset");
+        window.history.replaceState({}, "", url.toString());
+        return;
+      }
       const raw = sessionStorage.getItem(FORM_KEY);
       if (!raw) return;
       const d = JSON.parse(raw);
@@ -2374,16 +2383,19 @@ ${annexeTable}
                         </div>
                       </div>
 
-                      {/* Bouton Valider — toujours visible dans la section amort */}
-                      <div className="flex justify-center">
-                        <button onClick={handleAjuster}
-                          className="px-10 py-4 text-base font-medium transition-opacity hover:opacity-[0.88] rounded-lg"
-                          style={{ backgroundColor: "#C95B2A", color: "#F5F0E8", letterSpacing: "0.02em" }}>
-                          Valider la simulation →
-                        </button>
-                      </div>
                   </div>
                 </div>}
+
+                {/* Bouton Valider — visible pour réel (après amort) et micro-BIC */}
+                {selectedRegime !== null && (
+                  <div className="flex justify-center mt-4">
+                    <button onClick={handleAjuster}
+                      className="px-10 py-4 text-base font-medium transition-opacity hover:opacity-[0.88] rounded-lg"
+                      style={{ backgroundColor: "#C95B2A", color: "#F5F0E8", letterSpacing: "0.02em" }}>
+                      Valider la simulation →
+                    </button>
+                  </div>
+                )}
 
               </div>
               )}

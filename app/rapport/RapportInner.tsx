@@ -1068,7 +1068,7 @@ ${!isMicro && annexeCols.length > 0 ? `<div class="pb">
 
       <header style={{ backgroundColor: "#4E1F12", borderBottom: "2px solid rgba(245,240,232,0.18)" }} className="sticky top-0 z-50">
         <div className="hidden md:flex max-w-6xl mx-auto px-4 py-3 items-center justify-between">
-          <Link href="/"><Logo variant="light" /></Link>
+          <Link href="/?reset=1"><Logo variant="light" /></Link>
           <nav className="flex items-center gap-6 text-base font-normal" style={{ color: "#F5F0E8" }}>
             <Link href="/comment-ca-marche" className="hover:opacity-80 transition-opacity">LMNP</Link>
             <Link href="/blog" className="hover:opacity-80 transition-opacity">Articles</Link>
@@ -1076,13 +1076,13 @@ ${!isMicro && annexeCols.length > 0 ? `<div class="pb">
           </nav>
           <div className="flex items-center gap-2">
             <HeaderAuth dark={true} />
-            <a href="/#simulateur" className="text-sm font-medium px-4 py-2 transition-opacity hover:opacity-[0.88]"
+            <a href="/?reset=1#simulateur" className="text-sm font-medium px-4 py-2 transition-opacity hover:opacity-[0.88]"
               style={{ backgroundColor: "#C95B2A", color: "#F5F0E8", borderRadius: 6 }}>
               Simuler maintenant
             </a>
           </div>
         </div>
-        <MobileHeader />
+        <MobileHeader simulerHref="/?reset=1#simulateur" />
       </header>
 
       <div className="max-w-2xl mx-auto px-4 py-24 text-center">
