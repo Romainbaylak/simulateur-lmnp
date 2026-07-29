@@ -481,7 +481,7 @@ table.tbl tr.total td{background:rgba(78,31,18,.07);font-weight:700}
     <div class="hdr-brand"><span class="hdr-light">tout</span><span class="hdr-bold">lmnp</span></div>
     <div class="hdr-sub">Rapport Client · Simulation LMNP</div>
   </div>
-  <div class="hdr-right">Généré le ${today}<br>Régime réel simplifié</div>
+  <div class="hdr-right">Généré le ${today}<br>${isMicro ? "Micro-BIC" : "Régime réel simplifié"}</div>
 </div>
 
 <div class="cover-title">
@@ -494,7 +494,7 @@ table.tbl tr.total td{background:rgba(78,31,18,.07);font-weight:700}
   ${bienInfo.ville ? `<span class="bien-badge">📍 ${bienInfo.ville}</span>` : ""}
   ${bienInfo.surface ? `<span class="bien-badge">📐 ${bienInfo.surface} m²</span>` : ""}
   ${bienInfo.description ? `<span style="font-size:10px;color:rgba(26,22,18,.5)">${bienInfo.description}</span>` : ""}
-  ${!bienInfo.type && !bienInfo.ville && !bienInfo.surface && !bienInfo.description ? `<span style="font-size:10px;color:rgba(26,22,18,.4)">Bien immobilier – simulation LMNP régime réel simplifié</span>` : ""}
+  ${!bienInfo.type && !bienInfo.ville && !bienInfo.surface && !bienInfo.description ? `<span style="font-size:10px;color:rgba(26,22,18,.4)">Bien immobilier – simulation LMNP ${isMicro ? "Micro-BIC" : "régime réel simplifié"}</span>` : ""}
 </div>
 
 <div class="info-grid">
@@ -573,7 +573,7 @@ ${saisonnierHtml}
 </table>
 
 <div class="beige-note">
-  <strong>Hypothèse :</strong> Simulation sur ${totalYears} ans en régime réel simplifié. Loyers, charges et valeur du bien supposés constants. L'amortissement est calculé selon les durées fiscalement reconnues. TMI appliquée : <strong>${tmi} %</strong> + prélèvements sociaux <strong>18,6 %</strong>. Cette simulation est indicative et ne constitue pas un conseil fiscal.
+  <strong>Hypothèse :</strong> Simulation sur ${totalYears} ans en ${isMicro ? "Micro-BIC" : "régime réel simplifié"}. Loyers, charges et valeur du bien supposés constants.${isMicro ? " Abattement forfaitaire 50 % appliqué sur les loyers." : " L'amortissement est calculé selon les durées fiscalement reconnues."} TMI appliquée : <strong>${tmi} %</strong> + prélèvements sociaux <strong>18,6 %</strong>. Cette simulation est indicative et ne constitue pas un conseil fiscal.
 </div>
 
 <!-- Recap fiscal + barre régime choisi -->
