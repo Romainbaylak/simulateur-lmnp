@@ -28,7 +28,7 @@ export default function MobileHeader({ simulerHref = "/#simulateur" }: { simuler
         </a>
 
         {/* Centre: Logo */}
-        <Link href="/" className="absolute left-1/2 -translate-x-1/2">
+        <Link href="/?reset=1" className="absolute left-1/2 -translate-x-1/2">
           <Logo variant="light" />
         </Link>
 
