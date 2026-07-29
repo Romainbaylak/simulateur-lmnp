@@ -706,7 +706,7 @@ export default function Simulateur() {
         const cfBic = r.cashflowBICMensuel;
         const cfReel = r.cashflowReelMensuel;
         const row = (lbl: string, val: string, color?: string, bold?: boolean, sep?: boolean) =>
-          `<tr><td style="padding:4px 6px;font-size:10px;color:rgba(26,22,18,.55);${sep?"border-top:1px solid rgba(26,22,18,.12);padding-top:6px":""}">${lbl}</td><td style="padding:4px 6px;font-size:10px;text-align:right;${bold?"font-weight:700;":""} ${color?`color:${color};`:""}${sep?"border-top:1px solid rgba(26,22,18,.12);padding-top:6px":""}">${val}</td></tr>`;
+          `<tr><td style="padding:4px 6px;font-size:10px;color:#1A1612;${sep?"border-top:1px solid rgba(26,22,18,.12);padding-top:6px":""}">${lbl}</td><td style="padding:4px 6px;font-size:10px;text-align:right;${bold?"font-weight:700;":""} ${color?`color:${color};`:""}${sep?"border-top:1px solid rgba(26,22,18,.12);padding-top:6px":""}">${val}</td></tr>`;
         return `<div style="flex:1;min-width:0;border-radius:8px;overflow:hidden;border:1px solid rgba(26,22,18,.12)">
           <div style="text-align:center;padding:10px 8px 8px;background:#4E1F12;color:#F5F0E8">
             <div style="font-size:11px;font-weight:700;letter-spacing:.05em;text-transform:uppercase">${label}</div>
@@ -740,7 +740,7 @@ export default function Simulateur() {
       };
       saisonniereSummaryHtml = `
 <h2>Location Saisonnière — Comparaison des 3 scénarios (année 1)</h2>
-<p style="font-size:10px;color:rgba(26,22,18,.5);margin-bottom:12px">Prix par nuitée : <strong>${fEur(parseFloat(prixNuitee)||0)}</strong>. Le tableau de projection détaillé ci-dessous utilise l'estimation <strong>Moyenne</strong>.</p>
+<p style="font-size:10px;color:#1A1612;margin-bottom:12px">Prix par nuitée : <strong>${fEur(parseFloat(prixNuitee)||0)}</strong>. Le tableau de projection détaillé ci-dessous utilise l'estimation <strong>Moyenne</strong>.</p>
 <div style="display:flex;gap:12px;align-items:stretch">
   ${scenarios.map(s => makeScenarioCol(s.label, s.r, s.taux, Math.round(parseFloat(s.taux)/100*365))).join("")}
 </div>`;
@@ -831,14 +831,14 @@ export default function Simulateur() {
     // Tableau de projection selon régime
     const projectionSection = isMicroPdf
       ? `<h2>Tableau de projection Micro-BIC (${totalYears} ans)</h2>
-<p style="font-size:10px;color:rgba(26,22,18,.5);margin-bottom:6px">Base imposable constante (abattement ${Math.round(abattementBICPdf * 100)} %). Seule la partie crédit évolue. Loyers et charges constants.</p>
+<p style="font-size:10px;color:#1A1612;margin-bottom:6px">Base imposable constante (abattement ${Math.round(abattementBICPdf * 100)} %). Seule la partie crédit évolue. Loyers et charges constants.</p>
 <table><thead><tr>
   <th class="col-an">An</th>
   <th class="cc">Capital restant</th><th class="cc">Annuités</th><th class="cc-last">dont intérêts</th>
   <th>Charges</th><th>Base imposable</th><th>Impôt</th><th>Cash-flow/mois</th>
 </tr></thead><tbody>${bicTableRows}</tbody></table>`
       : `<h2>Tableau de projection – Régime réel simplifié (${totalYears} ans)${isSaisonnier ? " — Estimation moyenne des revenus" : ""}</h2>
-<p style="font-size:10px;color:rgba(26,22,18,.5);margin-bottom:6px">Loyers et charges constants. L'amortissement évolue chaque année. La ligne marquée indique la fin du crédit.</p>
+<p style="font-size:10px;color:#1A1612;margin-bottom:6px">Loyers et charges constants. L'amortissement évolue chaque année. La ligne marquée indique la fin du crédit.</p>
 <table><thead><tr>
   <th class="col-an">An</th>
   <th class="cc">Capital restant</th><th class="cc">Annuités</th><th class="cc-last">dont intérêts</th>
@@ -868,7 +868,7 @@ header{background:#4E1F12;color:#F5F0E8;padding:10px 16px;border-radius:5px;marg
 .ls{font-size:8px;letter-spacing:.12em;color:rgba(245,240,232,.5);text-transform:uppercase;margin-top:2px}
 .main-title{text-align:center;margin:16px 0 18px}
 .main-title h1{font-size:19px;font-weight:700;color:#4E1F12;letter-spacing:-.02em;margin:0 0 3px}
-.main-title .sub{font-size:9px;text-transform:uppercase;letter-spacing:.12em;color:rgba(26,22,18,.4)}
+.main-title .sub{font-size:9px;text-transform:uppercase;letter-spacing:.12em;color:#1A1612}
 h2{font-size:12px;font-weight:700;color:#4E1F12;border-bottom:2px solid #C95B2A;padding-bottom:4px;margin:18px 0 8px}
 table{width:100%;border-collapse:collapse;font-size:10px}
 th{background:#4E1F12;color:#F5F0E8;padding:6px 7px;text-align:right;font-weight:500;white-space:nowrap}
@@ -887,12 +887,12 @@ th.col-an,td.col-an{width:18px}
 .recap-col:last-child{margin-right:0}
 .recap-prestep{background:#EDE7DC;margin-bottom:7px;border-radius:5px;padding:7px 11px;display:flex;gap:10px;flex-wrap:wrap}
 .kvi{flex:1;min-width:70px}
-.kvl{font-size:8px;text-transform:uppercase;letter-spacing:.1em;color:rgba(26,22,18,.45)}
+.kvl{font-size:8px;text-transform:uppercase;letter-spacing:.1em;color:#1A1612}
 .kvv{font-size:11px;font-weight:600;color:#1A1612}
 .orange{color:#C95B2A}
-.note{background:rgba(201,91,42,.08);border:1px solid rgba(201,91,42,.2);border-radius:5px;padding:9px 13px;line-height:1.6;color:rgba(26,22,18,.7);margin-top:10px}
+.note{background:rgba(201,91,42,.08);border:1px solid rgba(201,91,42,.2);border-radius:5px;padding:9px 13px;line-height:1.6;color:#1A1612;margin-top:10px}
 .conclusion{background:#4E1F12;color:#F5F0E8;border-radius:6px;padding:11px 15px;margin-top:10px;line-height:1.7}
-.fiscal-note{background:#EDE7DC;border-radius:5px;padding:11px 15px;line-height:1.8;color:rgba(26,22,18,.65);margin-top:10px;font-size:10px}
+.fiscal-note{background:#EDE7DC;border-radius:5px;padding:11px 15px;line-height:1.8;color:#1A1612;margin-top:10px;font-size:10px}
 .fiscal-note p{margin:0 0 5px}
 </style></head><body>
 
