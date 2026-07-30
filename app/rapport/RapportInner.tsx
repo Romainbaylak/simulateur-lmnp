@@ -2215,11 +2215,15 @@ ${!isMicro && annexeCols.length > 0 ? `
       {/* Full-height split layout */}
       <div className="flex flex-col md:flex-row flex-1">
 
-        {/* LEFT HALF */}
-        <div className="flex-1 flex flex-col px-10 py-14" style={{ borderRight: "1.5px solid rgba(26,22,18,0.1)" }}>
+        {/* LEFT HALF — smaller */}
+        <div className="flex-[2] flex flex-col px-10 py-14 relative">
           <h1 className="font-bold mb-10" style={{ fontSize: "clamp(1.6rem,2.8vw,2.2rem)", color: "#4E1F12", letterSpacing: "-0.03em", lineHeight: 1.1 }}>
             Remplis ces infos
           </h1>
+
+          {/* Separator — starts below title, runs to bottom of content */}
+          <div className="hidden md:block absolute right-0 top-[108px] bottom-14"
+            style={{ width: "1.5px", background: "rgba(26,22,18,0.1)" }} />
 
           <div className="space-y-5 max-w-sm">
             {/* Type */}
@@ -2267,8 +2271,8 @@ ${!isMicro && annexeCols.length > 0 ? `
           </div>
         </div>
 
-        {/* RIGHT HALF */}
-        <div className="flex-1 flex flex-col px-10 py-14">
+        {/* RIGHT HALF — larger */}
+        <div className="flex-[3] flex flex-col px-10 py-14">
           <div className="flex items-center gap-4 mb-10">
             <div className="w-11 h-11 rounded-full flex items-center justify-center text-lg font-bold flex-shrink-0"
               style={{ background: "#1A7A52", color: "#fff" }}>✓</div>
@@ -2299,7 +2303,7 @@ ${!isMicro && annexeCols.length > 0 ? `
               <span className="text-xs font-bold px-2.5 py-0.5 rounded-full self-start"
                 style={{ background: "#4A9FCA", color: "#1A2D45" }}>PDF</span>
               <span className="text-base font-bold leading-tight" style={{ color: "#F5F0E8" }}>
-                Synthèse financière – Banque
+                Synthèse financière<br />– Banque
               </span>
               <span style={{ color: "#4A9FCA", fontSize: 22, fontWeight: 800, lineHeight: 1 }}>→</span>
             </button>
