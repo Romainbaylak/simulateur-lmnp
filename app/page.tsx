@@ -1,3 +1,5 @@
+"use client";
+import { useState } from "react";
 import Simulateur from "@/components/Simulateur";
 import Logo from "@/components/Logo";
 import Link from "next/link";
@@ -5,6 +7,7 @@ import HeaderAuth from "@/components/HeaderAuth";
 import MobileHeader from "@/components/MobileHeader";
 
 export default function Home() {
+  const [resultsShown, setResultsShown] = useState(false);
   return (
     <main className="min-h-screen" style={{ backgroundColor: "#F5F0E8" }}>
       {/* ─── Header ─── */}
@@ -32,7 +35,7 @@ export default function Home() {
       </header>
 
       {/* ─── Hero ─── */}
-      <section style={{ backgroundColor: "#4E1F12", color: "#F5F0E8" }} className="pt-10 pb-14 px-4">
+      <section style={{ backgroundColor: "#4E1F12", color: "#F5F0E8", display: resultsShown ? "none" : undefined }} className="pt-10 pb-14 px-4">
         <div className="max-w-3xl mx-auto text-center">
           <h1 className="mb-4" style={{ fontSize: "clamp(2rem,5vw,3.5rem)", letterSpacing: "-0.025em", lineHeight: 1.1, fontWeight: 400 }}>
             Votre invest LMNP<br />
@@ -48,7 +51,7 @@ export default function Home() {
       </section>
 
       {/* ─── Simulateur ─── */}
-      <Simulateur />
+      <Simulateur onShowResults={() => setResultsShown(true)} />
 
       {/* ─── Footer ─── */}
       <footer style={{ borderTop: "0.5px solid rgba(26,22,18,0.08)" }} className="py-10 px-4">

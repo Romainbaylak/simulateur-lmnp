@@ -199,7 +199,7 @@ const INPUT_STYLE = { background: "#F5F0E8", border: "0.5px solid rgba(26,22,18,
 const LABEL = "block text-[11px] font-medium uppercase tracking-[0.14em] text-[rgba(26,22,18,0.45)] mb-1.5";
 const AUTO_STYLE = { ...INPUT_STYLE, background: "rgba(201,91,42,0.06)" };
 
-export default function Simulateur() {
+export default function Simulateur({ onShowResults }: { onShowResults?: () => void } = {}) {
   const [form, setForm] = useState<FormState>({
     type: "ap",
     surface: "",
@@ -456,6 +456,7 @@ export default function Simulateur() {
       setResultatsTriple({ bas: rBas, moyen: rMoyen, haut: rHaut });
       setResultats(rMoyen);
       setShowResults(true);
+      onShowResults?.();
       setSelectedRegime(null);
       setSimulationValidated(false);
       scrollToResults.current = true;
@@ -468,6 +469,7 @@ export default function Simulateur() {
         setSliderMax(Math.max(loyerMensuel * 2, 200));
       }
       setShowResults(true);
+      onShowResults?.();
       setSelectedRegime(null);
       setSimulationValidated(false);
       scrollToResults.current = true;
