@@ -2187,12 +2187,12 @@ ${!isMicro && annexeCols.length > 0 ? `
     if (win) { win.document.write(html); win.document.close(); }
   };
 
-  const FIELD = "w-full px-4 py-3 text-base rounded-xl focus:outline-none focus:ring-2 focus:ring-[#C95B2A]";
+  const FIELD = "w-full px-3 py-2.5 text-sm rounded-xl focus:outline-none focus:ring-2 focus:ring-[#C95B2A]";
   const FSTYLE = { background: "#EDE7DC", border: "1.5px solid transparent", color: "#1A1612" };
-  const LBL = "block text-xs font-semibold uppercase tracking-[0.14em] mb-2" as const;
+  const LBL = "block text-[11px] font-semibold uppercase tracking-[0.14em] mb-1.5" as const;
 
   return (
-    <main className="min-h-screen" style={{ backgroundColor: "#F5F0E8" }}>
+    <main className="min-h-screen flex flex-col" style={{ backgroundColor: "#F5F0E8" }}>
       <header style={{ backgroundColor: "#4E1F12", borderBottom: "2px solid rgba(245,240,232,0.18)" }} className="sticky top-0 z-50">
         <div className="hidden md:flex max-w-6xl mx-auto px-4 py-3 items-center justify-between">
           <Link href="/?reset=1"><Logo variant="light" /></Link>
@@ -2212,30 +2212,23 @@ ${!isMicro && annexeCols.length > 0 ? `
         <MobileHeader simulerHref="/?reset=1#simulateur" />
       </header>
 
-      <div className="max-w-5xl mx-auto px-6 pt-14 pb-20">
+      {/* Full-height split layout */}
+      <div className="flex flex-col md:flex-row flex-1">
 
-        {/* Title */}
-        <div className="text-center mb-14">
-          <div className="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-6 text-2xl font-bold"
-            style={{ background: "#1A7A52", color: "#fff" }}>✓</div>
-          <h1 style={{ fontSize: "clamp(2rem,4vw,2.8rem)", color: "#4E1F12", letterSpacing: "-0.03em", fontWeight: 700, lineHeight: 1.1 }}>
-            Votre rapport est prêt
+        {/* LEFT HALF */}
+        <div className="flex-1 flex flex-col px-10 py-14" style={{ borderRight: "1.5px solid rgba(26,22,18,0.1)" }}>
+          <h1 className="font-bold mb-10" style={{ fontSize: "clamp(1.6rem,2.8vw,2.2rem)", color: "#4E1F12", letterSpacing: "-0.03em", lineHeight: 1.1 }}>
+            Remplis ces infos
           </h1>
-        </div>
 
-        {/* Two-column layout */}
-        <div className="flex flex-col md:flex-row gap-12 items-start">
-
-          {/* LEFT — Bien form, no card bg */}
-          <div className="w-full md:w-72 flex-shrink-0 space-y-5">
-
-            {/* Type selector */}
+          <div className="space-y-5 max-w-sm">
+            {/* Type */}
             <div>
               <label className={LBL} style={{ color: "#4E1F12" }}>Type de bien</label>
               <div className="flex rounded-xl overflow-hidden" style={{ border: "2px solid #EDE7DC" }}>
                 {([["ap", "Appart."], ["ma", "Maison"], ["im", "Immeuble"]] as ["ap"|"ma"|"im", string][]).map(([id, label]) => (
                   <button key={id} onClick={() => setBienType(id)}
-                    className="flex-1 py-3 text-sm font-semibold transition-all"
+                    className="flex-1 py-2.5 text-sm font-semibold transition-all"
                     style={{
                       background: bienType === id ? "#C95B2A" : "transparent",
                       color: bienType === id ? "#F5F0E8" : "rgba(26,22,18,0.45)",
@@ -2247,93 +2240,105 @@ ${!isMicro && annexeCols.length > 0 ? `
               </div>
             </div>
 
-            {/* Ville */}
-            <div>
-              <label className={LBL} style={{ color: "#4E1F12" }}>Ville</label>
-              <input type="text" value={bienVille}
-                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setBienVille(e.target.value)}
-                placeholder="Lyon, Paris, Bordeaux…" className={FIELD} style={FSTYLE} />
+            {/* Ville + Surface côte à côte */}
+            <div className="flex gap-3">
+              <div className="flex-1">
+                <label className={LBL} style={{ color: "#4E1F12" }}>Ville</label>
+                <input type="text" value={bienVille}
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => setBienVille(e.target.value)}
+                  placeholder="Lyon, Paris…" className={FIELD} style={FSTYLE} />
+              </div>
+              <div style={{ width: 110 }}>
+                <label className={LBL} style={{ color: "#4E1F12" }}>Surface (m²)</label>
+                <input type="number" value={bienSurface}
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => setBienSurface(e.target.value)}
+                  placeholder="45" className={FIELD} style={FSTYLE} />
+              </div>
             </div>
 
-            {/* Surface */}
-            <div>
-              <label className={LBL} style={{ color: "#4E1F12" }}>Surface (m²)</label>
-              <input type="number" value={bienSurface}
-                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setBienSurface(e.target.value)}
-                placeholder="45" className={FIELD} style={FSTYLE} />
-            </div>
-
-            {/* Description */}
+            {/* Commentaires */}
             <div>
               <label className={LBL} style={{ color: "#4E1F12" }}>Commentaires</label>
               <textarea value={bienDescription}
                 onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setBienDescription(e.target.value)}
-                placeholder="Notes, contexte…"
+                placeholder="Notes, contexte de l'investissement…"
                 rows={3} className={`${FIELD} resize-none`} style={FSTYLE} />
             </div>
+          </div>
+        </div>
 
-            <Link href="/#simulateur" className="inline-block text-sm transition-opacity hover:opacity-60"
-              style={{ color: "rgba(26,22,18,0.35)" }}>
-              ← Nouvelle simulation
-            </Link>
+        {/* RIGHT HALF */}
+        <div className="flex-1 flex flex-col px-10 py-14">
+          <div className="flex items-center gap-4 mb-10">
+            <div className="w-11 h-11 rounded-full flex items-center justify-center text-lg font-bold flex-shrink-0"
+              style={{ background: "#1A7A52", color: "#fff" }}>✓</div>
+            <h1 className="font-bold" style={{ fontSize: "clamp(1.6rem,2.8vw,2.2rem)", color: "#4E1F12", letterSpacing: "-0.03em", lineHeight: 1.1 }}>
+              Votre rapport est prêt
+            </h1>
           </div>
 
-          {/* RIGHT — Report cards */}
-          <div className="flex-1 space-y-4">
+          {/* 2×2 grid of report buttons */}
+          <div className="grid grid-cols-2 gap-4 max-w-sm">
 
-            {/* PDF — active */}
-            {([
-              { id: "synthese-pdf" as const, label: "Synthèse d'investissement" },
-              { id: "banque-pdf" as const, label: "Synthèse financière – Banque" },
-            ]).map(opt => (
-              <button key={opt.id} onClick={() => generatePdf(opt.id)}
-                className="w-full rounded-2xl flex items-center justify-between text-left transition-all hover:scale-[1.01] active:scale-[0.99]"
-                style={{ background: "#4E1F12", padding: "22px 28px", cursor: "pointer", border: "none" }}>
-                <div>
-                  <div className="text-xl font-bold mb-1" style={{ color: "#F5F0E8", letterSpacing: "-0.02em" }}>
-                    {opt.label}
-                  </div>
-                  <span className="text-xs font-bold px-3 py-1 rounded-full"
-                    style={{ background: "#C95B2A", color: "#F5F0E8", letterSpacing: ".06em" }}>
-                    PDF
-                  </span>
-                </div>
-                <span style={{ color: "#C95B2A", fontSize: 32, fontWeight: 800, lineHeight: 1 }}>→</span>
-              </button>
-            ))}
+            {/* Synthèse PDF */}
+            <button onClick={() => generatePdf("synthese-pdf")}
+              className="rounded-2xl flex flex-col gap-3 text-left transition-all hover:scale-[1.02] active:scale-[0.98]"
+              style={{ background: "#6B2D12", padding: "18px 20px", border: "none", cursor: "pointer" }}>
+              <span className="text-xs font-bold px-2.5 py-0.5 rounded-full self-start"
+                style={{ background: "#C95B2A", color: "#F5F0E8" }}>PDF</span>
+              <span className="text-base font-bold leading-tight" style={{ color: "#F5F0E8" }}>
+                Synthèse d&apos;investissement
+              </span>
+              <span style={{ color: "#C95B2A", fontSize: 22, fontWeight: 800, lineHeight: 1 }}>→</span>
+            </button>
 
-            {/* Word — locked */}
-            {([
-              { id: "synthese-word", label: "Synthèse d'investissement" },
-              { id: "banque-word", label: "Synthèse financière – Banque" },
-            ]).map(opt => (
-              <div key={opt.id}
-                className="w-full rounded-2xl flex items-center justify-between"
-                style={{ background: "#EDE7DC", padding: "22px 28px", opacity: 0.5, cursor: "not-allowed" }}>
-                <div>
-                  <div className="text-xl font-bold mb-1" style={{ color: "#1A1612", letterSpacing: "-0.02em" }}>
-                    {opt.label}
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs font-bold px-3 py-1 rounded-full"
-                      style={{ background: "rgba(42,112,128,0.15)", color: "#2A7080", letterSpacing: ".06em" }}>
-                      Word
-                    </span>
-                    <span className="text-xs font-bold px-3 py-1 rounded-full"
-                      style={{ background: "#1A1612", color: "#F5F0E8" }}>
-                      Pro
-                    </span>
-                  </div>
-                </div>
-                <span style={{ fontSize: 24 }}>🔒</span>
+            {/* Banque PDF */}
+            <button onClick={() => generatePdf("banque-pdf")}
+              className="rounded-2xl flex flex-col gap-3 text-left transition-all hover:scale-[1.02] active:scale-[0.98]"
+              style={{ background: "#1A2D45", padding: "18px 20px", border: "none", cursor: "pointer" }}>
+              <span className="text-xs font-bold px-2.5 py-0.5 rounded-full self-start"
+                style={{ background: "#4A9FCA", color: "#1A2D45" }}>PDF</span>
+              <span className="text-base font-bold leading-tight" style={{ color: "#F5F0E8" }}>
+                Synthèse financière – Banque
+              </span>
+              <span style={{ color: "#4A9FCA", fontSize: 22, fontWeight: 800, lineHeight: 1 }}>→</span>
+            </button>
+
+            {/* Synthèse Word — locked */}
+            <div className="rounded-2xl flex flex-col gap-3"
+              style={{ background: "#EDE7DC", padding: "18px 20px", opacity: 0.45, cursor: "not-allowed" }}>
+              <div className="flex items-center gap-1.5 self-start">
+                <span className="text-xs font-bold px-2.5 py-0.5 rounded-full"
+                  style={{ background: "rgba(42,112,128,0.18)", color: "#2A7080" }}>Word</span>
+                <span className="text-xs font-bold px-2 py-0.5 rounded-full"
+                  style={{ background: "#1A1612", color: "#F5F0E8" }}>Pro</span>
               </div>
-            ))}
+              <span className="text-base font-bold leading-tight" style={{ color: "#1A1612" }}>
+                Synthèse d&apos;investissement
+              </span>
+              <span style={{ fontSize: 18 }}>🔒</span>
+            </div>
+
+            {/* Banque Word — locked */}
+            <div className="rounded-2xl flex flex-col gap-3"
+              style={{ background: "#EDE7DC", padding: "18px 20px", opacity: 0.45, cursor: "not-allowed" }}>
+              <div className="flex items-center gap-1.5 self-start">
+                <span className="text-xs font-bold px-2.5 py-0.5 rounded-full"
+                  style={{ background: "rgba(42,112,128,0.18)", color: "#2A7080" }}>Word</span>
+                <span className="text-xs font-bold px-2 py-0.5 rounded-full"
+                  style={{ background: "#1A1612", color: "#F5F0E8" }}>Pro</span>
+              </div>
+              <span className="text-base font-bold leading-tight" style={{ color: "#1A1612" }}>
+                Synthèse financière – Banque
+              </span>
+              <span style={{ fontSize: 18 }}>🔒</span>
+            </div>
 
           </div>
         </div>
       </div>
 
-      <footer style={{ borderTop: "0.5px solid rgba(26,22,18,0.08)" }} className="py-10 px-4">
+      <footer style={{ borderTop: "0.5px solid rgba(26,22,18,0.08)" }} className="py-8 px-4">
         <div className="max-w-6xl mx-auto flex justify-between items-center">
           <Link href="/"><Logo /></Link>
           <p className="text-xs" style={{ color: "rgba(26,22,18,0.35)" }}>© 2026 toutlmnp</p>
