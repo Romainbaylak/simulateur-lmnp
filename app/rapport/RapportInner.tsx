@@ -2180,29 +2180,16 @@ ${!isMicro && annexeCols.length > 0 ? `
 
   const generatePdf = (choix: "synthese-pdf" | "banque-pdf") => {
     if (!form || !resultats) return;
-    const bienInfo = getBienInfo();
     const html = choix === "banque-pdf"
-      ? buildBanquePdfHtml(form, resultats, bienInfo)
-      : buildPdfHtml(form, resultats, bienInfo);
+      ? buildBanquePdfHtml(form, resultats, getBienInfo())
+      : buildPdfHtml(form, resultats, getBienInfo());
     const win = window.open("", "_blank");
     if (win) { win.document.write(html); win.document.close(); }
   };
 
-  const FIELD_CLS = "w-full px-3 py-2.5 text-sm rounded-lg focus:outline-none focus:ring-1 focus:ring-[#C95B2A]";
-  const FIELD_STYLE = { background: "#EDE7DC", border: "0.5px solid rgba(26,22,18,0.15)", color: "#1A1612" };
-  const LBL_CLS = "block text-[11px] font-medium uppercase tracking-[0.14em] mb-1.5";
-  const LBL_STYLE = { color: "rgba(26,22,18,0.45)" };
-
-  const RAPPORT_OPTIONS = [
-    { id: "synthese-pdf" as const, label: "Synthèse d'investissement", format: "PDF", pro: false,
-      desc: "Vision complète : rentabilité, fiscalité, cash-flow, projections" },
-    { id: "banque-pdf" as const, label: "Synthèse financière – Banque", format: "PDF", pro: false,
-      desc: "Dossier pro : DSCR, ratios bancaires, P&L, stress tests" },
-    { id: "synthese-word" as const, label: "Synthèse d'investissement", format: "Word", pro: true,
-      desc: "Version Word modifiable de la synthèse d'investissement" },
-    { id: "banque-word" as const, label: "Synthèse financière – Banque", format: "Word", pro: true,
-      desc: "Version Word modifiable du dossier bancaire" },
-  ];
+  const FIELD = "w-full px-4 py-3 text-base rounded-xl focus:outline-none focus:ring-2 focus:ring-[#C95B2A]";
+  const FSTYLE = { background: "#EDE7DC", border: "1.5px solid transparent", color: "#1A1612" };
+  const LBL = "block text-xs font-semibold uppercase tracking-[0.14em] mb-2" as const;
 
   return (
     <main className="min-h-screen" style={{ backgroundColor: "#F5F0E8" }}>
@@ -2225,129 +2212,123 @@ ${!isMicro && annexeCols.length > 0 ? `
         <MobileHeader simulerHref="/?reset=1#simulateur" />
       </header>
 
-      <div className="max-w-5xl mx-auto px-4 py-16">
+      <div className="max-w-5xl mx-auto px-6 pt-14 pb-20">
+
         {/* Title */}
-        <div className="text-center mb-12">
-          <div className="w-14 h-14 rounded-full flex items-center justify-center mx-auto mb-5 text-xl"
-            style={{ background: "rgba(26,122,82,0.1)", color: "#1A7A52" }}>✓</div>
-          <h1 className="font-light mb-2" style={{ fontSize: "clamp(1.6rem,3.5vw,2.2rem)", color: "#4E1F12", letterSpacing: "-0.025em" }}>
+        <div className="text-center mb-14">
+          <div className="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-6 text-2xl font-bold"
+            style={{ background: "#1A7A52", color: "#fff" }}>✓</div>
+          <h1 style={{ fontSize: "clamp(2rem,4vw,2.8rem)", color: "#4E1F12", letterSpacing: "-0.03em", fontWeight: 700, lineHeight: 1.1 }}>
             Votre rapport est prêt
           </h1>
-          <p className="text-sm" style={{ color: "rgba(26,22,18,0.45)" }}>
-            Complétez les informations sur votre bien, puis choisissez votre rapport
-          </p>
         </div>
 
         {/* Two-column layout */}
-        <div className="flex flex-col md:flex-row gap-8 items-start">
+        <div className="flex flex-col md:flex-row gap-12 items-start">
 
-          {/* LEFT — Bien info form */}
-          <div className="w-full md:w-80 flex-shrink-0">
-            <div className="rounded-2xl p-6" style={{ background: "#EDE7DC", border: "0.5px solid rgba(26,22,18,0.1)" }}>
-              <div className="mb-5">
-                <h2 className="font-semibold text-base mb-0.5" style={{ color: "#4E1F12" }}>Votre bien</h2>
-                <p className="text-[11px]" style={{ color: "rgba(26,22,18,0.45)" }}>Ces informations apparaîtront dans vos rapports. Non obligatoire.</p>
-              </div>
+          {/* LEFT — Bien form, no card bg */}
+          <div className="w-full md:w-72 flex-shrink-0 space-y-5">
 
-              {/* Type */}
-              <div className="mb-4">
-                <label className={LBL_CLS} style={LBL_STYLE}>Type de bien</label>
-                <div className="flex rounded-lg overflow-hidden" style={{ border: "0.5px solid rgba(26,22,18,0.15)" }}>
-                  {([["ap", "Appartement"], ["ma", "Maison"], ["im", "Immeuble"]] as ["ap"|"ma"|"im", string][]).map(([id, label]) => (
-                    <button key={id} onClick={() => setBienType(id)}
-                      className="flex-1 py-2 text-xs font-medium transition-colors"
-                      style={{
-                        background: bienType === id ? "#1A1612" : "#F5F0E8",
-                        color: bienType === id ? "#F5F0E8" : "rgba(26,22,18,0.55)",
-                        borderRight: id !== "im" ? "0.5px solid rgba(26,22,18,0.15)" : "none",
-                      }}>
-                      {label}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* Ville */}
-              <div className="mb-4">
-                <label className={LBL_CLS} style={LBL_STYLE}>Ville</label>
-                <input type="text" value={bienVille} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setBienVille(e.target.value)}
-                  placeholder="Ex : Lyon, Paris…" className={FIELD_CLS} style={FIELD_STYLE} />
-              </div>
-
-              {/* Surface */}
-              <div className="mb-4">
-                <label className={LBL_CLS} style={LBL_STYLE}>Surface (m²)</label>
-                <input type="number" value={bienSurface} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setBienSurface(e.target.value)}
-                  placeholder="Ex : 45" className={FIELD_CLS} style={FIELD_STYLE} />
-              </div>
-
-              {/* Description */}
-              <div>
-                <label className={LBL_CLS} style={LBL_STYLE}>Commentaires</label>
-                <textarea value={bienDescription} onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setBienDescription(e.target.value)}
-                  placeholder="Notes, contexte de l'investissement…"
-                  rows={3} className={`${FIELD_CLS} resize-none`} style={FIELD_STYLE} />
+            {/* Type selector */}
+            <div>
+              <label className={LBL} style={{ color: "#4E1F12" }}>Type de bien</label>
+              <div className="flex rounded-xl overflow-hidden" style={{ border: "2px solid #EDE7DC" }}>
+                {([["ap", "Appart."], ["ma", "Maison"], ["im", "Immeuble"]] as ["ap"|"ma"|"im", string][]).map(([id, label]) => (
+                  <button key={id} onClick={() => setBienType(id)}
+                    className="flex-1 py-3 text-sm font-semibold transition-all"
+                    style={{
+                      background: bienType === id ? "#C95B2A" : "transparent",
+                      color: bienType === id ? "#F5F0E8" : "rgba(26,22,18,0.45)",
+                      borderRight: id !== "im" ? "2px solid #EDE7DC" : "none",
+                    }}>
+                    {label}
+                  </button>
+                ))}
               </div>
             </div>
 
-            <div className="mt-4 text-center">
-              <Link href="/#simulateur" className="text-xs transition-opacity hover:opacity-70"
-                style={{ color: "rgba(26,22,18,0.4)" }}>
-                ← Nouvelle simulation
-              </Link>
+            {/* Ville */}
+            <div>
+              <label className={LBL} style={{ color: "#4E1F12" }}>Ville</label>
+              <input type="text" value={bienVille}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setBienVille(e.target.value)}
+                placeholder="Lyon, Paris, Bordeaux…" className={FIELD} style={FSTYLE} />
             </div>
+
+            {/* Surface */}
+            <div>
+              <label className={LBL} style={{ color: "#4E1F12" }}>Surface (m²)</label>
+              <input type="number" value={bienSurface}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setBienSurface(e.target.value)}
+                placeholder="45" className={FIELD} style={FSTYLE} />
+            </div>
+
+            {/* Description */}
+            <div>
+              <label className={LBL} style={{ color: "#4E1F12" }}>Commentaires</label>
+              <textarea value={bienDescription}
+                onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setBienDescription(e.target.value)}
+                placeholder="Notes, contexte…"
+                rows={3} className={`${FIELD} resize-none`} style={FSTYLE} />
+            </div>
+
+            <Link href="/#simulateur" className="inline-block text-sm transition-opacity hover:opacity-60"
+              style={{ color: "rgba(26,22,18,0.35)" }}>
+              ← Nouvelle simulation
+            </Link>
           </div>
 
-          {/* RIGHT — Report options */}
-          <div className="flex-1 space-y-3">
-            <h2 className="font-semibold text-base mb-4" style={{ color: "#4E1F12" }}>Choisissez votre rapport</h2>
+          {/* RIGHT — Report cards */}
+          <div className="flex-1 space-y-4">
 
-            {RAPPORT_OPTIONS.map(opt => {
-              const isPdf = opt.format === "PDF";
-              const fmtBg = isPdf ? "rgba(201,91,42,0.12)" : "rgba(42,112,128,0.12)";
-              const fmtColor = isPdf ? "#C95B2A" : "#2A7080";
-
-              if (opt.pro) {
-                return (
-                  <div key={opt.id}
-                    className="rounded-xl p-4 flex items-center gap-4"
-                    style={{ background: "#EDE7DC", border: "0.5px solid rgba(26,22,18,0.1)", opacity: 0.45, cursor: "not-allowed" }}>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 mb-1">
-                        <span className="text-sm font-medium" style={{ color: "#1A1612" }}>{opt.label}</span>
-                        <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full"
-                          style={{ background: fmtBg, color: fmtColor }}>{opt.format}</span>
-                        <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full"
-                          style={{ background: "#4E1F12", color: "#F5F0E8" }}>Pro</span>
-                      </div>
-                      <div className="text-xs" style={{ color: "rgba(26,22,18,0.5)" }}>{opt.desc}</div>
-                    </div>
-                    <span style={{ fontSize: 18 }}>🔒</span>
+            {/* PDF — active */}
+            {([
+              { id: "synthese-pdf" as const, label: "Synthèse d'investissement" },
+              { id: "banque-pdf" as const, label: "Synthèse financière – Banque" },
+            ]).map(opt => (
+              <button key={opt.id} onClick={() => generatePdf(opt.id)}
+                className="w-full rounded-2xl flex items-center justify-between text-left transition-all hover:scale-[1.01] active:scale-[0.99]"
+                style={{ background: "#4E1F12", padding: "22px 28px", cursor: "pointer", border: "none" }}>
+                <div>
+                  <div className="text-xl font-bold mb-1" style={{ color: "#F5F0E8", letterSpacing: "-0.02em" }}>
+                    {opt.label}
                   </div>
-                );
-              }
+                  <span className="text-xs font-bold px-3 py-1 rounded-full"
+                    style={{ background: "#C95B2A", color: "#F5F0E8", letterSpacing: ".06em" }}>
+                    PDF
+                  </span>
+                </div>
+                <span style={{ color: "#C95B2A", fontSize: 32, fontWeight: 800, lineHeight: 1 }}>→</span>
+              </button>
+            ))}
 
-              return (
-                <button key={opt.id}
-                  onClick={() => generatePdf(opt.id as "synthese-pdf" | "banque-pdf")}
-                  className="w-full rounded-xl p-4 flex items-center gap-4 text-left transition-all hover:brightness-95 active:scale-[0.99]"
-                  style={{ background: "#EDE7DC", border: `1px solid ${fmtColor}25`, cursor: "pointer" }}>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 mb-1">
-                      <span className="text-sm font-semibold" style={{ color: "#1A1612" }}>{opt.label}</span>
-                      <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full"
-                        style={{ background: fmtBg, color: fmtColor }}>{opt.format}</span>
-                    </div>
-                    <div className="text-xs" style={{ color: "rgba(26,22,18,0.5)" }}>{opt.desc}</div>
+            {/* Word — locked */}
+            {([
+              { id: "synthese-word", label: "Synthèse d'investissement" },
+              { id: "banque-word", label: "Synthèse financière – Banque" },
+            ]).map(opt => (
+              <div key={opt.id}
+                className="w-full rounded-2xl flex items-center justify-between"
+                style={{ background: "#EDE7DC", padding: "22px 28px", opacity: 0.5, cursor: "not-allowed" }}>
+                <div>
+                  <div className="text-xl font-bold mb-1" style={{ color: "#1A1612", letterSpacing: "-0.02em" }}>
+                    {opt.label}
                   </div>
-                  <span style={{ color: fmtColor, fontSize: 20, fontWeight: 700, flexShrink: 0 }}>→</span>
-                </button>
-              );
-            })}
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-bold px-3 py-1 rounded-full"
+                      style={{ background: "rgba(42,112,128,0.15)", color: "#2A7080", letterSpacing: ".06em" }}>
+                      Word
+                    </span>
+                    <span className="text-xs font-bold px-3 py-1 rounded-full"
+                      style={{ background: "#1A1612", color: "#F5F0E8" }}>
+                      Pro
+                    </span>
+                  </div>
+                </div>
+                <span style={{ fontSize: 24 }}>🔒</span>
+              </div>
+            ))}
 
-            <p className="text-[11px] pt-1" style={{ color: "rgba(26,22,18,0.35)" }}>
-              Si la fenêtre est bloquée, autorisez les pop-ups pour ce site dans votre navigateur puis réessayez.
-            </p>
           </div>
         </div>
       </div>
