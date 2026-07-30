@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { useSearchParams, useRouter } from "next/navigation";
 import Logo from "@/components/Logo";
@@ -12,8 +12,7 @@ import {
   type SimulationForm,
   type Resultats,
 } from "@/lib/computeResultats";
-import PopupBienInfo, { defaultBienInfo, type BienInfo } from "@/components/PopupBienInfo";
-import PopupChoixPDF from "@/components/PopupChoixPDF";
+import { defaultBienInfo, type BienInfo } from "@/components/PopupBienInfo";
 
 const SESSION_TTL_MS = 2 * 60 * 60 * 1000;
 
@@ -24,11 +23,12 @@ export default function RapportInner() {
   const [status, setStatus] = useState<"loading" | "ready" | "done" | "expired" | "used">("loading");
   const [form, setForm] = useState<SimulationForm | null>(null);
   const [resultats, setResultats] = useState<Resultats | null>(null);
-  const [showChoixPopup, setShowChoixPopup] = useState(false);
-  const [showBienPopup, setShowBienPopup] = useState(false);
   const [initialBienInfo, setInitialBienInfo] = useState<BienInfo>(defaultBienInfo);
+  const [bienType, setBienType] = useState<"ap" | "ma" | "im">("ap");
+  const [bienVille, setBienVille] = useState("");
+  const [bienSurface, setBienSurface] = useState("");
+  const [bienDescription, setBienDescription] = useState("");
 
-  const choixPdfRef = useRef<"synthese-pdf" | "banque-pdf">("synthese-pdf");
   const amortPctRef = useRef(85);
   const amortModeRef = useRef<"ensemble" | "composant">("ensemble");
   const amortDureeEnsembleRef = useRef(25);
@@ -79,35 +79,22 @@ export default function RapportInner() {
       const res = computeResultats(data.form, loyer, data.amortPct, data.amortMode, data.amortDureeEnsemble, composantsRef.current);
       setForm(data.form);
       setResultats(res);
-      setInitialBienInfo({
+      const bienInit: BienInfo = {
         type: data.form.type === "ma" ? "ma" : "ap",
         ville: data.form.villeLabel || "",
         surface: data.form.surface || "",
         description: "",
-      });
+      };
+      setInitialBienInfo(bienInit);
+      setBienType(bienInit.type);
+      setBienVille(bienInit.ville);
+      setBienSurface(bienInit.surface);
       sessionStorage.setItem(usedKey, "1");
       sessionStorage.removeItem("lmnp_simulation_data");
       setStatus("done");
     } catch { setStatus("expired"); }
   }, [sessionId, router]);
 
-  const handleOpenPdf = () => setShowChoixPopup(true);
-
-  const handleChoixPDF = (choix: "synthese-pdf" | "banque-pdf") => {
-    choixPdfRef.current = choix;
-    setShowChoixPopup(false);
-    setShowBienPopup(true);
-  };
-
-  const openPdfWithInfo = (bienInfo: BienInfo) => {
-    setShowBienPopup(false);
-    if (!form || !resultats) return;
-    const html = choixPdfRef.current === "banque-pdf"
-      ? buildBanquePdfHtml(form, resultats, bienInfo)
-      : buildPdfHtml(form, resultats, bienInfo);
-    const win = window.open("", "_blank");
-    if (win) { win.document.write(html); win.document.close(); }
-  };
 
   // ─── PDF BUILDER ────────────────────────────────────────────────────────────
   const buildPdfHtml = (f: SimulationForm, res: Resultats, bienInfo: BienInfo): string => {
@@ -2189,23 +2176,36 @@ ${!isMicro && annexeCols.length > 0 ? `
   }
 
   // status === "done"
+  const getBienInfo = (): BienInfo => ({ type: bienType, ville: bienVille, surface: bienSurface, description: bienDescription });
+
+  const generatePdf = (choix: "synthese-pdf" | "banque-pdf") => {
+    if (!form || !resultats) return;
+    const bienInfo = getBienInfo();
+    const html = choix === "banque-pdf"
+      ? buildBanquePdfHtml(form, resultats, bienInfo)
+      : buildPdfHtml(form, resultats, bienInfo);
+    const win = window.open("", "_blank");
+    if (win) { win.document.write(html); win.document.close(); }
+  };
+
+  const FIELD_CLS = "w-full px-3 py-2.5 text-sm rounded-lg focus:outline-none focus:ring-1 focus:ring-[#C95B2A]";
+  const FIELD_STYLE = { background: "#EDE7DC", border: "0.5px solid rgba(26,22,18,0.15)", color: "#1A1612" };
+  const LBL_CLS = "block text-[11px] font-medium uppercase tracking-[0.14em] mb-1.5";
+  const LBL_STYLE = { color: "rgba(26,22,18,0.45)" };
+
+  const RAPPORT_OPTIONS = [
+    { id: "synthese-pdf" as const, label: "Synthèse d'investissement", format: "PDF", pro: false,
+      desc: "Vision complète : rentabilité, fiscalité, cash-flow, projections" },
+    { id: "banque-pdf" as const, label: "Synthèse financière – Banque", format: "PDF", pro: false,
+      desc: "Dossier pro : DSCR, ratios bancaires, P&L, stress tests" },
+    { id: "synthese-word" as const, label: "Synthèse d'investissement", format: "Word", pro: true,
+      desc: "Version Word modifiable de la synthèse d'investissement" },
+    { id: "banque-word" as const, label: "Synthèse financière – Banque", format: "Word", pro: true,
+      desc: "Version Word modifiable du dossier bancaire" },
+  ];
+
   return (
     <main className="min-h-screen" style={{ backgroundColor: "#F5F0E8" }}>
-      {showChoixPopup && (
-        <PopupChoixPDF
-          onChoix={handleChoixPDF}
-          onClose={() => setShowChoixPopup(false)}
-        />
-      )}
-      {showBienPopup && (
-        <PopupBienInfo
-          initial={initialBienInfo}
-          onConfirm={openPdfWithInfo}
-          onClose={() => openPdfWithInfo(initialBienInfo)}
-          ctaLabel="Générer le rapport PDF →"
-        />
-      )}
-
       <header style={{ backgroundColor: "#4E1F12", borderBottom: "2px solid rgba(245,240,232,0.18)" }} className="sticky top-0 z-50">
         <div className="hidden md:flex max-w-6xl mx-auto px-4 py-3 items-center justify-between">
           <Link href="/?reset=1"><Logo variant="light" /></Link>
@@ -2225,29 +2225,131 @@ ${!isMicro && annexeCols.length > 0 ? `
         <MobileHeader simulerHref="/?reset=1#simulateur" />
       </header>
 
-      <div className="max-w-2xl mx-auto px-4 py-24 text-center">
-        <div className="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-8 text-2xl"
-          style={{ background: "rgba(26,122,82,0.1)", color: "#1A7A52" }}>✓</div>
-        <h1 className="font-light mb-4" style={{ fontSize: "clamp(1.8rem,4vw,2.5rem)", color: "#4E1F12", letterSpacing: "-0.025em" }}>
-          Votre rapport est prêt !
-        </h1>
-        <button
-          onClick={handleOpenPdf}
-          className="inline-block text-base font-medium px-10 py-4 mb-4 transition-opacity hover:opacity-[0.88] rounded-xl"
-          style={{ backgroundColor: "#1A4A35", color: "#F5F0E8" }}
-        >
-          📄 Ouvrir et imprimer le PDF
-        </button>
-        <div className="mb-10">
-          <p className="text-xs" style={{ color: "rgba(26,22,18,0.35)" }}>
-            Si la fenêtre est bloquée, autorisez les pop-ups pour ce site dans votre navigateur puis réessayez.
+      <div className="max-w-5xl mx-auto px-4 py-16">
+        {/* Title */}
+        <div className="text-center mb-12">
+          <div className="w-14 h-14 rounded-full flex items-center justify-center mx-auto mb-5 text-xl"
+            style={{ background: "rgba(26,122,82,0.1)", color: "#1A7A52" }}>✓</div>
+          <h1 className="font-light mb-2" style={{ fontSize: "clamp(1.6rem,3.5vw,2.2rem)", color: "#4E1F12", letterSpacing: "-0.025em" }}>
+            Votre rapport est prêt
+          </h1>
+          <p className="text-sm" style={{ color: "rgba(26,22,18,0.45)" }}>
+            Complétez les informations sur votre bien, puis choisissez votre rapport
           </p>
         </div>
-        <Link href="/#simulateur"
-          className="inline-block text-sm font-medium px-8 py-3 transition-opacity hover:opacity-[0.88]"
-          style={{ backgroundColor: "#C95B2A", color: "#F5F0E8", borderRadius: 6 }}>
-          Nouvelle simulation →
-        </Link>
+
+        {/* Two-column layout */}
+        <div className="flex flex-col md:flex-row gap-8 items-start">
+
+          {/* LEFT — Bien info form */}
+          <div className="w-full md:w-80 flex-shrink-0">
+            <div className="rounded-2xl p-6" style={{ background: "#EDE7DC", border: "0.5px solid rgba(26,22,18,0.1)" }}>
+              <div className="mb-5">
+                <h2 className="font-semibold text-base mb-0.5" style={{ color: "#4E1F12" }}>Votre bien</h2>
+                <p className="text-[11px]" style={{ color: "rgba(26,22,18,0.45)" }}>Ces informations apparaîtront dans vos rapports. Non obligatoire.</p>
+              </div>
+
+              {/* Type */}
+              <div className="mb-4">
+                <label className={LBL_CLS} style={LBL_STYLE}>Type de bien</label>
+                <div className="flex rounded-lg overflow-hidden" style={{ border: "0.5px solid rgba(26,22,18,0.15)" }}>
+                  {([["ap", "Appartement"], ["ma", "Maison"], ["im", "Immeuble"]] as ["ap"|"ma"|"im", string][]).map(([id, label]) => (
+                    <button key={id} onClick={() => setBienType(id)}
+                      className="flex-1 py-2 text-xs font-medium transition-colors"
+                      style={{
+                        background: bienType === id ? "#1A1612" : "#F5F0E8",
+                        color: bienType === id ? "#F5F0E8" : "rgba(26,22,18,0.55)",
+                        borderRight: id !== "im" ? "0.5px solid rgba(26,22,18,0.15)" : "none",
+                      }}>
+                      {label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Ville */}
+              <div className="mb-4">
+                <label className={LBL_CLS} style={LBL_STYLE}>Ville</label>
+                <input type="text" value={bienVille} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setBienVille(e.target.value)}
+                  placeholder="Ex : Lyon, Paris…" className={FIELD_CLS} style={FIELD_STYLE} />
+              </div>
+
+              {/* Surface */}
+              <div className="mb-4">
+                <label className={LBL_CLS} style={LBL_STYLE}>Surface (m²)</label>
+                <input type="number" value={bienSurface} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setBienSurface(e.target.value)}
+                  placeholder="Ex : 45" className={FIELD_CLS} style={FIELD_STYLE} />
+              </div>
+
+              {/* Description */}
+              <div>
+                <label className={LBL_CLS} style={LBL_STYLE}>Commentaires</label>
+                <textarea value={bienDescription} onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setBienDescription(e.target.value)}
+                  placeholder="Notes, contexte de l'investissement…"
+                  rows={3} className={`${FIELD_CLS} resize-none`} style={FIELD_STYLE} />
+              </div>
+            </div>
+
+            <div className="mt-4 text-center">
+              <Link href="/#simulateur" className="text-xs transition-opacity hover:opacity-70"
+                style={{ color: "rgba(26,22,18,0.4)" }}>
+                ← Nouvelle simulation
+              </Link>
+            </div>
+          </div>
+
+          {/* RIGHT — Report options */}
+          <div className="flex-1 space-y-3">
+            <h2 className="font-semibold text-base mb-4" style={{ color: "#4E1F12" }}>Choisissez votre rapport</h2>
+
+            {RAPPORT_OPTIONS.map(opt => {
+              const isPdf = opt.format === "PDF";
+              const fmtBg = isPdf ? "rgba(201,91,42,0.12)" : "rgba(42,112,128,0.12)";
+              const fmtColor = isPdf ? "#C95B2A" : "#2A7080";
+
+              if (opt.pro) {
+                return (
+                  <div key={opt.id}
+                    className="rounded-xl p-4 flex items-center gap-4"
+                    style={{ background: "#EDE7DC", border: "0.5px solid rgba(26,22,18,0.1)", opacity: 0.45, cursor: "not-allowed" }}>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className="text-sm font-medium" style={{ color: "#1A1612" }}>{opt.label}</span>
+                        <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full"
+                          style={{ background: fmtBg, color: fmtColor }}>{opt.format}</span>
+                        <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full"
+                          style={{ background: "#4E1F12", color: "#F5F0E8" }}>Pro</span>
+                      </div>
+                      <div className="text-xs" style={{ color: "rgba(26,22,18,0.5)" }}>{opt.desc}</div>
+                    </div>
+                    <span style={{ fontSize: 18 }}>🔒</span>
+                  </div>
+                );
+              }
+
+              return (
+                <button key={opt.id}
+                  onClick={() => generatePdf(opt.id as "synthese-pdf" | "banque-pdf")}
+                  className="w-full rounded-xl p-4 flex items-center gap-4 text-left transition-all hover:brightness-95 active:scale-[0.99]"
+                  style={{ background: "#EDE7DC", border: `1px solid ${fmtColor}25`, cursor: "pointer" }}>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className="text-sm font-semibold" style={{ color: "#1A1612" }}>{opt.label}</span>
+                      <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full"
+                        style={{ background: fmtBg, color: fmtColor }}>{opt.format}</span>
+                    </div>
+                    <div className="text-xs" style={{ color: "rgba(26,22,18,0.5)" }}>{opt.desc}</div>
+                  </div>
+                  <span style={{ color: fmtColor, fontSize: 20, fontWeight: 700, flexShrink: 0 }}>→</span>
+                </button>
+              );
+            })}
+
+            <p className="text-[11px] pt-1" style={{ color: "rgba(26,22,18,0.35)" }}>
+              Si la fenêtre est bloquée, autorisez les pop-ups pour ce site dans votre navigateur puis réessayez.
+            </p>
+          </div>
+        </div>
       </div>
 
       <footer style={{ borderTop: "0.5px solid rgba(26,22,18,0.08)" }} className="py-10 px-4">
