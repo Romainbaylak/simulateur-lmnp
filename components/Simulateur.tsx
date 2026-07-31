@@ -1782,29 +1782,8 @@ ${annexeTable}
                   </div>
                 </div>
 
-                {/* Loyer slider ou estimations saisonnières */}
-                {isSaisonnier && resultatsTriple ? (
-                  <div className="rounded-xl p-5" style={cardStyle}>
-                    <div className="text-sm font-medium mb-4" style={{ color: "#1A1612" }}>Revenus locatifs selon les estimations</div>
-                    <div className="grid grid-cols-3 gap-3">
-                      {([
-                        { label: "Basse", taux: parseFloat(tauxOccBas) || 0, accent: "rgba(176,58,42,0.12)", color: "#B03A2A" },
-                        { label: "Moyenne", taux: parseFloat(tauxOccMoyen) || 0, accent: "rgba(201,91,42,0.12)", color: "#C95B2A" },
-                        { label: "Haute", taux: parseFloat(tauxOccHaut) || 0, accent: "rgba(26,122,82,0.12)", color: "#1A7A52" },
-                      ] as const).map(({ label, taux, accent, color }) => {
-                        const loyer = loyerSaisonnier(parseFloat(prixNuitee) || 0, taux);
-                        return (
-                          <div key={label} className="rounded-lg p-3 text-center" style={{ background: accent }}>
-                            <div className="text-[10px] uppercase tracking-[0.12em] font-medium mb-1" style={{ color }}>{label}</div>
-                            <div className="text-lg font-light" style={{ color, letterSpacing: "-0.02em" }}>{formatEuro(loyer)}/mois</div>
-                            <div className="text-[11px] mt-0.5" style={{ color: "rgba(26,22,18,0.45)" }}>{taux}% d&apos;occupation · <strong>{Math.round(taux / 100 * 365)} nuits/an</strong></div>
-                            <div className="text-[11px]" style={{ color: "rgba(26,22,18,0.45)" }}>{formatEuro(loyer * 12)}/an</div>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </div>
-                ) : !isSaisonnier ? (
+                {/* Loyer slider — location classique uniquement */}
+                {!isSaisonnier ? (
                   <div className="rounded-xl px-4 py-2.5" style={cardStyle}>
                     <div className="flex justify-between items-center mb-1.5">
                       <span className="text-xs font-medium" style={{ color: "rgba(26,22,18,0.55)" }}>Ajuster le loyer</span>
@@ -1845,65 +1824,120 @@ ${annexeTable}
 
                 {/* Comparaison régimes + choix */}
                 <div className="rounded-xl p-5" style={cardStyle}>
-                  {isSaisonnier && <h3 className="font-medium text-[#1A1612] mb-4">Comparaison des régimes fiscaux</h3>}
 
                   {isSaisonnier && resultatsTriple ? (() => {
                     const scenarios = [
-                      { label: "Estimation basse", r: resultatsTriple.bas, accent: "rgba(176,58,42,0.05)", border: "rgba(176,58,42,0.25)", tagBg: "rgba(176,58,42,0.1)", tagColor: "#B03A2A" },
-                      { label: "Estimation moyenne", r: resultatsTriple.moyen, accent: "rgba(201,91,42,0.05)", border: "rgba(201,91,42,0.35)", tagBg: "rgba(201,91,42,0.12)", tagColor: "#C95B2A" },
-                      { label: "Estimation haute", r: resultatsTriple.haut, accent: "rgba(26,122,82,0.05)", border: "rgba(26,122,82,0.25)", tagBg: "rgba(26,122,82,0.1)", tagColor: "#1A7A52" },
+                      { label: "Basse", r: resultatsTriple.bas, taux: parseFloat(tauxOccBas)||0, color: "#B03A2A", accent: "rgba(176,58,42,0.08)", border: "rgba(176,58,42,0.22)" },
+                      { label: "Moyenne", r: resultatsTriple.moyen, taux: parseFloat(tauxOccMoyen)||0, color: "#C95B2A", accent: "rgba(201,91,42,0.08)", border: "rgba(201,91,42,0.28)" },
+                      { label: "Haute", r: resultatsTriple.haut, taux: parseFloat(tauxOccHaut)||0, color: "#1A7A52", accent: "rgba(26,122,82,0.08)", border: "rgba(26,122,82,0.22)" },
                     ];
-                    const RegimeRow = ({ sc, isReel }: { sc: typeof scenarios[0]; isReel: boolean }) => {
-                      const r = sc.r;
-                      if (!r) return <div className="rounded-lg p-3 text-center text-xs" style={{ background: sc.accent, border: `0.5px solid ${sc.border}`, color: "rgba(26,22,18,0.4)" }}>–</div>;
-                      const cf = isReel ? r.cashflowReelMensuel : r.cashflowBICMensuel;
-                      const base = isReel ? r.baseImposableReel : r.baseBIC;
-                      const impot = isReel ? r.impotReel : r.impotBIC;
-                      const Row = ({ label, val, color, bold, separator }: { label: string; val: string; color?: string; bold?: boolean; separator?: boolean }) => (
-                        <div className="flex justify-between" style={{ paddingTop: separator ? 6 : 0, marginTop: separator ? 4 : 0, borderTop: separator ? "0.5px solid rgba(26,22,18,0.1)" : "none" }}>
-                          <span style={{ color: "rgba(26,22,18,0.72)", fontSize: 11 }}>{label}</span>
-                          <span style={{ color: color ?? "#1A1612", fontWeight: bold ? 600 : 400, fontSize: 11 }}>{val}</span>
-                        </div>
-                      );
-                      return (
-                        <div>
-                          <div className="space-y-1.5">
-                            <Row label="Revenus annuels" val={formatEuro(r.loyerAnnuel)} bold />
-                            <Row label="Emprunt" val={`−${formatEuro(r.creditAnnuel)}`} color="#B03A2A" />
-                            {isReel ? (
-                              <>
-                                <Row label="Charges" val={`−${formatEuro(r.chargesDeductibles - r.interetsAnnee1)}`} color="#B03A2A" />
-                                <Row label="Amortissements" val={`−${formatEuro(r.amortTotal)}`} color="#B03A2A" />
-                              </>
-                            ) : (
-                              <Row label="Abattement 50%" val={`−${formatEuro(r.loyerAnnuel * 0.50)}`} color="#B03A2A" />
-                            )}
-                            <Row label="Base imposable" val={formatEuro(base)} color={base === 0 ? "#1A7A52" : "#1A1612"} bold separator />
-                            <Row label="Impôt estimé" val={formatEuro(impot)} color="#B03A2A" />
-                            <Row label="Cash-flow/mois" val={formatEuro(cf)} color={cf >= 0 ? "#1A7A52" : "#B03A2A"} bold separator />
-                          </div>
-                        </div>
-                      );
-                    };
+                    const TRow = ({ label, val, color, bold, sep }: { label: string; val: string; color?: string; bold?: boolean; sep?: boolean }) => (
+                      <div className="flex justify-between" style={{ paddingTop: sep ? 5 : 2, marginTop: sep ? 3 : 0, borderTop: sep ? "0.5px solid rgba(26,22,18,0.1)" : "none" }}>
+                        <span style={{ color: "rgba(26,22,18,0.65)", fontSize: 11 }}>{label}</span>
+                        <span style={{ color: color ?? "#1A1612", fontWeight: bold ? 600 : 400, fontSize: 11 }}>{val}</span>
+                      </div>
+                    );
                     return (
-                      <div className="grid grid-cols-3 gap-3">
-                        {scenarios.map(sc => (
-                          <div key={sc.label} className="rounded-xl overflow-hidden flex flex-col"
-                            style={{ border: `1.5px solid ${sc.border}`, background: sc.accent }}>
-                            <div className="px-3 py-3 text-center" style={{ borderBottom: `1px solid ${sc.border}` }}>
-                              <div className="text-[11px] font-bold uppercase tracking-[0.12em]" style={{ color: sc.tagColor }}>{sc.label}</div>
-                              {sc.r && <div className="text-base font-semibold mt-0.5" style={{ color: sc.tagColor }}>{formatEuro(sc.r.loyerAnnuel)}/an</div>}
-                            </div>
-                            <div className="px-3 pt-2 pb-3" style={{ borderBottom: `1px solid ${sc.border}` }}>
-                              <div className="text-[10px] font-semibold uppercase tracking-[0.1em] mb-2" style={{ color: "#4E1F12" }}>Régime réel <span className="px-1.5 py-0.5 rounded text-[9px]" style={{ background: "#C95B2A", color: "#F5F0E8" }}>Recommandé</span></div>
-                              <RegimeRow sc={sc} isReel={true} />
-                            </div>
-                            <div className="px-3 pt-2 pb-3">
-                              <div className="text-[10px] font-semibold uppercase tracking-[0.1em] mb-2" style={{ color: "rgba(26,22,18,0.5)" }}>Micro-BIC <span className="px-1.5 py-0.5 rounded text-[9px]" style={{ background: "rgba(26,22,18,0.08)", color: "rgba(26,22,18,0.5)" }}>Abatt. 30%</span></div>
-                              <RegimeRow sc={sc} isReel={false} />
-                            </div>
+                      <div className="space-y-3">
+                        {/* Header */}
+                        <div className="grid gap-2" style={{ gridTemplateColumns: "1fr 1.5fr 1.5fr" }}>
+                          <div />
+                          <div className="text-center text-[11px] font-bold uppercase tracking-[0.1em] py-2 rounded-lg" style={{ background: "rgba(201,91,42,0.08)", color: "#4E1F12" }}>
+                            Régime Réel&nbsp;<span className="px-1.5 py-0.5 rounded text-[9px]" style={{ background: "#C95B2A", color: "#F5F0E8" }}>Recommandé</span>
                           </div>
-                        ))}
+                          <div className="text-center text-[11px] font-bold uppercase tracking-[0.1em] py-2 rounded-lg" style={{ background: "rgba(26,22,18,0.05)", color: "rgba(26,22,18,0.5)" }}>
+                            Micro-BIC&nbsp;<span className="px-1.5 py-0.5 rounded text-[9px]" style={{ background: "rgba(26,22,18,0.1)", color: "rgba(26,22,18,0.5)" }}>Abatt. 30%</span>
+                          </div>
+                        </div>
+
+                        {/* One row per scenario */}
+                        {scenarios.map(sc => {
+                          const r = sc.r;
+                          const loyer = loyerSaisonnier(parseFloat(prixNuitee)||0, sc.taux);
+                          const nuits = Math.round(sc.taux / 100 * 365);
+                          return (
+                            <div key={sc.label} className="grid gap-0 rounded-xl overflow-hidden" style={{ gridTemplateColumns: "1fr 1.5fr 1.5fr", border: `1.5px solid ${sc.border}` }}>
+                              {/* Revenue */}
+                              <div className="p-3 flex flex-col justify-center" style={{ background: sc.accent }}>
+                                <div className="text-[10px] font-bold uppercase tracking-[0.12em] mb-1" style={{ color: sc.color }}>Estimation {sc.label}</div>
+                                <div className="text-xl font-bold" style={{ color: sc.color, letterSpacing: "-0.02em" }}>{formatEuro(loyer)}/mois</div>
+                                <div className="text-xs mt-0.5 font-semibold" style={{ color: "#1A1612" }}>{sc.taux}% · {nuits} nuits/an</div>
+                                <div className="text-xs mt-0.5 font-semibold" style={{ color: "#1A1612" }}>{formatEuro(loyer * 12)}/an</div>
+                              </div>
+                              {/* Réel */}
+                              <div className="p-3" style={{ background: "#FDFAF6", borderLeft: `1px solid ${sc.border}` }}>
+                                {r ? <div className="space-y-0.5">
+                                  <TRow label="Revenus annuels" val={formatEuro(r.loyerAnnuel)} bold />
+                                  <TRow label="Emprunt" val={`−${formatEuro(r.creditAnnuel)}`} color="#B03A2A" />
+                                  <TRow label="Charges" val={`−${formatEuro(r.chargesDeductibles - r.interetsAnnee1)}`} color="#B03A2A" />
+                                  <TRow label="Amortissements" val={`−${formatEuro(r.amortTotal)}`} color="#B03A2A" />
+                                  <TRow label="Base imposable" val={formatEuro(r.baseImposableReel)} bold sep color={r.baseImposableReel === 0 ? "#1A7A52" : "#1A1612"} />
+                                  <TRow label="Impôt estimé" val={formatEuro(r.impotReel)} color="#B03A2A" />
+                                  <TRow label="Cash-flow/mois" val={formatEuro(r.cashflowReelMensuel)} bold sep color={r.cashflowReelMensuel >= 0 ? "#1A7A52" : "#B03A2A"} />
+                                </div> : <div className="text-xs text-center py-4" style={{ color: "rgba(26,22,18,0.4)" }}>–</div>}
+                              </div>
+                              {/* BIC */}
+                              <div className="p-3" style={{ background: "#FDFAF6", borderLeft: `1px solid ${sc.border}` }}>
+                                {r ? <div className="space-y-0.5">
+                                  <TRow label="Revenus annuels" val={formatEuro(r.loyerAnnuel)} bold />
+                                  <TRow label="Emprunt" val={`−${formatEuro(r.creditAnnuel)}`} color="#B03A2A" />
+                                  <TRow label="Abattement 30%" val={`−${formatEuro(r.loyerAnnuel * 0.30)}`} color="#B03A2A" />
+                                  <TRow label="Base imposable" val={formatEuro(r.baseBIC)} bold sep />
+                                  <TRow label="Impôt estimé" val={formatEuro(r.impotBIC)} color="#B03A2A" />
+                                  <TRow label="Cash-flow/mois" val={formatEuro(r.cashflowBICMensuel)} bold sep color={r.cashflowBICMensuel >= 0 ? "#1A7A52" : "#B03A2A"} />
+                                </div> : <div className="text-xs text-center py-4" style={{ color: "rgba(26,22,18,0.4)" }}>–</div>}
+                              </div>
+                            </div>
+                          );
+                        })}
+
+                        {/* Regime choice buttons */}
+                        <div className="pt-2">
+                          <div className="text-center mb-3">
+                            <span className="text-base font-semibold" style={{ color: "#1A1612" }}>Choisissez votre régime fiscal</span>
+                          </div>
+                          <div className="grid grid-cols-2 gap-4">
+                            {/* Réel */}
+                            <button type="button" onClick={() => setSelectedRegime("reel")}
+                              className="rounded-xl overflow-hidden text-left transition-all hover:shadow-md focus:outline-none"
+                              style={{ border: selectedRegime === "reel" ? "2.5px solid #C95B2A" : "1.5px solid rgba(201,91,42,0.35)", boxShadow: selectedRegime === "reel" ? "0 0 0 3px rgba(201,91,42,0.12)" : "none" }}>
+                              <div className="flex items-center gap-3 px-5 py-3.5" style={{ background: selectedRegime === "reel" ? "#C95B2A" : "rgba(201,91,42,0.08)", borderBottom: "1px solid rgba(201,91,42,0.2)" }}>
+                                <div className="w-5 h-5 rounded-full flex-shrink-0 flex items-center justify-center" style={{ border: `2px solid ${selectedRegime === "reel" ? "#F5F0E8" : "#C95B2A"}`, background: "transparent" }}>
+                                  {selectedRegime === "reel" && <div className="w-2.5 h-2.5 rounded-full" style={{ background: "#F5F0E8" }} />}
+                                </div>
+                                <span className="font-bold text-[15px]" style={{ color: selectedRegime === "reel" ? "#F5F0E8" : "#4E1F12" }}>Régime réel simplifié</span>
+                                <span className="ml-auto text-[10px] font-bold px-2.5 py-1 rounded" style={{ background: selectedRegime === "reel" ? "rgba(245,240,232,0.2)" : "#C95B2A", color: "#F5F0E8" }}>RECOMMANDÉ</span>
+                              </div>
+                              <div className="px-5 py-2.5 text-center text-sm font-semibold" style={{ background: "#FDFAF6", color: "#C95B2A" }}>
+                                {selectedRegime === "reel" ? "✓ Sélectionné" : "Choisir ce régime →"}
+                              </div>
+                            </button>
+                            {/* Micro-BIC */}
+                            <button type="button" onClick={() => { setSelectedRegime("micro"); setSimulationValidated(true); window.scrollTo({ top: 0, behavior: "smooth" }); }}
+                              className="rounded-xl overflow-hidden text-left transition-all hover:shadow-md focus:outline-none"
+                              style={{ border: selectedRegime === "micro" ? "2.5px solid #1A1612" : "1.5px solid rgba(26,22,18,0.15)", boxShadow: selectedRegime === "micro" ? "0 0 0 3px rgba(26,22,18,0.07)" : "none" }}>
+                              <div className="flex items-center gap-3 px-5 py-3.5" style={{ background: selectedRegime === "micro" ? "#1A1612" : "#EDE7DC", borderBottom: "0.5px solid rgba(26,22,18,0.12)" }}>
+                                <div className="w-5 h-5 rounded-full flex-shrink-0 flex items-center justify-center" style={{ border: `2px solid ${selectedRegime === "micro" ? "#F5F0E8" : "rgba(26,22,18,0.35)"}`, background: "transparent" }}>
+                                  {selectedRegime === "micro" && <div className="w-2.5 h-2.5 rounded-full" style={{ background: "#F5F0E8" }} />}
+                                </div>
+                                <span className="font-bold text-[15px]" style={{ color: selectedRegime === "micro" ? "#F5F0E8" : "#1A1612" }}>Micro-BIC</span>
+                                <span className="ml-auto text-[10px] font-semibold px-2.5 py-1 rounded" style={{ background: selectedRegime === "micro" ? "rgba(245,240,232,0.2)" : "rgba(26,22,18,0.1)", color: selectedRegime === "micro" ? "#F5F0E8" : "rgba(26,22,18,0.55)" }}>ABATTEMENT 30%</span>
+                              </div>
+                              <div className="px-5 py-2.5 text-center text-sm font-semibold" style={{ background: "#FDFAF6", color: "rgba(26,22,18,0.6)" }}>
+                                {selectedRegime === "micro" ? "✓ Sélectionné" : "Choisir ce régime →"}
+                              </div>
+                            </button>
+                          </div>
+                          {selectedRegime !== null && (
+                            <div className="mt-3 text-center">
+                              <button type="button" onClick={() => { setSelectedRegime(null); setSimulationValidated(false); }}
+                                className="text-sm font-medium px-4 py-2 rounded-lg"
+                                style={{ background: "#EDE7DC", color: "rgba(26,22,18,0.6)" }}>
+                                ← Changer de régime
+                              </button>
+                            </div>
+                          )}
+                        </div>
                       </div>
                     );
                   })() : (() => {
