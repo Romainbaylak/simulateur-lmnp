@@ -1158,15 +1158,15 @@ ${annexeTable}
                     <label className={LABEL}>Taux d&apos;occupation estimé</label>
                     <div className="grid grid-cols-3 gap-2">
                       {[
-                        { label: "Basse", val: tauxOccBas, set: setTauxOccBas, placeholder: "20" },
-                        { label: "Moyenne", val: tauxOccMoyen, set: setTauxOccMoyen, placeholder: "35" },
-                        { label: "Haute", val: tauxOccHaut, set: setTauxOccHaut, placeholder: "45" },
+                        { label: "Bas", val: tauxOccBas, set: setTauxOccBas, placeholder: "20" },
+                        { label: "Moyen", val: tauxOccMoyen, set: setTauxOccMoyen, placeholder: "35" },
+                        { label: "Haut", val: tauxOccHaut, set: setTauxOccHaut, placeholder: "45" },
                       ].map(({ label, val, set, placeholder }) => {
                         const taux = parseFloat(val) || parseFloat(placeholder) || 0;
                         const nuits = Math.round(taux / 100 * 365);
                         return (
                           <div key={label}>
-                            <div className="text-[10px] text-center mb-1" style={{ color: "rgba(26,22,18,0.45)" }}>{label}</div>
+                            <div className="text-xs font-medium text-center mb-1" style={{ color: "#1A1612" }}>{label}</div>
                             <div className="relative">
                               <input type="number" value={val} onChange={e => set(e.target.value)}
                                 placeholder={placeholder} className={INPUT}
@@ -1174,7 +1174,7 @@ ${annexeTable}
                               <span className="absolute right-2 top-1/2 -translate-y-1/2 text-xs pointer-events-none"
                                 style={{ color: "rgba(26,22,18,0.45)" }}>%</span>
                             </div>
-                            <div className="text-[11px] font-semibold text-center mt-1" style={{ color: "#C95B2A" }}>{nuits} nuits/an</div>
+                            <div className="text-xs font-semibold text-center mt-1" style={{ color: "#C95B2A" }}>{nuits} nuits/an</div>
                           </div>
                         );
                       })}
