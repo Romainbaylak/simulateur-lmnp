@@ -1519,7 +1519,7 @@ ${annexeTable}
                     <div className="text-[12px] mt-1" style={{ color: "rgba(26,22,18,0.50)" }}>Soit <span className="font-semibold" style={{ color: "#1A1612" }}>{formatEuro(displayImpotMensuel)}</span>/mois</div>
                   </div>
                   <div className="rounded-lg px-3 py-2.5" style={cardStyle}>
-                    <div className={LABEL}>Cash-flow mensuel</div>
+                    <div className={LABEL}>Cash-flow <strong>Mensuel</strong></div>
                     <div className="text-lg font-bold mt-0.5" style={{ color: displayCashflow >= 0 ? "#1A7A52" : "#B03A2A", letterSpacing: "-0.02em" }}>{formatEuro(displayCashflow)}</div>
                     <div className="text-[12px] mt-0.5" style={{ color: "rgba(26,22,18,0.40)" }}>{selectedRegime === "micro" ? "Au Micro-BIC" : "Au Régime réel"}</div>
                   </div>
@@ -1638,7 +1638,18 @@ ${annexeTable}
                                       <FRow label="Amortissements" val={`−${formatEuro(r.amortTotal)}`} color="#B03A2A" />
                                       <FRow label="Base imposable" val={formatEuro(r.baseImposableReel)} bold sep color={r.baseImposableReel === 0 ? "#1A7A52" : "#1A1612"} />
                                       <FRow label="Impôt estimé" val={formatEuro(r.impotReel)} color="#B03A2A" />
-                                      <FRow label="Cash-flow/mois" val={formatEuro(cf)} bold sep color={cf >= 0 ? "#1A7A52" : "#B03A2A"} />
+                                      {(() => { const cfColor = cf >= 0 ? "#1A7A52" : "#B03A2A"; return (
+                                        <div className="mt-1" style={{ borderTop: "1px solid rgba(26,22,18,0.09)" }}>
+                                          <div className="flex justify-between items-baseline py-2.5">
+                                            <span style={{ color: "rgba(26,22,18,0.78)", fontSize: 13 }}>Cash-flow <strong>Mensuel</strong></span>
+                                            <span style={{ fontSize: 13, fontWeight: 700, color: cfColor }}>{formatEuro(cf)}</span>
+                                          </div>
+                                          <div className="flex justify-between -mt-1 pb-2">
+                                            <span style={{ fontSize: 12, color: "rgba(26,22,18,0.55)" }}>Soit annuel :</span>
+                                            <span style={{ fontSize: 12, fontWeight: 600, color: cfColor }}>{formatEuro(cf * 12)}</span>
+                                          </div>
+                                        </div>
+                                      ); })()}
                                     </>
                                   ) : (
                                     <>
@@ -1655,7 +1666,18 @@ ${annexeTable}
                                         </div>
                                       </div>
                                       <FRow label="Impôt estimé" val={formatEuro(r.impotBIC)} color="#B03A2A" />
-                                      <FRow label="Cash-flow/mois" val={formatEuro(cf)} bold sep color={cf >= 0 ? "#1A7A52" : "#B03A2A"} />
+                                      {(() => { const cfColor = cf >= 0 ? "#1A7A52" : "#B03A2A"; return (
+                                        <div className="mt-1" style={{ borderTop: "1px solid rgba(26,22,18,0.09)" }}>
+                                          <div className="flex justify-between items-baseline py-2.5">
+                                            <span style={{ color: "rgba(26,22,18,0.78)", fontSize: 13 }}>Cash-flow <strong>Mensuel</strong></span>
+                                            <span style={{ fontSize: 13, fontWeight: 700, color: cfColor }}>{formatEuro(cf)}</span>
+                                          </div>
+                                          <div className="flex justify-between -mt-1 pb-2">
+                                            <span style={{ fontSize: 12, color: "rgba(26,22,18,0.55)" }}>Soit annuel :</span>
+                                            <span style={{ fontSize: 12, fontWeight: 600, color: cfColor }}>{formatEuro(cf * 12)}</span>
+                                          </div>
+                                        </div>
+                                      ); })()}
                                     </>
                                   )) : <div className="text-xs py-4 text-center" style={{ color: "rgba(26,22,18,0.4)" }}>–</div>}
                                 </div>
@@ -1695,7 +1717,18 @@ ${annexeTable}
                               <FRow label="Base imposable" val={formatEuro(resultats.baseImposableReel)} bold sep />
                               <FRow label="Impôt estimé" val={formatEuro(resultats.impotReel)} color="#B03A2A" />
                               <FRow label="Amortissement à reporter N+1" val={formatEuro(resultats.amortAReporter)} color="#B08A2A" />
-                              <FRow label="Cash-flow mensuel" val={formatEuro(resultats.cashflowReelMensuel)} bold color={resultats.cashflowReelMensuel >= 0 ? "#1A7A52" : "#B03A2A"} sep />
+                              {(() => { const cfVal = resultats.cashflowReelMensuel; const cfColor = cfVal >= 0 ? "#1A7A52" : "#B03A2A"; return (
+                                <div className="mt-1" style={{ borderTop: "1px solid rgba(26,22,18,0.09)" }}>
+                                  <div className="flex justify-between items-baseline py-2.5">
+                                    <span style={{ color: "rgba(26,22,18,0.78)", fontSize: 13 }}>Cash-flow <strong>Mensuel</strong></span>
+                                    <span style={{ fontSize: 13, fontWeight: 700, color: cfColor }}>{formatEuro(cfVal)}</span>
+                                  </div>
+                                  <div className="flex justify-between -mt-1 pb-2">
+                                    <span style={{ fontSize: 12, color: "rgba(26,22,18,0.55)" }}>Soit annuel :</span>
+                                    <span style={{ fontSize: 12, fontWeight: 600, color: cfColor }}>{formatEuro(cfVal * 12)}</span>
+                                  </div>
+                                </div>
+                              ); })()}
                             </>
                           ) : (
                             <>
@@ -1705,7 +1738,18 @@ ${annexeTable}
                               <FRow label="Ensemble des charges" val={`−${formatEuro(resultats.chargesAnnuelles + resultats.assuranceEmprunteurAnnuel)}`} color="#B03A2A" />
                               <FRow label="Base imposable (50% recettes)" val={formatEuro(resultats.baseBIC)} bold sep />
                               <FRow label="Impôt estimé" val={formatEuro(resultats.impotBIC)} color="#B03A2A" />
-                              <FRow label="Cash-flow mensuel" val={formatEuro(resultats.cashflowBICMensuel)} bold color={resultats.cashflowBICMensuel >= 0 ? "#1A7A52" : "#B03A2A"} sep />
+                              {(() => { const cfVal = resultats.cashflowBICMensuel; const cfColor = cfVal >= 0 ? "#1A7A52" : "#B03A2A"; return (
+                                <div className="mt-1" style={{ borderTop: "1px solid rgba(26,22,18,0.09)" }}>
+                                  <div className="flex justify-between items-baseline py-2.5">
+                                    <span style={{ color: "rgba(26,22,18,0.78)", fontSize: 13 }}>Cash-flow <strong>Mensuel</strong></span>
+                                    <span style={{ fontSize: 13, fontWeight: 700, color: cfColor }}>{formatEuro(cfVal)}</span>
+                                  </div>
+                                  <div className="flex justify-between -mt-1 pb-2">
+                                    <span style={{ fontSize: 12, color: "rgba(26,22,18,0.55)" }}>Soit annuel :</span>
+                                    <span style={{ fontSize: 12, fontWeight: 600, color: cfColor }}>{formatEuro(cfVal * 12)}</span>
+                                  </div>
+                                </div>
+                              ); })()}
                             </>
                           )}
                         </div>
@@ -1846,7 +1890,7 @@ ${annexeTable}
 
                   {/* Cash-flow mensuel */}
                   <div className="rounded-lg px-3 py-2.5" style={cardStyle}>
-                    <div className={LABEL}>Cash-flow mensuel</div>
+                    <div className={LABEL}>Cash-flow <strong>Mensuel</strong></div>
                     <div className="text-lg font-bold mt-0.5" style={{
                       color: displayCashflow >= 0 ? "#1A7A52" : "#B03A2A",
                       letterSpacing: "-0.02em",
@@ -1962,7 +2006,18 @@ ${annexeTable}
                                   <TRow label="Amortissements" val={`−${formatEuro(r.amortTotal)}`} color="#B03A2A" />
                                   <TRow label="Base imposable" val={formatEuro(r.baseImposableReel)} bold sep color={r.baseImposableReel === 0 ? "#1A7A52" : "#1A1612"} />
                                   <TRow label="Impôt estimé" val={formatEuro(r.impotReel)} color="#B03A2A" />
-                                  <TRow label="Cash-flow/mois" val={formatEuro(r.cashflowReelMensuel)} bold sep color={r.cashflowReelMensuel >= 0 ? "#1A7A52" : "#B03A2A"} />
+                                  {(() => { const cfVal = r.cashflowReelMensuel; const cfColor = cfVal >= 0 ? "#1A7A52" : "#B03A2A"; return (
+                                    <div style={{ borderTop: "0.5px solid rgba(26,22,18,0.1)", paddingTop: 6, marginTop: 4 }}>
+                                      <div className="flex justify-between">
+                                        <span style={{ color: "rgba(26,22,18,0.7)", fontSize: 12.5, fontWeight: 700 }}>Cash-flow <strong>Mensuel</strong></span>
+                                        <span style={{ fontSize: 12.5, fontWeight: 700, color: cfColor }}>{formatEuro(cfVal)}</span>
+                                      </div>
+                                      <div className="flex justify-between mt-1">
+                                        <span style={{ fontSize: 11, color: "rgba(26,22,18,0.55)" }}>Soit annuel :</span>
+                                        <span style={{ fontSize: 11, fontWeight: 600, color: cfColor }}>{formatEuro(cfVal * 12)}</span>
+                                      </div>
+                                    </div>
+                                  ); })()}
                                 </div> : <div className="text-xs text-center py-4" style={{ color: "rgba(26,22,18,0.4)" }}>–</div>}
                               </div>
                               {/* BIC */}
@@ -1981,7 +2036,18 @@ ${annexeTable}
                                     </div>
                                   </div>
                                   <TRow label="Impôt estimé" val={formatEuro(r.impotBIC)} color="#B03A2A" />
-                                  <TRow label="Cash-flow/mois" val={formatEuro(r.cashflowBICMensuel)} bold sep color={r.cashflowBICMensuel >= 0 ? "#1A7A52" : "#B03A2A"} />
+                                  {(() => { const cfVal = r.cashflowBICMensuel; const cfColor = cfVal >= 0 ? "#1A7A52" : "#B03A2A"; return (
+                                    <div style={{ borderTop: "0.5px solid rgba(26,22,18,0.1)", paddingTop: 6, marginTop: 4 }}>
+                                      <div className="flex justify-between">
+                                        <span style={{ color: "rgba(26,22,18,0.7)", fontSize: 12.5, fontWeight: 700 }}>Cash-flow <strong>Mensuel</strong></span>
+                                        <span style={{ fontSize: 12.5, fontWeight: 700, color: cfColor }}>{formatEuro(cfVal)}</span>
+                                      </div>
+                                      <div className="flex justify-between mt-1">
+                                        <span style={{ fontSize: 11, color: "rgba(26,22,18,0.55)" }}>Soit annuel :</span>
+                                        <span style={{ fontSize: 11, fontWeight: 600, color: cfColor }}>{formatEuro(cfVal * 12)}</span>
+                                      </div>
+                                    </div>
+                                  ); })()}
                                 </div> : <div className="text-xs text-center py-4" style={{ color: "rgba(26,22,18,0.4)" }}>–</div>}
                               </div>
                             </div>
@@ -2052,7 +2118,18 @@ ${annexeTable}
                                   <Row label="Amortissements" val={`−${formatEuro(resultats.amortTotal)}`} color="#B03A2A" />
                                   <Row label="Base imposable" val={formatEuro(resultats.baseImposableReel)} bold sep />
                                   <Row label="Impôt estimé" val={formatEuro(resultats.impotReel)} color="#B03A2A" />
-                                  <Row label="Cash-flow mensuel" val={formatEuro(resultats.cashflowReelMensuel)} bold color={resultats.cashflowReelMensuel >= 0 ? "#1A7A52" : "#B03A2A"} sep />
+                                  {(() => { const cfVal = resultats.cashflowReelMensuel; const cfColor = cfVal >= 0 ? "#1A7A52" : "#B03A2A"; return (
+                                    <div className="mt-1" style={{ borderTop: "1px solid rgba(26,22,18,0.09)" }}>
+                                      <div className="flex justify-between items-baseline py-2.5">
+                                        <span style={{ color: "rgba(26,22,18,0.78)", fontSize: 13, fontWeight: 600 }}>Cash-flow <strong>Mensuel</strong></span>
+                                        <span style={{ fontSize: 13, fontWeight: 700, color: cfColor }}>{formatEuro(cfVal)}</span>
+                                      </div>
+                                      <div className="flex justify-between -mt-1 pb-2">
+                                        <span style={{ fontSize: 12, color: "rgba(26,22,18,0.55)" }}>Soit annuel :</span>
+                                        <span style={{ fontSize: 12, fontWeight: 600, color: cfColor }}>{formatEuro(cfVal * 12)}</span>
+                                      </div>
+                                    </div>
+                                  ); })()}
                                 </div>
                                 <div className="px-5 py-3 text-center text-sm font-semibold" style={{ background: "rgba(201,91,42,0.08)", color: "#C95B2A" }}>
                                   Choisir ce régime →
@@ -2080,7 +2157,18 @@ ${annexeTable}
                                   {!isSaisonnier && <Row label="Ensemble des charges" val={`−${formatEuro(resultats.chargesAnnuelles + resultats.assuranceEmprunteurAnnuel)}`} color="#B03A2A" />}
                                   <Row label={isSaisonnier ? "Base imposable (70% recettes)" : "Base imposable (50% recettes)"} val={formatEuro(resultats.baseBIC)} bold sep />
                                   <Row label="Impôt estimé" val={formatEuro(resultats.impotBIC)} color="#B03A2A" />
-                                  <Row label="Cash-flow mensuel" val={formatEuro(resultats.cashflowBICMensuel)} bold color={resultats.cashflowBICMensuel >= 0 ? "#1A7A52" : "#B03A2A"} sep />
+                                  {(() => { const cfVal = resultats.cashflowBICMensuel; const cfColor = cfVal >= 0 ? "#1A7A52" : "#B03A2A"; return (
+                                    <div className="mt-1" style={{ borderTop: "1px solid rgba(26,22,18,0.09)" }}>
+                                      <div className="flex justify-between items-baseline py-2.5">
+                                        <span style={{ color: "rgba(26,22,18,0.78)", fontSize: 13, fontWeight: 600 }}>Cash-flow <strong>Mensuel</strong></span>
+                                        <span style={{ fontSize: 13, fontWeight: 700, color: cfColor }}>{formatEuro(cfVal)}</span>
+                                      </div>
+                                      <div className="flex justify-between -mt-1 pb-2">
+                                        <span style={{ fontSize: 12, color: "rgba(26,22,18,0.55)" }}>Soit annuel :</span>
+                                        <span style={{ fontSize: 12, fontWeight: 600, color: cfColor }}>{formatEuro(cfVal * 12)}</span>
+                                      </div>
+                                    </div>
+                                  ); })()}
                                 </div>
                                 <div className="px-5 py-3 text-center text-sm font-semibold" style={{ background: "#EDE7DC", color: "rgba(26,22,18,0.6)" }}>
                                   Choisir ce régime →
@@ -2121,7 +2209,18 @@ ${annexeTable}
                                     <Row label="Base imposable" val={formatEuro(resultats.baseImposableReel)} bold sep />
                                     <Row label="Impôt estimé" val={formatEuro(resultats.impotReel)} color="#B03A2A" />
                                     <Row label="Amortissement à reporter N+1" val={formatEuro(resultats.amortAReporter)} color="#B08A2A" />
-                                    <Row label="Cash-flow mensuel" val={formatEuro(resultats.cashflowReelMensuel)} bold color={resultats.cashflowReelMensuel >= 0 ? "#1A7A52" : "#B03A2A"} sep />
+                                    {(() => { const cfVal = resultats.cashflowReelMensuel; const cfColor = cfVal >= 0 ? "#1A7A52" : "#B03A2A"; return (
+                                      <div className="mt-1" style={{ borderTop: "1px solid rgba(26,22,18,0.09)" }}>
+                                        <div className="flex justify-between items-baseline py-2.5">
+                                          <span style={{ color: "rgba(26,22,18,0.78)", fontSize: 13, fontWeight: 600 }}>Cash-flow <strong>Mensuel</strong></span>
+                                          <span style={{ fontSize: 13, fontWeight: 700, color: cfColor }}>{formatEuro(cfVal)}</span>
+                                        </div>
+                                        <div className="flex justify-between -mt-1 pb-2">
+                                          <span style={{ fontSize: 12, color: "rgba(26,22,18,0.55)" }}>Soit annuel :</span>
+                                          <span style={{ fontSize: 12, fontWeight: 600, color: cfColor }}>{formatEuro(cfVal * 12)}</span>
+                                        </div>
+                                      </div>
+                                    ); })()}
                                   </>
                                 ) : (
                                   <>
@@ -2134,7 +2233,18 @@ ${annexeTable}
                                     {!isSaisonnier && <Row label="Ensemble des charges" val={`−${formatEuro(resultats.chargesAnnuelles + resultats.assuranceEmprunteurAnnuel)}`} color="#B03A2A" />}
                                     <Row label={isSaisonnier ? "Base imposable (70% recettes)" : "Base imposable (50% recettes)"} val={formatEuro(resultats.baseBIC)} bold sep />
                                     <Row label="Impôt estimé" val={formatEuro(resultats.impotBIC)} color="#B03A2A" />
-                                    <Row label="Cash-flow mensuel" val={formatEuro(resultats.cashflowBICMensuel)} bold color={resultats.cashflowBICMensuel >= 0 ? "#1A7A52" : "#B03A2A"} sep />
+                                    {(() => { const cfVal = resultats.cashflowBICMensuel; const cfColor = cfVal >= 0 ? "#1A7A52" : "#B03A2A"; return (
+                                      <div className="mt-1" style={{ borderTop: "1px solid rgba(26,22,18,0.09)" }}>
+                                        <div className="flex justify-between items-baseline py-2.5">
+                                          <span style={{ color: "rgba(26,22,18,0.78)", fontSize: 13, fontWeight: 600 }}>Cash-flow <strong>Mensuel</strong></span>
+                                          <span style={{ fontSize: 13, fontWeight: 700, color: cfColor }}>{formatEuro(cfVal)}</span>
+                                        </div>
+                                        <div className="flex justify-between -mt-1 pb-2">
+                                          <span style={{ fontSize: 12, color: "rgba(26,22,18,0.55)" }}>Soit annuel :</span>
+                                          <span style={{ fontSize: 12, fontWeight: 600, color: cfColor }}>{formatEuro(cfVal * 12)}</span>
+                                        </div>
+                                      </div>
+                                    ); })()}
                                   </>
                                 )}
                               </div>
