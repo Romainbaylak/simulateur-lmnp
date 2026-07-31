@@ -1446,7 +1446,7 @@ ${annexeTable}
                     if (chargesLoc > 0) items.push({ label: "Charges locataire", value: `+ ${formatEuro(chargesLoc)}/mois` });
                   } else {
                     if (nuitee > 0) items.push({ label: "Prix par nuitée", value: formatEuro(nuitee) });
-                    items.push({ label: "Taux d'occupation", value: `${tauxOccBas} – ${tauxOccHaut} %`, note: `moy. ${tauxOccMoyen} %` });
+                    items.push({ label: "Taux d'occupation", value: `${tauxOccBas} % – ${tauxOccMoyen} % – ${tauxOccHaut} %` });
                   }
                   if (tr > 0) items.push({ label: "Travaux", value: formatEuro(tr) });
                   if (mob > 0) items.push({ label: "Mobilier", value: formatEuro(mob) });
