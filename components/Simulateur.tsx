@@ -987,7 +987,7 @@ ${annexeTable}
   const sectionStyle = { background: "#EDE7DC", border: "0.5px solid rgba(26,22,18,0.08)" };
 
   return (
-    <section id="simulateur" className="py-16" style={{ backgroundColor: "#F5F0E8" }}>
+    <section id="simulateur" className={simulationValidated ? "pt-4 pb-16" : "py-16"} style={{ backgroundColor: "#F5F0E8" }}>
       <div className="max-w-6xl mx-auto px-4">
 
         {/* ─── FORM ─── */}
