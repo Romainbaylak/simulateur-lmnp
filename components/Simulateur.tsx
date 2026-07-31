@@ -1634,6 +1634,7 @@ ${annexeTable}
                                       <FRow label="Revenus annuels" val={formatEuro(r.loyerAnnuel)} bold />
                                       <FRow label="Emprunt" val={`−${formatEuro(r.creditAnnuel)}`} color="#B03A2A" />
                                       <FRow label="Charges déduct." val={`−${formatEuro(r.chargesDeductibles)}`} color="#B03A2A" />
+                                      <FRow label="Résultat avant amort." val={formatEuro(r.resultatAvantAmort)} bold sep color={r.resultatAvantAmort >= 0 ? "#1A7A52" : "#B03A2A"} />
                                       <FRow label="Amortissements" val={`−${formatEuro(r.amortTotal)}`} color="#B03A2A" />
                                       <FRow label="Base imposable" val={formatEuro(r.baseImposableReel)} bold sep color={r.baseImposableReel === 0 ? "#1A7A52" : "#1A1612"} />
                                       <FRow label="Impôt estimé" val={formatEuro(r.impotReel)} color="#B03A2A" />
