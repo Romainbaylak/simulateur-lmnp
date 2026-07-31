@@ -1592,7 +1592,7 @@ ${annexeTable}
                   if (isSaisonnier && resultatsTriple) {
                     const isReel = selectedRegime === "reel";
                     const scenarios = [
-                      { label: "Basse", r: resultatsTriple.bas, taux: parseFloat(tauxOccBas)||0, color: "#B03A2A", accent: "rgba(176,58,42,0.08)", border: "rgba(176,58,42,0.22)" },
+                      { label: "Basse", r: resultatsTriple.bas, taux: parseFloat(tauxOccBas)||0, color: "#1A4D8F", accent: "rgba(26,77,143,0.07)", border: "rgba(26,77,143,0.22)" },
                       { label: "Moyenne", r: resultatsTriple.moyen, taux: parseFloat(tauxOccMoyen)||0, color: "#C95B2A", accent: "rgba(201,91,42,0.08)", border: "rgba(201,91,42,0.28)" },
                       { label: "Haute", r: resultatsTriple.haut, taux: parseFloat(tauxOccHaut)||0, color: "#1A7A52", accent: "rgba(26,122,82,0.08)", border: "rgba(26,122,82,0.22)" },
                     ];
@@ -1621,8 +1621,9 @@ ${annexeTable}
                               <div className="p-4 flex flex-col justify-center" style={{ background: sc.accent }}>
                                 <div className="text-[10px] font-bold uppercase tracking-[0.12em] mb-1" style={{ color: sc.color }}>Estimation {sc.label}</div>
                                 <div className="text-2xl font-bold" style={{ color: sc.color, letterSpacing: "-0.02em" }}>{formatEuro(loyer)}/mois</div>
-                                <div className="text-xs mt-1 font-semibold" style={{ color: "#1A1612" }}>{sc.taux}% occupation · {nuits} nuits/an</div>
-                                <div className="text-xs mt-0.5 font-semibold" style={{ color: "#1A1612" }}>{formatEuro(loyer * 12)}/an</div>
+                                <div className="text-xs mt-1 font-semibold" style={{ color: "#1A1612" }}>{sc.taux}% occupation</div>
+                                <div className="text-xs font-semibold" style={{ color: "#C95B2A" }}>{nuits} nuits/an</div>
+                                <div className="text-xs mt-1 font-bold" style={{ color: sc.color }}>{formatEuro(loyer * 12)}/an</div>
                               </div>
                               {/* Tableau régime */}
                               <div className="px-5 py-2" style={{ background: "#FDFAF6", borderLeft: `1px solid ${sc.border}` }}>
@@ -1890,7 +1891,7 @@ ${annexeTable}
 
                   {isSaisonnier && resultatsTriple ? (() => {
                     const scenarios = [
-                      { label: "Basse", r: resultatsTriple.bas, taux: parseFloat(tauxOccBas)||0, color: "#B03A2A", accent: "rgba(176,58,42,0.08)", border: "rgba(176,58,42,0.22)" },
+                      { label: "Basse", r: resultatsTriple.bas, taux: parseFloat(tauxOccBas)||0, color: "#1A4D8F", accent: "rgba(26,77,143,0.07)", border: "rgba(26,77,143,0.22)" },
                       { label: "Moyenne", r: resultatsTriple.moyen, taux: parseFloat(tauxOccMoyen)||0, color: "#C95B2A", accent: "rgba(201,91,42,0.08)", border: "rgba(201,91,42,0.28)" },
                       { label: "Haute", r: resultatsTriple.haut, taux: parseFloat(tauxOccHaut)||0, color: "#1A7A52", accent: "rgba(26,122,82,0.08)", border: "rgba(26,122,82,0.22)" },
                     ];
@@ -1924,8 +1925,9 @@ ${annexeTable}
                               <div className="p-3 flex flex-col justify-center" style={{ background: sc.accent }}>
                                 <div className="text-[10px] font-bold uppercase tracking-[0.12em] mb-1" style={{ color: sc.color }}>Estimation {sc.label}</div>
                                 <div className="text-xl font-bold" style={{ color: sc.color, letterSpacing: "-0.02em" }}>{formatEuro(loyer)}/mois</div>
-                                <div className="text-xs mt-0.5 font-semibold" style={{ color: "#1A1612" }}>{sc.taux}% occupation · {nuits} nuits/an</div>
-                                <div className="text-xs mt-0.5 font-semibold" style={{ color: "#1A1612" }}>{formatEuro(loyer * 12)}/an</div>
+                                <div className="text-xs mt-0.5 font-semibold" style={{ color: "#1A1612" }}>{sc.taux}% occupation</div>
+                                <div className="text-xs font-semibold" style={{ color: "#C95B2A" }}>{nuits} nuits/an</div>
+                                <div className="text-xs mt-1 font-bold" style={{ color: sc.color }}>{formatEuro(loyer * 12)}/an</div>
                               </div>
                               {/* Réel */}
                               <div className="p-3" style={{ background: "#FDFAF6", borderLeft: `1px solid ${sc.border}` }}>
