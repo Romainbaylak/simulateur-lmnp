@@ -2304,7 +2304,7 @@ ${!isMicro && annexeCols.length > 0 ? `
                 <span className="text-xs font-bold px-2.5 py-0.5 rounded-full flex-shrink-0"
                   style={{ background: "#4A9FCA", color: "#1A2D45" }}>PDF</span>
                 <span className="text-sm font-bold leading-tight flex-1" style={{ color: "#F5F0E8" }}>
-                  Synthèse financière<br />– Banque
+                  Synthèse financière –<br />Banque
                 </span>
                 <span style={{ color: "#4A9FCA", fontSize: 18, fontWeight: 800, lineHeight: 1, flexShrink: 0 }}>→</span>
               </button>
