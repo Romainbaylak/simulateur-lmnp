@@ -1144,13 +1144,17 @@ ${annexeTable}
                 <div className="space-y-3 rounded-xl p-4" style={{ background: "rgba(38,82,122,0.05)", border: "1px solid rgba(38,82,122,0.2)" }}>
                   <div className="text-[11px] font-medium uppercase tracking-[0.14em]" style={{ color: "#26527A" }}>Location Saisonnière</div>
                   <div>
-                    <label className={LABEL}>Prix moyen par nuitée (€)</label>
-                    <input type="number" value={prixNuitee}
-                      onChange={e => setPrixNuitee(e.target.value)}
-                      placeholder="Ex : 80" className={INPUT} style={INPUT_STYLE} />
+                    <label className={LABEL}>Prix moyen par nuitée</label>
+                    <div className="relative">
+                      <input type="number" value={prixNuitee}
+                        onChange={e => setPrixNuitee(e.target.value)}
+                        placeholder="Ex : 80" className={INPUT} style={{ ...INPUT_STYLE, paddingRight: "28px" }} />
+                      <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-medium pointer-events-none"
+                        style={{ color: "rgba(26,22,18,0.45)" }}>€</span>
+                    </div>
                   </div>
                   <div>
-                    <label className={LABEL}>Taux d&apos;occupation estimé (%)</label>
+                    <label className={LABEL}>Taux d&apos;occupation estimé</label>
                     <div className="grid grid-cols-3 gap-2">
                       {[
                         { label: "Basse", val: tauxOccBas, set: setTauxOccBas, placeholder: "20" },
@@ -1162,14 +1166,19 @@ ${annexeTable}
                         return (
                           <div key={label}>
                             <div className="text-[10px] text-center mb-1" style={{ color: "rgba(26,22,18,0.45)" }}>{label}</div>
-                            <input type="number" value={val} onChange={e => set(e.target.value)}
-                              placeholder={placeholder} className={INPUT} style={{ ...INPUT_STYLE, textAlign: "center" }} />
-                            <div className="text-[10px] text-center mt-1" style={{ color: "rgba(26,22,18,0.35)" }}>{nuits} nuits/an</div>
+                            <div className="relative">
+                              <input type="number" value={val} onChange={e => set(e.target.value)}
+                                placeholder={placeholder} className={INPUT}
+                                style={{ ...INPUT_STYLE, textAlign: "center", paddingRight: "22px" }} />
+                              <span className="absolute right-2 top-1/2 -translate-y-1/2 text-xs pointer-events-none"
+                                style={{ color: "rgba(26,22,18,0.45)" }}>%</span>
+                            </div>
+                            <div className="text-[11px] font-semibold text-center mt-1" style={{ color: "#C95B2A" }}>{nuits} nuits/an</div>
                           </div>
                         );
                       })}
                     </div>
-                    <p className="text-[11px] mt-2" style={{ color: "rgba(26,22,18,0.45)", lineHeight: 1.5 }}>
+                    <p className="text-[11px] mt-2" style={{ color: "#1A1612", lineHeight: 1.5 }}>
                       Les calculs de rentabilité approfondis sont effectués avec l&apos;estimation <strong>Moyenne</strong>.
                     </p>
                   </div>
@@ -1219,7 +1228,10 @@ ${annexeTable}
               {(() => {
                 const pnoPct = parseFloat(form.assurancePNO) || 0;
                 const gestionPct = parseFloat(form.gestionLocativePct) || 0;
-                const loyerHC = parseFloat(form.loyer) || 0;
+                // Pour saisonnier : utiliser le revenu moyen estimé pour l'affichage
+                const loyerHC = isSaisonnier
+                  ? loyerSaisonnier(parseFloat(prixNuitee) || 0, parseFloat(tauxOccMoyen) || 0)
+                  : parseFloat(form.loyer) || 0;
                 const loyerAnnuelUI = loyerHC * 12;
                 const assurancePNOEur = loyerAnnuelUI * (pnoPct / 100);
                 const gestionLocative = loyerAnnuelUI * (gestionPct / 100);
@@ -1248,14 +1260,20 @@ ${annexeTable}
                     </button>
                     {showAutresCharges && (
                       <div className="p-4 space-y-3" style={{ background: "#F5F0E8" }}>
-                        {/* Popup avertissement loyer */}
+                        {/* Popup avertissement loyer / nuitée */}
                         {showLoyerWarning && (
                           <div className="fixed inset-0 z-50 flex items-center justify-center" style={{ background: "rgba(26,22,18,0.45)" }}
                             onClick={() => setShowLoyerWarning(false)}>
                             <div className="rounded-2xl p-6 max-w-xs w-full mx-4 text-center shadow-2xl" style={{ background: "#F5F0E8" }}
                               onClick={e => e.stopPropagation()}>
-                              <p className="text-sm font-medium mb-1" style={{ color: "#1A1612" }}>Loyer non renseigné</p>
-                              <p className="text-xs mb-4" style={{ color: "rgba(26,22,18,0.6)" }}>Renseigne d&apos;abord le loyer HC mensuel pour calculer le montant de la gestion locative.</p>
+                              <p className="text-sm font-medium mb-1" style={{ color: "#1A1612" }}>
+                                {isSaisonnier ? "Prix par nuitée non renseigné" : "Loyer non renseigné"}
+                              </p>
+                              <p className="text-xs mb-4" style={{ color: "rgba(26,22,18,0.6)" }}>
+                                {isSaisonnier
+                                  ? "Renseigne d'abord le prix par nuitée pour estimer le montant de la gestion locative."
+                                  : "Renseigne d'abord le loyer HC mensuel pour calculer le montant de la gestion locative."}
+                              </p>
                               <button onClick={() => setShowLoyerWarning(false)}
                                 className="px-5 py-2 rounded-xl text-sm font-medium" style={{ background: "#C95B2A", color: "#fff" }}>
                                 OK
@@ -1299,7 +1317,7 @@ ${annexeTable}
                                 type="text" inputMode="decimal"
                                 value={form.gestionLocativePct}
                                 placeholder="~25%"
-                                onClick={() => { if (!loyerHC) setShowLoyerWarning(true); }}
+                                onClick={() => { if (!loyerHC && !(isSaisonnier && parseFloat(prixNuitee) > 0)) setShowLoyerWarning(true); }}
                                 onChange={e => {
                                   const v = e.target.value.replace(",", ".");
                                   if (/^\d*\.?\d*$/.test(v) && (parseFloat(v) || 0) <= 70)
