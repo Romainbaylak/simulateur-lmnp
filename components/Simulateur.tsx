@@ -1908,14 +1908,20 @@ ${annexeTable}
                         <div className="grid gap-2" style={{ gridTemplateColumns: "0.6fr 1.5fr 1.5fr" }}>
                           <div />
                           <button type="button" onClick={() => setSelectedRegime("reel")}
-                            className="text-center text-[11px] font-bold uppercase tracking-[0.1em] py-2 rounded-lg transition-all"
+                            className="flex items-center justify-center gap-2 text-[11px] font-bold uppercase tracking-[0.1em] py-2 px-3 rounded-lg transition-all"
                             style={{ background: selectedRegime === "reel" ? "#C95B2A" : "rgba(201,91,42,0.08)", color: selectedRegime === "reel" ? "#F5F0E8" : "#4E1F12", border: selectedRegime === "reel" ? "none" : "1.5px solid rgba(201,91,42,0.25)", cursor: "pointer" }}>
-                            Régime Réel&nbsp;<span className="px-1.5 py-0.5 rounded text-[9px]" style={{ background: selectedRegime === "reel" ? "rgba(245,240,232,0.25)" : "#C95B2A", color: "#F5F0E8" }}>{selectedRegime === "reel" ? "✓ Sélectionné" : "Recommandé"}</span>
+                            <span className="flex-shrink-0 w-4 h-4 rounded-full flex items-center justify-center" style={{ border: `2px solid ${selectedRegime === "reel" ? "#F5F0E8" : "#C95B2A"}` }}>
+                              {selectedRegime === "reel" && <span className="w-2 h-2 rounded-full" style={{ background: "#F5F0E8", display: "block" }} />}
+                            </span>
+                            Régime Réel&nbsp;<span className="px-1.5 py-0.5 rounded text-[9px]" style={{ background: selectedRegime === "reel" ? "rgba(245,240,232,0.25)" : "#C95B2A", color: "#F5F0E8" }}>{selectedRegime === "reel" ? "✓ Sélect." : "Recommandé"}</span>
                           </button>
                           <button type="button" onClick={() => { setSelectedRegime("micro"); setSimulationValidated(true); window.scrollTo({ top: 0, behavior: "smooth" }); }}
-                            className="text-center text-[11px] font-bold uppercase tracking-[0.1em] py-2 rounded-lg transition-all"
+                            className="flex items-center justify-center gap-2 text-[11px] font-bold uppercase tracking-[0.1em] py-2 px-3 rounded-lg transition-all"
                             style={{ background: selectedRegime === "micro" ? "#1A1612" : "rgba(26,22,18,0.08)", color: selectedRegime === "micro" ? "#F5F0E8" : "#1A1612", border: selectedRegime === "micro" ? "none" : "1.5px solid rgba(26,22,18,0.15)", cursor: "pointer" }}>
-                            Micro-BIC&nbsp;<span className="px-1.5 py-0.5 rounded text-[9px]" style={{ background: selectedRegime === "micro" ? "rgba(245,240,232,0.2)" : "rgba(26,22,18,0.15)", color: selectedRegime === "micro" ? "#F5F0E8" : "#1A1612" }}>{selectedRegime === "micro" ? "✓ Sélectionné" : "Abatt. 30%"}</span>
+                            <span className="flex-shrink-0 w-4 h-4 rounded-full flex items-center justify-center" style={{ border: `2px solid ${selectedRegime === "micro" ? "#F5F0E8" : "rgba(26,22,18,0.4)"}` }}>
+                              {selectedRegime === "micro" && <span className="w-2 h-2 rounded-full" style={{ background: "#F5F0E8", display: "block" }} />}
+                            </span>
+                            Micro-BIC&nbsp;<span className="px-1.5 py-0.5 rounded text-[9px]" style={{ background: selectedRegime === "micro" ? "rgba(245,240,232,0.2)" : "rgba(26,22,18,0.15)", color: selectedRegime === "micro" ? "#F5F0E8" : "#1A1612" }}>{selectedRegime === "micro" ? "✓ Sélect." : "Abatt. 30%"}</span>
                           </button>
                         </div>
 
