@@ -1832,21 +1832,21 @@ ${annexeTable}
                       { label: "Haute", r: resultatsTriple.haut, taux: parseFloat(tauxOccHaut)||0, color: "#1A7A52", accent: "rgba(26,122,82,0.08)", border: "rgba(26,122,82,0.22)" },
                     ];
                     const TRow = ({ label, val, color, bold, sep }: { label: string; val: string; color?: string; bold?: boolean; sep?: boolean }) => (
-                      <div className="flex justify-between" style={{ paddingTop: sep ? 5 : 2, marginTop: sep ? 3 : 0, borderTop: sep ? "0.5px solid rgba(26,22,18,0.1)" : "none" }}>
-                        <span style={{ color: "rgba(26,22,18,0.65)", fontSize: 11 }}>{label}</span>
-                        <span style={{ color: color ?? "#1A1612", fontWeight: bold ? 600 : 400, fontSize: 11 }}>{val}</span>
+                      <div className="flex justify-between" style={{ paddingTop: sep ? 6 : 3, marginTop: sep ? 4 : 0, borderTop: sep ? "0.5px solid rgba(26,22,18,0.1)" : "none" }}>
+                        <span style={{ color: "rgba(26,22,18,0.7)", fontSize: 12.5 }}>{label}</span>
+                        <span style={{ color: color ?? "#1A1612", fontWeight: bold ? 700 : 400, fontSize: 12.5 }}>{val}</span>
                       </div>
                     );
                     return (
                       <div className="space-y-3">
                         {/* Header */}
-                        <div className="grid gap-2" style={{ gridTemplateColumns: "1fr 1.5fr 1.5fr" }}>
+                        <div className="grid gap-2" style={{ gridTemplateColumns: "0.6fr 1.5fr 1.5fr" }}>
                           <div />
                           <div className="text-center text-[11px] font-bold uppercase tracking-[0.1em] py-2 rounded-lg" style={{ background: "rgba(201,91,42,0.08)", color: "#4E1F12" }}>
                             Régime Réel&nbsp;<span className="px-1.5 py-0.5 rounded text-[9px]" style={{ background: "#C95B2A", color: "#F5F0E8" }}>Recommandé</span>
                           </div>
-                          <div className="text-center text-[11px] font-bold uppercase tracking-[0.1em] py-2 rounded-lg" style={{ background: "rgba(26,22,18,0.05)", color: "rgba(26,22,18,0.5)" }}>
-                            Micro-BIC&nbsp;<span className="px-1.5 py-0.5 rounded text-[9px]" style={{ background: "rgba(26,22,18,0.1)", color: "rgba(26,22,18,0.5)" }}>Abatt. 30%</span>
+                          <div className="text-center text-[11px] font-bold uppercase tracking-[0.1em] py-2 rounded-lg" style={{ background: "rgba(26,22,18,0.08)", color: "#1A1612" }}>
+                            Micro-BIC&nbsp;<span className="px-1.5 py-0.5 rounded text-[9px]" style={{ background: "rgba(26,22,18,0.15)", color: "#1A1612" }}>Abatt. 30%</span>
                           </div>
                         </div>
 
@@ -1856,12 +1856,12 @@ ${annexeTable}
                           const loyer = loyerSaisonnier(parseFloat(prixNuitee)||0, sc.taux);
                           const nuits = Math.round(sc.taux / 100 * 365);
                           return (
-                            <div key={sc.label} className="grid gap-0 rounded-xl overflow-hidden" style={{ gridTemplateColumns: "1fr 1.5fr 1.5fr", border: `1.5px solid ${sc.border}` }}>
+                            <div key={sc.label} className="grid gap-0 rounded-xl overflow-hidden" style={{ gridTemplateColumns: "0.6fr 1.5fr 1.5fr", border: `1.5px solid ${sc.border}` }}>
                               {/* Revenue */}
                               <div className="p-3 flex flex-col justify-center" style={{ background: sc.accent }}>
                                 <div className="text-[10px] font-bold uppercase tracking-[0.12em] mb-1" style={{ color: sc.color }}>Estimation {sc.label}</div>
                                 <div className="text-xl font-bold" style={{ color: sc.color, letterSpacing: "-0.02em" }}>{formatEuro(loyer)}/mois</div>
-                                <div className="text-xs mt-0.5 font-semibold" style={{ color: "#1A1612" }}>{sc.taux}% · {nuits} nuits/an</div>
+                                <div className="text-xs mt-0.5 font-semibold" style={{ color: "#1A1612" }}>{sc.taux}% occupation · {nuits} nuits/an</div>
                                 <div className="text-xs mt-0.5 font-semibold" style={{ color: "#1A1612" }}>{formatEuro(loyer * 12)}/an</div>
                               </div>
                               {/* Réel */}
