@@ -116,7 +116,8 @@ function computeResultats(
   isSaisonnier = false,
   dureeMobilier = 10,
   dureeTravaux = 20,
-  dureeNotaire = 25
+  dureeNotaire = 25,
+  abattementBIC = isSaisonnier ? 0.30 : 0.50
 ): Resultats | null {
   const prix = parseFloat(form.prix) || 0;
   const travaux = parseFloat(form.travaux) || 0;
@@ -172,8 +173,7 @@ function computeResultats(
   const amortAReporter = Math.max(0, amortTotal - Math.max(0, resultatAvantAmort));
   const cashflowReelMensuel = (recettesAnnuelles - creditAnnuel - chargesAnnuelles - assuranceEmprunteurAnnuel - impotReel) / 12;
 
-  // Micro-BIC : abattement 50%
-  const abattementBIC = 0.50;
+  // Micro-BIC : abattement 50% classique, 30% saisonnier (Loi de Finances 2024)
   const baseBIC = recettesAnnuelles * (1 - abattementBIC);
   const impotBIC = baseBIC * (form.tmi / 100 + 0.186);
   const cashflowBICMensuel = (recettesAnnuelles - creditAnnuel - chargesAnnuelles - assuranceEmprunteurAnnuel - impotBIC) / 12;
@@ -703,7 +703,7 @@ export default function Simulateur({ onShowResults }: { onShowResults?: () => vo
       const makeScenarioCol = (label: string, r: Resultats | null, taux: string, nuits: number) => {
         if (!r) return `<div style="flex:1"></div>`;
         const lr = r.recettesAnnuelles;
-        const bic = lr * 0.50; // abattement 50% Micro-BIC
+        const bic = lr * 0.70; // abattement 30% saisonnier (LF 2024) → base imposable = 70%
         const impBic = bic * (form.tmi / 100 + 0.186);
         const cfBic = r.cashflowBICMensuel;
         const cfReel = r.cashflowReelMensuel;
@@ -732,7 +732,7 @@ export default function Simulateur({ onShowResults }: { onShowResults?: () => vo
             <div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#26527A;padding:4px 6px 2px">Micro-BIC</div>
             <table style="width:100%;border-collapse:collapse">
               ${row("Revenus annuels", fEur(lr), undefined, true)}
-              ${row("Abattement 50%", `−${fEur(lr*.50)}`, "#B03A2A")}
+              ${row("Abattement 30%", `−${fEur(lr*.30)}`, "#B03A2A")}
               ${row("Base imposable", fEur(bic), "#1A1612", true, true)}
               ${row("Impôt estimé", fEur(impBic), "#B03A2A")}
               ${row("Cash-flow/mois", `${fEur(cfBic)}/mois`, cfBic>=0?"#1A7A52":"#B03A2A", true, true)}
@@ -1598,7 +1598,7 @@ ${annexeTable}
                     ];
                     const headerBg = isReel ? "#C95B2A" : "#1A1612";
                     const headerLabel = isReel ? "Régime réel simplifié" : "Micro-BIC";
-                    const headerBadge = isReel ? "RECOMMANDÉ" : "ABATTEMENT 30%";
+                    const headerBadge = isReel ? "RECOMMANDÉ" : "ABATT. 30%";
                     return (
                       <div className="space-y-3">
                         {/* Header */}
@@ -1641,7 +1641,7 @@ ${annexeTable}
                                   <>
                                     <FRow label="Revenus annuels" val={formatEuro(r.loyerAnnuel)} bold />
                                     <FRow label="Emprunt" val={`−${formatEuro(r.creditAnnuel)}`} color="#B03A2A" />
-                                    <FRow label="Abattement 30%" val={`−${formatEuro(r.loyerAnnuel * 0.30)}`} color="#B03A2A" />
+                                    <FRow label="Abattement 30%" val={`−${formatEuro(r.recettesAnnuelles * 0.30)}`} color="#B03A2A" />
                                     <FRow label="Base imposable" val={formatEuro(r.baseBIC)} bold sep />
                                     <FRow label="Impôt estimé" val={formatEuro(r.impotBIC)} color="#B03A2A" />
                                     <FRow label="Cash-flow mensuel" val={formatEuro(cf)} bold sep color={cf >= 0 ? "#1A7A52" : "#B03A2A"} />
@@ -1903,15 +1903,20 @@ ${annexeTable}
                     );
                     return (
                       <div className="space-y-3">
-                        {/* Header */}
+                        {/* Title + clickable regime headers */}
+                        <div className="text-center text-sm font-semibold mb-1" style={{ color: "#1A1612" }}>Choisissez votre régime fiscal</div>
                         <div className="grid gap-2" style={{ gridTemplateColumns: "0.6fr 1.5fr 1.5fr" }}>
                           <div />
-                          <div className="text-center text-[11px] font-bold uppercase tracking-[0.1em] py-2 rounded-lg" style={{ background: "rgba(201,91,42,0.08)", color: "#4E1F12" }}>
-                            Régime Réel&nbsp;<span className="px-1.5 py-0.5 rounded text-[9px]" style={{ background: "#C95B2A", color: "#F5F0E8" }}>Recommandé</span>
-                          </div>
-                          <div className="text-center text-[11px] font-bold uppercase tracking-[0.1em] py-2 rounded-lg" style={{ background: "rgba(26,22,18,0.08)", color: "#1A1612" }}>
-                            Micro-BIC&nbsp;<span className="px-1.5 py-0.5 rounded text-[9px]" style={{ background: "rgba(26,22,18,0.15)", color: "#1A1612" }}>Abatt. 30%</span>
-                          </div>
+                          <button type="button" onClick={() => setSelectedRegime("reel")}
+                            className="text-center text-[11px] font-bold uppercase tracking-[0.1em] py-2 rounded-lg transition-all"
+                            style={{ background: selectedRegime === "reel" ? "#C95B2A" : "rgba(201,91,42,0.08)", color: selectedRegime === "reel" ? "#F5F0E8" : "#4E1F12", border: selectedRegime === "reel" ? "none" : "1.5px solid rgba(201,91,42,0.25)", cursor: "pointer" }}>
+                            Régime Réel&nbsp;<span className="px-1.5 py-0.5 rounded text-[9px]" style={{ background: selectedRegime === "reel" ? "rgba(245,240,232,0.25)" : "#C95B2A", color: "#F5F0E8" }}>{selectedRegime === "reel" ? "✓ Sélectionné" : "Recommandé"}</span>
+                          </button>
+                          <button type="button" onClick={() => { setSelectedRegime("micro"); setSimulationValidated(true); window.scrollTo({ top: 0, behavior: "smooth" }); }}
+                            className="text-center text-[11px] font-bold uppercase tracking-[0.1em] py-2 rounded-lg transition-all"
+                            style={{ background: selectedRegime === "micro" ? "#1A1612" : "rgba(26,22,18,0.08)", color: selectedRegime === "micro" ? "#F5F0E8" : "#1A1612", border: selectedRegime === "micro" ? "none" : "1.5px solid rgba(26,22,18,0.15)", cursor: "pointer" }}>
+                            Micro-BIC&nbsp;<span className="px-1.5 py-0.5 rounded text-[9px]" style={{ background: selectedRegime === "micro" ? "rgba(245,240,232,0.2)" : "rgba(26,22,18,0.15)", color: selectedRegime === "micro" ? "#F5F0E8" : "#1A1612" }}>{selectedRegime === "micro" ? "✓ Sélectionné" : "Abatt. 30%"}</span>
+                          </button>
                         </div>
 
                         {/* One row per scenario */}
@@ -1946,7 +1951,7 @@ ${annexeTable}
                                 {r ? <div className="space-y-0.5">
                                   <TRow label="Revenus annuels" val={formatEuro(r.loyerAnnuel)} bold />
                                   <TRow label="Emprunt" val={`−${formatEuro(r.creditAnnuel)}`} color="#B03A2A" />
-                                  <TRow label="Abattement 30%" val={`−${formatEuro(r.loyerAnnuel * 0.30)}`} color="#B03A2A" />
+                                  <TRow label="Abattement 30%" val={`−${formatEuro(r.recettesAnnuelles * 0.30)}`} color="#B03A2A" />
                                   <TRow label="Base imposable" val={formatEuro(r.baseBIC)} bold sep />
                                   <TRow label="Impôt estimé" val={formatEuro(r.impotBIC)} color="#B03A2A" />
                                   <TRow label="Cash-flow/mois" val={formatEuro(r.cashflowBICMensuel)} bold sep color={r.cashflowBICMensuel >= 0 ? "#1A7A52" : "#B03A2A"} />
@@ -1956,53 +1961,6 @@ ${annexeTable}
                           );
                         })}
 
-                        {/* Regime choice buttons */}
-                        <div className="pt-2">
-                          <div className="text-center mb-3">
-                            <span className="text-base font-semibold" style={{ color: "#1A1612" }}>Choisissez votre régime fiscal</span>
-                          </div>
-                          <div className="grid grid-cols-2 gap-4">
-                            {/* Réel */}
-                            <button type="button" onClick={() => setSelectedRegime("reel")}
-                              className="rounded-xl overflow-hidden text-left transition-all hover:shadow-md focus:outline-none"
-                              style={{ border: selectedRegime === "reel" ? "2.5px solid #C95B2A" : "1.5px solid rgba(201,91,42,0.35)", boxShadow: selectedRegime === "reel" ? "0 0 0 3px rgba(201,91,42,0.12)" : "none" }}>
-                              <div className="flex items-center gap-3 px-5 py-3.5" style={{ background: selectedRegime === "reel" ? "#C95B2A" : "rgba(201,91,42,0.08)", borderBottom: "1px solid rgba(201,91,42,0.2)" }}>
-                                <div className="w-5 h-5 rounded-full flex-shrink-0 flex items-center justify-center" style={{ border: `2px solid ${selectedRegime === "reel" ? "#F5F0E8" : "#C95B2A"}`, background: "transparent" }}>
-                                  {selectedRegime === "reel" && <div className="w-2.5 h-2.5 rounded-full" style={{ background: "#F5F0E8" }} />}
-                                </div>
-                                <span className="font-bold text-[15px]" style={{ color: selectedRegime === "reel" ? "#F5F0E8" : "#4E1F12" }}>Régime réel simplifié</span>
-                                <span className="ml-auto text-[10px] font-bold px-2.5 py-1 rounded" style={{ background: selectedRegime === "reel" ? "rgba(245,240,232,0.2)" : "#C95B2A", color: "#F5F0E8" }}>RECOMMANDÉ</span>
-                              </div>
-                              <div className="px-5 py-2.5 text-center text-sm font-semibold" style={{ background: "#FDFAF6", color: "#C95B2A" }}>
-                                {selectedRegime === "reel" ? "✓ Sélectionné" : "Choisir ce régime →"}
-                              </div>
-                            </button>
-                            {/* Micro-BIC */}
-                            <button type="button" onClick={() => { setSelectedRegime("micro"); setSimulationValidated(true); window.scrollTo({ top: 0, behavior: "smooth" }); }}
-                              className="rounded-xl overflow-hidden text-left transition-all hover:shadow-md focus:outline-none"
-                              style={{ border: selectedRegime === "micro" ? "2.5px solid #1A1612" : "1.5px solid rgba(26,22,18,0.15)", boxShadow: selectedRegime === "micro" ? "0 0 0 3px rgba(26,22,18,0.07)" : "none" }}>
-                              <div className="flex items-center gap-3 px-5 py-3.5" style={{ background: selectedRegime === "micro" ? "#1A1612" : "#EDE7DC", borderBottom: "0.5px solid rgba(26,22,18,0.12)" }}>
-                                <div className="w-5 h-5 rounded-full flex-shrink-0 flex items-center justify-center" style={{ border: `2px solid ${selectedRegime === "micro" ? "#F5F0E8" : "rgba(26,22,18,0.35)"}`, background: "transparent" }}>
-                                  {selectedRegime === "micro" && <div className="w-2.5 h-2.5 rounded-full" style={{ background: "#F5F0E8" }} />}
-                                </div>
-                                <span className="font-bold text-[15px]" style={{ color: selectedRegime === "micro" ? "#F5F0E8" : "#1A1612" }}>Micro-BIC</span>
-                                <span className="ml-auto text-[10px] font-semibold px-2.5 py-1 rounded" style={{ background: selectedRegime === "micro" ? "rgba(245,240,232,0.2)" : "rgba(26,22,18,0.1)", color: selectedRegime === "micro" ? "#F5F0E8" : "rgba(26,22,18,0.55)" }}>ABATTEMENT 30%</span>
-                              </div>
-                              <div className="px-5 py-2.5 text-center text-sm font-semibold" style={{ background: "#FDFAF6", color: "rgba(26,22,18,0.6)" }}>
-                                {selectedRegime === "micro" ? "✓ Sélectionné" : "Choisir ce régime →"}
-                              </div>
-                            </button>
-                          </div>
-                          {selectedRegime !== null && (
-                            <div className="mt-3 text-center">
-                              <button type="button" onClick={() => { setSelectedRegime(null); setSimulationValidated(false); }}
-                                className="text-sm font-medium px-4 py-2 rounded-lg"
-                                style={{ background: "#EDE7DC", color: "rgba(26,22,18,0.6)" }}>
-                                ← Changer de régime
-                              </button>
-                            </div>
-                          )}
-                        </div>
                       </div>
                     );
                   })() : (() => {
