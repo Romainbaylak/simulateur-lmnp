@@ -1644,6 +1644,7 @@ ${annexeTable}
                                     <>
                                       <FRow label="Revenus annuels" val={formatEuro(r.loyerAnnuel)} bold />
                                       <FRow label="Emprunt" val={`−${formatEuro(r.creditAnnuel)}`} color="#B03A2A" />
+                                      <FRow label="Ensemble des charges" val={`−${formatEuro(r.chargesAnnuelles + r.assuranceEmprunteurAnnuel)}`} color="#B03A2A" />
                                       <div className="mt-1 pt-1" style={{ borderTop: "1px solid rgba(26,22,18,0.09)" }}>
                                         <div className="flex justify-between items-baseline py-2.5">
                                           <span style={{ color: "rgba(26,22,18,0.78)", fontSize: 13, fontWeight: 600 }}>Base imposable</span>
@@ -1969,6 +1970,7 @@ ${annexeTable}
                                 {r ? <div className="space-y-0.5">
                                   <TRow label="Revenus annuels" val={formatEuro(r.loyerAnnuel)} bold />
                                   <TRow label="Emprunt" val={`−${formatEuro(r.creditAnnuel)}`} color="#B03A2A" />
+                                  <TRow label="Ensemble des charges" val={`−${formatEuro(r.chargesAnnuelles + r.assuranceEmprunteurAnnuel)}`} color="#B03A2A" />
                                   <div className="mt-1 pt-1" style={{ borderTop: "0.5px solid rgba(26,22,18,0.1)" }}>
                                     <div className="flex justify-between py-1.5">
                                       <span style={{ color: "rgba(26,22,18,0.7)", fontSize: 12.5, fontWeight: 600 }}>Base imposable</span>
