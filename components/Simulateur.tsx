@@ -1644,9 +1644,8 @@ ${annexeTable}
                                             <span style={{ color: "rgba(26,22,18,0.78)", fontSize: 13 }}>Cash-flow <strong>Mensuel</strong></span>
                                             <span style={{ fontSize: 13, fontWeight: 700, color: cfColor }}>{formatEuro(cf)}</span>
                                           </div>
-                                          <div className="flex justify-between -mt-1 pb-2">
-                                            <span style={{ fontSize: 12, color: "rgba(26,22,18,0.55)" }}>Soit annuel :</span>
-                                            <span style={{ fontSize: 12, fontWeight: 600, color: cfColor }}>{formatEuro(cf * 12)}</span>
+                                          <div className="-mt-1 pb-2">
+                                            <span style={{ fontSize: 12, color: "rgba(26,22,18,0.55)" }}>Soit annuel : </span><span style={{ fontSize: 12, color: cfColor }}>{formatEuro(cf * 12)}</span>
                                           </div>
                                         </div>
                                       ); })()}
@@ -1672,9 +1671,8 @@ ${annexeTable}
                                             <span style={{ color: "rgba(26,22,18,0.78)", fontSize: 13 }}>Cash-flow <strong>Mensuel</strong></span>
                                             <span style={{ fontSize: 13, fontWeight: 700, color: cfColor }}>{formatEuro(cf)}</span>
                                           </div>
-                                          <div className="flex justify-between -mt-1 pb-2">
-                                            <span style={{ fontSize: 12, color: "rgba(26,22,18,0.55)" }}>Soit annuel :</span>
-                                            <span style={{ fontSize: 12, fontWeight: 600, color: cfColor }}>{formatEuro(cf * 12)}</span>
+                                          <div className="-mt-1 pb-2">
+                                            <span style={{ fontSize: 12, color: "rgba(26,22,18,0.55)" }}>Soit annuel : </span><span style={{ fontSize: 12, color: cfColor }}>{formatEuro(cf * 12)}</span>
                                           </div>
                                         </div>
                                       ); })()}
@@ -2012,9 +2010,8 @@ ${annexeTable}
                                         <span style={{ color: "rgba(26,22,18,0.7)", fontSize: 12.5, fontWeight: 700 }}>Cash-flow <strong>Mensuel</strong></span>
                                         <span style={{ fontSize: 12.5, fontWeight: 700, color: cfColor }}>{formatEuro(cfVal)}</span>
                                       </div>
-                                      <div className="flex justify-between mt-1">
-                                        <span style={{ fontSize: 11, color: "rgba(26,22,18,0.55)" }}>Soit annuel :</span>
-                                        <span style={{ fontSize: 11, fontWeight: 600, color: cfColor }}>{formatEuro(cfVal * 12)}</span>
+                                      <div className="mt-1">
+                                        <span style={{ fontSize: 11, color: "rgba(26,22,18,0.55)" }}>Soit annuel : </span><span style={{ fontSize: 11, color: cfColor }}>{formatEuro(cfVal * 12)}</span>
                                       </div>
                                     </div>
                                   ); })()}
@@ -2042,9 +2039,8 @@ ${annexeTable}
                                         <span style={{ color: "rgba(26,22,18,0.7)", fontSize: 12.5, fontWeight: 700 }}>Cash-flow <strong>Mensuel</strong></span>
                                         <span style={{ fontSize: 12.5, fontWeight: 700, color: cfColor }}>{formatEuro(cfVal)}</span>
                                       </div>
-                                      <div className="flex justify-between mt-1">
-                                        <span style={{ fontSize: 11, color: "rgba(26,22,18,0.55)" }}>Soit annuel :</span>
-                                        <span style={{ fontSize: 11, fontWeight: 600, color: cfColor }}>{formatEuro(cfVal * 12)}</span>
+                                      <div className="mt-1">
+                                        <span style={{ fontSize: 11, color: "rgba(26,22,18,0.55)" }}>Soit annuel : </span><span style={{ fontSize: 11, color: cfColor }}>{formatEuro(cfVal * 12)}</span>
                                       </div>
                                     </div>
                                   ); })()}
@@ -2215,9 +2211,8 @@ ${annexeTable}
                                           <span style={{ color: "rgba(26,22,18,0.78)", fontSize: 13, fontWeight: 600 }}>Cash-flow <strong>Mensuel</strong></span>
                                           <span style={{ fontSize: 13, fontWeight: 700, color: cfColor }}>{formatEuro(cfVal)}</span>
                                         </div>
-                                        <div className="flex justify-between -mt-1 pb-2">
-                                          <span style={{ fontSize: 12, color: "rgba(26,22,18,0.55)" }}>Soit annuel :</span>
-                                          <span style={{ fontSize: 12, fontWeight: 600, color: cfColor }}>{formatEuro(cfVal * 12)}</span>
+                                        <div className="-mt-1 pb-2">
+                                          <span style={{ fontSize: 12, color: "rgba(26,22,18,0.55)" }}>Soit annuel : </span><span style={{ fontSize: 12, color: cfColor }}>{formatEuro(cfVal * 12)}</span>
                                         </div>
                                       </div>
                                     ); })()}
@@ -2239,9 +2234,8 @@ ${annexeTable}
                                           <span style={{ color: "rgba(26,22,18,0.78)", fontSize: 13, fontWeight: 600 }}>Cash-flow <strong>Mensuel</strong></span>
                                           <span style={{ fontSize: 13, fontWeight: 700, color: cfColor }}>{formatEuro(cfVal)}</span>
                                         </div>
-                                        <div className="flex justify-between -mt-1 pb-2">
-                                          <span style={{ fontSize: 12, color: "rgba(26,22,18,0.55)" }}>Soit annuel :</span>
-                                          <span style={{ fontSize: 12, fontWeight: 600, color: cfColor }}>{formatEuro(cfVal * 12)}</span>
+                                        <div className="-mt-1 pb-2">
+                                          <span style={{ fontSize: 12, color: "rgba(26,22,18,0.55)" }}>Soit annuel : </span><span style={{ fontSize: 12, color: cfColor }}>{formatEuro(cfVal * 12)}</span>
                                         </div>
                                       </div>
                                     ); })()}
