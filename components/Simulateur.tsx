@@ -1087,7 +1087,7 @@ ${annexeTable}
                     <input type="number" step="0.1" value={form.taux}
                       onChange={e => updateField("taux", e.target.value)}
                       onBlur={() => handleBlur("taux")}
-                      placeholder="3.5" className={INPUT} style={{ ...INPUT_STYLE, flex: 1 }} />
+                      placeholder="3.5" className={INPUT} style={{ ...INPUT_STYLE, width: "80px" }} />
                     <span className="text-xs font-medium" style={{ color: "rgba(26,22,18,0.45)" }}>%</span>
                   </div>
                 </div>
@@ -1097,7 +1097,7 @@ ${annexeTable}
                     <input type="number" step="0.01" min="0" max="1" value={form.assuranceEmprunteur}
                       onChange={e => updateField("assuranceEmprunteur", e.target.value)}
                       onBlur={() => handleBlur("assuranceEmprunteur")}
-                      placeholder="0.25" className={INPUT} style={{ ...INPUT_STYLE, flex: 1 }} />
+                      placeholder="0.25" className={INPUT} style={{ ...INPUT_STYLE, width: "80px" }} />
                     <span className="text-xs font-medium" style={{ color: "rgba(26,22,18,0.45)" }}>%</span>
                   </div>
                   {(() => {
@@ -1105,8 +1105,9 @@ ${annexeTable}
                     const capital = resultats?.montantCredit ?? 0;
                     const annuel = capital * pct / 100;
                     return capital > 0 && pct > 0 ? (
-                      <p className="text-[10px] mt-1" style={{ color: "rgba(26,22,18,0.4)" }}>
-                        = {new Intl.NumberFormat("fr-FR", { style: "currency", currency: "EUR", maximumFractionDigits: 0 }).format(annuel)}/an · charge financière déductible
+                      <p className="text-sm font-semibold mt-1" style={{ color: "#C95B2A" }}>
+                        = {new Intl.NumberFormat("fr-FR", { style: "currency", currency: "EUR", maximumFractionDigits: 0 }).format(annuel)}/an
+                        <span className="text-[10px] font-normal ml-1" style={{ color: "rgba(26,22,18,0.4)" }}>· charge financière déductible</span>
                       </p>
                     ) : (
                       <p className="text-[10px] mt-1" style={{ color: "rgba(26,22,18,0.4)" }}>% du capital emprunté · déductible</p>
