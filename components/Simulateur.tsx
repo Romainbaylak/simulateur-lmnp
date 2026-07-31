@@ -1037,7 +1037,18 @@ ${annexeTable}
 </body></html>`;
 
     const win = window.open("", "_blank");
-    if (win) { win.document.write(html); win.document.close(); }
+    if (win) {
+      win.document.write(html);
+      win.document.close();
+    } else {
+      const blob = new Blob([html], { type: "text/html" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.target = "_blank";
+      a.click();
+      setTimeout(() => URL.revokeObjectURL(url), 10000);
+    }
   }; // end _handleGeneratePDFInner
 
   const cardStyle = { background: "#EDE7DC", border: "0.5px solid rgba(26,22,18,0.08)" };
@@ -1179,7 +1190,7 @@ ${annexeTable}
               <div className="flex items-center justify-between">
                 <p className={LABEL} style={{ opacity: 1, color: "#1A1612", marginBottom: 0 }}>Loyer</p>
                 <button
-                  onClick={() => { setIsSaisonnier(!isSaisonnier); setResultatsTriple(null); }}
+                  onClick={() => { const next = !isSaisonnier; setIsSaisonnier(next); setResultatsTriple(null); if (next) { updateField("loyer", ""); setLoyerSlider(0); } }}
                   className="flex items-center gap-2 px-3.5 py-2 rounded-md text-sm font-medium transition-all"
                   style={{
                     background: isSaisonnier ? "rgba(26,82,122,0.1)" : "#F5F0E8",
