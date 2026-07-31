@@ -537,10 +537,14 @@ export default function Simulateur({ onShowResults }: { onShowResults?: () => vo
     const taux = parseFloat(form.taux) / 100 || 0;
     const duree = form.duree;
     const tmi = form.tmi;
-    const loyerMensuelExact = parseFloat(form.loyer) || loyerEffectif;
+    const isSaisonnierPdf = isSaisonnier;
+    // Pour saisonnier, on utilise l'estimation Moyenne comme base de calcul
+    const loyerMensuelExact = isSaisonnierPdf
+      ? (resultats?.loyerAnnuel ?? 0) / 12
+      : (parseFloat(form.loyer) || loyerEffectif);
     const loyerAnnuel = loyerMensuelExact * 12;
     const chargesLoyer = parseFloat(form.chargesLoyer) || 0;
-    const chargesLocatairesAnnuel = chargesLoyer * 12;
+    const chargesLocatairesAnnuel = isSaisonnierPdf ? 0 : chargesLoyer * 12;
     const recettesAnnuelles = loyerAnnuel + chargesLocatairesAnnuel;
     const chargesAnnuelles = resultats.chargesAnnuelles;
     const assuranceEmprunteurAnnuel = resultats.assuranceEmprunteurAnnuel;
@@ -623,7 +627,7 @@ export default function Simulateur({ onShowResults }: { onShowResults?: () => vo
 
     const zerosYears = rows.filter(ro => ro.baseImposable === 0).length;
     const firstTaxRow = rows.find(ro => ro.baseImposable > 0);
-    const abattementBICPdf = 0.50;
+    const abattementBICPdf = isSaisonnierPdf ? 0.30 : 0.50;
     const baseBIC = recettesAnnuelles * (1 - abattementBICPdf);
     const impotBIC = baseBIC * (tmi / 100 + 0.186);
 
@@ -692,65 +696,75 @@ export default function Simulateur({ onShowResults }: { onShowResults?: () => vo
       ? `En Micro-BIC, votre base imposable serait de <strong>${fEur(baseBIC)}</strong> par an (abattement ${"50"} % sur les recettes totales de ${fEur(recettesAnnuelles)}/an, en cas de loyer constant), générant un impôt estimé de <strong>${fEur(impotBIC)}</strong> par an (TMI ${tmi} % + prélèvements sociaux 18,6 %).`
       : `En Micro-BIC, votre base imposable serait de <strong>${fEur(baseBIC)}</strong> par an (abattement ${"50"} % sur les recettes totales de ${fEur(recettesAnnuelles)}/an, en cas de loyer constant). Renseignez votre TMI pour calculer l'impôt correspondant.`;
 
-    // Saisonnière: 6-table comparison block
+    // Saisonnière: 3 colonnes pour le régime choisi uniquement
     let saisonniereSummaryHtml = "";
-    if (isSaisonnier && resultatsTriple) {
-      const scenarios = [
-        { label: "Estimation basse", r: resultatsTriple.bas, taux: tauxOccBas },
-        { label: "Estimation moyenne", r: resultatsTriple.moyen, taux: tauxOccMoyen },
-        { label: "Estimation haute", r: resultatsTriple.haut, taux: tauxOccHaut },
+    if (isSaisonnierPdf && resultatsTriple) {
+      const isReelSaison = selectedRegime === "reel";
+      const scenariosDef = [
+        { label: "Estimation Basse", r: resultatsTriple.bas, taux: tauxOccBas, accentBg: "rgba(26,77,143,0.08)", borderCol: "rgba(26,77,143,0.3)", titleCol: "#1A4D8F" },
+        { label: "Estimation Moyenne", r: resultatsTriple.moyen, taux: tauxOccMoyen, accentBg: "rgba(201,91,42,0.09)", borderCol: "rgba(201,91,42,0.35)", titleCol: "#C95B2A" },
+        { label: "Estimation Haute", r: resultatsTriple.haut, taux: tauxOccHaut, accentBg: "rgba(26,122,82,0.08)", borderCol: "rgba(26,122,82,0.3)", titleCol: "#1A7A52" },
       ];
-      const makeScenarioCol = (label: string, r: Resultats | null, taux: string, nuits: number) => {
+      const row = (lbl: string, val: string, color?: string, bold?: boolean, sep?: boolean) =>
+        `<tr>
+          <td style="padding:5px 8px;font-size:10px;color:rgba(26,22,18,0.75);${sep?"border-top:1px solid rgba(26,22,18,.1);padding-top:7px":""}">${lbl}</td>
+          <td style="padding:5px 8px;font-size:10px;text-align:right;${bold?"font-weight:700;":""}${color?`color:${color};`:""}${sep?"border-top:1px solid rgba(26,22,18,.1);padding-top:7px":""}">${val}</td>
+        </tr>`;
+      const makeCol = (sc: typeof scenariosDef[0]) => {
+        const r = sc.r;
         if (!r) return `<div style="flex:1"></div>`;
         const lr = r.recettesAnnuelles;
-        const bic = lr * 0.70; // abattement 30% saisonnier (LF 2024) → base imposable = 70%
-        const impBic = bic * (form.tmi / 100 + 0.186);
-        const cfBic = r.cashflowBICMensuel;
-        const cfReel = r.cashflowReelMensuel;
-        const row = (lbl: string, val: string, color?: string, bold?: boolean, sep?: boolean) =>
-          `<tr><td style="padding:4px 6px;font-size:10px;color:#1A1612;${sep?"border-top:1px solid rgba(26,22,18,.12);padding-top:6px":""}">${lbl}</td><td style="padding:4px 6px;font-size:10px;text-align:right;${bold?"font-weight:700;":""} ${color?`color:${color};`:""}${sep?"border-top:1px solid rgba(26,22,18,.12);padding-top:6px":""}">${val}</td></tr>`;
-        return `<div style="flex:1;min-width:0;border-radius:8px;overflow:hidden;border:1px solid rgba(26,22,18,.12)">
-          <div style="text-align:center;padding:10px 8px 8px;background:#4E1F12;color:#F5F0E8">
-            <div style="font-size:11px;font-weight:700;letter-spacing:.05em;text-transform:uppercase">${label}</div>
-            <div style="font-size:9px;opacity:.65;margin-top:2px">${taux}% · ${nuits} nuits/an</div>
-            <div style="font-size:16px;font-weight:300;color:#C95B2A;margin-top:4px;letter-spacing:-.02em">${fEur(lr/12)}/mois</div>
-            <div style="font-size:9px;opacity:.55;margin-top:1px">${fEur(lr)}/an</div>
+        const nuits = Math.round(parseFloat(sc.taux) / 100 * 365);
+        const cf = isReelSaison ? r.cashflowReelMensuel : r.cashflowBICMensuel;
+        const cfColor = cf >= 0 ? "#1A7A52" : "#B03A2A";
+        const tableRows = isReelSaison
+          ? `${row("Revenus annuels", fEur(lr), undefined, true)}
+             ${row("Emprunt", `−${fEur(r.creditAnnuel)}`, "#B03A2A")}
+             ${row("Charges déductibles", `−${fEur(r.chargesDeductibles)}`, "#B03A2A")}
+             ${row("Résultat av. amort.", fEur(r.resultatAvantAmort), r.resultatAvantAmort>=0?"#1A7A52":"#B03A2A", true, true)}
+             ${row("Amortissements", `−${fEur(r.amortTotal)}`, "#B03A2A")}
+             ${row("Base imposable", fEur(r.baseImposableReel), r.baseImposableReel===0?"#1A7A52":"#1A1612", true, true)}
+             ${row("Impôt estimé", fEur(r.impotReel), "#B03A2A")}
+             ${row("Cash-flow Mensuel", fEur(cf), cfColor, true, true)}`
+          : `${row("Revenus annuels", fEur(lr), undefined, true)}
+             ${row("Emprunt", `−${fEur(r.creditAnnuel)}`, "#B03A2A")}
+             ${row("Ensemble des charges", `−${fEur(r.chargesAnnuelles + r.assuranceEmprunteurAnnuel)}`, "#B03A2A")}
+             ${row("Base imposable", fEur(r.baseBIC), "#1A1612", true, true)}
+             <tr><td colspan="2" style="padding:3px 8px 6px;font-size:9px;color:rgba(26,22,18,0.5);font-style:italic">Abattement 30% sur ${fEur(lr)} de recettes</td></tr>
+             ${row("Impôt estimé", fEur(r.impotBIC), "#B03A2A")}
+             ${row("Cash-flow Mensuel", fEur(cf), cfColor, true, true)}`;
+        return `<div style="flex:1;min-width:0;border-radius:9px;overflow:hidden;border:1.5px solid ${sc.borderCol}">
+          <div style="text-align:center;padding:12px 10px 10px;background:${sc.accentBg}">
+            <div style="font-size:9px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:${sc.titleCol}">${sc.label}</div>
+            <div style="font-size:18px;font-weight:700;color:${sc.titleCol};margin-top:5px;letter-spacing:-.02em">${fEur(lr/12)}<span style="font-size:11px;font-weight:400">/mois</span></div>
+            <div style="font-size:9px;color:rgba(26,22,18,0.65);margin-top:3px">${sc.taux}% occupation · ${nuits} nuits/an</div>
+            <div style="font-size:11px;font-weight:700;color:${sc.titleCol};margin-top:4px">${fEur(lr)}/an</div>
           </div>
-          <div style="background:#EDE7DC;padding:6px 0 2px">
-            <div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#4E1F12;padding:4px 6px 2px">Régime Réel</div>
-            <table style="width:100%;border-collapse:collapse">
-              ${row("Revenus annuels", fEur(lr), undefined, true)}
-              ${row("Emprunt", `−${fEur(r.creditAnnuel)}`, "#B03A2A")}
-              ${row("Charges", `−${fEur(r.chargesAnnuelles)}`, "#B03A2A")}
-              ${row("Amortissements", `−${fEur(r.amortTotal)}`, "#B03A2A")}
-              ${row("Base imposable", fEur(r.baseImposableReel), r.baseImposableReel===0?"#1A7A52":"#1A1612", true, true)}
-              ${row("Impôt estimé", fEur(r.impotReel), "#B03A2A")}
-              ${row("Cash-flow/mois", `${fEur(cfReel)}/mois`, cfReel>=0?"#1A7A52":"#B03A2A", true, true)}
-            </table>
-          </div>
-          <div style="background:#F5F0E8;padding:6px 0 6px;border-top:2px solid rgba(26,82,122,.15)">
-            <div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#26527A;padding:4px 6px 2px">Micro-BIC</div>
-            <table style="width:100%;border-collapse:collapse">
-              ${row("Revenus annuels", fEur(lr), undefined, true)}
-              ${row("Abattement 30%", `−${fEur(lr*.30)}`, "#B03A2A")}
-              ${row("Base imposable", fEur(bic), "#1A1612", true, true)}
-              ${row("Impôt estimé", fEur(impBic), "#B03A2A")}
-              ${row("Cash-flow/mois", `${fEur(cfBic)}/mois`, cfBic>=0?"#1A7A52":"#B03A2A", true, true)}
-            </table>
+          <div style="background:#FDFAF6;padding:4px 0 6px">
+            <table style="width:100%;border-collapse:collapse">${tableRows}</table>
+            <div style="padding:5px 8px 2px;border-top:1px solid rgba(26,22,18,0.07)">
+              <div style="font-size:9px;color:rgba(26,22,18,0.45)">Soit annuel : <span style="font-weight:600;color:${cfColor}">${fEur(cf*12)}</span></div>
+            </div>
           </div>
         </div>`;
       };
+      const regimeHeaderColor = isReelSaison ? "#C95B2A" : "#1A1612";
+      const regimeHeaderLabel = isReelSaison ? "Régime Réel Simplifié" : "Micro-BIC (abattement 30%)";
       saisonniereSummaryHtml = `
-<h2>Location Saisonnière — Comparaison des 3 scénarios (année 1)</h2>
-<p style="font-size:10px;color:#1A1612;margin-bottom:12px">Prix par nuitée : <strong>${fEur(parseFloat(prixNuitee)||0)}</strong>. Le tableau de projection détaillé ci-dessous utilise l'estimation <strong>Moyenne</strong>.</p>
-<div style="display:flex;gap:12px;align-items:stretch">
-  ${scenarios.map(s => makeScenarioCol(s.label, s.r, s.taux, Math.round(parseFloat(s.taux)/100*365))).join("")}
+<h2>Location Saisonnière — ${regimeHeaderLabel} · Les 3 estimations</h2>
+<p style="font-size:10px;color:rgba(26,22,18,0.6);margin:-4px 0 14px">
+  Prix par nuitée : <strong style="color:#1A1612">${fEur(parseFloat(prixNuitee)||0)}</strong> &nbsp;·&nbsp;
+  Les projections détaillées de ce rapport utilisent l'<strong style="color:${regimeHeaderColor}">estimation Moyenne</strong>.
+</p>
+<div style="display:flex;gap:14px;align-items:stretch">
+  ${scenariosDef.map(s => makeCol(s)).join("")}
 </div>`;
     }
 
     const isMicroPdf = selectedRegime === "micro";
     const isReelPdf = selectedRegime === "reel";
-    const regimeLabel = isMicroPdf ? "Micro-BIC" : "Régime réel simplifié";
+    const regimeLabelBase = isMicroPdf ? "Micro-BIC" : "Régime réel simplifié";
+    const regimeLabel = isSaisonnierPdf ? `Location Saisonnière · ${regimeLabelBase}` : regimeLabelBase;
 
     // Tableau de projection Micro-BIC (constant chaque année, seul crédit varie)
     const bicCashflowAnnuel = (recettesAnnuelles - chargesAnnuelles - assuranceEmprunteurAnnuel - impotBIC);
@@ -788,7 +802,39 @@ export default function Simulateur({ onShowResults }: { onShowResults?: () => vo
     }).join("");
 
     // Section fiscale (régime-aware)
-    const fiscalSection = !isSaisonnier ? (() => {
+    const fiscalSection = (() => {
+      if (isSaisonnierPdf) {
+        // Saisonnier : détail fiscal de l'estimation Moyenne
+        if (isMicroPdf) {
+          const cfBicMoyen = resultats.cashflowBICMensuel;
+          return `<h2>Fiscalité Estimation Moyenne — Micro-BIC (année 1)</h2>
+<table><thead><tr><th>Indicateur</th><th>Montant</th></tr></thead><tbody>
+<tr><td>Recettes annuelles (estimation moyenne)</td><td>${fEur(recettesAnnuelles)}</td></tr>
+<tr><td>Abattement forfaitaire 30% (Loi de Finances 2024)</td><td style="color:#B03A2A">−${fEur(recettesAnnuelles * abattementBICPdf)}</td></tr>
+<tr><td>Base imposable</td><td style="font-weight:600;color:#B03A2A">${fEur(baseBIC)}</td></tr>
+<tr><td>Impôt IR (TMI ${tmi} %)</td><td>${fEur(impotBIC * (tmi / (tmi + 18.6)))}</td></tr>
+<tr><td>Prélèvements sociaux (18,6 %)</td><td>${fEur(impotBIC * (18.6 / (tmi + 18.6)))}</td></tr>
+<tr><td style="font-weight:700">Fiscalité totale estimée</td><td style="font-weight:700;color:#B03A2A">${fEur(impotBIC)}</td></tr>
+<tr><td>Emprunt mensuel</td><td style="color:#B03A2A">−${fEur(resultats.creditAnnuel / 12)}</td></tr>
+<tr><td>Ensemble des charges annuelles</td><td style="color:#B03A2A">−${fEur(resultats.chargesAnnuelles + resultats.assuranceEmprunteurAnnuel)}</td></tr>
+<tr><td style="font-weight:700">Cash-flow mensuel net</td><td style="font-weight:700;color:${cfBicMoyen >= 0 ? "#1A7A52" : "#B03A2A"}">${fEur(cfBicMoyen)}/mois</td></tr>
+</tbody></table>`;
+        }
+        // Saisonnier réel
+        const cfReelMoyen = resultats.cashflowReelMensuel;
+        return `<h2>Fiscalité Estimation Moyenne — Régime Réel Simplifié (année 1)</h2>
+<table><thead><tr><th>Indicateur</th><th>Montant</th></tr></thead><tbody>
+<tr><td>Recettes annuelles (estimation moyenne)</td><td>${fEur(recettesAnnuelles)}</td></tr>
+<tr><td>Charges déductibles (charges + intérêts + ass. emprunteur)</td><td style="color:#B03A2A">−${fEur(rows[0]?.chargesDeductibles ?? 0)}</td></tr>
+<tr><td>Résultat avant amortissement</td><td style="font-weight:600;color:${(rows[0]?.resultatAvantAmort??0)>=0?"#1A7A52":"#B03A2A"}">${fEur(rows[0]?.resultatAvantAmort ?? 0)}</td></tr>
+<tr><td>Amortissements déduits (an. 1)</td><td style="color:#B03A2A">−${fEur(rows[0]?.amortTotalA ?? 0)}</td></tr>
+<tr><td style="font-weight:600">Base imposable</td><td style="font-weight:600;color:${(rows[0]?.baseImposable ?? 0) === 0 ? "#1A7A52" : "#B03A2A"}">${fEur(rows[0]?.baseImposable ?? 0)}</td></tr>
+<tr><td>Impôt IR (TMI ${tmi} %)</td><td>${fEur((rows[0]?.impot ?? 0) * (tmi / (tmi + 18.6)))}</td></tr>
+<tr><td>Prélèvements sociaux (18,6 %)</td><td>${fEur((rows[0]?.impot ?? 0) * (18.6 / (tmi + 18.6)))}</td></tr>
+<tr><td style="font-weight:700">Fiscalité totale estimée</td><td style="font-weight:700;color:${(rows[0]?.impot ?? 0) === 0 ? "#1A7A52" : "#B03A2A"}">${fEur(rows[0]?.impot ?? 0)}</td></tr>
+<tr><td style="font-weight:700">Cash-flow mensuel net</td><td style="font-weight:700;color:${cfReelMoyen >= 0 ? "#1A7A52" : "#B03A2A"}">${fEur(cfReelMoyen)}/mois</td></tr>
+</tbody></table>`;
+      }
       if (isMicroPdf) {
         const cfBicAn1 = (recettesAnnuelles - (rows[0]?.creditAnnuelR ?? 0) - chargesAnnuelles - assuranceEmprunteurAnnuel - impotBIC) / 12;
         return `<h2>Fiscalité — Micro-BIC (année 1)</h2>
@@ -828,12 +874,12 @@ export default function Simulateur({ onShowResults }: { onShowResults?: () => vo
 <tr><td style="font-weight:700">Fiscalité totale estimée</td><td style="font-weight:700;color:${(rows[0]?.impot ?? 0) === 0 ? "#1A7A52" : "#B03A2A"}">${fEur(rows[0]?.impot ?? 0)}</td><td style="font-weight:700;color:${impotBIC === 0 ? "#1A7A52" : "#B03A2A"}">${fEur(impotBIC)}</td></tr>
 <tr><td style="font-weight:700">Cash-flow mensuel net</td><td style="font-weight:700;color:${(rows[0]?.cashflow ?? 0) >= 0 ? "#1A7A52" : "#B03A2A"}">${fEur(rows[0]?.cashflow ?? 0)}/mois</td><td style="color:${resultats.cashflowBICMensuel >= 0 ? "#1A7A52" : "#B03A2A"}">${fEur(resultats.cashflowBICMensuel)}/mois</td></tr>
 </tbody></table>`;
-    })() : "";
+    })();
 
     // Tableau de projection selon régime
     const projectionSection = isMicroPdf
-      ? `<h2>Tableau de projection Micro-BIC (${totalYears} ans)</h2>
-<p style="font-size:10px;color:#1A1612;margin-bottom:6px">Base imposable constante (abattement ${Math.round(abattementBICPdf * 100)} %). Seule la partie crédit évolue. Loyers et charges constants.</p>
+      ? `<h2>Tableau de projection Micro-BIC (${totalYears} ans)${isSaisonnierPdf ? " — Estimation Moyenne" : ""}</h2>
+<p style="font-size:10px;color:#1A1612;margin-bottom:6px">Base imposable constante (abattement ${Math.round(abattementBICPdf * 100)} %${isSaisonnierPdf ? " saisonnier · Loi de Finances 2024" : ""}). Seule la partie crédit évolue. Loyers et charges constants.</p>
 <table><thead><tr>
   <th class="col-an">An</th>
   <th class="cc">Capital restant</th><th class="cc">Annuités</th><th class="cc-last">dont intérêts</th>
@@ -933,11 +979,19 @@ th.col-an,td.col-an{width:18px}
   </div>
   <div class="recap-col" style="background:rgba(201,91,42,0.09);border:1px solid rgba(201,91,42,0.2)">
     <div class="kvl" style="margin-bottom:6px;font-weight:700;color:#C95B2A">Revenus</div>
+    ${isSaisonnierPdf ? `
+    <div class="kvi" style="margin-bottom:6px"><div class="kvl">Prix par nuitée</div><div class="kvv orange">${fEur(parseFloat(prixNuitee)||0)}</div></div>
+    <div class="kvi" style="margin-bottom:6px"><div class="kvl">Taux d'occupation (bas · moy · haut)</div><div class="kvv">${tauxOccBas}% · ${tauxOccMoyen}% · ${tauxOccHaut}%</div></div>
+    <div class="kvi" style="margin-bottom:6px"><div class="kvl">Recettes estimation moyenne</div><div class="kvv orange">${fEur(loyerAnnuel / 12)}/mois · ${fEur(loyerAnnuel)}/an</div></div>
+    <div class="kvi"><div class="kvl">Charges propriétaire/an</div><div class="kvv">${fEur(chargesAnnuelles)}</div></div>
+    ${assuranceEmprunteurAnnuel > 0 ? `<div class="kvi" style="margin-top:4px"><div class="kvl">Ass. emprunteur/an</div><div class="kvv">${fEur(assuranceEmprunteurAnnuel)}</div></div>` : ""}
+    ` : `
     <div class="kvi" style="margin-bottom:6px"><div class="kvl">Loyer HC mensuel</div><div class="kvv orange">${fEur(loyerAnnuel / 12)}/mois</div></div>
     ${chargesLoyer > 0 ? `<div class="kvi" style="margin-bottom:6px"><div class="kvl">Charges locataire</div><div class="kvv">${fEur(chargesLoyer)}/mois</div></div>` : ""}
     <div class="kvi" style="margin-bottom:6px"><div class="kvl">Loyer HC annuel</div><div class="kvv orange">${fEur(loyerAnnuel)}/an</div></div>
     <div class="kvi"><div class="kvl">Charges propriétaire/an</div><div class="kvv">${fEur(chargesAnnuelles)}</div></div>
     ${assuranceEmprunteurAnnuel > 0 ? `<div class="kvi" style="margin-top:4px"><div class="kvl">Ass. emprunteur/an</div><div class="kvv">${fEur(assuranceEmprunteurAnnuel)}</div></div>` : ""}
+    `}
   </div>
   <div class="recap-col" style="background:#EDE7DC">
     <div class="kvl" style="margin-bottom:6px;font-weight:700">Financement</div>
