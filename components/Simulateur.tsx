@@ -529,6 +529,9 @@ export default function Simulateur({ onShowResults }: { onShowResults?: () => vo
   const amortTotalDisplay = amortBienDisplay + amortMobilierDisplay + amortTravauxDisplay + amortNotaireDisplay;
 
   const handleGeneratePDF = () => {
+    try { _handleGeneratePDFInner(); } catch(e) { alert("Erreur génération PDF : " + String(e)); console.error(e); }
+  };
+  const _handleGeneratePDFInner = () => {
     if (!resultats) return;
     const prix = parseFloat(form.prix) || 0;
     const travaux = parseFloat(form.travaux) || 0;
@@ -1035,7 +1038,7 @@ ${annexeTable}
 
     const win = window.open("", "_blank");
     if (win) { win.document.write(html); win.document.close(); }
-  };
+  }; // end _handleGeneratePDFInner
 
   const cardStyle = { background: "#EDE7DC", border: "0.5px solid rgba(26,22,18,0.08)" };
   const sectionStyle = { background: "#EDE7DC", border: "0.5px solid rgba(26,22,18,0.08)" };
