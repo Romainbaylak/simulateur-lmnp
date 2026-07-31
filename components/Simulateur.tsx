@@ -1644,8 +1644,15 @@ ${annexeTable}
                                     <>
                                       <FRow label="Revenus annuels" val={formatEuro(r.loyerAnnuel)} bold />
                                       <FRow label="Emprunt" val={`−${formatEuro(r.creditAnnuel)}`} color="#B03A2A" />
-                                      <FRow label="Abattement 30%" val={`−${formatEuro(r.recettesAnnuelles * 0.30)}`} color="#B03A2A" />
-                                      <FRow label="Base imposable" val={formatEuro(r.baseBIC)} bold sep />
+                                      <div className="mt-1 pt-1" style={{ borderTop: "1px solid rgba(26,22,18,0.09)" }}>
+                                        <div className="flex justify-between items-baseline py-2.5">
+                                          <span style={{ color: "rgba(26,22,18,0.78)", fontSize: 13, fontWeight: 600 }}>Base imposable</span>
+                                          <span style={{ fontSize: 13, fontWeight: 600, color: "#1A1612" }}>{formatEuro(r.baseBIC)}</span>
+                                        </div>
+                                        <div className="text-[11px] mb-1 px-2 py-1 rounded" style={{ color: "rgba(26,22,18,0.55)", background: "rgba(26,22,18,0.04)", lineHeight: 1.4 }}>
+                                          Abattement forfaitaire 30% appliqué sur {formatEuro(r.recettesAnnuelles)} de recettes
+                                        </div>
+                                      </div>
                                       <FRow label="Impôt estimé" val={formatEuro(r.impotBIC)} color="#B03A2A" />
                                       <FRow label="Cash-flow/mois" val={formatEuro(cf)} bold sep color={cf >= 0 ? "#1A7A52" : "#B03A2A"} />
                                     </>
@@ -1961,8 +1968,15 @@ ${annexeTable}
                                 {r ? <div className="space-y-0.5">
                                   <TRow label="Revenus annuels" val={formatEuro(r.loyerAnnuel)} bold />
                                   <TRow label="Emprunt" val={`−${formatEuro(r.creditAnnuel)}`} color="#B03A2A" />
-                                  <TRow label="Abattement 30%" val={`−${formatEuro(r.recettesAnnuelles * 0.30)}`} color="#B03A2A" />
-                                  <TRow label="Base imposable" val={formatEuro(r.baseBIC)} bold sep />
+                                  <div className="mt-1 pt-1" style={{ borderTop: "0.5px solid rgba(26,22,18,0.1)" }}>
+                                    <div className="flex justify-between py-1.5">
+                                      <span style={{ color: "rgba(26,22,18,0.7)", fontSize: 12.5, fontWeight: 600 }}>Base imposable</span>
+                                      <span style={{ fontSize: 12.5, fontWeight: 600, color: "#1A1612" }}>{formatEuro(r.baseBIC)}</span>
+                                    </div>
+                                    <div className="text-[10px] mb-1 px-1.5 py-0.5 rounded" style={{ color: "rgba(26,22,18,0.5)", background: "rgba(26,22,18,0.04)" }}>
+                                      Abatt. 30% sur {formatEuro(r.recettesAnnuelles)}
+                                    </div>
+                                  </div>
                                   <TRow label="Impôt estimé" val={formatEuro(r.impotBIC)} color="#B03A2A" />
                                   <TRow label="Cash-flow/mois" val={formatEuro(r.cashflowBICMensuel)} bold sep color={r.cashflowBICMensuel >= 0 ? "#1A7A52" : "#B03A2A"} />
                                 </div> : <div className="text-xs text-center py-4" style={{ color: "rgba(26,22,18,0.4)" }}>–</div>}
