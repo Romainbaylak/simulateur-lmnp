@@ -1600,8 +1600,8 @@ ${annexeTable}
                     const headerLabel = isReel ? "Régime réel simplifié" : "Micro-BIC";
                     const headerBadge = isReel ? "RECOMMANDÉ" : "ABATT. 30%";
                     return (
-                      <div className="space-y-3">
-                        {/* Header */}
+                      <div className="space-y-4">
+                        {/* Header régime */}
                         <div className="flex items-center gap-3 px-5 py-3 rounded-xl" style={{ background: headerBg }}>
                           <div className="w-5 h-5 rounded-full flex-shrink-0 flex items-center justify-center" style={{ border: "2px solid #F5F0E8" }}>
                             <div className="w-2.5 h-2.5 rounded-full" style={{ background: "#F5F0E8" }} />
@@ -1610,47 +1610,50 @@ ${annexeTable}
                           <span className="ml-auto text-[10px] font-bold px-2.5 py-1 rounded" style={{ background: "rgba(245,240,232,0.2)", color: "#F5F0E8" }}>✓ {headerBadge}</span>
                         </div>
 
-                        {scenarios.map(sc => {
-                          const r = sc.r;
-                          const loyer = loyerSaisonnier(parseFloat(prixNuitee)||0, sc.taux);
-                          const nuits = Math.round(sc.taux / 100 * 365);
-                          const cf = r ? (isReel ? r.cashflowReelMensuel : r.cashflowBICMensuel) : 0;
-                          return (
-                            <div key={sc.label} className="grid rounded-xl overflow-hidden" style={{ gridTemplateColumns: "0.55fr 1fr", border: `1.5px solid ${sc.border}` }}>
-                              {/* Revenue */}
-                              <div className="p-4 flex flex-col justify-center" style={{ background: sc.accent }}>
-                                <div className="text-[10px] font-bold uppercase tracking-[0.12em] mb-1" style={{ color: sc.color }}>Estimation {sc.label}</div>
-                                <div className="text-2xl font-bold" style={{ color: sc.color, letterSpacing: "-0.02em" }}>{formatEuro(loyer)}/mois</div>
-                                <div className="text-xs mt-1 font-semibold" style={{ color: "#1A1612" }}>{sc.taux}% occupation</div>
-                                <div className="text-xs font-semibold" style={{ color: "#C95B2A" }}>{nuits} nuits/an</div>
-                                <div className="text-xs mt-1 font-bold" style={{ color: sc.color }}>{formatEuro(loyer * 12)}/an</div>
+                        {/* 3 colonnes côte à côte */}
+                        <div className="grid grid-cols-3 gap-3">
+                          {scenarios.map(sc => {
+                            const r = sc.r;
+                            const loyer = loyerSaisonnier(parseFloat(prixNuitee)||0, sc.taux);
+                            const nuits = Math.round(sc.taux / 100 * 365);
+                            const cf = r ? (isReel ? r.cashflowReelMensuel : r.cashflowBICMensuel) : 0;
+                            return (
+                              <div key={sc.label} className="rounded-xl overflow-hidden flex flex-col" style={{ border: `1.5px solid ${sc.border}` }}>
+                                {/* En-tête estimation */}
+                                <div className="px-4 py-3 text-center" style={{ background: sc.accent, borderBottom: `1px solid ${sc.border}` }}>
+                                  <div className="text-[10px] font-bold uppercase tracking-[0.12em]" style={{ color: sc.color }}>Estimation {sc.label}</div>
+                                  <div className="text-xl font-bold mt-1" style={{ color: sc.color, letterSpacing: "-0.02em" }}>{formatEuro(loyer)}/mois</div>
+                                  <div className="text-[11px] mt-1 font-semibold" style={{ color: "#1A1612" }}>{sc.taux}% occupation</div>
+                                  <div className="text-[11px] font-semibold" style={{ color: "#C95B2A" }}>{nuits} nuits/an</div>
+                                  <div className="text-[11px] mt-1 font-bold" style={{ color: sc.color }}>{formatEuro(loyer * 12)}/an</div>
+                                </div>
+                                {/* Tableau régime */}
+                                <div className="px-4 py-3 flex-1" style={{ background: "#FDFAF6" }}>
+                                  {r ? (isReel ? (
+                                    <>
+                                      <FRow label="Revenus annuels" val={formatEuro(r.loyerAnnuel)} bold />
+                                      <FRow label="Emprunt" val={`−${formatEuro(r.creditAnnuel)}`} color="#B03A2A" />
+                                      <FRow label="Charges déduct." val={`−${formatEuro(r.chargesDeductibles)}`} color="#B03A2A" />
+                                      <FRow label="Amortissements" val={`−${formatEuro(r.amortTotal)}`} color="#B03A2A" />
+                                      <FRow label="Base imposable" val={formatEuro(r.baseImposableReel)} bold sep color={r.baseImposableReel === 0 ? "#1A7A52" : "#1A1612"} />
+                                      <FRow label="Impôt estimé" val={formatEuro(r.impotReel)} color="#B03A2A" />
+                                      <FRow label="Cash-flow/mois" val={formatEuro(cf)} bold sep color={cf >= 0 ? "#1A7A52" : "#B03A2A"} />
+                                    </>
+                                  ) : (
+                                    <>
+                                      <FRow label="Revenus annuels" val={formatEuro(r.loyerAnnuel)} bold />
+                                      <FRow label="Emprunt" val={`−${formatEuro(r.creditAnnuel)}`} color="#B03A2A" />
+                                      <FRow label="Abattement 30%" val={`−${formatEuro(r.recettesAnnuelles * 0.30)}`} color="#B03A2A" />
+                                      <FRow label="Base imposable" val={formatEuro(r.baseBIC)} bold sep />
+                                      <FRow label="Impôt estimé" val={formatEuro(r.impotBIC)} color="#B03A2A" />
+                                      <FRow label="Cash-flow/mois" val={formatEuro(cf)} bold sep color={cf >= 0 ? "#1A7A52" : "#B03A2A"} />
+                                    </>
+                                  )) : <div className="text-xs py-4 text-center" style={{ color: "rgba(26,22,18,0.4)" }}>–</div>}
+                                </div>
                               </div>
-                              {/* Tableau régime */}
-                              <div className="px-5 py-2" style={{ background: "#FDFAF6", borderLeft: `1px solid ${sc.border}` }}>
-                                {r ? (isReel ? (
-                                  <>
-                                    <FRow label="Revenus annuels" val={formatEuro(r.loyerAnnuel)} bold />
-                                    <FRow label="Emprunt" val={`−${formatEuro(r.creditAnnuel)}`} color="#B03A2A" />
-                                    <FRow label="Charges déductibles" val={`−${formatEuro(r.chargesDeductibles)}`} color="#B03A2A" />
-                                    <FRow label="Amortissements" val={`−${formatEuro(r.amortTotal)}`} color="#B03A2A" />
-                                    <FRow label="Base imposable" val={formatEuro(r.baseImposableReel)} bold sep color={r.baseImposableReel === 0 ? "#1A7A52" : "#1A1612"} />
-                                    <FRow label="Impôt estimé" val={formatEuro(r.impotReel)} color="#B03A2A" />
-                                    <FRow label="Cash-flow mensuel" val={formatEuro(cf)} bold sep color={cf >= 0 ? "#1A7A52" : "#B03A2A"} />
-                                  </>
-                                ) : (
-                                  <>
-                                    <FRow label="Revenus annuels" val={formatEuro(r.loyerAnnuel)} bold />
-                                    <FRow label="Emprunt" val={`−${formatEuro(r.creditAnnuel)}`} color="#B03A2A" />
-                                    <FRow label="Abattement 30%" val={`−${formatEuro(r.recettesAnnuelles * 0.30)}`} color="#B03A2A" />
-                                    <FRow label="Base imposable" val={formatEuro(r.baseBIC)} bold sep />
-                                    <FRow label="Impôt estimé" val={formatEuro(r.impotBIC)} color="#B03A2A" />
-                                    <FRow label="Cash-flow mensuel" val={formatEuro(cf)} bold sep color={cf >= 0 ? "#1A7A52" : "#B03A2A"} />
-                                  </>
-                                )) : <div className="text-xs py-4 text-center" style={{ color: "rgba(26,22,18,0.4)" }}>–</div>}
-                              </div>
-                            </div>
-                          );
-                        })}
+                            );
+                          })}
+                        </div>
 
                         {/* Amortissement en dessous si réel */}
                         {isReel && <AmortBlock />}
