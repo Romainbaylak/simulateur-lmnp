@@ -1581,8 +1581,8 @@ ${annexeTable}
 
                 {/* Régime fiscal + Amortissement */}
                 {(() => {
-                  const FRow = ({ label, val, color, bold, sep, indent }: { label: string; val: string; color?: string; bold?: boolean; sep?: boolean; indent?: boolean }) => (
-                    <div className={`flex justify-between items-baseline py-2.5${indent ? " pl-4" : ""}${sep ? " mt-1" : ""}`}
+                  const FRow = ({ label, val, color, bold, sep, indent, tight }: { label: string; val: string; color?: string; bold?: boolean; sep?: boolean; indent?: boolean; tight?: boolean }) => (
+                    <div className={`flex justify-between items-baseline ${tight ? "py-1.5" : "py-2.5"}${indent ? " pl-4" : ""}${sep ? " mt-0.5" : ""}`}
                       style={{ borderTop: sep ? "1px solid rgba(26,22,18,0.09)" : undefined }}>
                       <span style={{ color: indent ? "rgba(26,22,18,0.6)" : "rgba(26,22,18,0.78)", fontSize: indent ? 12 : 13 }}>{label}</span>
                       <span className="whitespace-nowrap" style={{ fontSize: 13, fontWeight: bold ? 600 : 400, color: color ?? "#1A1612" }}>{val}</span>
@@ -1682,23 +1682,23 @@ ${annexeTable}
                                   <div className="text-[11px] mt-1 font-bold" style={{ color: sc.color }}>{formatEuro(loyer * 12)}/an</div>
                                 </div>
                                 {/* Tableau régime */}
-                                <div className="px-4 py-3 flex-1" style={{ background: "#FDFAF6" }}>
+                                <div className="px-4 py-2 flex-1" style={{ background: "#FDFAF6" }}>
                                   {r ? (isReel ? (
                                     <>
-                                      <FRow label="Revenus annuels" val={formatEuro(r.loyerAnnuel)} bold />
-                                      <FRow label="Emprunt" val={`−${formatEuro(r.creditAnnuel)}`} color="#B03A2A" />
-                                      <FRow label="Charges déduct." val={`−${formatEuro(r.chargesDeductibles)}`} color="#B03A2A" />
-                                      <FRow label="Résultat avant amort." val={formatEuro(r.resultatAvantAmort)} bold sep color={r.resultatAvantAmort >= 0 ? "#1A7A52" : "#B03A2A"} />
-                                      <FRow label="Amortissements" val={`−${formatEuro(r.amortTotal)}`} color="#B03A2A" />
-                                      <FRow label="Base imposable" val={formatEuro(r.baseImposableReel)} bold sep color={r.baseImposableReel === 0 ? "#1A7A52" : "#1A1612"} />
-                                      <FRow label="Impôt estimé" val={formatEuro(r.impotReel)} color="#B03A2A" />
+                                      <FRow tight label="Revenus annuels" val={formatEuro(r.loyerAnnuel)} bold />
+                                      <FRow tight label="Emprunt" val={`−${formatEuro(r.creditAnnuel)}`} color="#B03A2A" />
+                                      <FRow tight label="Charges déduct." val={`−${formatEuro(r.chargesDeductibles)}`} color="#B03A2A" />
+                                      <FRow tight label="Résultat avant amort." val={formatEuro(r.resultatAvantAmort)} bold sep color={r.resultatAvantAmort >= 0 ? "#1A7A52" : "#B03A2A"} />
+                                      <FRow tight label="Amortissements" val={`−${formatEuro(r.amortTotal)}`} color="#B03A2A" />
+                                      <FRow tight label="Base imposable" val={formatEuro(r.baseImposableReel)} bold sep color={r.baseImposableReel === 0 ? "#1A7A52" : "#1A1612"} />
+                                      <FRow tight label="Impôt estimé" val={formatEuro(r.impotReel)} color="#B03A2A" />
                                       {(() => { const cfColor = cf >= 0 ? "#1A7A52" : "#B03A2A"; return (
-                                        <div className="mt-1" style={{ borderTop: "1px solid rgba(26,22,18,0.09)" }}>
-                                          <div className="flex justify-between items-baseline py-2.5">
+                                        <div className="mt-0.5" style={{ borderTop: "1px solid rgba(26,22,18,0.09)" }}>
+                                          <div className="flex justify-between items-baseline py-1.5">
                                             <span style={{ color: "rgba(26,22,18,0.78)", fontSize: 13 }}>Cash-flow <strong>Mensuel</strong></span>
                                             <span style={{ fontSize: 13, fontWeight: 700, color: cfColor }}>{formatEuro(cf)}</span>
                                           </div>
-                                          <div className="-mt-1 pb-2">
+                                          <div className="-mt-0.5 pb-1.5">
                                             <span style={{ fontSize: 12, color: "rgba(26,22,18,0.55)" }}>Soit annuel : </span><span style={{ fontSize: 12, color: cfColor }}>{formatEuro(cf * 12)}</span>
                                           </div>
                                         </div>
@@ -1706,11 +1706,11 @@ ${annexeTable}
                                     </>
                                   ) : (
                                     <>
-                                      <FRow label="Revenus annuels" val={formatEuro(r.loyerAnnuel)} bold />
-                                      <FRow label="Emprunt" val={`−${formatEuro(r.creditAnnuel)}`} color="#B03A2A" />
-                                      <FRow label="Ensemble des charges" val={`−${formatEuro(r.chargesAnnuelles + r.assuranceEmprunteurAnnuel)}`} color="#B03A2A" />
-                                      <div className="mt-1 pt-1" style={{ borderTop: "1px solid rgba(26,22,18,0.09)" }}>
-                                        <div className="flex justify-between items-baseline py-2.5">
+                                      <FRow tight label="Revenus annuels" val={formatEuro(r.loyerAnnuel)} bold />
+                                      <FRow tight label="Emprunt" val={`−${formatEuro(r.creditAnnuel)}`} color="#B03A2A" />
+                                      <FRow tight label="Ensemble des charges" val={`−${formatEuro(r.chargesAnnuelles + r.assuranceEmprunteurAnnuel)}`} color="#B03A2A" />
+                                      <div className="mt-0.5 pt-1" style={{ borderTop: "1px solid rgba(26,22,18,0.09)" }}>
+                                        <div className="flex justify-between items-baseline py-1.5">
                                           <span style={{ color: "rgba(26,22,18,0.78)", fontSize: 13, fontWeight: 600 }}>Base imposable</span>
                                           <span style={{ fontSize: 13, fontWeight: 600, color: "#1A1612" }}>{formatEuro(r.baseBIC)}</span>
                                         </div>
@@ -1718,14 +1718,14 @@ ${annexeTable}
                                           Abattement forfaitaire 30% appliqué sur {formatEuro(r.recettesAnnuelles)} de recettes
                                         </div>
                                       </div>
-                                      <FRow label="Impôt estimé" val={formatEuro(r.impotBIC)} color="#B03A2A" />
+                                      <FRow tight label="Impôt estimé" val={formatEuro(r.impotBIC)} color="#B03A2A" />
                                       {(() => { const cfColor = cf >= 0 ? "#1A7A52" : "#B03A2A"; return (
-                                        <div className="mt-1" style={{ borderTop: "1px solid rgba(26,22,18,0.09)" }}>
-                                          <div className="flex justify-between items-baseline py-2.5">
+                                        <div className="mt-0.5" style={{ borderTop: "1px solid rgba(26,22,18,0.09)" }}>
+                                          <div className="flex justify-between items-baseline py-1.5">
                                             <span style={{ color: "rgba(26,22,18,0.78)", fontSize: 13 }}>Cash-flow <strong>Mensuel</strong></span>
                                             <span style={{ fontSize: 13, fontWeight: 700, color: cfColor }}>{formatEuro(cf)}</span>
                                           </div>
-                                          <div className="-mt-1 pb-2">
+                                          <div className="-mt-0.5 pb-1.5">
                                             <span style={{ fontSize: 12, color: "rgba(26,22,18,0.55)" }}>Soit annuel : </span><span style={{ fontSize: 12, color: cfColor }}>{formatEuro(cf * 12)}</span>
                                           </div>
                                         </div>
