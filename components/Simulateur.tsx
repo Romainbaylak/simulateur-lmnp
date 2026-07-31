@@ -1701,6 +1701,7 @@ ${annexeTable}
                               <FRow label="Loyers annuels" val={formatEuro(resultats.loyerAnnuel)} bold />
                               <FRow label="Emprunt" val={`−${formatEuro(resultats.creditAnnuel)}`} color="#B03A2A" />
                               <div className="pl-3 -mt-1 pb-2"><span style={{ fontSize: 12, color: "rgba(26,22,18,0.6)" }}>Dont frais d&apos;emprunt </span><span style={{ fontSize: 13, fontWeight: 600, color: "#B03A2A" }}>{formatEuro(resultats.interetsAnnee1)}</span></div>
+                              <FRow label="Ensemble des charges" val={`−${formatEuro(resultats.chargesAnnuelles + resultats.assuranceEmprunteurAnnuel)}`} color="#B03A2A" />
                               <FRow label="Base imposable (50% recettes)" val={formatEuro(resultats.baseBIC)} bold sep />
                               <FRow label="Impôt estimé" val={formatEuro(resultats.impotBIC)} color="#B03A2A" />
                               <FRow label="Cash-flow mensuel" val={formatEuro(resultats.cashflowBICMensuel)} bold color={resultats.cashflowBICMensuel >= 0 ? "#1A7A52" : "#B03A2A"} sep />
@@ -2074,6 +2075,7 @@ ${annexeTable}
                                     <span className="text-[13px] font-medium" style={{ color: "rgba(26,22,18,0.6)" }}>Dont frais d&apos;emprunt : </span>
                                     <span className="text-[13px] font-semibold" style={{ color: "#B03A2A" }}>{formatEuro(resultats.interetsAnnee1)}</span>
                                   </div>
+                                  {!isSaisonnier && <Row label="Ensemble des charges" val={`−${formatEuro(resultats.chargesAnnuelles + resultats.assuranceEmprunteurAnnuel)}`} color="#B03A2A" />}
                                   <Row label={isSaisonnier ? "Base imposable (70% recettes)" : "Base imposable (50% recettes)"} val={formatEuro(resultats.baseBIC)} bold sep />
                                   <Row label="Impôt estimé" val={formatEuro(resultats.impotBIC)} color="#B03A2A" />
                                   <Row label="Cash-flow mensuel" val={formatEuro(resultats.cashflowBICMensuel)} bold color={resultats.cashflowBICMensuel >= 0 ? "#1A7A52" : "#B03A2A"} sep />
@@ -2127,6 +2129,7 @@ ${annexeTable}
                                       <span className="text-[12px]" style={{ color: "rgba(26,22,18,0.6)" }}>Dont frais d&apos;emprunt </span>
                                       <span className="text-[13px] font-semibold" style={{ color: "#B03A2A" }}>{formatEuro(resultats.interetsAnnee1)}</span>
                                     </div>
+                                    {!isSaisonnier && <Row label="Ensemble des charges" val={`−${formatEuro(resultats.chargesAnnuelles + resultats.assuranceEmprunteurAnnuel)}`} color="#B03A2A" />}
                                     <Row label={isSaisonnier ? "Base imposable (70% recettes)" : "Base imposable (50% recettes)"} val={formatEuro(resultats.baseBIC)} bold sep />
                                     <Row label="Impôt estimé" val={formatEuro(resultats.impotBIC)} color="#B03A2A" />
                                     <Row label="Cash-flow mensuel" val={formatEuro(resultats.cashflowBICMensuel)} bold color={resultats.cashflowBICMensuel >= 0 ? "#1A7A52" : "#B03A2A"} sep />
