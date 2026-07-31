@@ -1069,7 +1069,7 @@ ${annexeTable}
               <div>
                 <label className={LABEL}>
                   Durée du crédit —{" "}
-                  <span style={{ color: "#C95B2A", fontWeight: 600 }}>{form.duree} ans</span>
+                  <span style={{ color: "#C95B2A", fontWeight: 700, fontSize: "1rem" }}>{form.duree} ans</span>
                 </label>
                 <input type="range" min={7} max={30} step={1} value={form.duree}
                   onChange={e => updateField("duree", parseInt(e.target.value))}
@@ -1250,7 +1250,7 @@ ${annexeTable}
                           Autres charges déductibles
                         </span>
                         {total > 0 && (
-                          <span className="ml-2 text-xs font-medium" style={{ color: "#C95B2A" }}>
+                          <span className="ml-2 text-sm font-bold" style={{ color: "#C95B2A" }}>
                             {new Intl.NumberFormat("fr-FR", { style: "currency", currency: "EUR", maximumFractionDigits: 0 }).format(total)}/an
                           </span>
                         )}
