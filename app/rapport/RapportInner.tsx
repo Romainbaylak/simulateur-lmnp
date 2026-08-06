@@ -2136,8 +2136,8 @@ ${!isSaisonnier ? `<!-- PAGE 1 — COUVERTURE -->
     {
       lbl: "Cash-flow après impôt",
       val: fE(cfApresImpot / 12) + "/mois",
-      formula: "CF avant impôt − fiscalité",
-      detail: `CF ${fE(cfAvantImpot / 12)} − Impôt ${fE((isMicro ? impotBIC : impotReel) / 12)}`,
+      formula: "Cash-flow avant impôt − fiscalité",
+      detail: `Cash-flow ${fE(cfAvantImpot / 12)} − Impôt ${fE((isMicro ? impotBIC : impotReel) / 12)}`,
       note: cfApresImpot >= 0 ? "Positif — flux net après impôt favorable" : "Négatif — coût de portage de " + fE(-cfApresImpot / 12) + "/mois",
       color: cfApresImpot >= 0 ? "#1A7A52" : "#B03A2A",
     },
@@ -2151,7 +2151,7 @@ ${!isSaisonnier ? `<!-- PAGE 1 — COUVERTURE -->
 </div>
 
 <div class="beige-note">
-  <strong>Grilles d'analyse bancaires (indicatif) :</strong> DSCR &gt; 1,20x (solide &gt; 1,30x) · Debt Yield &gt; 6–8 % · LTC &lt; 80 % recommandé · CF avant impôt &gt; 0. Ces seuils varient selon les établissements prêteurs. La solidité globale du dossier dépend aussi du profil de l'emprunteur (revenus, endettement global, patrimoine).
+  <strong>Grilles d'analyse bancaires (indicatif) :</strong> DSCR &gt; 1,20x (solide &gt; 1,30x) · Debt Yield &gt; 6–8 % · LTC &lt; 80 % recommandé · Cash-flow avant impôt &gt; 0. Ces seuils varient selon les établissements prêteurs. La solidité globale du dossier dépend aussi du profil de l'emprunteur (revenus, endettement global, patrimoine).
 </div>
 </div>
 
@@ -2233,8 +2233,8 @@ ${isMicro ? `
     ${!isMicro ? `<th class="r">Amortissement</th>` : ""}
     <th class="r">Base imposable</th>
     <th class="r">Impôt</th>
-    <th class="r">CF avant impôt/mois</th>
-    <th class="r">CF après impôt/mois</th>
+    <th class="r">Cash-flow avant impôt/mois</th>
+    <th class="r">Cash-flow après impôt/mois</th>
   </tr></thead>
   <tbody>
     ${keyYears.map(yr => {
@@ -2267,9 +2267,9 @@ ${isMicro ? `
     <th class="r">Loyers annuels</th>
     <th class="r">NOI</th>
     <th class="r">DSCR</th>
-    <th class="r">CF avant impôt/mois</th>
+    <th class="r">Cash-flow avant impôt/mois</th>
     <th class="r">Fiscalité</th>
-    <th class="r">CF après impôt/mois</th>
+    <th class="r">Cash-flow après impôt/mois</th>
   </tr></thead>
   <tbody>
     ${[
@@ -2400,8 +2400,8 @@ ${isMicro ? (() => {
     <th class="r" style="font-size:8px">Charges</th>
     <th class="r" style="font-size:8px">Base BIC</th>
     <th class="r" style="font-size:8px">Impôt</th>
-    <th class="r" style="font-size:8px">CF av. impôt/mois</th>
-    <th class="r" style="font-size:8px">CF ap. impôt/mois</th>
+    <th class="r" style="font-size:8px">Cash-flow av. impôt/mois</th>
+    <th class="r" style="font-size:8px">Cash-flow ap. impôt/mois</th>
   </tr></thead>
   <tbody>
     ${rows.map(ro => {
@@ -2434,8 +2434,8 @@ ${isMicro ? (() => {
     <th class="r" style="font-size:8px">Amort. déduit</th>
     <th class="r" style="font-size:8px">Base imposable</th>
     <th class="r" style="font-size:8px">Impôt</th>
-    <th class="r" style="font-size:8px">CF av./mois</th>
-    <th class="r" style="font-size:8px">CF ap./mois</th>
+    <th class="r" style="font-size:8px">Cash-flow av./mois</th>
+    <th class="r" style="font-size:8px">Cash-flow ap./mois</th>
   </tr></thead>
   <tbody>
     ${rows.map(ro => {
