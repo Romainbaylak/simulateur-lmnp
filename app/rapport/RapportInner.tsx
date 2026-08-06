@@ -346,40 +346,177 @@ ${yr % 5 === 0 || yr === 1 ? `<text x="${(bx + bW / 2).toFixed(1)}" y="${(H - 6)
     // Key years for page 6
     const keyYears = [1, 5, 10, 15, 20, 21, 25, 30, 35, 40].filter(y => y <= totalYears);
 
-    // Saisonnier scenarios
-    const saisonnierHtml = isSaisonnier && resultatsTriple ? (() => {
+    const today = new Date().toLocaleDateString("fr-FR");
+    const chargesLoyer = parseFloat(f.chargesLoyer ?? "0") || 0;
+    const taxeFonciere = parseFloat(f.taxeFonciere) || 0;
+    const chargesCopro = parseFloat(f.chargesCopro ?? "0") || 0;
+
+    // Saisonnier scenario pages (Pages 1 & 2 for saisonnier)
+    const saisonnierPagesHtml = isSaisonnier && resultatsTriple ? (() => {
       const scenarios = [
-        { label: "Estimation basse", sr: resultatsTriple.bas, taux: tauxOccBas },
-        { label: "Estimation moyenne", sr: resultatsTriple.moyen, taux: tauxOccMoyen },
-        { label: "Estimation haute", sr: resultatsTriple.haut, taux: tauxOccHaut },
+        { label: "Estimation basse", color: "#2A7080", sr: resultatsTriple.bas, taux: tauxOccBas },
+        { label: "Estimation moyenne", color: "#C95B2A", sr: resultatsTriple.moyen, taux: tauxOccMoyen },
+        { label: "Estimation haute", color: "#1A7A52", sr: resultatsTriple.haut, taux: tauxOccHaut },
       ];
-      const cols = scenarios.map(({ label, sr, taux: t }) => {
-        if (!sr) return `<td></td>`;
+      const prixN = parseFloat(prixNuitee) || 0;
+
+      // Mini recap cards
+      const miniCards = scenarios.map(({ label, color, sr, taux: t }) => {
+        if (!sr) return `<div style="flex:1;background:#EDE7DC;border-radius:8px;padding:12px 14px;opacity:.4"><div style="font-size:10px;font-weight:700;color:#4E1F12">${label}</div><div style="font-size:9px;color:#1A1612;margin-top:4px">Données indisponibles</div></div>`;
         const nuits = Math.round(parseFloat(t) / 100 * 365);
-        const bic = sr.loyerAnnuel * 0.50;
-        const ibic = bic * (tmi / 100 + 0.186);
-        return `<td style="padding:10px;background:#EDE7DC;border-radius:6px;vertical-align:top">
-          <div style="font-weight:700;font-size:11px;color:#4E1F12;margin-bottom:4px">${label}</div>
-          <div style="font-size:9px;color:#1A1612;margin-bottom:8px">${t}% · ${nuits} nuits/an · ${fE(parseFloat(prixNuitee) || 0)}/nuit</div>
-          <div style="display:flex;gap:16px">
-            <div>
-              <div style="font-size:8px;text-transform:uppercase;letter-spacing:.1em;color:#1A1612;margin-bottom:3px">Régime réel</div>
-              <div style="font-size:10px">Loyers : <strong>${fE(sr.loyerAnnuel)}</strong></div>
-              <div style="font-size:10px">Base : <strong style="color:${sr.baseImposableReel === 0 ? "#1A7A52" : "#B03A2A"}">${fE(sr.baseImposableReel)}</strong></div>
-              <div style="font-size:10px">Impôt : <strong>${fE(sr.impotReel)}</strong></div>
-              <div style="font-size:11px;font-weight:700;color:${sr.cashflowReelMensuel >= 0 ? "#1A7A52" : "#B03A2A"};margin-top:4px">CF : ${fE(sr.cashflowReelMensuel)}/mois</div>
-            </div>
-            <div>
-              <div style="font-size:8px;text-transform:uppercase;letter-spacing:.1em;color:#1A1612;margin-bottom:3px">Micro-BIC</div>
-              <div style="font-size:10px">Base : <strong>${fE(bic)}</strong></div>
-              <div style="font-size:10px">Impôt : <strong>${fE(ibic)}</strong></div>
-              <div style="font-size:11px;font-weight:700;color:${sr.cashflowBICMensuel >= 0 ? "#1A7A52" : "#B03A2A"};margin-top:4px">CF : ${fE(sr.cashflowBICMensuel)}/mois</div>
-            </div>
-          </div>
+        const cfNet = isMicro ? sr.cashflowBICMensuel : sr.cashflowReelMensuel;
+        return `<div style="flex:1;background:#EDE7DC;border-radius:8px;padding:12px 14px;border-top:3px solid ${color}">
+          <div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:${color};margin-bottom:6px">${label}</div>
+          <div style="font-size:8px;color:rgba(26,22,18,.6);margin-bottom:8px">${t}% occ. · ${nuits} nuits/an · ${fE(prixN)}/nuit</div>
+          <div style="font-size:15px;font-weight:700;color:#4E1F12;margin-bottom:2px">${fE(sr.loyerAnnuel)}/an</div>
+          <div style="font-size:9px;color:rgba(26,22,18,.6);margin-bottom:8px">loyers annuels estimés</div>
+          <div style="font-size:11px;font-weight:700;color:${cfNet >= 0 ? "#1A7A52" : "#B03A2A"}">${fE(cfNet)}/mois</div>
+          <div style="font-size:8px;color:rgba(26,22,18,.6)">cash-flow net · ${isMicro ? "Micro-BIC" : "régime réel"}</div>
+        </div>`;
+      }).join("");
+
+      // Detailed 3-column fiscal table
+      const fiscalCols = scenarios.map(({ label, color, sr, taux: t }) => {
+        if (!sr) return `<td style="padding:10px;background:#EDE7DC;border-radius:6px;vertical-align:top;opacity:.4"><div style="font-size:10px;color:#4E1F12">${label}</div></td>`;
+        const nuits = Math.round(parseFloat(t) / 100 * 365);
+        const bic30 = sr.loyerAnnuel * 0.30; // abattement saisonnier 30% (Loi de Finances 2024)
+        const ibic30 = bic30 * (tmi / 100 + 0.186);
+        return `<td style="padding:10px 12px;background:#EDE7DC;border-radius:8px;vertical-align:top;border-top:3px solid ${color}">
+          <div style="font-weight:700;font-size:10px;color:${color};margin-bottom:3px;text-transform:uppercase;letter-spacing:.08em">${label}</div>
+          <div style="font-size:8px;color:rgba(26,22,18,.6);margin-bottom:10px">${t}% · ${nuits} nuits/an</div>
+          <div style="font-size:8px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:#4E1F12;margin-bottom:5px;border-bottom:1px solid rgba(26,22,18,.1);padding-bottom:4px">Régime réel simplifié</div>
+          <div style="font-size:9px;margin-bottom:3px;display:flex;justify-content:space-between"><span style="color:rgba(26,22,18,.7)">Loyers</span><strong>${fE(sr.loyerAnnuel)}</strong></div>
+          <div style="font-size:9px;margin-bottom:3px;display:flex;justify-content:space-between"><span style="color:rgba(26,22,18,.7)">Charges déductibles</span><strong>${fE(sr.chargesDeductibles)}</strong></div>
+          <div style="font-size:9px;margin-bottom:3px;display:flex;justify-content:space-between"><span style="color:rgba(26,22,18,.7)">Amortissements</span><strong>${fE(sr.amortTotal)}</strong></div>
+          <div style="font-size:9px;margin-bottom:6px;display:flex;justify-content:space-between"><span style="color:rgba(26,22,18,.7)">Base imposable</span><strong style="color:${sr.baseImposableReel === 0 ? "#1A7A52" : "#B03A2A"}">${fE(sr.baseImposableReel)}</strong></div>
+          <div style="font-size:10px;font-weight:700;margin-bottom:2px;display:flex;justify-content:space-between"><span>Impôt total</span><span style="color:${sr.impotReel === 0 ? "#1A7A52" : "#B03A2A"}">${fE(sr.impotReel)}</span></div>
+          <div style="font-size:11px;font-weight:700;color:${sr.cashflowReelMensuel >= 0 ? "#1A7A52" : "#B03A2A"};text-align:right;margin-top:4px;padding-top:4px;border-top:1px solid rgba(26,22,18,.1)">CF ${fE(sr.cashflowReelMensuel)}/mois</div>
+          <div style="font-size:8px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:#4E1F12;margin:10px 0 5px;border-bottom:1px solid rgba(26,22,18,.1);padding-bottom:4px">Micro-BIC (abatt. 30%)</div>
+          <div style="font-size:9px;margin-bottom:3px;display:flex;justify-content:space-between"><span style="color:rgba(26,22,18,.7)">Loyers</span><strong>${fE(sr.loyerAnnuel)}</strong></div>
+          <div style="font-size:9px;margin-bottom:3px;display:flex;justify-content:space-between"><span style="color:rgba(26,22,18,.7)">Abattement 30%</span><strong>${fE(sr.loyerAnnuel * 0.30)}</strong></div>
+          <div style="font-size:9px;margin-bottom:6px;display:flex;justify-content:space-between"><span style="color:rgba(26,22,18,.7)">Base imposable</span><strong>${fE(bic30)}</strong></div>
+          <div style="font-size:10px;font-weight:700;margin-bottom:2px;display:flex;justify-content:space-between"><span>Impôt total</span><span style="color:#B03A2A">${fE(ibic30)}</span></div>
+          <div style="font-size:11px;font-weight:700;color:${sr.cashflowBICMensuel >= 0 ? "#1A7A52" : "#B03A2A"};text-align:right;margin-top:4px;padding-top:4px;border-top:1px solid rgba(26,22,18,.1)">CF ${fE(sr.cashflowBICMensuel)}/mois</div>
         </td>`;
       }).join("");
-      return `<h2 class="ch">Location saisonnière — Comparaison des 3 scénarios (année 1)</h2>
-<table style="border-collapse:separate;border-spacing:8px 0"><tr>${cols}</tr></table>`;
+
+      const nuitsMoyen = Math.round(parseFloat(tauxOccMoyen) / 100 * 365);
+      const moyen = resultatsTriple.moyen;
+      const cfMoyen = moyen ? (isMicro ? moyen.cashflowBICMensuel : moyen.cashflowReelMensuel) : 0;
+
+      return `
+<!-- PAGE 1 SAISONNIER — COMPARAISON DES 3 SCÉNARIOS -->
+<div class="page">
+<div class="hdr">
+  <div>
+    <div class="hdr-brand"><span class="hdr-light">tout</span><span class="hdr-bold">lmnp</span></div>
+    <div class="hdr-sub">Rapport Client · Simulation LMNP · Location saisonnière</div>
+  </div>
+  <div class="hdr-right">Généré le ${today}<br>${isMicro ? "Micro-BIC" : "Régime réel simplifié"}</div>
+</div>
+
+<div class="cover-title">
+  <h1>Synthèse de votre investissement LMNP</h1>
+  <div class="sub">Location saisonnière · Comparaison des 3 scénarios · ${fE(prixN)}/nuit</div>
+</div>
+
+<div style="background:#EDE7DC;border-radius:7px;padding:10px 14px;margin-bottom:16px;display:flex;gap:16px;flex-wrap:wrap">
+  ${bienInfo.type ? `<span class="bien-badge">${bienInfo.type === "ap" ? "Appartement" : bienInfo.type === "ma" ? "Maison" : "Immeuble"}</span>` : ""}
+  ${bienInfo.ville ? `<span class="bien-badge">📍 ${bienInfo.ville}</span>` : ""}
+  ${bienInfo.surface ? `<span class="bien-badge">📐 ${bienInfo.surface} m²</span>` : ""}
+  <span class="bien-badge">🏡 Location saisonnière</span>
+  ${bienInfo.description ? `<span style="font-size:10px;color:#1A1612">${bienInfo.description}</span>` : ""}
+</div>
+
+<h2 class="ch">Aperçu des 3 estimations</h2>
+<div style="display:flex;gap:10px;margin-bottom:20px">
+  ${miniCards}
+</div>
+
+<h2 class="ch">Détail fiscal par scénario – année 1</h2>
+<table style="width:100%;border-collapse:separate;border-spacing:8px 0"><tr>
+  ${fiscalCols}
+</tr></table>
+
+<div class="beige-note" style="margin-top:14px">
+  <strong>Loi de Finances 2024 :</strong> Pour les meublés de tourisme non classés, l'abattement Micro-BIC est de <strong>30 %</strong> (contre 50 % en location nue). Le régime réel reste souvent plus avantageux grâce aux amortissements. TMI appliquée : <strong>${tmi} %</strong> + prélèvements sociaux <strong>18,6 %</strong>.
+</div>
+</div>
+
+<!-- PAGE 2 SAISONNIER — PIVOT ESTIMATION MOYENNE -->
+<div class="page">
+<div class="hdr">
+  <div>
+    <div class="hdr-brand"><span class="hdr-light">tout</span><span class="hdr-bold">lmnp</span></div>
+    <div class="hdr-sub">Rapport Client · Simulation LMNP · Location saisonnière</div>
+  </div>
+  <div class="hdr-right">${today}<br>${isMicro ? "Micro-BIC" : "Régime réel simplifié"}</div>
+</div>
+
+<div style="text-align:center;margin:24px 0 28px;padding:28px 32px;background:#4E1F12;border-radius:12px">
+  <div style="font-size:9px;text-transform:uppercase;letter-spacing:.2em;color:rgba(245,240,232,.55);font-weight:600;margin-bottom:10px">Base de calcul pour la suite du rapport</div>
+  <div style="font-size:20px;font-weight:700;color:#F5F0E8;line-height:1.4;letter-spacing:-.02em;margin-bottom:12px">
+    Pour la suite de ce rapport,<br>nous utilisons l'<span style="color:#C95B2A">Estimation Moyenne</span>
+  </div>
+  <div style="display:flex;justify-content:center;gap:24px">
+    <div style="text-align:center"><div style="font-size:8px;text-transform:uppercase;letter-spacing:.12em;color:rgba(245,240,232,.55);margin-bottom:3px">Taux d'occupation</div><div style="font-size:14px;font-weight:700;color:#C95B2A">${tauxOccMoyen}%</div></div>
+    <div style="width:1px;background:rgba(245,240,232,.2)"></div>
+    <div style="text-align:center"><div style="font-size:8px;text-transform:uppercase;letter-spacing:.12em;color:rgba(245,240,232,.55);margin-bottom:3px">Nuits/an</div><div style="font-size:14px;font-weight:700;color:#C95B2A">${nuitsMoyen}</div></div>
+    <div style="width:1px;background:rgba(245,240,232,.2)"></div>
+    <div style="text-align:center"><div style="font-size:8px;text-transform:uppercase;letter-spacing:.12em;color:rgba(245,240,232,.55);margin-bottom:3px">Prix/nuit</div><div style="font-size:14px;font-weight:700;color:#C95B2A">${fE(prixN)}</div></div>
+    <div style="width:1px;background:rgba(245,240,232,.2)"></div>
+    <div style="text-align:center"><div style="font-size:8px;text-transform:uppercase;letter-spacing:.12em;color:rgba(245,240,232,.55);margin-bottom:3px">Loyers annuels</div><div style="font-size:14px;font-weight:700;color:#C95B2A">${moyen ? fE(moyen.loyerAnnuel) : "—"}</div></div>
+  </div>
+</div>
+
+<div class="kpi-row">
+  <div class="kpi">
+    <div class="kpi-lbl">Coût total projet</div>
+    <div class="kpi-val">${fE(investTotal)}</div>
+    <div class="kpi-unit">acquisition + travaux + notaire</div>
+  </div>
+  <div class="kpi">
+    <div class="kpi-lbl">Rentabilité brute acte en main</div>
+    <div class="kpi-val">${fP(rendementBrut, 2)}</div>
+    <div class="kpi-unit">loyer annuel / coût total</div>
+  </div>
+  <div class="kpi">
+    <div class="kpi-lbl">Cash-flow mensuel après fiscalité</div>
+    <div class="kpi-val" style="color:${cfMoyen >= 0 ? "#4ADE80" : "#FCA5A5"}">${fE(cfMoyen)}</div>
+    <div class="kpi-unit">année 1 · ${isMicro ? "Micro-BIC" : "régime réel"} · est. moyenne</div>
+  </div>
+  <div class="kpi">
+    <div class="kpi-lbl">Capital remboursé année 1</div>
+    <div class="kpi-val">${fE(capitalRembourseAn1)}</div>
+    <div class="kpi-unit">annuité − intérêts</div>
+  </div>
+</div>
+
+<div class="info-grid">
+  <div class="info-col">
+    <div class="info-col-title">Le bien et les revenus</div>
+    <div class="info-row"><div class="ir-lbl">Loyer HC mensuel (est. moy.)</div><div class="ir-val orange">${fE(loyerAnnuel / 12)}/mois</div></div>
+    <div class="info-row"><div class="ir-lbl">Loyer HC annuel (est. moy.)</div><div class="ir-val">${fE(loyerAnnuel)}</div></div>
+    <div class="info-row"><div class="ir-lbl">Prix nuit · Taux occupation</div><div class="ir-val">${fE(prixN)} · ${tauxOccMoyen}%</div></div>
+    <div class="info-row"><div class="ir-lbl">Charges propriétaire/an</div><div class="ir-val">${fE(chargesAnnuelles)}</div></div>
+  </div>
+  <div class="info-col">
+    <div class="info-col-title">Acquisition</div>
+    <div class="info-row"><div class="ir-lbl">Prix d'achat</div><div class="ir-val">${fE(prix)}</div></div>
+    ${travaux > 0 ? `<div class="info-row"><div class="ir-lbl">Travaux</div><div class="ir-val">${fE(travaux)}</div></div>` : ""}
+    ${mobilier > 0 ? `<div class="info-row"><div class="ir-lbl">Mobilier</div><div class="ir-val">${fE(mobilier)}</div></div>` : ""}
+    <div class="info-row"><div class="ir-lbl">Frais de notaire</div><div class="ir-val">${fE(notaire)}</div></div>
+    <div class="info-row"><div class="ir-lbl">Coût total</div><div class="ir-val orange">${fE(investTotal)}</div></div>
+  </div>
+  <div class="info-col">
+    <div class="info-col-title">Financement</div>
+    <div class="info-row"><div class="ir-lbl">Apport personnel</div><div class="ir-val">${fE(apport)}</div></div>
+    <div class="info-row"><div class="ir-lbl">Montant emprunté</div><div class="ir-val">${fE(montantCredit)}</div></div>
+    <div class="info-row"><div class="ir-lbl">Taux · Durée</div><div class="ir-val">${f.taux} % · ${duree} ans</div></div>
+    <div class="info-row"><div class="ir-lbl">Mensualité (hors ass.)</div><div class="ir-val">${fE(mensualite)}/mois</div></div>
+  </div>
+</div>
+</div>`;
     })() : "";
 
     // Annexe B table
@@ -407,11 +544,6 @@ ${yr % 5 === 0 || yr === 1 ? `<text x="${(bx + bW / 2).toFixed(1)}" y="${(H - 6)
     const annexeBHeaderSub = annexeCols.map(() =>
       `<th style="font-size:8px;background:#3a1509;padding:4px 5px">Amort.</th><th style="font-size:8px;background:#3a1509;padding:4px 5px;border-right:1px solid rgba(255,255,255,0.1)">Reste</th>`
     ).join("");
-
-    const today = new Date().toLocaleDateString("fr-FR");
-    const chargesLoyer = parseFloat(f.chargesLoyer ?? "0") || 0;
-    const taxeFonciere = parseFloat(f.taxeFonciere) || 0;
-    const chargesCopro = parseFloat(f.chargesCopro ?? "0") || 0;
 
     return `<!DOCTYPE html><html lang="fr"><head><meta charset="UTF-8">
 <title>Rapport LMNP – toutlmnp</title>
@@ -485,7 +617,9 @@ table.tbl tr.total td{background:rgba(78,31,18,.07);font-weight:700}
   <button onclick="window.print()" style="background:#C95B2A;color:#F5F0E8;border:none;border-radius:6px;padding:8px 20px;font-size:12px;font-weight:600;cursor:pointer;letter-spacing:.02em">⬇ Imprimer / Enregistrer en PDF</button>
 </div>
 
-<!-- ═══════════════════════════════════════════════════════
+${saisonnierPagesHtml}
+
+${!isSaisonnier ? `<!-- ═══════════════════════════════════════════════════════
      PAGE 1 — COUVERTURE / SYNTHÈSE
 ═══════════════════════════════════════════════════════ -->
 <div class="page">
@@ -558,8 +692,6 @@ table.tbl tr.total td{background:rgba(78,31,18,.07);font-weight:700}
   </div>
 </div>
 
-${saisonnierHtml}
-
 <h2 class="ch">Comparaison des régimes fiscaux – année 1</h2>
 <table class="tbl">
   <thead><tr>
@@ -626,9 +758,10 @@ ${saisonnierHtml}
 <!-- ═══════════════════════════════════════════════════════
      PAGE 2 — CHAPITRE 1 : PROJET ET FINANCEMENT
 ═══════════════════════════════════════════════════════ -->
-</div><div class="page">
-<div class="hdr"><div><div class="hdr-brand"><span class="hdr-light">tout</span><span class="hdr-bold">lmnp</span></div><div class="hdr-sub">Rapport Client · Simulation LMNP</div></div><div class="hdr-right">${today}</div></div>
-<h2 class="ch"><span class="num">1.</span>Votre projet et son financement</h2>
+</div>` : ""}
+<div class="page">
+<div class="hdr"><div><div class="hdr-brand"><span class="hdr-light">tout</span><span class="hdr-bold">lmnp</span></div><div class="hdr-sub">Rapport Client · Simulation LMNP${isSaisonnier ? " · Estimation Moyenne" : ""}</div></div><div class="hdr-right">${today}</div></div>
+<h2 class="ch"><span class="num">1.</span>Votre projet et son financement${isSaisonnier ? " <span style=\"font-size:9px;font-weight:400;color:#C95B2A;margin-left:6px\">(Estimation Moyenne)</span>" : ""}</h2>
 
 <div class="two-col" style="margin-bottom:14px">
   <div>
@@ -1110,6 +1243,12 @@ ${!isMicro && annexeCols.length > 0 ? `<div class="page landscape">
     const amortMode = amortModeRef.current;
     const amortDureeEnsemble = amortDureeEnsembleRef.current;
     const composants = composantsRef.current;
+    const isSaisonnier = isSaisonnierRef.current;
+    const prixNuitee = prixNuiteeRef.current;
+    const tauxOccBas = tauxOccBasRef.current;
+    const tauxOccMoyen = tauxOccMoyenRef.current;
+    const tauxOccHaut = tauxOccHautRef.current;
+    const resultatsTriple = resultatsTripleRef.current;
     const selectedRegime = selectedRegimeRef.current;
     const isMicro = selectedRegime === "micro";
 
@@ -1252,8 +1391,172 @@ ${!isMicro && annexeCols.length > 0 ? `<div class="page landscape">
 
     const keyYears = [1, 5, 10, 15, 20, 25].filter(y => y <= totalYears);
 
+    const bienLabel = bienInfo.type === "ap" ? "Appartement" : bienInfo.type === "ma" ? "Maison" : "Immeuble";
+    const regimeLabel = isMicro ? "Micro-BIC" : "Régime réel simplifié";
     const dscrColor = dscr >= 1.3 ? "#1A7A52" : dscr >= 1.0 ? "#B08A2A" : "#B03A2A";
     const dscrLabel = dscr >= 1.3 ? "Solide" : dscr >= 1.0 ? "Acceptable" : "Insuffisant";
+
+    // Saisonnier scenario pages for banque PDF
+    const saisonnierBanquePagesHtml = isSaisonnier && resultatsTriple ? (() => {
+      const fEB = fE;
+      const scenarios = [
+        { label: "Estimation basse", color: "#2A7080", sr: resultatsTriple.bas, taux: tauxOccBas },
+        { label: "Estimation moyenne", color: "#4A9FCA", sr: resultatsTriple.moyen, taux: tauxOccMoyen },
+        { label: "Estimation haute", color: "#1A7A52", sr: resultatsTriple.haut, taux: tauxOccHaut },
+      ];
+      const prixN = parseFloat(prixNuitee) || 0;
+
+      const miniCards = scenarios.map(({ label, color, sr, taux: t }) => {
+        if (!sr) return `<div style="flex:1;background:#EDE7DC;border-radius:8px;padding:12px 14px;opacity:.4"><div style="font-size:10px;font-weight:700;color:#1A2D45">${label}</div></div>`;
+        const nuits = Math.round(parseFloat(t) / 100 * 365);
+        const cfNet = isMicro ? sr.cashflowBICMensuel : sr.cashflowReelMensuel;
+        const noiS = sr.loyerAnnuel - sr.chargesAnnuelles;
+        const dscrS = serviceDebt > 0 ? noiS / serviceDebt : 0;
+        const dscrColorS = dscrS >= 1.3 ? "#1A7A52" : dscrS >= 1.0 ? "#B08A2A" : "#B03A2A";
+        return `<div style="flex:1;background:#EDE7DC;border-radius:8px;padding:12px 14px;border-top:3px solid ${color}">
+          <div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:${color};margin-bottom:6px">${label}</div>
+          <div style="font-size:8px;color:rgba(26,22,18,.6);margin-bottom:8px">${t}% occ. · ${nuits} nuits/an · ${fEB(prixN)}/nuit</div>
+          <div style="font-size:15px;font-weight:700;color:#1A2D45;margin-bottom:2px">${fEB(sr.loyerAnnuel)}/an</div>
+          <div style="font-size:8px;color:rgba(26,22,18,.6);margin-bottom:8px">revenus annuels estimés</div>
+          <div style="font-size:10px;font-weight:700;color:${dscrColorS};margin-bottom:2px">DSCR ${dscrS.toFixed(2)}x</div>
+          <div style="font-size:11px;font-weight:700;color:${cfNet >= 0 ? "#1A7A52" : "#B03A2A"}">${fEB(cfNet)}/mois net</div>
+        </div>`;
+      }).join("");
+
+      const fiscalCols = scenarios.map(({ label, color, sr, taux: t }) => {
+        if (!sr) return `<td style="padding:10px;background:#EDE7DC;border-radius:6px;vertical-align:top;opacity:.4"><div>${label}</div></td>`;
+        const nuits = Math.round(parseFloat(t) / 100 * 365);
+        const noiFull = sr.loyerAnnuel - sr.chargesAnnuelles;
+        const bic30 = sr.loyerAnnuel * 0.30;
+        const ibic30 = bic30 * (tmi / 100 + 0.186);
+        const dscrS = serviceDebt > 0 ? noiFull / serviceDebt : 0;
+        const dscrColorS = dscrS >= 1.3 ? "#1A7A52" : dscrS >= 1.0 ? "#B08A2A" : "#B03A2A";
+        return `<td style="padding:10px 12px;background:#EDE7DC;border-radius:8px;vertical-align:top;border-top:3px solid ${color}">
+          <div style="font-weight:700;font-size:10px;color:${color};margin-bottom:3px;text-transform:uppercase;letter-spacing:.08em">${label}</div>
+          <div style="font-size:8px;color:rgba(26,22,18,.6);margin-bottom:10px">${t}% · ${nuits} nuits/an</div>
+          <div style="font-size:8px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:#1A2D45;margin-bottom:5px;border-bottom:1px solid rgba(26,22,18,.1);padding-bottom:4px">Régime réel simplifié</div>
+          <div style="font-size:9px;margin-bottom:3px;display:flex;justify-content:space-between"><span style="color:rgba(26,22,18,.7)">Loyers</span><strong>${fEB(sr.loyerAnnuel)}</strong></div>
+          <div style="font-size:9px;margin-bottom:3px;display:flex;justify-content:space-between"><span style="color:rgba(26,22,18,.7)">NOI</span><strong>${fEB(noiFull)}</strong></div>
+          <div style="font-size:9px;margin-bottom:3px;display:flex;justify-content:space-between"><span style="color:rgba(26,22,18,.7)">DSCR</span><strong style="color:${dscrColorS}">${dscrS.toFixed(2)}x</strong></div>
+          <div style="font-size:9px;margin-bottom:6px;display:flex;justify-content:space-between"><span style="color:rgba(26,22,18,.7)">Base imposable</span><strong style="color:${sr.baseImposableReel === 0 ? "#1A7A52" : "#B03A2A"}">${fEB(sr.baseImposableReel)}</strong></div>
+          <div style="font-size:10px;font-weight:700;margin-bottom:2px;display:flex;justify-content:space-between"><span>Impôt total</span><span style="color:${sr.impotReel === 0 ? "#1A7A52" : "#B03A2A"}">${fEB(sr.impotReel)}</span></div>
+          <div style="font-size:11px;font-weight:700;color:${sr.cashflowReelMensuel >= 0 ? "#1A7A52" : "#B03A2A"};text-align:right;margin-top:4px;padding-top:4px;border-top:1px solid rgba(26,22,18,.1)">CF ${fEB(sr.cashflowReelMensuel)}/mois</div>
+          <div style="font-size:8px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:#1A2D45;margin:10px 0 5px;border-bottom:1px solid rgba(26,22,18,.1);padding-bottom:4px">Micro-BIC (abatt. 30%)</div>
+          <div style="font-size:9px;margin-bottom:3px;display:flex;justify-content:space-between"><span style="color:rgba(26,22,18,.7)">Base imposable</span><strong>${fEB(bic30)}</strong></div>
+          <div style="font-size:10px;font-weight:700;margin-bottom:2px;display:flex;justify-content:space-between"><span>Impôt total</span><span style="color:#B03A2A">${fEB(ibic30)}</span></div>
+          <div style="font-size:11px;font-weight:700;color:${sr.cashflowBICMensuel >= 0 ? "#1A7A52" : "#B03A2A"};text-align:right;margin-top:4px;padding-top:4px;border-top:1px solid rgba(26,22,18,.1)">CF ${fEB(sr.cashflowBICMensuel)}/mois</div>
+        </td>`;
+      }).join("");
+
+      const nuitsMoyen = Math.round(parseFloat(tauxOccMoyen) / 100 * 365);
+      const moyen = resultatsTriple.moyen;
+
+      return `
+<!-- PAGE 1 SAISONNIER BANQUE — COMPARAISON DES 3 SCÉNARIOS -->
+<div class="page">
+<div class="hdr">
+  <div>
+    <div class="hdr-brand"><span class="hdr-light">tout</span><span class="hdr-bold">lmnp</span></div>
+    <div class="hdr-sub">Dossier de Financement · LMNP · Location saisonnière</div>
+  </div>
+  <div class="hdr-right">Généré le ${today}<br>${regimeLabel}</div>
+</div>
+
+<div style="text-align:center;margin:10px 0 16px">
+  <div style="font-size:9px;text-transform:uppercase;letter-spacing:.18em;color:#4A9FCA;font-weight:600;margin-bottom:6px">Dossier de Financement · Location saisonnière</div>
+  <h1 style="font-size:22px;font-weight:700;color:#1A2D45;letter-spacing:-.025em;margin-bottom:4px">Investissement LMNP – Comparaison des 3 scénarios</h1>
+  <div style="font-size:10px;color:#1A1612">${bienInfo.ville ? bienInfo.ville + " · " : ""}${bienLabel}${bienInfo.surface ? " · " + bienInfo.surface + " m²" : ""} · ${fEB(parseFloat(prixNuitee) || 0)}/nuit</div>
+</div>
+
+<h2 class="ch" style="border-bottom-color:#4A9FCA;color:#1A2D45">Aperçu des 3 estimations</h2>
+<div style="display:flex;gap:10px;margin-bottom:18px">
+  ${miniCards}
+</div>
+
+<h2 class="ch" style="border-bottom-color:#4A9FCA;color:#1A2D45">Détail fiscal par scénario – année 1</h2>
+<table style="width:100%;border-collapse:separate;border-spacing:8px 0"><tr>
+  ${fiscalCols}
+</tr></table>
+
+<div class="beige-note" style="margin-top:14px">
+  <strong>Loi de Finances 2024 :</strong> Pour les meublés de tourisme non classés, l'abattement Micro-BIC est de <strong>30 %</strong>. Le DSCR (Debt Service Coverage Ratio) mesure la capacité du bien à couvrir le service de la dette — seuil bancaire typique : 1,20x. TMI : <strong>${tmi}%</strong> + prélèvements sociaux <strong>18,6%</strong>.
+</div>
+</div>
+
+<!-- PAGE 2 SAISONNIER BANQUE — PIVOT ESTIMATION MOYENNE -->
+<div class="page">
+<div class="hdr">
+  <div>
+    <div class="hdr-brand"><span class="hdr-light">tout</span><span class="hdr-bold">lmnp</span></div>
+    <div class="hdr-sub">Dossier de Financement · LMNP · Location saisonnière</div>
+  </div>
+  <div class="hdr-right">${today} · ${regimeLabel}</div>
+</div>
+
+<div style="text-align:center;margin:24px 0 28px;padding:28px 32px;background:#1A2D45;border-radius:12px">
+  <div style="font-size:9px;text-transform:uppercase;letter-spacing:.2em;color:rgba(245,240,232,.55);font-weight:600;margin-bottom:10px">Base de calcul pour la suite du dossier</div>
+  <div style="font-size:20px;font-weight:700;color:#F5F0E8;line-height:1.4;letter-spacing:-.02em;margin-bottom:12px">
+    Pour la suite de ce dossier,<br>nous utilisons l'<span style="color:#4A9FCA">Estimation Moyenne</span>
+  </div>
+  <div style="display:flex;justify-content:center;gap:24px">
+    <div style="text-align:center"><div style="font-size:8px;text-transform:uppercase;letter-spacing:.12em;color:rgba(245,240,232,.55);margin-bottom:3px">Taux d'occupation</div><div style="font-size:14px;font-weight:700;color:#4A9FCA">${tauxOccMoyen}%</div></div>
+    <div style="width:1px;background:rgba(245,240,232,.2)"></div>
+    <div style="text-align:center"><div style="font-size:8px;text-transform:uppercase;letter-spacing:.12em;color:rgba(245,240,232,.55);margin-bottom:3px">Nuits/an</div><div style="font-size:14px;font-weight:700;color:#4A9FCA">${nuitsMoyen}</div></div>
+    <div style="width:1px;background:rgba(245,240,232,.2)"></div>
+    <div style="text-align:center"><div style="font-size:8px;text-transform:uppercase;letter-spacing:.12em;color:rgba(245,240,232,.55);margin-bottom:3px">Prix/nuit</div><div style="font-size:14px;font-weight:700;color:#4A9FCA">${fEB(parseFloat(prixNuitee) || 0)}</div></div>
+    <div style="width:1px;background:rgba(245,240,232,.2)"></div>
+    <div style="text-align:center"><div style="font-size:8px;text-transform:uppercase;letter-spacing:.12em;color:rgba(245,240,232,.55);margin-bottom:3px">Revenus annuels</div><div style="font-size:14px;font-weight:700;color:#4A9FCA">${moyen ? fEB(moyen.loyerAnnuel) : "—"}</div></div>
+  </div>
+</div>
+
+<div style="display:flex;gap:10px;margin-bottom:14px">
+  <div style="flex:1;background:#EDE7DC;border-radius:8px;padding:12px 14px">
+    <div style="font-size:8px;font-weight:700;text-transform:uppercase;letter-spacing:.12em;color:#4A9FCA;margin-bottom:8px">L'actif</div>
+    <div style="margin-bottom:5px"><div style="font-size:8px;text-transform:uppercase;letter-spacing:.08em;color:#1A1612">Type</div><div style="font-size:11px;font-weight:600">${bienLabel}</div></div>
+    <div style="margin-bottom:5px"><div style="font-size:8px;text-transform:uppercase;letter-spacing:.08em;color:#1A1612">Prix d'achat</div><div style="font-size:11px;font-weight:600">${fEB(prix)}</div></div>
+    ${travaux > 0 ? `<div style="margin-bottom:5px"><div style="font-size:8px;text-transform:uppercase;letter-spacing:.08em;color:#1A1612">Travaux</div><div style="font-size:11px;font-weight:600">${fEB(travaux)}</div></div>` : ""}
+    <div><div style="font-size:8px;text-transform:uppercase;letter-spacing:.08em;color:#1A1612">Coût total</div><div style="font-size:13px;font-weight:700;color:#1A2D45">${fEB(investTotal)}</div></div>
+  </div>
+  <div style="flex:1;background:#EDE7DC;border-radius:8px;padding:12px 14px">
+    <div style="font-size:8px;font-weight:700;text-transform:uppercase;letter-spacing:.12em;color:#4A9FCA;margin-bottom:8px">Montage financier</div>
+    <div style="margin-bottom:5px"><div style="font-size:8px;text-transform:uppercase;letter-spacing:.08em;color:#1A1612">Apport</div><div style="font-size:11px;font-weight:600">${fEB(apport)}</div></div>
+    <div style="margin-bottom:5px"><div style="font-size:8px;text-transform:uppercase;letter-spacing:.08em;color:#1A1612">Crédit</div><div style="font-size:11px;font-weight:600">${fEB(montantCredit)}</div></div>
+    <div style="margin-bottom:5px"><div style="font-size:8px;text-transform:uppercase;letter-spacing:.08em;color:#1A1612">Taux · Durée</div><div style="font-size:11px;font-weight:600">${f.taux} % · ${duree} ans</div></div>
+    <div><div style="font-size:8px;text-transform:uppercase;letter-spacing:.08em;color:#1A1612">Mensualité</div><div style="font-size:13px;font-weight:700;color:#1A2D45">${fEB(mensualite)}/mois</div></div>
+  </div>
+  <div style="flex:1;background:#EDE7DC;border-radius:8px;padding:12px 14px">
+    <div style="font-size:8px;font-weight:700;text-transform:uppercase;letter-spacing:.12em;color:#4A9FCA;margin-bottom:8px">Exploitation (est. moy.)</div>
+    <div style="margin-bottom:5px"><div style="font-size:8px;text-transform:uppercase;letter-spacing:.08em;color:#1A1612">Régime fiscal</div><div style="font-size:11px;font-weight:600">${regimeLabel}</div></div>
+    <div style="margin-bottom:5px"><div style="font-size:8px;text-transform:uppercase;letter-spacing:.08em;color:#1A1612">Loyers annuels</div><div style="font-size:11px;font-weight:600">${fEB(loyerAnnuel)}</div></div>
+    <div style="margin-bottom:5px"><div style="font-size:8px;text-transform:uppercase;letter-spacing:.08em;color:#1A1612">Charges annuelles</div><div style="font-size:11px;font-weight:600">${fEB(chargesAnnuelles)}</div></div>
+    <div><div style="font-size:8px;text-transform:uppercase;letter-spacing:.08em;color:#1A1612">NOI</div><div style="font-size:13px;font-weight:700;color:#1A2D45">${fEB(noi)}</div></div>
+  </div>
+</div>
+
+<div class="kpi-row">
+  <div class="kpi">
+    <div class="kpi-lbl">Coût total du projet</div>
+    <div class="kpi-val">${fEB(investTotal)}</div>
+    <div class="kpi-sub">acquisition + frais</div>
+  </div>
+  <div class="kpi">
+    <div class="kpi-lbl">Financement / Coût</div>
+    <div class="kpi-val">${fP(ltc, 1)}</div>
+    <div class="kpi-sub">LTC — loan-to-cost</div>
+  </div>
+  <div class="kpi">
+    <div class="kpi-lbl">DSCR — Couverture dette</div>
+    <div class="kpi-val" style="color:${dscrColor}">${fX(dscr, 2)}x</div>
+    <div class="kpi-sub">${dscrLabel} · est. moyenne</div>
+  </div>
+  <div class="kpi">
+    <div class="kpi-lbl">Cash-flow après fiscalité</div>
+    <div class="kpi-val" style="color:${cfApresImpot >= 0 ? "#4ADE80" : "#FCA5A5"}">${fEB(cfApresImpot / 12)}/mois</div>
+    <div class="kpi-sub">année 1 · ${regimeLabel} · est. moy.</div>
+  </div>
+</div>
+</div>`;
+    })() : "";
 
     // Annexe B rows
     const annexeMaxDuree = annexeCols.length > 0 ? Math.max(...annexeCols.map(c => c.duree)) : 0;
@@ -1280,9 +1583,6 @@ ${!isMicro && annexeCols.length > 0 ? `<div class="page landscape">
     const annexeBHeaderSub = annexeCols.map(() =>
       `<th style="font-size:8px;background:#3a1509;padding:4px 5px">Amort.</th><th style="font-size:8px;background:#3a1509;padding:4px 5px;border-right:1px solid rgba(255,255,255,0.1)">Reste</th>`
     ).join("");
-
-    const bienLabel = bienInfo.type === "ap" ? "Appartement" : bienInfo.type === "ma" ? "Maison" : "Immeuble";
-    const regimeLabel = isMicro ? "Micro-BIC" : "Régime réel simplifié";
 
     const css = `
 @page{size:A4;margin:0}
@@ -1348,7 +1648,9 @@ table.tbl tr.total td{background:rgba(26,45,69,.07);font-weight:700}
   <button onclick="window.print()" style="background:#4A9FCA;color:#1A2D45;border:none;border-radius:6px;padding:8px 20px;font-size:12px;font-weight:700;cursor:pointer">⬇ Imprimer / Enregistrer en PDF</button>
 </div>
 
-<!-- PAGE 1 — COUVERTURE -->
+${saisonnierBanquePagesHtml}
+
+${!isSaisonnier ? `<!-- PAGE 1 — COUVERTURE -->
 <div class="page">
 <div class="hdr">
   <div>
@@ -1415,12 +1717,12 @@ table.tbl tr.total td{background:rgba(26,45,69,.07);font-weight:700}
 <div class="beige-note" style="margin-top:4px">
   <strong>Objet du dossier :</strong> Ce document présente l'analyse financière de l'investissement locatif meublé (LMNP) soumis à financement bancaire. Les projections sont réalisées en <strong>${regimeLabel}</strong> sur ${totalYears} ans. Loyers, charges et valeur du bien supposés constants. TMI : <strong>${tmi} %</strong> + prélèvements sociaux <strong>18,6 %</strong>. Simulation indicative — ne constitue pas un conseil fiscal ou financier.
 </div>
-</div>
+</div>` : ""}
 
 <!-- PAGE 2 — RÉSUMÉ EXÉCUTIF -->
 <div class="page">
-<div class="hdr"><div><div class="hdr-brand"><span class="hdr-light">tout</span><span class="hdr-bold">lmnp</span></div><div class="hdr-sub">Dossier de Financement · LMNP</div></div><div class="hdr-right">${today} · ${regimeLabel}</div></div>
-<h2 class="ch"><span class="num">1.</span>Résumé exécutif</h2>
+<div class="hdr"><div><div class="hdr-brand"><span class="hdr-light">tout</span><span class="hdr-bold">lmnp</span></div><div class="hdr-sub">Dossier de Financement · LMNP${isSaisonnier ? " · Estimation Moyenne" : ""}</div></div><div class="hdr-right">${today} · ${regimeLabel}</div></div>
+<h2 class="ch"><span class="num">1.</span>Résumé exécutif${isSaisonnier ? " <span style=\"font-size:9px;font-weight:400;color:#4A9FCA;margin-left:6px\">(Estimation Moyenne)</span>" : ""}</h2>
 
 <div class="two-col" style="margin-bottom:12px">
   <div>
