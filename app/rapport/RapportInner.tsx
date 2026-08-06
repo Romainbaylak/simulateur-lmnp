@@ -2232,7 +2232,7 @@ ${!isMicro && annexeCols.length > 0 ? `
 
         {/* LEFT HALF — rapport buttons */}
         <div className="flex-[3] flex flex-col items-center justify-center px-10 py-14 relative">
-          <div className="w-full max-w-lg">
+          <div style={{ width: "100%", maxWidth: 520 }}>
             <div className="flex items-center gap-4 mb-8">
               <div className="w-11 h-11 rounded-full flex items-center justify-center text-lg font-bold flex-shrink-0"
                 style={{ background: "#1A7A52", color: "#fff" }}>✓</div>
@@ -2241,16 +2241,16 @@ ${!isMicro && annexeCols.length > 0 ? `
               </h1>
             </div>
 
-            {/* 4 buttons — single column for full width */}
-            <div className="flex flex-col gap-3">
+            {/* PDF row — side by side */}
+            <div className="grid grid-cols-2 gap-3 mb-3">
 
               {/* Synthèse PDF */}
               <button onClick={() => generatePdf("synthese-pdf")}
                 className="rounded-xl flex items-center gap-3 text-left transition-all hover:scale-[1.01] active:scale-[0.99]"
-                style={{ background: "#6B2D12", padding: "16px 22px", border: "none", cursor: "pointer" }}>
+                style={{ background: "#6B2D12", padding: "16px 18px", border: "none", cursor: "pointer" }}>
                 <span className="text-xs font-bold px-2.5 py-0.5 rounded-full flex-shrink-0"
                   style={{ background: "#C95B2A", color: "#F5F0E8" }}>PDF</span>
-                <span className="text-sm font-bold leading-tight flex-1" style={{ color: "#F5F0E8" }}>
+                <span className="text-sm font-bold leading-tight flex-1 whitespace-nowrap" style={{ color: "#F5F0E8" }}>
                   Synthèse d&apos;investissement
                 </span>
                 <span style={{ color: "#C95B2A", fontSize: 18, fontWeight: 800, lineHeight: 1, flexShrink: 0 }}>→</span>
@@ -2259,25 +2259,30 @@ ${!isMicro && annexeCols.length > 0 ? `
               {/* Banque PDF */}
               <button onClick={() => generatePdf("banque-pdf")}
                 className="rounded-xl flex items-center gap-3 text-left transition-all hover:scale-[1.01] active:scale-[0.99]"
-                style={{ background: "#1A2D45", padding: "16px 22px", border: "none", cursor: "pointer" }}>
+                style={{ background: "#1A2D45", padding: "16px 18px", border: "none", cursor: "pointer" }}>
                 <span className="text-xs font-bold px-2.5 py-0.5 rounded-full flex-shrink-0"
                   style={{ background: "#4A9FCA", color: "#1A2D45" }}>PDF</span>
-                <span className="text-sm font-bold leading-tight flex-1" style={{ color: "#F5F0E8" }}>
+                <span className="text-sm font-bold leading-tight flex-1 whitespace-nowrap" style={{ color: "#F5F0E8" }}>
                   Synthèse financière – Banque
                 </span>
                 <span style={{ color: "#4A9FCA", fontSize: 18, fontWeight: 800, lineHeight: 1, flexShrink: 0 }}>→</span>
               </button>
 
+            </div>
+
+            {/* Word row — side by side, locked */}
+            <div className="grid grid-cols-2 gap-3">
+
               {/* Synthèse Word — locked */}
               <div className="rounded-xl flex items-center gap-3"
-                style={{ background: "#EDE7DC", padding: "16px 22px", opacity: 0.45, cursor: "not-allowed" }}>
+                style={{ background: "#EDE7DC", padding: "16px 18px", opacity: 0.45, cursor: "not-allowed" }}>
                 <div className="flex items-center gap-1.5 flex-shrink-0">
                   <span className="text-xs font-bold px-2.5 py-0.5 rounded-full"
                     style={{ background: "rgba(42,112,128,0.18)", color: "#2A7080" }}>Word</span>
                   <span className="text-xs font-bold px-2 py-0.5 rounded-full"
                     style={{ background: "#1A1612", color: "#F5F0E8" }}>Pro</span>
                 </div>
-                <span className="text-sm font-bold leading-tight flex-1" style={{ color: "#1A1612" }}>
+                <span className="text-sm font-bold leading-tight flex-1 whitespace-nowrap" style={{ color: "#1A1612" }}>
                   Synthèse d&apos;investissement
                 </span>
                 <span style={{ fontSize: 16, flexShrink: 0 }}>🔒</span>
@@ -2285,14 +2290,14 @@ ${!isMicro && annexeCols.length > 0 ? `
 
               {/* Banque Word — locked */}
               <div className="rounded-xl flex items-center gap-3"
-                style={{ background: "#EDE7DC", padding: "16px 22px", opacity: 0.45, cursor: "not-allowed" }}>
+                style={{ background: "#EDE7DC", padding: "16px 18px", opacity: 0.45, cursor: "not-allowed" }}>
                 <div className="flex items-center gap-1.5 flex-shrink-0">
                   <span className="text-xs font-bold px-2.5 py-0.5 rounded-full"
                     style={{ background: "rgba(42,112,128,0.18)", color: "#2A7080" }}>Word</span>
                   <span className="text-xs font-bold px-2 py-0.5 rounded-full"
                     style={{ background: "#1A1612", color: "#F5F0E8" }}>Pro</span>
                 </div>
-                <span className="text-sm font-bold leading-tight flex-1" style={{ color: "#1A1612" }}>
+                <span className="text-sm font-bold leading-tight flex-1 whitespace-nowrap" style={{ color: "#1A1612" }}>
                   Synthèse financière – Banque
                 </span>
                 <span style={{ fontSize: 16, flexShrink: 0 }}>🔒</span>
