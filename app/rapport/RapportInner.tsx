@@ -513,11 +513,12 @@ ${fiscalTable}
 
 <div class="info-grid">
   <div class="info-col">
-    <div class="info-col-title">Le bien et les revenus</div>
-    <div class="info-row"><div class="ir-lbl">Loyer HC mensuel (est. moy.)</div><div class="ir-val orange">${fE(loyerAnnuel / 12)}/mois</div></div>
-    <div class="info-row"><div class="ir-lbl">Loyer HC annuel (est. moy.)</div><div class="ir-val">${fE(loyerAnnuel)}</div></div>
-    <div class="info-row"><div class="ir-lbl">Prix nuit · Taux occupation</div><div class="ir-val">${fE(prixN)} · ${tauxOccMoyen}%</div></div>
+    <div class="info-col-title">Revenus (estimation moyenne)</div>
+    <div class="info-row"><div class="ir-lbl">Prix par nuitée</div><div class="ir-val orange">${fE(prixN)}</div></div>
+    <div class="info-row"><div class="ir-lbl">Recettes moy./mois</div><div class="ir-val orange">${fE(loyerAnnuel / 12)}</div></div>
+    <div class="info-row"><div class="ir-lbl">Recettes moy./an</div><div class="ir-val">${fE(loyerAnnuel)}</div></div>
     <div class="info-row"><div class="ir-lbl">Charges propriétaire/an</div><div class="ir-val">${fE(chargesAnnuelles)}</div></div>
+    ${assuranceEmprunteurAnnuel > 0 ? `<div class="info-row"><div class="ir-lbl">Ass. emprunteur/an</div><div class="ir-val">${fE(assuranceEmprunteurAnnuel)}</div></div>` : ""}
   </div>
   <div class="info-col">
     <div class="info-col-title">Acquisition</div>
@@ -590,10 +591,10 @@ h2.ch .num{color:#C95B2A;margin-right:5px}
 .info-col{flex:1;background:#EDE7DC;border-radius:7px;padding:12px 14px}
 .info-col.orange{background:rgba(201,91,42,0.08);border:1px solid rgba(201,91,42,0.2)}
 .info-col-title{font-size:8px;font-weight:700;text-transform:uppercase;letter-spacing:.12em;color:#1A1612;margin-bottom:10px}
-.info-row{margin-bottom:7px}
+.info-row{display:flex;justify-content:space-between;align-items:baseline;gap:8px;margin-bottom:5px}
 .info-row:last-child{margin-bottom:0}
-.ir-lbl{font-size:8px;text-transform:uppercase;letter-spacing:.1em;color:#1A1612}
-.ir-val{font-size:11px;font-weight:600;color:#1A1612}
+.ir-lbl{font-size:8px;text-transform:uppercase;letter-spacing:.09em;color:rgba(26,22,18,0.55);flex-shrink:0}
+.ir-val{font-size:10px;font-weight:700;color:#1A1612;text-align:right}
 .ir-val.orange{color:#C95B2A}
 .kpi-row{display:flex;gap:8px;margin-bottom:14px}
 .kpi{flex:1;background:#4E1F12;color:#F5F0E8;border-radius:7px;padding:12px 10px;text-align:center}
@@ -1565,11 +1566,12 @@ ${fiscalTableBanque}
     <div><div style="font-size:8px;text-transform:uppercase;letter-spacing:.08em;color:#1A1612">Mensualité</div><div style="font-size:13px;font-weight:700;color:#1A2D45">${fEB(mensualite)}/mois</div></div>
   </div>
   <div style="flex:1;background:#EDE7DC;border-radius:8px;padding:12px 14px">
-    <div style="font-size:8px;font-weight:700;text-transform:uppercase;letter-spacing:.12em;color:#4A9FCA;margin-bottom:8px">Exploitation (est. moy.)</div>
-    <div style="margin-bottom:5px"><div style="font-size:8px;text-transform:uppercase;letter-spacing:.08em;color:#1A1612">Régime fiscal</div><div style="font-size:11px;font-weight:600">${regimeLabel}</div></div>
-    <div style="margin-bottom:5px"><div style="font-size:8px;text-transform:uppercase;letter-spacing:.08em;color:#1A1612">Loyers annuels</div><div style="font-size:11px;font-weight:600">${fEB(loyerAnnuel)}</div></div>
-    <div style="margin-bottom:5px"><div style="font-size:8px;text-transform:uppercase;letter-spacing:.08em;color:#1A1612">Charges annuelles</div><div style="font-size:11px;font-weight:600">${fEB(chargesAnnuelles)}</div></div>
-    <div><div style="font-size:8px;text-transform:uppercase;letter-spacing:.08em;color:#1A1612">NOI</div><div style="font-size:13px;font-weight:700;color:#1A2D45">${fEB(noi)}</div></div>
+    <div style="font-size:8px;font-weight:700;text-transform:uppercase;letter-spacing:.12em;color:#4A9FCA;margin-bottom:8px">Revenus (est. moy.)</div>
+    <div style="display:flex;justify-content:space-between;align-items:baseline;gap:6px;margin-bottom:5px"><div style="font-size:8px;text-transform:uppercase;letter-spacing:.08em;color:rgba(26,22,18,.55)">Prix par nuitée</div><div style="font-size:10px;font-weight:700;color:#4A9FCA">${fEB(parseFloat(prixNuitee) || 0)}</div></div>
+    <div style="display:flex;justify-content:space-between;align-items:baseline;gap:6px;margin-bottom:5px"><div style="font-size:8px;text-transform:uppercase;letter-spacing:.08em;color:rgba(26,22,18,.55)">Recettes moy./mois</div><div style="font-size:10px;font-weight:700;color:#4A9FCA">${fEB(loyerAnnuel / 12)}</div></div>
+    <div style="display:flex;justify-content:space-between;align-items:baseline;gap:6px;margin-bottom:5px"><div style="font-size:8px;text-transform:uppercase;letter-spacing:.08em;color:rgba(26,22,18,.55)">Recettes moy./an</div><div style="font-size:10px;font-weight:700">${fEB(loyerAnnuel)}</div></div>
+    <div style="display:flex;justify-content:space-between;align-items:baseline;gap:6px;margin-bottom:5px"><div style="font-size:8px;text-transform:uppercase;letter-spacing:.08em;color:rgba(26,22,18,.55)">Charges propriétaire/an</div><div style="font-size:10px;font-weight:700">${fEB(chargesAnnuelles)}</div></div>
+    <div style="display:flex;justify-content:space-between;align-items:baseline;gap:6px"><div style="font-size:8px;text-transform:uppercase;letter-spacing:.08em;color:rgba(26,22,18,.55)">NOI</div><div style="font-size:12px;font-weight:700;color:#1A2D45">${fEB(noi)}</div></div>
   </div>
 </div>
 
