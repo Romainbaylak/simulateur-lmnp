@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback, useRef } from "react";
+import { useUser } from "@clerk/nextjs";
 import Link from "next/link";
 import PopupPaiementUnite from "./PopupPaiementUnite";
 import PopupAmortLimite from "./PopupAmortLimite";
@@ -200,6 +201,7 @@ const LABEL = "block text-[11px] font-medium uppercase tracking-[0.14em] text-[r
 const AUTO_STYLE = { ...INPUT_STYLE, background: "rgba(201,91,42,0.06)" };
 
 export default function Simulateur({ onShowResults }: { onShowResults?: () => void } = {}) {
+  const { isSignedIn } = useUser();
   const [form, setForm] = useState<FormState>({
     type: "ap",
     surface: "",
@@ -2715,6 +2717,7 @@ ${annexeTable}
       {showAmortLimite && <PopupAmortLimite onClose={() => setShowAmortLimite(false)} />}
       {showSauvegarder && (
         <PopupSauvegarder
+          isSignedIn={!!isSignedIn}
           isPro={getPlan() === "starter" || getPlan() === "pro"}
           simulationData={{ form, amortPct, amortMode, amortDureeEnsemble, amortDureeMobilier, amortDureeTravaux, amortDureeNotaire, composants, savedAt: Date.now(), isSaisonnier, prixNuitee, tauxOccBas, tauxOccMoyen, tauxOccHaut, resultatsTriple, selectedRegime }}
           onClose={() => setShowSauvegarder(false)}
