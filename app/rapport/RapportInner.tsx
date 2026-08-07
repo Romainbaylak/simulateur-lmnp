@@ -1649,6 +1649,13 @@ table.tbl tr.total td{background:rgba(26,45,69,.07);font-weight:700}
 .green{color:#1A7A52}.red{color:#B03A2A}.blue{color:#1A2D45}.teal{color:#4A9FCA}
 .note{background:rgba(74,159,202,.07);border:1px solid rgba(74,159,202,.2);border-radius:6px;padding:9px 12px;font-size:9px;line-height:1.6;color:#1A1612;margin-top:8px}
 .beige-note{background:#EDE7DC;border-radius:6px;padding:9px 12px;font-size:9px;line-height:1.6;color:#1A1612;margin-top:8px}
+.info-grid{display:flex;gap:10px;margin-bottom:14px}
+.info-col{flex:1;background:#EDE7DC;border-radius:7px;padding:12px 14px}
+.info-col-title{font-size:8px;font-weight:700;text-transform:uppercase;letter-spacing:.12em;color:#1A2D45;margin-bottom:10px}
+.info-row{display:flex;justify-content:space-between;align-items:baseline;gap:8px;margin-bottom:5px}
+.info-row:last-child{margin-bottom:0}
+.ir-lbl{font-size:8px;text-transform:uppercase;letter-spacing:.09em;color:rgba(26,22,18,0.55);flex-shrink:0}
+.ir-val{font-size:10px;font-weight:700;color:#1A1612;text-align:right}
 .two-col{display:flex;gap:12px}
 .two-col>div{flex:1}
 .section-label{font-size:8px;font-weight:700;text-transform:uppercase;letter-spacing:.12em;color:#4A9FCA;margin-bottom:5px}
