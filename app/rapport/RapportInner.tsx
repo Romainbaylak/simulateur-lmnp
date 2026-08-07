@@ -562,14 +562,14 @@ ${yr % 5 === 0 || yr === 1 ? `<text x="${(bx + bW / 2).toFixed(1)}" y="${(H - 6)
 @page landscape{size:A4 landscape;margin:0}
 *{box-sizing:border-box;margin:0;padding:0}
 html,body{background:#5a5a5a;margin:0;padding:0;font-family:'Helvetica Neue',Arial,sans-serif;color:#1A1612;font-size:11px;line-height:1.55;-webkit-print-color-adjust:exact;print-color-adjust:exact}
-body{padding:24px 0 32px}
+body{padding:0 0 32px}
 .page{width:210mm;min-height:297mm;background:#F5F0E8;margin:0 auto 24px;padding:14mm 15mm;box-shadow:0 8px 40px rgba(0,0,0,0.5);position:relative}
 .page.landscape{width:297mm;min-height:210mm;page:landscape}
-.no-print{position:sticky;top:0;z-index:100;background:#3a1509;padding:10px 20px;display:flex;align-items:center;justify-content:space-between;margin-bottom:24px}
+.no-print{position:sticky;top:0;z-index:100;background:#3a1509;padding:10px 20px;display:flex;align-items:center;justify-content:space-between;margin-bottom:0}
 .hdr{display:flex;align-items:center;justify-content:space-between;background:#4E1F12;color:#F5F0E8;
-  padding:10px 16px;border-radius:6px;margin-bottom:18px}
+  padding:6px 14px;border-radius:5px;margin-bottom:14px}
 .hdr-brand{display:flex;align-items:baseline;gap:0}
-.hdr-light{font-weight:300;font-size:17px}.hdr-bold{font-weight:700;font-size:17px;color:#C95B2A}
+.hdr-light{font-weight:300;font-size:14px}.hdr-bold{font-weight:700;font-size:14px;color:#C95B2A}
 .hdr-sub{font-size:8px;letter-spacing:.12em;opacity:.5;text-transform:uppercase;margin-top:2px}
 .hdr-right{font-size:9px;opacity:.5;text-align:right}
 h2.ch{font-size:12px;font-weight:700;color:#4E1F12;border-bottom:2px solid #C95B2A;padding-bottom:5px;margin:22px 0 10px;letter-spacing:-.01em}
@@ -1620,13 +1620,13 @@ ${!isMicro && annexeCols.length > 0 ? `<div class="page landscape">
 @page landscape{size:A4 landscape;margin:0}
 *{box-sizing:border-box;margin:0;padding:0}
 html,body{background:#4a4a4a;margin:0;padding:0;font-family:'Helvetica Neue',Arial,sans-serif;color:#1A1612;font-size:11px;line-height:1.5;-webkit-print-color-adjust:exact;print-color-adjust:exact}
-body{padding:24px 0 32px}
+body{padding:0 0 32px}
 .page{width:210mm;min-height:297mm;background:#F5F0E8;margin:0 auto 24px;padding:13mm 14mm;box-shadow:0 8px 40px rgba(0,0,0,0.5);position:relative}
 .page.landscape{width:297mm;min-height:210mm;page:landscape}
-.no-print{position:sticky;top:0;z-index:100;background:#1A2D45;padding:10px 20px;display:flex;align-items:center;justify-content:space-between;margin-bottom:24px}
-.hdr{display:flex;align-items:center;justify-content:space-between;background:#1A2D45;color:#F5F0E8;padding:10px 16px;border-radius:6px;margin-bottom:16px}
+.no-print{position:sticky;top:0;z-index:100;background:#1A2D45;padding:10px 20px;display:flex;align-items:center;justify-content:space-between;margin-bottom:0}
+.hdr{display:flex;align-items:center;justify-content:space-between;background:#1A2D45;color:#F5F0E8;padding:6px 14px;border-radius:5px;margin-bottom:14px}
 .hdr-brand{display:flex;align-items:baseline}
-.hdr-light{font-weight:300;font-size:16px}.hdr-bold{font-weight:700;font-size:16px;color:#4A9FCA}
+.hdr-light{font-weight:300;font-size:14px}.hdr-bold{font-weight:700;font-size:14px;color:#4A9FCA}
 .hdr-sub{font-size:8px;letter-spacing:.12em;opacity:.5;text-transform:uppercase;margin-top:2px}
 .hdr-right{font-size:9px;opacity:.55;text-align:right;line-height:1.6}
 h2.ch{font-size:12px;font-weight:700;color:#1A2D45;border-bottom:2px solid #4A9FCA;padding-bottom:4px;margin:18px 0 10px;letter-spacing:-.01em}
