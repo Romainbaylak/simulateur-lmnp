@@ -162,7 +162,8 @@ export default function PopupSauvegarder({ isPro, isSignedIn, simulationData, on
                 Crée un compte gratuit pour sauvegarder 1 simulation et la retrouver à tout moment.
               </p>
             </div>
-            <SignUpButton mode="modal" afterSignUpUrl={typeof window !== "undefined" ? window.location.href : "/"}>
+            <SignUpButton mode="modal" fallbackRedirectUrl="/">
+
               <button
                 className="block w-full py-3 text-center rounded-lg font-medium text-sm transition-opacity hover:opacity-[0.88] mb-3"
                 style={{ backgroundColor: "#C95B2A", color: "#F5F0E8" }}
