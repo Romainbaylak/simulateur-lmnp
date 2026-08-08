@@ -29,9 +29,11 @@ function openSimulation(sim: SavedSimulation) {
     amortDureeNotaire: data.amortDureeNotaire,
     composants: data.composants,
     selectedRegime: data.selectedRegime,
+    resultats: data.resultats,
+    resultatsTriple: data.resultatsTriple,
+    autoShowResults: true,
   }));
-  sessionStorage.setItem("lmnp_simulation_data", JSON.stringify({ ...data, savedAt: Date.now() }));
-  window.location.href = `/rapport?session_id=saved_${Date.now()}`;
+  window.location.href = "/#simulateur";
 }
 
 function SimulationCard({ sim, onDelete }: { sim: SavedSimulation; onDelete: () => void }) {
@@ -167,6 +169,7 @@ function SimulationCard({ sim, onDelete }: { sim: SavedSimulation; onDelete: () 
               composants: data.composants,
               selectedRegime: data.selectedRegime,
             }));
+            // No autoShowResults — user wants to edit the form
           }}
           className="text-sm font-medium px-4 py-2.5 rounded-md transition-opacity hover:opacity-80"
           style={{ background: "#EDE7DC", color: "#4E1F12" }}
@@ -181,11 +184,26 @@ function SimulationCard({ sim, onDelete }: { sim: SavedSimulation; onDelete: () 
 export default function MesSimulationsClient() {
   const [sims, setSims] = useState<SavedSimulation[]>([]);
   const [loaded, setLoaded] = useState(false);
+  const [query, setQuery] = useState("");
 
   useEffect(() => {
     setSims(getSavedSimulations());
     setLoaded(true);
   }, []);
+
+  const filtered = query.trim()
+    ? sims.filter((s) => {
+        const q = query.toLowerCase();
+        const data = s.data as Record<string, unknown>;
+        const form = (data.form ?? {}) as Record<string, unknown>;
+        return (
+          s.name.toLowerCase().includes(q) ||
+          String(form.prix ?? "").includes(q) ||
+          String(form.surface ?? "").includes(q) ||
+          String((form.ville as string) ?? "").toLowerCase().includes(q)
+        );
+      })
+    : sims;
 
   function deleteSim(name: string, savedAt: number) {
     const updated = sims.filter((s) => !(s.name === name && s.savedAt === savedAt));
@@ -216,16 +234,42 @@ export default function MesSimulationsClient() {
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex items-center justify-between gap-4 mb-6 flex-wrap">
         <h2 className="font-semibold text-lg" style={{ color: "#4E1F12" }}>
-          {sims.length} simulation{sims.length > 1 ? "s" : ""} sauvegardée{sims.length > 1 ? "s" : ""}
+          {filtered.length} simulation{filtered.length > 1 ? "s" : ""} sauvegardée{filtered.length > 1 ? "s" : ""}
         </h2>
-        <Link href="/#simulateur" className="text-sm font-medium transition-opacity hover:opacity-80" style={{ color: "#C95B2A" }}>
-          + Nouvelle simulation
-        </Link>
+        <div className="flex items-center gap-3 flex-1 justify-end">
+          {/* Search bar */}
+          <div className="relative" style={{ maxWidth: 260, width: "100%" }}>
+            <svg
+              className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none"
+              width="15" height="15" viewBox="0 0 20 20" fill="none"
+              style={{ color: "rgba(26,22,18,0.35)" }}
+            >
+              <circle cx="8.5" cy="8.5" r="5.75" stroke="currentColor" strokeWidth="1.5" />
+              <path d="M13 13l3.5 3.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+            </svg>
+            <input
+              type="text"
+              placeholder="Rechercher…"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              className="w-full pl-9 pr-3 py-2 text-sm rounded-lg focus:outline-none focus:ring-1 focus:ring-[#C95B2A]"
+              style={{ background: "#EDE7DC", border: "0.5px solid rgba(26,22,18,0.12)", color: "#1A1612" }}
+            />
+          </div>
+          <Link href="/#simulateur" className="text-sm font-medium transition-opacity hover:opacity-80 whitespace-nowrap" style={{ color: "#C95B2A" }}>
+            + Nouvelle simulation
+          </Link>
+        </div>
       </div>
       <div className="grid gap-5 md:grid-cols-2">
-        {sims.map((sim) => (
+        {filtered.length === 0 && (
+          <p className="col-span-2 text-sm py-8 text-center" style={{ color: "rgba(26,22,18,0.4)" }}>
+            Aucune simulation ne correspond à votre recherche.
+          </p>
+        )}
+        {filtered.map((sim) => (
           <SimulationCard
             key={`${sim.name}-${sim.savedAt}`}
             sim={sim}

@@ -298,6 +298,12 @@ export default function Simulateur({ onShowResults }: { onShowResults?: () => vo
       if (d.amortDureeNotaire != null) { setAmortDureeNotaire(d.amortDureeNotaire); setInputNotaire(String(d.amortDureeNotaire)); }
       if (d.composants?.length) setComposants(d.composants);
       if (d.selectedRegime != null) setSelectedRegime(d.selectedRegime);
+      if (d.resultats && d.autoShowResults) {
+        setResultats(d.resultats);
+        if (d.resultatsTriple) setResultatsTriple(d.resultatsTriple);
+        if (d.loyerSlider) setLoyerSlider(d.loyerSlider);
+        setShowResults(true);
+      }
     } catch { /* ignore */ }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -2215,7 +2221,7 @@ export default function Simulateur({ onShowResults }: { onShowResults?: () => vo
         <PopupSauvegarder
           isSignedIn={!!isSignedIn}
           plan={(getPlan() || "free") as Plan}
-          simulationData={{ form, amortPct, amortMode, amortDureeEnsemble, amortDureeMobilier, amortDureeTravaux, amortDureeNotaire, composants, savedAt: Date.now(), isSaisonnier, prixNuitee, tauxOccBas, tauxOccMoyen, tauxOccHaut, resultatsTriple, selectedRegime }}
+          simulationData={{ form, amortPct, amortMode, amortDureeEnsemble, amortDureeMobilier, amortDureeTravaux, amortDureeNotaire, composants, savedAt: Date.now(), isSaisonnier, prixNuitee, tauxOccBas, tauxOccMoyen, tauxOccHaut, resultatsTriple, resultats, selectedRegime }}
           onClose={() => setShowSauvegarder(false)}
           onSaved={() => setShowSauvegarder(false)}
         />
