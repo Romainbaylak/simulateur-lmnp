@@ -246,6 +246,7 @@ export default function PopupSauvegarder({ plan, isSignedIn, simulationData, onC
               <div className="space-y-2 mb-4 max-h-60 overflow-y-auto">
                 {existing.map(sim => {
                   const bi = (sim.data.bienInfo ?? {}) as Record<string, unknown>;
+                  const biVille = typeof bi.ville === "string" ? bi.ville : "";
                   const dateStr = new Date(sim.savedAt).toLocaleDateString("fr-FR", { day: "numeric", month: "short", year: "numeric" });
                   return (
                     <button key={sim.name} onClick={() => saveReplace(sim.name)}
@@ -256,7 +257,7 @@ export default function PopupSauvegarder({ plan, isSignedIn, simulationData, onC
                           <div className="font-semibold text-sm" style={{ color: "#4E1F12" }}>{sim.name}</div>
                           <div className="text-[11px] mt-0.5 flex items-center gap-2" style={{ color: "rgba(26,22,18,0.45)" }}>
                             <span>{dateStr}</span>
-                            {bi.ville && <span>· {bi.ville as string}</span>}
+                            {biVille && <span>· {biVille}</span>}
                           </div>
                         </div>
                         <span className="text-xs font-medium px-2 py-0.5 rounded opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0 mt-0.5"
