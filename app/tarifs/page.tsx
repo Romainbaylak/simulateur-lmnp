@@ -96,7 +96,7 @@ export default function TarifsPage() {
                 "Simulations illimitées",
                 "Tableau d'amortissement ajustable",
                 "Export PDF (3 par semaine)",
-                "Sauvegarde jusqu'à 6 simulations",
+                "Sauvegarde jusqu'à 10 simulations",
                 "Comparaison réel vs micro-BIC détaillée",
                 "Tout le plan Gratuit inclus",
               ].map(f => (

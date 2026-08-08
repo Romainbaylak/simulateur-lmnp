@@ -6,7 +6,7 @@ import Link from "next/link";
 import PopupPaiementUnite from "./PopupPaiementUnite";
 import PopupAmortLimite from "./PopupAmortLimite";
 import PopupPDFStarter from "./PopupPDFStarter";
-import PopupSauvegarder from "./PopupSauvegarder";
+import PopupSauvegarder, { type Plan } from "./PopupSauvegarder";
 
 type TypeBien = "ap" | "ma";
 type TMI = 0 | 11 | 30 | 41 | 45;
@@ -2214,7 +2214,7 @@ export default function Simulateur({ onShowResults }: { onShowResults?: () => vo
       {showSauvegarder && (
         <PopupSauvegarder
           isSignedIn={!!isSignedIn}
-          isPro={getPlan() === "starter" || getPlan() === "pro"}
+          plan={(getPlan() || "free") as Plan}
           simulationData={{ form, amortPct, amortMode, amortDureeEnsemble, amortDureeMobilier, amortDureeTravaux, amortDureeNotaire, composants, savedAt: Date.now(), isSaisonnier, prixNuitee, tauxOccBas, tauxOccMoyen, tauxOccHaut, resultatsTriple, selectedRegime }}
           onClose={() => setShowSauvegarder(false)}
           onSaved={() => setShowSauvegarder(false)}
