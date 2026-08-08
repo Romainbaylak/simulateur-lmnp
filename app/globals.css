@@ -16,3 +16,8 @@ body {
 input[type="range"] {
   accent-color: #C95B2A;
 }
+
+/* Hide Clerk's orphan "ou" divider when OAuth buttons are absent (mobile) */
+.cl-dividerRow {
+  display: none !important;
+}
