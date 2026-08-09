@@ -298,6 +298,38 @@ export default function Simulateur({ onShowResults }: { onShowResults?: () => vo
       if (d.amortDureeNotaire != null) { setAmortDureeNotaire(d.amortDureeNotaire); setInputNotaire(String(d.amortDureeNotaire)); }
       if (d.composants?.length) setComposants(d.composants);
       if (d.selectedRegime != null) setSelectedRegime(d.selectedRegime);
+
+      // Ouverture depuis "Mes simulations" → recalcule et affiche le bilan
+      if (params.get("open") === "1") {
+        const f = d.form ?? form;
+        const aMode = d.amortMode ?? "ensemble";
+        const aPct = d.amortPct ?? amortPct;
+        const aDurEns = d.amortDureeEnsemble ?? amortDureeEnsemble;
+        const aComps = d.composants?.length ? d.composants : composants;
+        const aMob = d.amortDureeMobilier ?? amortDureeMobilier;
+        const aTrav = d.amortDureeTravaux ?? amortDureeTravaux;
+        const aNotaire = d.amortDureeNotaire ?? amortDureeNotaire;
+        if (d.isSaisonnier) {
+          const nuitee = parseFloat(d.prixNuitee) || 0;
+          const lBas   = nuitee * ((parseFloat(d.tauxOccBas)   || 0) / 100) * 365 / 12;
+          const lMoyen = nuitee * ((parseFloat(d.tauxOccMoyen) || 0) / 100) * 365 / 12;
+          const lHaut  = nuitee * ((parseFloat(d.tauxOccHaut)  || 0) / 100) * 365 / 12;
+          const rBas   = computeResultats(f, lBas,   aPct, aMode, aDurEns, aComps, true, aMob, aTrav, aNotaire);
+          const rMoyen = computeResultats(f, lMoyen, aPct, aMode, aDurEns, aComps, true, aMob, aTrav, aNotaire);
+          const rHaut  = computeResultats(f, lHaut,  aPct, aMode, aDurEns, aComps, true, aMob, aTrav, aNotaire);
+          setResultatsTriple({ bas: rBas, moyen: rMoyen, haut: rHaut });
+          setResultats(rMoyen);
+        } else {
+          const loyer = parseFloat(f.loyer) || 0;
+          setResultats(computeResultats(f, loyer, aPct, aMode, aDurEns, aComps, false, aMob, aTrav, aNotaire));
+        }
+        setShowResults(true);
+        scrollToResults.current = true;
+        // Nettoie le param sans recharger la page
+        const cleanUrl = new URL(window.location.href);
+        cleanUrl.searchParams.delete("open");
+        window.history.replaceState({}, "", cleanUrl.toString());
+      }
     } catch { /* ignore */ }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);

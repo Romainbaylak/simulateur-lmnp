@@ -14,12 +14,23 @@ function fE(n: number) {
 
 function openSimulation(sim: SavedSimulation) {
   const data = sim.data as Record<string, unknown>;
-  const sessionId = `saved_${Date.now()}`;
-  sessionStorage.setItem("lmnp_simulation_data", JSON.stringify({
-    ...data,
-    savedAt: Date.now(),
+  sessionStorage.setItem("lmnp_form_draft", JSON.stringify({
+    form: data.form,
+    isSaisonnier: data.isSaisonnier,
+    prixNuitee: data.prixNuitee,
+    tauxOccBas: data.tauxOccBas,
+    tauxOccMoyen: data.tauxOccMoyen,
+    tauxOccHaut: data.tauxOccHaut,
+    amortPct: data.amortPct,
+    amortMode: data.amortMode,
+    amortDureeEnsemble: data.amortDureeEnsemble,
+    amortDureeMobilier: data.amortDureeMobilier,
+    amortDureeTravaux: data.amortDureeTravaux,
+    amortDureeNotaire: data.amortDureeNotaire,
+    composants: data.composants,
+    selectedRegime: data.selectedRegime,
   }));
-  window.location.href = `/rapport?session_id=${sessionId}`;
+  window.location.href = "/?open=1#simulateur";
 }
 
 function SimulationCard({ sim, onDelete }: { sim: SavedSimulation; onDelete: () => void }) {
