@@ -260,6 +260,7 @@ export default function Simulateur({ onShowResults }: { onShowResults?: () => vo
   ]);
   const [resultats, setResultats] = useState<Resultats | null>(null);
   const [showResults, setShowResults] = useState(false);
+  const [pendingAutoSimulate, setPendingAutoSimulate] = useState<Record<string, unknown> | null>(null);
   const [showPayPopup, setShowPayPopup] = useState(false);
   const [showAmortLimite, setShowAmortLimite] = useState(false);
   const [showPDFStarter, setShowPDFStarter] = useState(false);
@@ -299,33 +300,9 @@ export default function Simulateur({ onShowResults }: { onShowResults?: () => vo
       if (d.composants?.length) setComposants(d.composants);
       if (d.selectedRegime != null) setSelectedRegime(d.selectedRegime);
 
-      // Ouverture depuis "Mes simulations" → recalcule et affiche le bilan
+      // Ouverture depuis "Mes simulations" → déclenche l'auto-simulation via état intermédiaire
       if (params.get("open") === "1") {
-        const f = d.form ?? form;
-        const aMode = d.amortMode ?? "ensemble";
-        const aPct = d.amortPct ?? amortPct;
-        const aDurEns = d.amortDureeEnsemble ?? amortDureeEnsemble;
-        const aComps = d.composants?.length ? d.composants : composants;
-        const aMob = d.amortDureeMobilier ?? amortDureeMobilier;
-        const aTrav = d.amortDureeTravaux ?? amortDureeTravaux;
-        const aNotaire = d.amortDureeNotaire ?? amortDureeNotaire;
-        if (d.isSaisonnier) {
-          const nuitee = parseFloat(d.prixNuitee) || 0;
-          const lBas   = nuitee * ((parseFloat(d.tauxOccBas)   || 0) / 100) * 365 / 12;
-          const lMoyen = nuitee * ((parseFloat(d.tauxOccMoyen) || 0) / 100) * 365 / 12;
-          const lHaut  = nuitee * ((parseFloat(d.tauxOccHaut)  || 0) / 100) * 365 / 12;
-          const rBas   = computeResultats(f, lBas,   aPct, aMode, aDurEns, aComps, true, aMob, aTrav, aNotaire);
-          const rMoyen = computeResultats(f, lMoyen, aPct, aMode, aDurEns, aComps, true, aMob, aTrav, aNotaire);
-          const rHaut  = computeResultats(f, lHaut,  aPct, aMode, aDurEns, aComps, true, aMob, aTrav, aNotaire);
-          setResultatsTriple({ bas: rBas, moyen: rMoyen, haut: rHaut });
-          setResultats(rMoyen);
-        } else {
-          const loyer = parseFloat(f.loyer) || 0;
-          setResultats(computeResultats(f, loyer, aPct, aMode, aDurEns, aComps, false, aMob, aTrav, aNotaire));
-        }
-        setShowResults(true);
-        scrollToResults.current = true;
-        // Nettoie le param sans recharger la page
+        setPendingAutoSimulate(d);
         const cleanUrl = new URL(window.location.href);
         cleanUrl.searchParams.delete("open");
         window.history.replaceState({}, "", cleanUrl.toString());
@@ -348,6 +325,39 @@ export default function Simulateur({ onShowResults }: { onShowResults?: () => vo
       amortPct, amortMode, amortDureeEnsemble,
       amortDureeMobilier, amortDureeTravaux, amortDureeNotaire,
       composants, selectedRegime]);
+
+  // Effet 2 : déclenché APRÈS le rendu avec le formulaire peuplé → calcule et affiche le bilan
+  useEffect(() => {
+    if (!pendingAutoSimulate) return;
+    const d = pendingAutoSimulate;
+    setPendingAutoSimulate(null);
+    const f = (d.form ?? {}) as FormState;
+    const aMode = (d.amortMode as "ensemble" | "composant") ?? "ensemble";
+    const aPct = (d.amortPct as number) ?? 0;
+    const aDurEns = (d.amortDureeEnsemble as number) ?? 20;
+    const aComps = (d.composants as { label: string; pct: number; duree: number }[]) ?? [];
+    const aMob = (d.amortDureeMobilier as number) ?? 10;
+    const aTrav = (d.amortDureeTravaux as number) ?? 20;
+    const aNotaire = (d.amortDureeNotaire as number) ?? 25;
+    if (d.isSaisonnier) {
+      const nuitee = parseFloat(d.prixNuitee as string) || 0;
+      const lBas   = nuitee * ((parseFloat(d.tauxOccBas   as string) || 0) / 100) * 365 / 12;
+      const lMoyen = nuitee * ((parseFloat(d.tauxOccMoyen as string) || 0) / 100) * 365 / 12;
+      const lHaut  = nuitee * ((parseFloat(d.tauxOccHaut  as string) || 0) / 100) * 365 / 12;
+      const rBas   = computeResultats(f, lBas,   aPct, aMode, aDurEns, aComps, true, aMob, aTrav, aNotaire);
+      const rMoyen = computeResultats(f, lMoyen, aPct, aMode, aDurEns, aComps, true, aMob, aTrav, aNotaire);
+      const rHaut  = computeResultats(f, lHaut,  aPct, aMode, aDurEns, aComps, true, aMob, aTrav, aNotaire);
+      setResultatsTriple({ bas: rBas, moyen: rMoyen, haut: rHaut });
+      setResultats(rMoyen);
+    } else {
+      const loyer = parseFloat((f as unknown as Record<string, string>).loyer) || 0;
+      setResultats(computeResultats(f, loyer, aPct, aMode, aDurEns, aComps, false, aMob, aTrav, aNotaire));
+    }
+    if (d.selectedRegime) setSelectedRegime(d.selectedRegime as "micro" | "reel" | null);
+    setShowResults(true);
+    scrollToResults.current = true;
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pendingAutoSimulate]);
 
   // Helpers pour lire le plan et les compteurs localStorage
   const getPlan = () => (typeof window !== "undefined" ? localStorage.getItem("lmnp_plan") : null);
