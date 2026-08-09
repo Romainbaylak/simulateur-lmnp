@@ -298,10 +298,12 @@ export default function Simulateur({ onShowResults }: { onShowResults?: () => vo
       if (d.amortDureeNotaire != null) { setAmortDureeNotaire(d.amortDureeNotaire); setInputNotaire(String(d.amortDureeNotaire)); }
       if (d.composants?.length) setComposants(d.composants);
       if (d.selectedRegime != null) setSelectedRegime(d.selectedRegime);
-      if (d.resultats && d.autoShowResults) {
-        setResultats(d.resultats);
-        if (d.resultatsTriple) setResultatsTriple(d.resultatsTriple);
-        if (d.loyerSlider) setLoyerSlider(d.loyerSlider);
+      if (d.autoShowResults && (d.resultats || d.resultatsTriple)) {
+        if (d.resultats) setResultats(d.resultats);
+        if (d.resultatsTriple) {
+          setResultatsTriple(d.resultatsTriple);
+          if (!d.resultats) setResultats(d.resultatsTriple.moyen ?? null);
+        }
         setShowResults(true);
       }
     } catch { /* ignore */ }
