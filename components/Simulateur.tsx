@@ -355,7 +355,10 @@ export default function Simulateur({ onShowResults }: { onShowResults?: () => vo
     }
     if (d.selectedRegime) setSelectedRegime(d.selectedRegime as "micro" | "reel" | null);
     setShowResults(true);
-    scrollToResults.current = true;
+    onShowResults?.();
+    setTimeout(() => {
+      resultsRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }, 80);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pendingAutoSimulate]);
 
