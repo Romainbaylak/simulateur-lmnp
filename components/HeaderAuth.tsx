@@ -1,6 +1,6 @@
 "use client";
 
-import { useUser, SignInButton, UserButton } from "@clerk/nextjs";
+import { useUser, SignUpButton, UserButton } from "@clerk/nextjs";
 import Link from "next/link";
 
 export default function HeaderAuth({ dark = true }: { dark?: boolean }) {
@@ -35,7 +35,7 @@ export default function HeaderAuth({ dark = true }: { dark?: boolean }) {
 
   return (
     <div className="flex items-center gap-2">
-      <SignInButton mode="modal" fallbackRedirectUrl="/">
+      <SignUpButton mode="modal" fallbackRedirectUrl="/">
         <button
           className="text-sm font-medium px-4 py-2 transition-opacity hover:opacity-80"
           style={{
@@ -45,7 +45,7 @@ export default function HeaderAuth({ dark = true }: { dark?: boolean }) {
           }}>
           Se connecter
         </button>
-      </SignInButton>
+      </SignUpButton>
     </div>
   );
 }
