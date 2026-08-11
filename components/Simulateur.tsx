@@ -442,7 +442,7 @@ export default function Simulateur({ onShowResults }: { onShowResults?: () => vo
   useEffect(() => {
     if (scrollToResults.current) {
       scrollToResults.current = false;
-      resultsRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+      window.scrollTo({ top: 0, behavior: "smooth" });
     }
     if (scrollToPdf.current) {
       scrollToPdf.current = false;
@@ -1056,13 +1056,40 @@ export default function Simulateur({ onShowResults }: { onShowResults?: () => vo
                   const montantCredit = Math.max(0, p - ap);
                   const tmi         = form.tmi                    || 0;
 
-                  const COL = { background: "#EDE7DC", borderRadius: 10, padding: "14px 18px", flex: 1 };
-                  const LBL_S = { fontSize: 9, fontWeight: 700, textTransform: "uppercase" as const, letterSpacing: "0.13em", color: "rgba(26,22,18,0.42)", marginBottom: 10, display: "block" };
-                  type Row = { label: string; value: string; sub?: string };
-                  const Row = ({ label, value, sub }: Row) => (
+                  // Formattage avec points (1.000.000 €)
+                  const fDot = (n: number) => {
+                    const rounded = Math.round(n);
+                    return rounded.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".") + " €";
+                  };
+
+                  type ColDef = { bg: string; border: string; titleColor: string };
+                  const COLS: Record<string, ColDef> = {
+                    bien:        { bg: "#E9F4EC", border: "#C4DFC9", titleColor: "#1E5C2E" },
+                    financement: { bg: "#E4EEF8", border: "#BACED9", titleColor: "#1A3A6B" },
+                    charges:     { bg: "#FDF0E8", border: "#E8CEBC", titleColor: "#7A3010" },
+                  };
+                  const colStyle = (k: string) => ({
+                    background: COLS[k].bg,
+                    border: `1px solid ${COLS[k].border}`,
+                    borderRadius: 12,
+                    padding: "16px 18px",
+                    flex: 1,
+                    minWidth: 220,
+                  });
+                  const titleStyle = (k: string) => ({
+                    fontSize: 14,
+                    fontWeight: 700,
+                    color: COLS[k].titleColor,
+                    textAlign: "center" as const,
+                    marginBottom: 14,
+                    display: "block",
+                    letterSpacing: "-0.01em",
+                  });
+                  type Row = { label: string; value: string; sub?: string; color?: string };
+                  const Row = ({ label, value, sub, color }: Row) => (
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: 8, marginBottom: 7 }}>
                       <span style={{ fontSize: 11, color: "rgba(26,22,18,0.55)", textTransform: "uppercase" as const, letterSpacing: "0.07em" }}>{label}</span>
-                      <span style={{ fontSize: 13, fontWeight: 700, color: "#1A1612", textAlign: "right" as const }}>
+                      <span style={{ fontSize: 13, fontWeight: 700, color: color ?? "#1A1612", textAlign: "right" as const }}>
                         {value}{sub && <span style={{ fontSize: 10, fontWeight: 400, color: "rgba(26,22,18,0.45)", marginLeft: 4 }}>{sub}</span>}
                       </span>
                     </div>
@@ -1070,58 +1097,58 @@ export default function Simulateur({ onShowResults }: { onShowResults?: () => vo
 
                   return (
                     <div style={{ marginTop: 20, marginBottom: 4 }}>
-                      <div style={{ fontSize: 10, fontWeight: 700, textTransform: "uppercase" as const, letterSpacing: "0.14em", color: "rgba(26,22,18,0.35)", marginBottom: 10 }}>
+                      <div style={{ fontSize: 10, fontWeight: 700, textTransform: "uppercase" as const, letterSpacing: "0.14em", color: "rgba(26,22,18,0.35)", marginBottom: 12 }}>
                         Récapitulatif de votre simulation
                       </div>
                       <div style={{ display: "flex", gap: 10, flexWrap: "wrap" as const }}>
 
                         {/* Colonne 1 — Le bien */}
-                        <div style={COL}>
-                          <span style={LBL_S}>🏠 Le bien</span>
-                          <Row label="Prix d'achat"     value={formatEuro(p)} />
-                          <Row label="Apport"           value={formatEuro(ap)} />
-                          <Row label="Crédit"           value={formatEuro(montantCredit)} />
-                          {tr   > 0 && <Row label="Travaux"          value={formatEuro(tr)} />}
-                          {mob  > 0 && <Row label="Mobilier"         value={formatEuro(mob)} />}
-                          <Row label="Frais de notaire" value={formatEuro(not)} />
+                        <div style={colStyle("bien")}>
+                          <span style={titleStyle("bien")}>🏠 Le bien</span>
+                          <Row label="Prix d'achat"     value={fDot(p)} />
+                          <Row label="Apport"           value={fDot(ap)} />
+                          <Row label="Crédit"           value={fDot(montantCredit)} />
+                          {tr  > 0 && <Row label="Travaux"          value={fDot(tr)} />}
+                          {mob > 0 && <Row label="Mobilier"         value={fDot(mob)} />}
+                          <Row label="Frais de notaire" value={fDot(not)} />
                           {!isSaisonnier ? (
                             <>
-                              <Row label="Loyer mensuel" value={formatEuro(loyer)} sub="HC" />
-                              {chargesLoc > 0 && <Row label="Charges locataire" value={`+${formatEuro(chargesLoc)}/mois`} />}
+                              <Row label="Loyer mensuel" value={fDot(loyer)} sub="HC" />
+                              {chargesLoc > 0 && <Row label="Charges locataire" value={`+${fDot(chargesLoc)}/mois`} />}
                             </>
                           ) : (
                             <>
-                              <Row label="Prix par nuitée" value={formatEuro(nuitee)} />
+                              <Row label="Prix par nuitée" value={fDot(nuitee)} />
                               <Row label="Taux d'occupation" value={`${tauxOccBas} / ${tauxOccMoyen} / ${tauxOccHaut} %`} />
                             </>
                           )}
                         </div>
 
                         {/* Colonne 2 — Financement */}
-                        <div style={COL}>
-                          <span style={LBL_S}>🏦 Financement</span>
-                          <Row label="Taux d'intérêt"     value={`${taux} %`} sub={`sur ${duree} ans`} />
-                          <Row label="Assurance emprunteur" value={`${assurEmp > 0 ? assurEmp : 0} %`} sub="du capital" />
-                          <Row label="Montant emprunté"   value={formatEuro(montantCredit)} />
+                        <div style={colStyle("financement")}>
+                          <span style={titleStyle("financement")}>🏦 Financement</span>
+                          <Row label="Taux d'intérêt"       value={`${taux} %`} sub={`sur ${duree} ans`} />
+                          <Row label="Assurance emprunteur"  value={`${assurEmp} %`} sub="du capital" />
+                          <Row label="Montant emprunté"      value={fDot(montantCredit)} />
                           {resultats && (
                             <>
-                              <Row label="Mensualité crédit" value={`${formatEuro(resultats.creditAnnuel / 12)}/mois`} />
-                              <Row label="Coût total crédit"  value={formatEuro(resultats.creditAnnuel * duree)} />
+                              <Row label="Mensualité crédit"  value={`${fDot(resultats.creditAnnuel / 12)}/mois`} />
+                              <Row label="Coût total crédit"   value={fDot(resultats.creditAnnuel * duree)} />
                             </>
                           )}
-                          <Row label="Tranche marginale"  value={`${tmi} %`} />
+                          <Row label="Tranche marginale d'imposition" value={`${tmi} %`} />
                         </div>
 
                         {/* Colonne 3 — Charges */}
-                        <div style={COL}>
-                          <span style={LBL_S}>📋 Charges annuelles</span>
-                          <Row label="Taxe foncière"      value={formatEuro(taxeFonc)} />
-                          <Row label="Charges copropriété" value={formatEuro(copro)} />
-                          <Row label="Assurance PNO"      value={`${pno > 0 ? pno : 0} %`} sub="du prix" />
-                          {gestion > 0 && <Row label="Gestion locative"   value={`${gestion} %`} sub="des loyers" />}
-                          {entretien > 0 && <Row label="Entretien courant"   value={formatEuro(entretien)} sub="/an" />}
-                          {compta > 0    && <Row label="Comptabilité"        value={formatEuro(compta)} sub="/an" />}
-                          {resultats && <Row label="Total charges"       value={formatEuro(resultats.chargesAnnuelles)} sub="/an" />}
+                        <div style={colStyle("charges")}>
+                          <span style={titleStyle("charges")}>📋 Charges annuelles</span>
+                          <Row label="Taxe foncière"        value={fDot(taxeFonc)} />
+                          <Row label="Charges copropriété"  value={fDot(copro)} />
+                          <Row label="Assurance PNO"        value={`${pno} %`} sub="du prix" />
+                          {gestion   > 0 && <Row label="Gestion locative"  value={`${gestion} %`} sub="des loyers" />}
+                          {entretien > 0 && <Row label="Entretien courant"  value={fDot(entretien)} sub="/an" />}
+                          {compta    > 0 && <Row label="Comptabilité"       value={fDot(compta)} sub="/an" />}
+                          {resultats && <Row label="Total charges" value={fDot(resultats.chargesAnnuelles)} sub="/an" color={COLS.charges.titleColor} />}
                         </div>
 
                       </div>
