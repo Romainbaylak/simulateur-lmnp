@@ -1036,52 +1036,95 @@ export default function Simulateur({ onShowResults }: { onShowResults?: () => vo
 
                 {/* Récap données client */}
                 {(() => {
-                  const p = parseFloat(form.prix) || 0;
-                  const ap = parseFloat(form.apport) || 0;
-                  const tr = parseFloat(form.travaux) || 0;
-                  const mob = parseFloat(form.mobilier) || 0;
-                  const not = parseFloat(form.notaire) || 0;
-                  const loyer = parseFloat(form.loyer) || loyerEffectif || 0;
-                  const chargesLoc = parseFloat(form.chargesLoyer) || 0;
-                  const taux = parseFloat(form.taux) || 0;
-                  const nuitee = parseFloat(prixNuitee) || 0;
+                  const p    = parseFloat(form.prix)             || 0;
+                  const ap   = parseFloat(form.apport)           || 0;
+                  const tr   = parseFloat(form.travaux)          || 0;
+                  const mob  = parseFloat(form.mobilier)         || 0;
+                  const not  = parseFloat(form.notaire)          || 0;
+                  const loyer       = parseFloat(form.loyer)     || loyerEffectif || 0;
+                  const chargesLoc  = parseFloat(form.chargesLoyer) || 0;
+                  const taux        = parseFloat(form.taux)      || 0;
+                  const duree       = form.duree                  || 20;
+                  const assurEmp    = parseFloat(form.assuranceEmprunteur) || 0;
+                  const taxeFonc    = parseFloat(form.taxeFonciere)        || 0;
+                  const copro       = parseFloat(form.chargesCopro)        || 0;
+                  const pno         = parseFloat(form.assurancePNO)        || 0;
+                  const entretien   = parseFloat(form.entretienCourant)    || 0;
+                  const gestion     = parseFloat(form.gestionLocativePct)  || 0;
+                  const compta      = parseFloat(form.comptabilite)        || 0;
+                  const nuitee      = parseFloat(prixNuitee)               || 0;
+                  const montantCredit = Math.max(0, p - ap);
+                  const tmi         = form.tmi                    || 0;
 
-                  type Item = { label: string; value: string; note?: string };
-                  const items: Item[] = [];
-
-                  if (p > 0) items.push({ label: "Prix d'achat", value: formatEuro(p) });
-                  if (ap > 0) items.push({ label: "Apport personnel", value: formatEuro(ap) });
-                  if (taux > 0) items.push({ label: "Emprunt", value: `${taux} %`, note: `sur ${form.duree} ans` });
-                  if (!isSaisonnier) {
-                    if (loyer > 0) items.push({ label: "Loyer mensuel", value: formatEuro(loyer), note: "hors charges" });
-                    if (chargesLoc > 0) items.push({ label: "Charges locataire", value: `+ ${formatEuro(chargesLoc)}/mois` });
-                  } else {
-                    if (nuitee > 0) items.push({ label: "Prix par nuitée", value: formatEuro(nuitee) });
-                    items.push({ label: "Taux d'occupation", value: `${tauxOccBas} % – ${tauxOccMoyen} % – ${tauxOccHaut} %` });
-                  }
-                  if (tr > 0) items.push({ label: "Travaux", value: formatEuro(tr) });
-                  if (mob > 0) items.push({ label: "Mobilier", value: formatEuro(mob) });
-                  if (not > 0) items.push({ label: "Frais de notaire", value: formatEuro(not) });
-                  items.push({ label: "Tranche marginale", value: `${form.tmi} %` });
+                  const COL = { background: "#EDE7DC", borderRadius: 10, padding: "14px 18px", flex: 1 };
+                  const LBL_S = { fontSize: 9, fontWeight: 700, textTransform: "uppercase" as const, letterSpacing: "0.13em", color: "rgba(26,22,18,0.42)", marginBottom: 10, display: "block" };
+                  type Row = { label: string; value: string; sub?: string };
+                  const Row = ({ label, value, sub }: Row) => (
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: 8, marginBottom: 7 }}>
+                      <span style={{ fontSize: 11, color: "rgba(26,22,18,0.55)", textTransform: "uppercase" as const, letterSpacing: "0.07em" }}>{label}</span>
+                      <span style={{ fontSize: 13, fontWeight: 700, color: "#1A1612", textAlign: "right" as const }}>
+                        {value}{sub && <span style={{ fontSize: 10, fontWeight: 400, color: "rgba(26,22,18,0.45)", marginLeft: 4 }}>{sub}</span>}
+                      </span>
+                    </div>
+                  );
 
                   return (
-                    <div style={{
-                      display: "flex", alignItems: "center", flexWrap: "wrap" as const, gap: "0",
-                      borderTop: "1px solid rgba(26,22,18,0.1)",
-                      borderBottom: "1px solid rgba(26,22,18,0.1)",
-                      padding: "12px 0",
-                      marginTop: 24,
-                      marginBottom: -12,
-                    }}>
-                      {items.map((it, i) => (
-                        <div key={it.label} style={{ display: "flex", alignItems: "center" }}>
-                          <div style={{ padding: "2px 18px", borderRight: i < items.length - 1 ? "1px solid rgba(26,22,18,0.12)" : "none" }}>
-                            <span style={{ fontSize: 10, fontWeight: 500, color: "#1A1612", letterSpacing: "0.06em", textTransform: "uppercase" as const, marginRight: 7 }}>{it.label}</span>
-                            <span style={{ fontSize: 13, fontWeight: 800, color: "#1A1612", letterSpacing: "-0.01em" }}>{it.value}</span>
-                            {it.note && <span style={{ fontSize: 11, color: "rgba(26,22,18,0.5)", marginLeft: 5 }}>{it.note}</span>}
-                          </div>
+                    <div style={{ marginTop: 20, marginBottom: 4 }}>
+                      <div style={{ fontSize: 10, fontWeight: 700, textTransform: "uppercase" as const, letterSpacing: "0.14em", color: "rgba(26,22,18,0.35)", marginBottom: 10 }}>
+                        Récapitulatif de votre simulation
+                      </div>
+                      <div style={{ display: "flex", gap: 10, flexWrap: "wrap" as const }}>
+
+                        {/* Colonne 1 — Le bien */}
+                        <div style={COL}>
+                          <span style={LBL_S}>🏠 Le bien</span>
+                          <Row label="Prix d'achat"     value={formatEuro(p)} />
+                          <Row label="Apport"           value={formatEuro(ap)} />
+                          <Row label="Crédit"           value={formatEuro(montantCredit)} />
+                          {tr   > 0 && <Row label="Travaux"          value={formatEuro(tr)} />}
+                          {mob  > 0 && <Row label="Mobilier"         value={formatEuro(mob)} />}
+                          <Row label="Frais de notaire" value={formatEuro(not)} />
+                          {!isSaisonnier ? (
+                            <>
+                              <Row label="Loyer mensuel" value={formatEuro(loyer)} sub="HC" />
+                              {chargesLoc > 0 && <Row label="Charges locataire" value={`+${formatEuro(chargesLoc)}/mois`} />}
+                            </>
+                          ) : (
+                            <>
+                              <Row label="Prix par nuitée" value={formatEuro(nuitee)} />
+                              <Row label="Taux d'occupation" value={`${tauxOccBas} / ${tauxOccMoyen} / ${tauxOccHaut} %`} />
+                            </>
+                          )}
                         </div>
-                      ))}
+
+                        {/* Colonne 2 — Financement */}
+                        <div style={COL}>
+                          <span style={LBL_S}>🏦 Financement</span>
+                          <Row label="Taux d'intérêt"     value={`${taux} %`} sub={`sur ${duree} ans`} />
+                          <Row label="Assurance emprunteur" value={`${assurEmp > 0 ? assurEmp : 0} %`} sub="du capital" />
+                          <Row label="Montant emprunté"   value={formatEuro(montantCredit)} />
+                          {resultats && (
+                            <>
+                              <Row label="Mensualité crédit" value={`${formatEuro(resultats.creditAnnuel / 12)}/mois`} />
+                              <Row label="Coût total crédit"  value={formatEuro(resultats.creditAnnuel * duree)} />
+                            </>
+                          )}
+                          <Row label="Tranche marginale"  value={`${tmi} %`} />
+                        </div>
+
+                        {/* Colonne 3 — Charges */}
+                        <div style={COL}>
+                          <span style={LBL_S}>📋 Charges annuelles</span>
+                          <Row label="Taxe foncière"      value={formatEuro(taxeFonc)} />
+                          <Row label="Charges copropriété" value={formatEuro(copro)} />
+                          <Row label="Assurance PNO"      value={`${pno > 0 ? pno : 0} %`} sub="du prix" />
+                          {gestion > 0 && <Row label="Gestion locative"   value={`${gestion} %`} sub="des loyers" />}
+                          {entretien > 0 && <Row label="Entretien courant"   value={formatEuro(entretien)} sub="/an" />}
+                          {compta > 0    && <Row label="Comptabilité"        value={formatEuro(compta)} sub="/an" />}
+                          {resultats && <Row label="Total charges"       value={formatEuro(resultats.chargesAnnuelles)} sub="/an" />}
+                        </div>
+
+                      </div>
                     </div>
                   );
                 })()}
