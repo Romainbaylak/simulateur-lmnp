@@ -2,6 +2,7 @@
 
 import { useUser, SignUpButton, UserButton } from "@clerk/nextjs";
 import Link from "next/link";
+import { PlanBadgeInline } from "@/components/PlanBadge";
 
 export default function HeaderAuth({ dark = true }: { dark?: boolean }) {
   const { isSignedIn, user, isLoaded } = useUser();
@@ -26,7 +27,9 @@ export default function HeaderAuth({ dark = true }: { dark?: boolean }) {
             borderRadius: 6,
             lineHeight: 1.2,
           }}>
-          <span className="text-sm font-medium">{user.firstName ?? "Mon compte"}</span>
+          <span className="text-sm font-medium">
+            {user.firstName ?? "Mon compte"}<PlanBadgeInline />
+          </span>
           <span className="text-[10px] font-normal opacity-60">Mes simulations</span>
         </Link>
       </div>
