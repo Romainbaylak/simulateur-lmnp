@@ -359,7 +359,7 @@ export default function Simulateur({ onShowResults }: { onShowResults?: () => vo
     setShowResults(true);
     onShowResults?.();
     setTimeout(() => {
-      resultsRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+      verdictRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
     }, 80);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pendingAutoSimulate]);
@@ -433,6 +433,7 @@ export default function Simulateur({ onShowResults }: { onShowResults?: () => vo
     return new Date(d.setDate(diff)).toISOString().slice(0, 10);
   };
   const resultsRef = useRef<HTMLDivElement>(null);
+  const verdictRef = useRef<HTMLDivElement>(null);
   const pdfButtonsRef = useRef<HTMLDivElement>(null);
   const amortContentRef = useRef<HTMLDivElement>(null);
 
@@ -444,7 +445,7 @@ export default function Simulateur({ onShowResults }: { onShowResults?: () => vo
   useEffect(() => {
     if (scrollToResults.current) {
       scrollToResults.current = false;
-      window.scrollTo({ top: 0, behavior: "smooth" });
+      verdictRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
     }
     if (scrollToPdf.current) {
       scrollToPdf.current = false;
@@ -1162,7 +1163,7 @@ export default function Simulateur({ onShowResults }: { onShowResults?: () => vo
 
                 {/* Verdict */}
                 {verdict && (
-                  <div className="rounded-xl p-4 flex items-center gap-3" style={{ background: verdict.bg, color: "#F5F0E8" }}>
+                  <div ref={verdictRef} className="rounded-xl p-4 flex items-center gap-3" style={{ scrollMarginTop: "80px", background: verdict.bg, color: "#F5F0E8" }}>
                     <span className="text-2xl font-bold">{verdict.icon}</span>
                     <div>
                       <div className="font-bold text-xl">{verdict.label}</div>
