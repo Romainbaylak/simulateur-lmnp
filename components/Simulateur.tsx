@@ -1005,15 +1005,17 @@ export default function Simulateur({ onShowResults }: { onShowResults?: () => vo
         {/* ─── BOUTON SIMULER ─── */}
         {!simulationValidated && <div className="flex justify-end items-center gap-3 mb-10">
           {(() => {
+            const plan = getPlan();
+            const isSubscribed = plan === "starter" || plan === "pro";
             const remaining = Math.max(0, SIM_LIMIT - getSimDayCount());
             const blocked = isSimBlocked();
             return <>
               <span style={{ fontSize: 11, color: blocked ? "#B03A2A" : "rgba(26,22,18,0.45)" }}>
-                {blocked
+                {!isSubscribed && (blocked
                   ? "0 simulation restante aujourd'hui"
                   : remaining <= 3
                     ? `${remaining} simulation${remaining > 1 ? "s" : ""} restante${remaining > 1 ? "s" : ""} aujourd'hui`
-                    : ""}
+                    : "")}
               </span>
               <button onClick={handleSimuler}
                 className="px-10 py-4 text-base font-medium transition-opacity hover:opacity-[0.88]"
