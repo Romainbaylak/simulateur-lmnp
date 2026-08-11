@@ -7,6 +7,7 @@ import PopupPaiementUnite from "./PopupPaiementUnite";
 import PopupAmortLimite from "./PopupAmortLimite";
 import PopupPDFStarter from "./PopupPDFStarter";
 import PopupSauvegarder, { type Plan } from "./PopupSauvegarder";
+import PopupSimLimite from "./PopupSimLimite";
 
 type TypeBien = "ap" | "ma";
 type TMI = 0 | 11 | 30 | 41 | 45;
@@ -262,6 +263,7 @@ export default function Simulateur({ onShowResults }: { onShowResults?: () => vo
   const [showResults, setShowResults] = useState(false);
   const [pendingAutoSimulate, setPendingAutoSimulate] = useState<Record<string, unknown> | null>(null);
   const [showPayPopup, setShowPayPopup] = useState(false);
+  const [showSimLimite, setShowSimLimite] = useState(false);
   const [showAmortLimite, setShowAmortLimite] = useState(false);
   const [showPDFStarter, setShowPDFStarter] = useState(false);
   const [pdfWeekCount, setPdfWeekCount] = useState(0);
@@ -486,7 +488,7 @@ export default function Simulateur({ onShowResults }: { onShowResults?: () => vo
   const loyerSaisonnier = (nuitee: number, taux: number) => nuitee * (taux / 100) * 365 / 12;
 
   const handleSimuler = () => {
-    if (isSimBlocked()) { setShowPayPopup(true); return; }
+    if (isSimBlocked()) { setShowSimLimite(true); return; }
     incrementSimDayCount();
     if (isSaisonnier) {
       const nuitee = parseFloat(prixNuitee) || 0;
@@ -994,15 +996,17 @@ export default function Simulateur({ onShowResults }: { onShowResults?: () => vo
             const remaining = Math.max(0, SIM_LIMIT - getSimDayCount());
             const blocked = isSimBlocked();
             return <>
-              {!blocked && remaining <= 3 && (
-                <span style={{ fontSize: 11, color: "rgba(26,22,18,0.45)" }}>
-                  {remaining} simulation{remaining > 1 ? "s" : ""} gratuite{remaining > 1 ? "s" : ""} restante{remaining > 1 ? "s" : ""}
-                </span>
-              )}
+              <span style={{ fontSize: 11, color: blocked ? "#B03A2A" : "rgba(26,22,18,0.45)" }}>
+                {blocked
+                  ? "0 simulation restante aujourd'hui"
+                  : remaining <= 3
+                    ? `${remaining} simulation${remaining > 1 ? "s" : ""} restante${remaining > 1 ? "s" : ""} aujourd'hui`
+                    : ""}
+              </span>
               <button onClick={handleSimuler}
                 className="px-10 py-4 text-base font-medium transition-opacity hover:opacity-[0.88]"
-                style={{ backgroundColor: "#C95B2A", color: "#F5F0E8", borderRadius: 8, letterSpacing: "0.02em", opacity: blocked ? 0.5 : 1 }}>
-                {blocked ? "Limite atteinte" : "Lancer la simulation →"}
+                style={{ backgroundColor: "#C95B2A", color: "#F5F0E8", borderRadius: 8, letterSpacing: "0.02em" }}>
+                Lancer la simulation →
               </button>
             </>;
           })()}
@@ -2322,6 +2326,19 @@ export default function Simulateur({ onShowResults }: { onShowResults?: () => vo
             tauxOccHaut,
             resultatsTriple,
             selectedRegime,
+          }}
+        />
+      )}
+      {showSimLimite && (
+        <PopupSimLimite
+          isSignedIn={!!isSignedIn}
+          onClose={() => setShowSimLimite(false)}
+          onAccountBonus={() => {
+            // Remet le compteur à 6 (bonus unique création de compte)
+            const today = new Date().toISOString().slice(0, 10);
+            localStorage.setItem("lmnp_sim_day_count", JSON.stringify({ count: 0, date: today }));
+            localStorage.setItem("lmnp_account_bonus_used", "1");
+            setShowSimLimite(false);
           }}
         />
       )}
