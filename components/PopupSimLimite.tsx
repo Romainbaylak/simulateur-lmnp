@@ -11,7 +11,8 @@ interface Props {
 
 export default function PopupSimLimite({ isSignedIn, onClose, onAccountBonus }: Props) {
   const bonusAlreadyUsed =
-    typeof window !== "undefined" && !!localStorage.getItem("lmnp_account_bonus_used");
+    typeof window !== "undefined" &&
+    (!!localStorage.getItem("lmnp_account_bonus_used") || !!localStorage.getItem("lmnp_bonus_pending"));
 
   return (
     <div

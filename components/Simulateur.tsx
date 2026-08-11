@@ -202,6 +202,17 @@ const AUTO_STYLE = { ...INPUT_STYLE, background: "rgba(201,91,42,0.06)" };
 
 export default function Simulateur({ onShowResults }: { onShowResults?: () => void } = {}) {
   const { isSignedIn } = useUser();
+
+  // Applique le bonus de simulations dès que l'utilisateur crée son compte
+  useEffect(() => {
+    if (!isSignedIn) return;
+    const pending = typeof window !== "undefined" && localStorage.getItem("lmnp_bonus_pending");
+    if (!pending) return;
+    const today = new Date().toISOString().slice(0, 10);
+    localStorage.setItem("lmnp_sim_day_count", JSON.stringify({ count: 0, date: today }));
+    localStorage.setItem("lmnp_account_bonus_used", "1");
+    localStorage.removeItem("lmnp_bonus_pending");
+  }, [isSignedIn]);
   const [form, setForm] = useState<FormState>({
     type: "ap",
     surface: "",
@@ -2335,10 +2346,8 @@ export default function Simulateur({ onShowResults }: { onShowResults?: () => vo
           isSignedIn={!!isSignedIn}
           onClose={() => setShowSimLimite(false)}
           onAccountBonus={() => {
-            // Remet le compteur à 6 (bonus unique création de compte)
-            const today = new Date().toISOString().slice(0, 10);
-            localStorage.setItem("lmnp_sim_day_count", JSON.stringify({ count: 0, date: today }));
-            localStorage.setItem("lmnp_account_bonus_used", "1");
+            // Pose un flag : le bonus sera appliqué quand isSignedIn passe à true
+            localStorage.setItem("lmnp_bonus_pending", "1");
             setShowSimLimite(false);
           }}
         />
