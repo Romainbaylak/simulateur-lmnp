@@ -453,9 +453,11 @@ export default function Simulateur({ onShowResults }: { onShowResults?: () => vo
   const verdictRef = useRef<HTMLDivElement>(null);
   const pdfButtonsRef = useRef<HTMLDivElement>(null);
   const amortContentRef = useRef<HTMLDivElement>(null);
+  const validerRef = useRef<HTMLDivElement>(null);
 
   // Flags pour déclencher un scroll après le prochain rendu React
   const scrollToResults = useRef(false);
+  const scrollToValider = useRef(false);
   const scrollToPdf = useRef(false);
   const scrollToAmort = useRef(false);
 
@@ -475,6 +477,14 @@ export default function Simulateur({ onShowResults }: { onShowResults?: () => vo
       scrollToAmort.current = false;
       if (amortContentRef.current) {
         const top = amortContentRef.current.getBoundingClientRect().top + window.scrollY - 120;
+        window.scrollTo({ top, behavior: "smooth" });
+      }
+    }
+    if (scrollToValider.current) {
+      scrollToValider.current = false;
+      if (validerRef.current) {
+        const rect = validerRef.current.getBoundingClientRect();
+        const top = window.scrollY + rect.bottom - window.innerHeight + 32;
         window.scrollTo({ top, behavior: "smooth" });
       }
     }
@@ -2033,7 +2043,7 @@ export default function Simulateur({ onShowResults }: { onShowResults?: () => vo
                                   const C2 = "#2A7080";
                                   const inputCls = "w-14 px-2 py-1.5 text-sm rounded-md text-center text-[#1A1612] focus:outline-none focus:ring-1 focus:ring-[#2A7080] [appearance:none] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none [-moz-appearance:textfield]";
                                   return (
-                                    <div onClick={() => setAmortMode("composant")} className="cursor-pointer rounded-xl overflow-hidden transition-all"
+                                    <div onClick={() => { setAmortMode("composant"); scrollToValider.current = true; }} className="cursor-pointer rounded-xl overflow-hidden transition-all"
                                       style={{
                                         border: amortMode === "composant" ? `2px solid ${C2}` : "1.5px solid rgba(42,112,128,0.2)",
                                         boxShadow: amortMode === "composant" ? "0 0 0 3px rgba(42,112,128,0.1)" : "none",
@@ -2159,7 +2169,7 @@ export default function Simulateur({ onShowResults }: { onShowResults?: () => vo
                               {/* ── Colonne Global Simplifié ── */}
                               <div className="space-y-3">
                                 {amortMode !== "composant" ? (
-                                  <div onClick={() => setAmortMode("ensemble")} className="cursor-pointer rounded-xl overflow-hidden transition-all"
+                                  <div onClick={() => { setAmortMode("ensemble"); scrollToValider.current = true; }} className="cursor-pointer rounded-xl overflow-hidden transition-all"
                                     style={{
                                       border: amortMode === "ensemble" ? "2px solid #C95B2A" : "1.5px solid rgba(201,91,42,0.2)",
                                       boxShadow: amortMode === "ensemble" ? "0 0 0 3px rgba(201,91,42,0.1)" : "none",
@@ -2314,7 +2324,7 @@ export default function Simulateur({ onShowResults }: { onShowResults?: () => vo
 
                 {/* Bouton Valider — visible pour réel (après amort) et micro-BIC */}
                 {selectedRegime !== null && (
-                  <div className="flex justify-center mt-4">
+                  <div ref={validerRef} className="flex justify-center mt-4">
                     <button onClick={handleAjuster}
                       className="px-10 py-4 text-base font-medium transition-opacity hover:opacity-[0.88] rounded-lg"
                       style={{ backgroundColor: "#C95B2A", color: "#F5F0E8", letterSpacing: "0.02em" }}>
