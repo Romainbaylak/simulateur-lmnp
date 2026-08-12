@@ -375,7 +375,7 @@ export default function Simulateur({ onShowResults }: { onShowResults?: () => vo
     onShowResults?.();
     setTimeout(() => {
       if (verdictRef.current) {
-        const top = verdictRef.current.getBoundingClientRect().top + window.scrollY - 130;
+        const top = verdictRef.current.getBoundingClientRect().top + window.scrollY - 100;
         window.scrollTo({ top, behavior: "smooth" });
       }
     }, 80);
@@ -466,7 +466,7 @@ export default function Simulateur({ onShowResults }: { onShowResults?: () => vo
     if (scrollToResults.current) {
       scrollToResults.current = false;
       if (verdictRef.current) {
-        const top = verdictRef.current.getBoundingClientRect().top + window.scrollY - 130;
+        const top = verdictRef.current.getBoundingClientRect().top + window.scrollY - 100;
         window.scrollTo({ top, behavior: "smooth" });
       }
     }
@@ -687,6 +687,9 @@ export default function Simulateur({ onShowResults }: { onShowResults?: () => vo
                     onBlur={() => handleBlur("notaire")}
                     className={INPUT} style={AUTO_STYLE} />
                 </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className={LABEL}>Apport personnel (€)</label>
                   <input type="number" value={form.apport}
@@ -772,6 +775,8 @@ export default function Simulateur({ onShowResults }: { onShowResults?: () => vo
 
             {/* ── RIGHT : Loyer ── */}
             <div className="space-y-4">
+              {/* Mobile separator */}
+              <div className="lg:hidden" style={{ borderTop: "1.5px solid rgba(26,22,18,0.1)", marginTop: 8 }} />
               <div className="flex items-center justify-between">
                 <p className={LABEL} style={{ opacity: 1, color: "#1A1612", marginBottom: 0 }}>Loyer</p>
                 <button
@@ -2075,7 +2080,7 @@ export default function Simulateur({ onShowResults }: { onShowResults?: () => vo
                             </div>
 
                             {/* Grille 2 colonnes : Composant | Global */}
-                            <div ref={amortContentRef} className="grid grid-cols-2 gap-12" style={{ scrollMarginTop: "80px" }}>
+                            <div ref={amortContentRef} className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-12" style={{ scrollMarginTop: "80px" }}>
 
                               {/* ── Colonne Par Composant ── */}
                               <div className="space-y-3">
