@@ -202,6 +202,9 @@ const AUTO_STYLE = { ...INPUT_STYLE, background: "rgba(201,91,42,0.06)" };
 
 export default function Simulateur({ onShowResults }: { onShowResults?: () => void } = {}) {
   const { isSignedIn } = useUser();
+  const [currentPlan, setCurrentPlan] = useState<string | null>(null);
+  useEffect(() => { setCurrentPlan(localStorage.getItem("lmnp_plan")); }, []);
+  const isSubscribed = currentPlan === "starter" || currentPlan === "pro";
 
   // Applique le bonus de simulations dès que l'utilisateur crée son compte
   useEffect(() => {
@@ -1005,8 +1008,6 @@ export default function Simulateur({ onShowResults }: { onShowResults?: () => vo
         {/* ─── BOUTON SIMULER ─── */}
         {!simulationValidated && <div className="flex justify-end items-center gap-3 mb-10">
           {(() => {
-            const plan = getPlan();
-            const isSubscribed = plan === "starter" || plan === "pro";
             const remaining = Math.max(0, SIM_LIMIT - getSimDayCount());
             const blocked = isSimBlocked();
             return <>
