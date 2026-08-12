@@ -373,7 +373,10 @@ export default function Simulateur({ onShowResults }: { onShowResults?: () => vo
     setShowResults(true);
     onShowResults?.();
     setTimeout(() => {
-      verdictRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+      if (verdictRef.current) {
+        const top = verdictRef.current.getBoundingClientRect().top + window.scrollY - 90;
+        window.scrollTo({ top, behavior: "smooth" });
+      }
     }, 80);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pendingAutoSimulate]);
@@ -459,7 +462,10 @@ export default function Simulateur({ onShowResults }: { onShowResults?: () => vo
   useEffect(() => {
     if (scrollToResults.current) {
       scrollToResults.current = false;
-      verdictRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+      if (verdictRef.current) {
+        const top = verdictRef.current.getBoundingClientRect().top + window.scrollY - 90;
+        window.scrollTo({ top, behavior: "smooth" });
+      }
     }
     if (scrollToPdf.current) {
       scrollToPdf.current = false;
