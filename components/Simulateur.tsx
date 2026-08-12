@@ -278,6 +278,7 @@ export default function Simulateur({ onShowResults }: { onShowResults?: () => vo
   const [pendingAutoSimulate, setPendingAutoSimulate] = useState<Record<string, unknown> | null>(null);
   const [showPayPopup, setShowPayPopup] = useState(false);
   const [showSimLimite, setShowSimLimite] = useState(false);
+  const [showAmortRequired, setShowAmortRequired] = useState(false);
   const [showAmortLimite, setShowAmortLimite] = useState(false);
   const [showPDFStarter, setShowPDFStarter] = useState(false);
   const [pdfWeekCount, setPdfWeekCount] = useState(0);
@@ -476,7 +477,7 @@ export default function Simulateur({ onShowResults }: { onShowResults?: () => vo
     if (scrollToAmort.current) {
       scrollToAmort.current = false;
       if (amortContentRef.current) {
-        const top = amortContentRef.current.getBoundingClientRect().top + window.scrollY - 120;
+        const top = amortContentRef.current.getBoundingClientRect().top + window.scrollY - 80;
         window.scrollTo({ top, behavior: "smooth" });
       }
     }
@@ -556,6 +557,12 @@ export default function Simulateur({ onShowResults }: { onShowResults?: () => vo
   };
 
   const handleAjuster = () => {
+    if (selectedRegime === "reel" && amortMode === null) {
+      scrollToAmort.current = true;
+      setShowAmortRequired(true);
+      setTimeout(() => setShowAmortRequired(false), 3000);
+      return;
+    }
     if (isSaisonnier) {
       const nuitee = parseFloat(prixNuitee) || 0;
       const lBas   = loyerSaisonnier(nuitee, parseFloat(tauxOccBas)   || 0);
@@ -2374,6 +2381,12 @@ export default function Simulateur({ onShowResults }: { onShowResults?: () => vo
           )}
         </div>
       </div>
+      {showAmortRequired && (
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 px-5 py-3 rounded-xl text-sm font-medium shadow-lg"
+          style={{ background: "#4E1F12", color: "#F5F0E8", letterSpacing: "0.01em" }}>
+          Choisis ton type d'amortissement avant de valider
+        </div>
+      )}
       {showPayPopup && (
         <PopupPaiementUnite
           onClose={() => setShowPayPopup(false)}
