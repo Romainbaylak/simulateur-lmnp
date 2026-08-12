@@ -1514,8 +1514,8 @@ export default function Simulateur({ onShowResults }: { onShowResults?: () => vo
               <div className="space-y-5">
                 {/* Verdict */}
                 {verdict && (
-                  <div className="rounded-xl p-4 flex items-center gap-3"
-                    style={{ background: verdict.bg, color: "#F5F0E8" }}>
+                  <div ref={verdictRef} className="rounded-xl p-4 flex items-center gap-3"
+                    style={{ scrollMarginTop: "80px", background: verdict.bg, color: "#F5F0E8" }}>
                     <span className="text-2xl font-bold">{verdict.icon}</span>
                     <div>
                       <div className="font-bold text-xl">{verdict.label}</div>
@@ -1662,7 +1662,7 @@ export default function Simulateur({ onShowResults }: { onShowResults?: () => vo
                         <div className="text-center text-sm font-semibold mb-1" style={{ color: "#1A1612" }}>Choisissez votre régime fiscal</div>
                         <div className="grid gap-2" style={{ gridTemplateColumns: "0.6fr 1.5fr 1.5fr" }}>
                           <div />
-                          <button type="button" onClick={() => setSelectedRegime("reel")}
+                          <button type="button" onClick={() => { setSelectedRegime("reel"); scrollToAmort.current = true; }}
                             className="flex items-center justify-center gap-2 text-[11px] font-bold uppercase tracking-[0.1em] py-2 px-3 rounded-lg transition-all"
                             style={{ background: selectedRegime === "reel" ? "#C95B2A" : "rgba(201,91,42,0.08)", color: selectedRegime === "reel" ? "#F5F0E8" : "#4E1F12", border: selectedRegime === "reel" ? "none" : "1.5px solid rgba(201,91,42,0.25)", cursor: "pointer" }}>
                             <span className="flex-shrink-0 w-4 h-4 rounded-full flex items-center justify-center" style={{ border: `2px solid ${selectedRegime === "reel" ? "#F5F0E8" : "#C95B2A"}` }}>
@@ -1792,7 +1792,7 @@ export default function Simulateur({ onShowResults }: { onShowResults?: () => vo
                             </div>
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-start">
                               {/* Réel — clickable */}
-                              <button type="button" onClick={() => setSelectedRegime("reel")}
+                              <button type="button" onClick={() => { setSelectedRegime("reel"); scrollToAmort.current = true; }}
                                 className="rounded-xl overflow-hidden text-left w-full transition-all hover:shadow-md focus:outline-none group"
                                 style={{ border: "2px solid rgba(201,91,42,0.35)" }}>
                                 {/* Radio header */}
@@ -2010,7 +2010,7 @@ export default function Simulateur({ onShowResults }: { onShowResults?: () => vo
                             </div>
 
                             {/* Titre choix type amortissement */}
-                            <div className="text-center mt-14 mb-8">
+                            <div ref={amortContentRef} className="text-center mt-14 mb-8" style={{ scrollMarginTop: "80px" }}>
                               <span className="text-base font-semibold" style={{ color: "#1A1612" }}>Fais ton choix de méthode d&apos;Amortissement</span>
                             </div>
 
