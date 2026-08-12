@@ -374,7 +374,7 @@ export default function Simulateur({ onShowResults }: { onShowResults?: () => vo
     onShowResults?.();
     setTimeout(() => {
       if (verdictRef.current) {
-        const top = verdictRef.current.getBoundingClientRect().top + window.scrollY - 90;
+        const top = verdictRef.current.getBoundingClientRect().top + window.scrollY - 130;
         window.scrollTo({ top, behavior: "smooth" });
       }
     }, 80);
@@ -463,7 +463,7 @@ export default function Simulateur({ onShowResults }: { onShowResults?: () => vo
     if (scrollToResults.current) {
       scrollToResults.current = false;
       if (verdictRef.current) {
-        const top = verdictRef.current.getBoundingClientRect().top + window.scrollY - 90;
+        const top = verdictRef.current.getBoundingClientRect().top + window.scrollY - 130;
         window.scrollTo({ top, behavior: "smooth" });
       }
     }
@@ -473,7 +473,10 @@ export default function Simulateur({ onShowResults }: { onShowResults?: () => vo
     }
     if (scrollToAmort.current) {
       scrollToAmort.current = false;
-      amortContentRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+      if (amortContentRef.current) {
+        const top = amortContentRef.current.getBoundingClientRect().top + window.scrollY - 120;
+        window.scrollTo({ top, behavior: "smooth" });
+      }
     }
   });
 
@@ -1971,7 +1974,7 @@ export default function Simulateur({ onShowResults }: { onShowResults?: () => vo
                 </div>
 
                 {/* Amortissement — réel uniquement */}
-                {selectedRegime === "reel" && <div className="rounded-xl overflow-hidden" style={cardStyle}>
+                {selectedRegime === "reel" && <div ref={amortContentRef} className="rounded-xl overflow-hidden" style={{ ...cardStyle, scrollMarginTop: "90px" }}>
                   {/* En-tête L'Amortissement */}
                   <div className="px-6 py-4 flex items-center gap-3" style={{ background: "linear-gradient(90deg, #4E1F12 0%, #7A2E15 100%)" }}>
                     <div className="text-xl font-black tracking-tight" style={{ color: "#F5F0E8" }}>L&apos;Amortissement LMNP</div>
@@ -2016,7 +2019,7 @@ export default function Simulateur({ onShowResults }: { onShowResults?: () => vo
                             </div>
 
                             {/* Titre choix type amortissement */}
-                            <div ref={amortContentRef} className="text-center mt-14 mb-8" style={{ scrollMarginTop: "80px" }}>
+                            <div className="text-center mt-14 mb-8">
                               <span className="text-base font-semibold" style={{ color: "#1A1612" }}>Fais ton choix de méthode d&apos;Amortissement</span>
                             </div>
 
