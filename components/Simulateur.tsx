@@ -573,7 +573,6 @@ export default function Simulateur({ onShowResults }: { onShowResults?: () => vo
       if (loyerMensuel > 0) setSliderMax(Math.max(loyerMensuel * 2, 200));
     }
     setSimulationValidated(true);
-    scrollToPdf.current = true;
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
