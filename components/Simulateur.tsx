@@ -1515,7 +1515,7 @@ export default function Simulateur({ onShowResults }: { onShowResults?: () => vo
                   </div>
                 )}
 
-                {/* Boutons PDF + Word + Sauvegarder */}
+                {/* Boutons PDF + Sauvegarder */}
                 <div className="flex flex-wrap justify-center items-center gap-3 pt-2">
                   <button onClick={() => {
                     const plan = getPlan();
@@ -1527,41 +1527,6 @@ export default function Simulateur({ onShowResults }: { onShowResults?: () => vo
                     style={{ background: "#1A4A35", color: "#F5F0E8", letterSpacing: "0.02em" }}>
                     Générer compte rendu PDF
                   </button>
-                  {currentPlan === "pro" && (
-                    <button onClick={async () => {
-                      try {
-                        const sessionData = sessionStorage.getItem("lmnp_simulation_data");
-                        const data = sessionData ? JSON.parse(sessionData) : {
-                          form, amortPct, amortMode: amortMode ?? "ensemble",
-                          amortDureeEnsemble, composants, isSaisonnier, prixNuitee,
-                          tauxOccBas, tauxOccMoyen, tauxOccHaut, resultatsTriple, selectedRegime,
-                        };
-                        const res = await fetch("/api/generate-word", {
-                          method: "POST",
-                          headers: { "Content-Type": "application/json" },
-                          body: JSON.stringify(data),
-                        });
-                        if (!res.ok) throw new Error("Erreur génération Word");
-                        const blob = await res.blob();
-                        const url = URL.createObjectURL(blob);
-                        const a = document.createElement("a");
-                        a.href = url;
-                        a.download = `rapport-lmnp-${new Date().toISOString().slice(0, 10)}.docx`;
-                        a.click();
-                        URL.revokeObjectURL(url);
-                      } catch (e) {
-                        alert("Impossible de générer le fichier Word. Veuillez réessayer.");
-                      }
-                    }}
-                      className="px-10 py-4 text-base font-medium transition-opacity hover:opacity-[0.88] rounded-lg flex items-center gap-2"
-                      style={{ background: "#2B579A", color: "#F5F0E8", letterSpacing: "0.02em" }}>
-                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-                        <polyline points="14 2 14 8 20 8"/>
-                      </svg>
-                      Télécharger en Word
-                    </button>
-                  )}
                   <button onClick={() => setShowSauvegarder(true)}
                     className="flex items-center gap-2 px-6 py-4 text-base font-medium transition-opacity hover:opacity-[0.88] rounded-lg"
                     style={{ background: "#EDE7DC", color: "#4E1F12", border: "1px solid rgba(78,31,18,0.2)" }}>
