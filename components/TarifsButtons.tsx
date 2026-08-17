@@ -4,10 +4,9 @@ import { useUser, SignInButton } from "@clerk/nextjs";
 import { useStripeCheckout } from "@/lib/useStripeCheckout";
 import { useEffect, useRef } from "react";
 
-// ⚠️  Remplace ces IDs par les nouveaux price IDs créés dans le tableau Stripe
-const PRICE_INVESTISSEUR = "price_1Ttn8vRkmRCKEt1coHEDX2yS"; // TODO: remplacer par le price 7,99 €/mois
-const PRICE_PRO          = "price_1Ttn9rRkmRCKEt1cfdcRt1f7"; // TODO: remplacer par le price 24,99 €/mois
-const PRICE_PRO_PLUS     = "price_REPLACE_WITH_PROPLUS_ID";   // TODO: remplacer par le price 149,99 €/mois
+const PRICE_INVESTISSEUR = "price_1U5T8GRkmRCKEt1c1fzR1ohu"; // 7,99 €/mois
+const PRICE_PRO          = "price_1U5T9JRkmRCKEt1ckBI94SLL"; // 24,99 €/mois
+const PRICE_PRO_PLUS     = "price_1U5TACRkmRCKEt1csstjHr1c"; // 149,99 €/mois
 
 // clé sessionStorage pour mémoriser l'abonnement visé avant connexion
 const PENDING_KEY = "lmnp_pending_checkout";
