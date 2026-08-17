@@ -885,7 +885,40 @@ export default function Simulateur({ onShowResults }: { onShowResults?: () => vo
 
               {/* TMI */}
               <div>
-                <label className={LABEL}>Tranche marginale d&apos;imposition (TMI)</label>
+                <label className={LABEL}>
+                  Tranche marginale d&apos;imposition (TMI)
+                  <span className="relative group inline-flex items-center justify-center ml-1.5 align-middle">
+                    <span className="w-4 h-4 rounded-full border border-current text-[9px] font-bold inline-flex items-center justify-center cursor-default select-none" style={{ color: "rgba(26,22,18,0.45)", borderColor: "rgba(26,22,18,0.35)" }}>?</span>
+                    <span className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 z-50 hidden group-hover:block w-64 rounded-lg shadow-lg text-left"
+                      style={{ background: "#1A1612", color: "#F5F0E8", padding: "10px 12px", fontSize: "11px", lineHeight: "1.5" }}>
+                      <span className="block font-semibold mb-1.5" style={{ fontSize: "11.5px" }}>Taux Marginal d&apos;Imposition</span>
+                      <span className="block mb-2" style={{ color: "rgba(245,240,232,0.75)" }}>Taux qui s&apos;applique à la tranche la plus élevée de vos revenus.</span>
+                      <table className="w-full" style={{ borderCollapse: "collapse", fontSize: "10px" }}>
+                        <thead>
+                          <tr style={{ borderBottom: "1px solid rgba(245,240,232,0.2)" }}>
+                            <th className="text-left pb-1" style={{ color: "rgba(245,240,232,0.55)", fontWeight: 500 }}>Tranche</th>
+                            <th className="text-right pb-1" style={{ color: "rgba(245,240,232,0.55)", fontWeight: 500 }}>TMI</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {[
+                            ["Jusqu'à 10 225 €", "0 %"],
+                            ["10 226 € – 26 070 €", "11 %"],
+                            ["26 071 € – 74 545 €", "30 %"],
+                            ["74 546 € – 160 336 €", "41 %"],
+                            ["Plus de 160 336 €", "45 %"],
+                          ].map(([tranche, taux]) => (
+                            <tr key={taux} style={{ borderBottom: "1px solid rgba(245,240,232,0.08)" }}>
+                              <td className="py-0.5" style={{ color: "rgba(245,240,232,0.85)" }}>{tranche}</td>
+                              <td className="text-right py-0.5 font-semibold">{taux}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                      <span className="absolute left-1/2 -translate-x-1/2 top-full w-0 h-0" style={{ borderLeft: "6px solid transparent", borderRight: "6px solid transparent", borderTop: "6px solid #1A1612" }} />
+                    </span>
+                  </span>
+                </label>
                 <div className="flex rounded-md overflow-hidden" style={{ border: "0.5px solid rgba(26,22,18,0.12)" }}>
                   {([0, 11, 30, 41, 45] as TMI[]).map(t => (
                     <button key={t} onClick={() => updateField("tmi", t)}
