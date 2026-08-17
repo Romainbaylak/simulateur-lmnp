@@ -640,8 +640,8 @@ export async function generateWordReport(input: WordReportInput): Promise<Buffer
   const bicBase = loyerAnnuel * 0.50;
   const bicImpot = bicBase * (tmi / 100 + 0.186);
 
-  const annexeAHeaderMicro = [th("An", annexeACols[0]), th("CRD fin", annexeACols[1], true), th("Annuité", annexeACols[2], true), th("Intérêts", annexeACols[3], true), th("Cap. remb.", annexeACols[4], true), th("Charges", annexeACols[5], true), th("Base BIC", annexeACols[6], true), th("Impôt", annexeACols[7], true), th("CF/mois", annexeACols[8], true)];
-  const annexeAHeaderReel = [th("An", annexeACols[0]), th("CRD fin", annexeACols[1], true), th("Annuité", annexeACols[2], true), th("Intérêts", annexeACols[3], true), th("Cap.remb.", annexeACols[4], true), th("Charges", annexeACols[5], true), th("Rés.av.amort", annexeACols[6], true), th("Amort.", annexeACols[7], true), th("Base impos.", annexeACols[8], true), th("Impôt", annexeACols[9], true), th("CF/mois", annexeACols[10], true)];
+  const annexeAHeaderMicro = [th("An", annexeACols[0]), th("Capital restant dû", annexeACols[1], true), th("Annuité", annexeACols[2], true), th("Intérêts", annexeACols[3], true), th("Cap. remb.", annexeACols[4], true), th("Charges", annexeACols[5], true), th("Base BIC", annexeACols[6], true), th("Impôt", annexeACols[7], true), th("CF/mois", annexeACols[8], true)];
+  const annexeAHeaderReel = [th("An", annexeACols[0]), th("Capital restant dû", annexeACols[1], true), th("Annuité", annexeACols[2], true), th("Intérêts", annexeACols[3], true), th("Cap.remb.", annexeACols[4], true), th("Charges", annexeACols[5], true), th("Rés.av.amort", annexeACols[6], true), th("Amort.", annexeACols[7], true), th("Base impos.", annexeACols[8], true), th("Impôt", annexeACols[9], true), th("CF/mois", annexeACols[10], true)];
 
   const annexeARows = rows.map(ro => {
     if (isMicro) {

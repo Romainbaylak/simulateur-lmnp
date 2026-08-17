@@ -1199,7 +1199,7 @@ ${isMicro ? (() => {
   return `<table class="tbl">
   <thead><tr>
     <th class="can">An</th>
-    <th class="r" style="font-size:8.5px">CRD fin</th>
+    <th class="r" style="font-size:8.5px">Capital restant dû</th>
     <th class="r" style="font-size:8.5px">Annuité</th>
     <th class="r" style="font-size:8.5px">Intérêts</th>
     <th class="r" style="font-size:8.5px">Capital remb.</th>
@@ -1228,7 +1228,7 @@ ${isMicro ? (() => {
 })() : `<table class="tbl">
   <thead><tr>
     <th class="can">An</th>
-    <th class="r" style="font-size:8.5px">CRD fin</th>
+    <th class="r" style="font-size:8.5px">Capital restant dû</th>
     <th class="r" style="font-size:8.5px">Annuité</th>
     <th class="r" style="font-size:8.5px">Intérêts</th>
     <th class="r" style="font-size:8.5px">Capital remb.</th>
@@ -2271,7 +2271,7 @@ ${isMicro ? `
 <table class="tbl" style="margin-bottom:14px">
   <thead><tr>
     <th>Année</th>
-    <th class="r">CRD fin</th>
+    <th class="r">Capital restant dû</th>
     <th class="r">Capital remb. cumulé</th>
     ${!isMicro ? `<th class="r">Amortissement</th>` : ""}
     <th class="r">Base imposable</th>
@@ -2440,7 +2440,7 @@ ${isMicro ? (() => {
   return `<table class="tbl">
   <thead><tr>
     <th class="can">An</th>
-    <th class="r" style="font-size:8px">CRD fin</th>
+    <th class="r" style="font-size:8px">Capital restant dû</th>
     <th class="r" style="font-size:8px">Annuité</th>
     <th class="r" style="font-size:8px">Intérêts</th>
     <th class="r" style="font-size:8px">Capital remb.</th>
@@ -2472,7 +2472,7 @@ ${isMicro ? (() => {
 })() : `<table class="tbl">
   <thead><tr>
     <th class="can">An</th>
-    <th class="r" style="font-size:8px">CRD fin</th>
+    <th class="r" style="font-size:8px">Capital restant dû</th>
     <th class="r" style="font-size:8px">Annuité</th>
     <th class="r" style="font-size:8px">Intérêts</th>
     <th class="r" style="font-size:8px">Capital remb.</th>
