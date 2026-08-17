@@ -2091,71 +2091,103 @@ export default function Simulateur({ onShowResults }: { onShowResults?: () => vo
                                             style={{ color: amortMode === "composant" ? "#F5F0E8" : C2 }}>{formatEuro(valAmort2)}</div>
                                         </div>
                                       </div>
-                                      {/* Table column headers — hidden on mobile, shown on md+ */}
-                                      <div className="hidden md:flex px-4 py-2 items-center gap-2" style={{ background: "rgba(42,112,128,0.08)", borderBottom: "1px solid rgba(42,112,128,0.12)" }}>
-                                        <span className="text-[11px] font-semibold uppercase tracking-wider" style={{ color: "rgba(42,112,128,0.7)", width: 100 }}>Composant</span>
-                                        <span className="text-[11px] font-semibold uppercase tracking-wider" style={{ color: "rgba(42,112,128,0.7)", flex: 1 }}>Quote-part %</span>
-                                        <span className="text-[11px] font-semibold uppercase tracking-wider" style={{ color: "rgba(42,112,128,0.7)", width: 80 }}>Durée</span>
-                                        <span className="text-[11px] font-semibold uppercase tracking-wider text-right" style={{ color: C2, width: 70 }}>Amort/an</span>
-                                      </div>
-                                      {/* Rows */}
-                                      {composants.map((c, i) => {
-                                        const val = valAmort2 * c.pct / 100;
-                                        return (
-                                          <div key={c.label} className="px-3 py-2"
-                                            style={{ borderBottom: "0.5px solid rgba(26,22,18,0.06)", background: i % 2 === 0 ? "#FDFAF6" : "#F8F4EE" }}>
-                                            {/* Mobile layout: label on top, inputs in a row */}
-                                            <div className="md:hidden mb-1">
-                                              <span className="text-[13px] font-semibold" style={{ color: "#1A1612" }}>{c.label}</span>
-                                            </div>
-                                            <div className="flex items-center gap-1.5">
-                                              {/* Name — desktop only */}
-                                              <span className="hidden md:inline text-[13px] font-semibold" style={{ color: "#1A1612", width: 100 }}>{c.label}</span>
-                                              {/* % input */}
-                                              <div className="flex items-center gap-1 flex-1">
+                                      {/* ── MOBILE table: single CSS grid so columns align across rows ── */}
+                                      <div className="md:hidden" style={{
+                                        display: "grid",
+                                        gridTemplateColumns: "1fr 56px 62px 60px",
+                                        columnGap: 4,
+                                      }}>
+                                        {/* Header */}
+                                        {["Composant", "%  /  Valeur", "Durée", "/ an"].map((h, hi) => (
+                                          <div key={h} className="px-2 py-1.5 text-[10px] font-semibold uppercase tracking-wider"
+                                            style={{ background: "rgba(42,112,128,0.08)", borderBottom: "1px solid rgba(42,112,128,0.12)", color: hi === 3 ? C2 : "rgba(42,112,128,0.7)", textAlign: hi >= 1 ? "center" : "left" }}>
+                                            {h}
+                                          </div>
+                                        ))}
+                                        {/* Data rows */}
+                                        {composants.map((c, i) => {
+                                          const val = valAmort2 * c.pct / 100;
+                                          const rowBg = i % 2 === 0 ? "#FDFAF6" : "#F8F4EE";
+                                          const border = "0.5px solid rgba(26,22,18,0.06)";
+                                          return [
+                                            /* Col 1: name */
+                                            <div key={`${c.label}-n`} className="px-2 flex items-center text-[11px] font-semibold" style={{ color: "#1A1612", background: rowBg, borderBottom: border, minHeight: 38 }}>{c.label}</div>,
+                                            /* Col 2: % input + valeur */
+                                            <div key={`${c.label}-p`} className="flex flex-col items-center justify-center gap-0.5 py-1" style={{ background: rowBg, borderBottom: border }}>
+                                              <div className="flex items-center gap-0.5">
                                                 <input type="number" min={0} max={100} value={c.pct === 0 ? "" : c.pct}
                                                   placeholder="0"
                                                   onClick={e => e.stopPropagation()}
-                                                  onChange={e => {
-                                                    const raw = e.target.value;
-                                                    const v = raw === "" ? 0 : Math.min(100, Math.max(0, parseInt(raw) || 0));
-                                                    setComposants(prev => prev.map((x, j) => j === i ? { ...x, pct: v } : x));
-                                                  }}
-                                                  className={inputCls} style={{ ...INPUT_STYLE, width: 44 }} />
-                                                <span className="text-[12px]" style={{ color: "rgba(26,22,18,0.5)" }}>%</span>
-                                                <span className="text-[11px] hidden sm:inline" style={{ color: "rgba(26,22,18,0.4)" }}>soit</span>
-                                                <span className="text-[12px] font-bold" style={{ color: C2 }}>{formatEuro(val)}</span>
+                                                  onChange={e => { const raw = e.target.value; const v = raw === "" ? 0 : Math.min(100, Math.max(0, parseInt(raw) || 0)); setComposants(prev => prev.map((x, j) => j === i ? { ...x, pct: v } : x)); }}
+                                                  className={inputCls} style={{ ...INPUT_STYLE, width: 34, fontSize: 12, padding: "3px 4px" }} />
+                                                <span className="text-[11px]" style={{ color: "rgba(26,22,18,0.5)" }}>%</span>
                                               </div>
-                                              {/* durée input */}
-                                              <div className="flex items-center gap-1" style={{ width: 80 }}>
-                                                <span className="text-[11px]" style={{ color: "rgba(26,22,18,0.4)" }}>sur</span>
+                                              <span className="text-[10px] font-bold" style={{ color: C2 }}>{formatEuro(val)}</span>
+                                            </div>,
+                                            /* Col 3: durée input */
+                                            <div key={`${c.label}-d`} className="flex flex-col items-center justify-center gap-0.5 py-1" style={{ background: rowBg, borderBottom: border }}>
+                                              <div className="flex items-center gap-0.5">
                                                 <input type="number" min={0} max={100} value={c.duree === 0 ? "" : c.duree}
                                                   placeholder="0"
                                                   onClick={e => e.stopPropagation()}
-                                                  onChange={e => {
-                                                    const raw = e.target.value;
-                                                    const v = raw === "" ? 0 : Math.min(100, Math.max(0, parseInt(raw) || 0));
-                                                    setComposants(prev => prev.map((x, j) => j === i ? { ...x, duree: v } : x));
-                                                  }}
-                                                  className={inputCls} style={{ ...INPUT_STYLE, width: 40 }} />
+                                                  onChange={e => { const raw = e.target.value; const v = raw === "" ? 0 : Math.min(100, Math.max(0, parseInt(raw) || 0)); setComposants(prev => prev.map((x, j) => j === i ? { ...x, duree: v } : x)); }}
+                                                  className={inputCls} style={{ ...INPUT_STYLE, width: 34, fontSize: 12, padding: "3px 4px" }} />
+                                                <span className="text-[11px]" style={{ color: "rgba(26,22,18,0.5)" }}>ans</span>
+                                              </div>
+                                            </div>,
+                                            /* Col 4: amort/an */
+                                            <div key={`${c.label}-a`} className="flex items-center justify-center text-[11px] font-bold" style={{ color: C2, background: rowBg, borderBottom: border }}>{formatEuro(c.duree > 0 ? val / c.duree : 0)}</div>,
+                                          ];
+                                        })}
+                                        {/* Total row */}
+                                        <div className="px-2 py-2 text-[13px] font-bold col-span-1" style={{ background: "rgba(42,112,128,0.1)", borderTop: "1px solid rgba(42,112,128,0.15)", color: "#1A1612" }}>Total</div>
+                                        <div className="py-2 flex items-center justify-center text-[13px] font-bold" style={{ background: "rgba(42,112,128,0.1)", borderTop: "1px solid rgba(42,112,128,0.15)", color: totalPct === 100 ? "#1A7A52" : "#B03A2A" }}>{totalPct} %{totalPct !== 100 && " ⚠"}</div>
+                                        <div className="py-2" style={{ background: "rgba(42,112,128,0.1)", borderTop: "1px solid rgba(42,112,128,0.15)" }} />
+                                        <div className="py-2 flex items-center justify-center text-[12px] font-bold" style={{ background: "rgba(42,112,128,0.1)", borderTop: "1px solid rgba(42,112,128,0.15)", color: C2 }}>{formatEuro(composants.reduce((s, c) => s + (valAmort2 * c.pct / 100) / (c.duree || 1), 0))}/an</div>
+                                      </div>
+
+                                      {/* ── DESKTOP table: flex rows ── */}
+                                      <div className="hidden md:block">
+                                        <div className="flex px-4 py-2 items-center gap-2" style={{ background: "rgba(42,112,128,0.08)", borderBottom: "1px solid rgba(42,112,128,0.12)" }}>
+                                          <span className="text-[11px] font-semibold uppercase tracking-wider" style={{ color: "rgba(42,112,128,0.7)", width: 100 }}>Composant</span>
+                                          <span className="text-[11px] font-semibold uppercase tracking-wider" style={{ color: "rgba(42,112,128,0.7)", flex: 1 }}>Quote-part %</span>
+                                          <span className="text-[11px] font-semibold uppercase tracking-wider" style={{ color: "rgba(42,112,128,0.7)", width: 80 }}>Durée</span>
+                                          <span className="text-[11px] font-semibold uppercase tracking-wider text-right" style={{ color: C2, width: 70 }}>Amort/an</span>
+                                        </div>
+                                        {composants.map((c, i) => {
+                                          const val = valAmort2 * c.pct / 100;
+                                          return (
+                                            <div key={c.label} className="flex items-center gap-2 px-4 py-2.5"
+                                              style={{ borderBottom: "0.5px solid rgba(26,22,18,0.06)", background: i % 2 === 0 ? "#FDFAF6" : "#F8F4EE" }}>
+                                              <span className="text-[13px] font-semibold" style={{ color: "#1A1612", width: 100 }}>{c.label}</span>
+                                              <div className="flex items-center gap-1" style={{ flex: 1 }}>
+                                                <input type="number" min={0} max={100} value={c.pct === 0 ? "" : c.pct}
+                                                  placeholder="0" onClick={e => e.stopPropagation()}
+                                                  onChange={e => { const raw = e.target.value; const v = raw === "" ? 0 : Math.min(100, Math.max(0, parseInt(raw) || 0)); setComposants(prev => prev.map((x, j) => j === i ? { ...x, pct: v } : x)); }}
+                                                  className={inputCls} style={{ ...INPUT_STYLE, width: 50 }} />
+                                                <span className="text-[12px]" style={{ color: "rgba(26,22,18,0.5)" }}>%</span>
+                                                <span className="text-[12px] ml-1" style={{ color: "rgba(26,22,18,0.4)" }}>soit</span>
+                                                <span className="text-[13px] font-bold" style={{ color: C2 }}>{formatEuro(val)}</span>
+                                              </div>
+                                              <div className="flex items-center gap-1" style={{ width: 80 }}>
+                                                <span className="text-[12px]" style={{ color: "rgba(26,22,18,0.4)" }}>sur</span>
+                                                <input type="number" min={0} max={100} value={c.duree === 0 ? "" : c.duree}
+                                                  placeholder="0" onClick={e => e.stopPropagation()}
+                                                  onChange={e => { const raw = e.target.value; const v = raw === "" ? 0 : Math.min(100, Math.max(0, parseInt(raw) || 0)); setComposants(prev => prev.map((x, j) => j === i ? { ...x, duree: v } : x)); }}
+                                                  className={inputCls} style={{ ...INPUT_STYLE, width: 44 }} />
                                                 <span className="text-[12px]" style={{ color: "rgba(26,22,18,0.5)" }}>ans</span>
                                               </div>
-                                              {/* amort/an */}
-                                              <div className="flex items-center gap-1" style={{ width: 70, justifyContent: "flex-end" }}>
-                                                <span className="text-[11px] font-light" style={{ color: "rgba(26,22,18,0.25)" }}>=</span>
-                                                <span className="text-[12px] font-bold" style={{ color: C2 }}>{formatEuro(c.duree > 0 ? val / c.duree : 0)}</span>
+                                              <div className="flex items-center gap-1.5" style={{ width: 70, justifyContent: "flex-end" }}>
+                                                <span className="text-[13px] font-bold" style={{ color: C2 }}>{formatEuro(c.duree > 0 ? val / c.duree : 0)}</span>
                                               </div>
                                             </div>
-                                          </div>
-                                        );
-                                      })}
-                                      {/* Total row */}
-                                      <div className="flex items-center gap-2 px-3 py-3" style={{ background: "rgba(42,112,128,0.1)", borderTop: "1px solid rgba(42,112,128,0.15)" }}>
-                                        <span className="text-[15px] font-bold" style={{ color: "#1A1612", flex: 1 }}>Total</span>
-                                        <span className="text-[15px] font-bold" style={{ color: totalPct === 100 ? "#1A7A52" : "#B03A2A" }}>
-                                          {totalPct} %{totalPct !== 100 && " ⚠"}
-                                        </span>
-                                        <span className="text-[15px] font-bold ml-auto" style={{ color: C2 }}>{formatEuro(composants.reduce((s, c) => s + (valAmort2 * c.pct / 100) / (c.duree || 1), 0))}/an</span>
+                                          );
+                                        })}
+                                        <div className="flex items-center gap-2 px-4 py-3" style={{ background: "rgba(42,112,128,0.1)", borderTop: "1px solid rgba(42,112,128,0.15)" }}>
+                                          <span className="text-[15px] font-bold" style={{ color: "#1A1612", flex: 1 }}>Total</span>
+                                          <span className="text-[15px] font-bold" style={{ color: totalPct === 100 ? "#1A7A52" : "#B03A2A" }}>{totalPct} %{totalPct !== 100 && " ⚠"}</span>
+                                          <span className="text-[15px] font-bold ml-auto" style={{ color: C2 }}>{formatEuro(composants.reduce((s, c) => s + (valAmort2 * c.pct / 100) / (c.duree || 1), 0))}/an</span>
+                                        </div>
                                       </div>
                                       {/* Warnings */}
                                       {totalPct !== 100 && (
