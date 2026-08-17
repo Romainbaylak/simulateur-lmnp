@@ -4,8 +4,10 @@ import { useUser, SignInButton } from "@clerk/nextjs";
 import { useStripeCheckout } from "@/lib/useStripeCheckout";
 import { useEffect, useRef } from "react";
 
-const PRICE_INVESTISSEUR = "price_1Ttn8vRkmRCKEt1coHEDX2yS";
-const PRICE_PRO = "price_1Ttn9rRkmRCKEt1cfdcRt1f7";
+// ⚠️  Remplace ces IDs par les nouveaux price IDs créés dans le tableau Stripe
+const PRICE_INVESTISSEUR = "price_1Ttn8vRkmRCKEt1coHEDX2yS"; // TODO: remplacer par le price 7,99 €/mois
+const PRICE_PRO          = "price_1Ttn9rRkmRCKEt1cfdcRt1f7"; // TODO: remplacer par le price 24,99 €/mois
+const PRICE_PRO_PLUS     = "price_REPLACE_WITH_PROPLUS_ID";   // TODO: remplacer par le price 149,99 €/mois
 
 // clé sessionStorage pour mémoriser l'abonnement visé avant connexion
 const PENDING_KEY = "lmnp_pending_checkout";
@@ -95,7 +97,7 @@ export function InvestisseurButton() {
     <SubscribeButton
       priceId={PRICE_INVESTISSEUR}
       plan="starter"
-      label="Commencer — 4,99 €/mois"
+      label="Commencer — 7,99 €/mois"
       style={{ backgroundColor: "#C95B2A", color: "#F5F0E8" }}
     />
   );
@@ -106,9 +108,21 @@ export function ProButton() {
     <SubscribeButton
       priceId={PRICE_PRO}
       plan="pro"
-      label="Passer Pro — 12,99 €/mois"
+      label="Passer Pro — 24,99 €/mois"
       style={{ backgroundColor: "#F5F0E8", color: "#1A1612" }}
       errorStyle={{ color: "#C95B2A" }}
+    />
+  );
+}
+
+export function ProPlusButton() {
+  return (
+    <SubscribeButton
+      priceId={PRICE_PRO_PLUS}
+      plan="pro_plus"
+      label="Accès Pro+ — 149,99 €/mois"
+      style={{ backgroundColor: "#C95B2A", color: "#F5F0E8" }}
+      errorStyle={{ color: "rgba(245,240,232,0.6)" }}
     />
   );
 }

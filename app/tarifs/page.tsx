@@ -3,7 +3,7 @@ import Link from "next/link";
 import type { Metadata } from "next";
 import HeaderAuth from "@/components/HeaderAuth";
 import MobileHeader from "@/components/MobileHeader";
-import { InvestisseurButton, ProButton } from "@/components/TarifsButtons";
+import { InvestisseurButton, ProButton, ProPlusButton } from "@/components/TarifsButtons";
 
 export const metadata: Metadata = {
   title: "Abonnements – toutlmnp",
@@ -43,8 +43,8 @@ export default function TarifsPage() {
         </div>
       </div>
 
-      <div className="max-w-5xl mx-auto px-4 py-16">
-        <div className="grid md:grid-cols-3 gap-6 items-start">
+      <div className="max-w-6xl mx-auto px-4 py-16">
+        <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 items-start">
 
           {/* Gratuit */}
           <div className="rounded-xl p-8 flex flex-col" style={{ background: "#F5F0E8", border: "0.5px solid rgba(26,22,18,0.12)" }}>
@@ -86,7 +86,7 @@ export default function TarifsPage() {
             <div className="mb-6">
               <h2 className="font-light text-2xl text-[#1A1612] mb-2" style={{ letterSpacing: "-0.02em" }}>Investisseur</h2>
               <div className="flex items-baseline gap-1 mb-1">
-                <span className="text-4xl font-light" style={{ color: "#C95B2A", letterSpacing: "-0.03em" }}>4,99 €</span>
+                <span className="text-4xl font-light" style={{ color: "#C95B2A", letterSpacing: "-0.03em" }}>7,99 €</span>
                 <span style={{ color: "rgba(26,22,18,0.4)", fontSize: 14 }}>/mois</span>
               </div>
               <div className="text-sm" style={{ color: "rgba(26,22,18,0.4)" }}>Sans engagement</div>
@@ -119,7 +119,7 @@ export default function TarifsPage() {
             <div className="mb-6">
               <h2 className="font-light text-2xl mb-2" style={{ color: "#F5F0E8", letterSpacing: "-0.02em" }}>Pro</h2>
               <div className="flex items-baseline gap-1 mb-1">
-                <span className="text-4xl font-light" style={{ color: "#C95B2A", letterSpacing: "-0.03em" }}>12,99 €</span>
+                <span className="text-4xl font-light" style={{ color: "#C95B2A", letterSpacing: "-0.03em" }}>24,99 €</span>
                 <span style={{ color: "rgba(245,240,232,0.35)", fontSize: 14 }}>/mois</span>
               </div>
               <div className="text-sm" style={{ color: "rgba(245,240,232,0.35)" }}>Sans engagement</div>
@@ -145,6 +145,47 @@ export default function TarifsPage() {
             </ul>
             <ProButton />
             <p className="text-xs text-center mt-3" style={{ color: "rgba(245,240,232,0.25)" }}>
+              Paiement sécurisé via Stripe · Sans engagement
+            </p>
+          </div>
+
+          {/* Pro+ */}
+          <div className="rounded-xl p-8 flex flex-col relative"
+            style={{ background: "#2C1A10", border: "1.5px solid rgba(201,91,42,0.6)", boxShadow: "0 0 0 3px rgba(201,91,42,0.12)" }}>
+            <div className="absolute -top-3 left-6">
+              <span className="text-[10px] uppercase tracking-[0.12em] font-medium px-3 py-1 rounded"
+                style={{ background: "#C95B2A", color: "#F5F0E8" }}>PROFESSIONNEL</span>
+            </div>
+            <div className="mb-6">
+              <h2 className="font-light text-2xl mb-2" style={{ color: "#F5F0E8", letterSpacing: "-0.02em" }}>Pro+</h2>
+              <div className="flex items-baseline gap-1 mb-1">
+                <span className="text-4xl font-light" style={{ color: "#C95B2A", letterSpacing: "-0.03em" }}>149,99 €</span>
+                <span style={{ color: "rgba(245,240,232,0.35)", fontSize: 14 }}>/mois</span>
+              </div>
+              <div className="text-sm" style={{ color: "rgba(245,240,232,0.35)" }}>Sans engagement</div>
+            </div>
+            <p className="text-sm leading-relaxed mb-6" style={{ color: "rgba(245,240,232,0.7)" }}>
+              Vous êtes un professionnel ? Donnez un accès premium à tous vos clients qui auront accès à l&apos;outil complet et pourront faire leurs propres simulations.
+            </p>
+            <ul className="space-y-3 mb-8 flex-1">
+              {[
+                "Tout le plan Pro inclus",
+                "Accès multi-clients illimité",
+                "Chaque client simule en autonomie",
+                "Outil complet pour vos clients",
+                "Personal branding — votre marque",
+                "Dashboard de gestion clients",
+                "Support dédié prioritaire",
+              ].map(f => (
+                <li key={f} className="flex items-center gap-3 text-sm" style={{ color: "rgba(245,240,232,0.65)" }}>
+                  <span className="w-4 h-4 rounded-full flex items-center justify-center text-[10px] flex-shrink-0"
+                    style={{ background: "rgba(201,91,42,0.35)", color: "#C95B2A" }}>✓</span>
+                  {f}
+                </li>
+              ))}
+            </ul>
+            <ProPlusButton />
+            <p className="text-xs text-center mt-3" style={{ color: "rgba(245,240,232,0.2)" }}>
               Paiement sécurisé via Stripe · Sans engagement
             </p>
           </div>
