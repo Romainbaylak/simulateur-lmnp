@@ -1091,6 +1091,11 @@ ${(() => {
     return (N - 5) * 0.0165;
   };
 
+  // Amortissements cumulés au fil des ans (réintégration Loi de finances 2025 pour LMNP réel)
+  const amortCumulByYear: Record<number, number> = {};
+  let cumul = 0;
+  for (const ro of rows) { cumul += ro.amortTotalA; amortCumulByYear[ro.year] = cumul; }
+
   const reventeYears = [10, 25, 35];
   const growthScenarios = [
     { label: "Valeur stable (0 %/an)", pct: 0, color: "#6B4226" },
@@ -1099,27 +1104,30 @@ ${(() => {
 
   const getRow = (year: number) => rows.find(ro => ro.year === year) ?? rows[rows.length - 1];
 
-  // Build 3 year-cards, each with 2 scenario rows
   const yearCards = reventeYears.map(yr => {
     const abIR = abattIR(yr);
     const abPS = abattPS(yr);
     const exoIRTag = abIR >= 1 ? `<span style="display:inline-block;font-size:7.5px;background:#1A7A52;color:#fff;border-radius:3px;padding:1px 5px;margin-left:6px;font-weight:600">IR exonéré</span>` : abIR > 0 ? `<span style="display:inline-block;font-size:7.5px;background:rgba(176,138,42,0.18);color:#B08A2A;border-radius:3px;padding:1px 5px;margin-left:6px">Abatt. IR ${Math.round(abIR*100)} %</span>` : "";
-    const exoPSTag = abPS >= 1 ? `<span style="display:inline-block;font-size:7.5px;background:#1A7A52;color:#fff;border-radius:3px;padding:1px 5px;margin-left:4px;font-weight:600">PS exonérés</span>` : "";
+    const exoPSTag = abPS >= 1 ? `<span style="display:inline-block;font-size:7.5px;background:#1A7A52;color:#fff;border-radius:3px;padding:1px 5px;margin-left:4px;font-weight:600">Prél. soc. exonérés</span>` : "";
     const row = getRow(yr);
     const crd = yr <= duree ? (row?.capitalFin ?? 0) : 0;
+    // Réintégration des amortissements dans l'assiette de plus-value (Loi de finances 2025 — LMNP réel)
+    const amortCumul = isMicro ? 0 : (amortCumulByYear[yr] ?? amortCumulByYear[Math.max(...Object.keys(amortCumulByYear).map(Number).filter(k => k <= yr))] ?? 0);
     const scenRows = growthScenarios.map((sc, si) => {
       const prixVente = investTotal * Math.pow(1 + sc.pct, yr);
-      const pvBrute = Math.max(0, prixVente - investTotal);
+      // Plus-value brute = prix de vente − (investTotal − amortissements réintégrés)
+      const pvBrute = Math.max(0, prixVente - investTotal + amortCumul);
       const taxIR = pvBrute * (1 - abattIR(yr)) * 0.19;
       const taxPS = pvBrute * (1 - abattPS(yr)) * 0.172;
-      const impotPV = taxIR + taxPS;
-      const net = prixVente - crd - impotPV;
+      const impotTotal = taxIR + taxPS;
+      const net = prixVente - crd - impotTotal;
       const netColor = net >= investTotal ? "#1A7A52" : net >= 0 ? "#B08A2A" : "#B03A2A";
       return `<tr style="background:${si === 0 ? "#F5F0E8" : "#EDE7DC"}">
         <td style="padding:7px 10px;font-size:9px;font-weight:600;color:${sc.color};border-right:1px solid rgba(26,22,18,0.08);white-space:nowrap">${sc.label}</td>
         <td style="padding:7px 8px;font-size:9px;text-align:right;color:#1A1612;border-right:1px solid rgba(26,22,18,0.08)">${fE(prixVente)}</td>
         <td style="padding:7px 8px;font-size:9px;text-align:right;color:${crd > 0 ? "#B03A2A" : "rgba(26,22,18,0.3)"};border-right:1px solid rgba(26,22,18,0.08)">${crd > 0 ? `−${fE(crd)}` : "—"}</td>
-        <td style="padding:7px 8px;font-size:9px;text-align:right;color:${impotPV > 0 ? "#B03A2A" : "#1A7A52"};border-right:1px solid rgba(26,22,18,0.08)">${impotPV > 0 ? `−${fE(impotPV)}` : "0 € ✓"}</td>
+        <td style="padding:7px 8px;font-size:9px;text-align:right;color:${taxIR > 0 ? "#B03A2A" : "#1A7A52"};border-right:1px solid rgba(26,22,18,0.08)">${taxIR > 0 ? `−${fE(taxIR)}` : "0 € ✓"}</td>
+        <td style="padding:7px 8px;font-size:9px;text-align:right;color:${taxPS > 0 ? "#B03A2A" : "#1A7A52"};border-right:1px solid rgba(26,22,18,0.08)">${taxPS > 0 ? `−${fE(taxPS)}` : "0 € ✓"}</td>
         <td style="padding:7px 10px;text-align:right"><span style="font-size:12px;font-weight:800;color:${netColor}">${fE(net)}</span></td>
       </tr>`;
     }).join("");
@@ -1130,11 +1138,12 @@ ${(() => {
       </div>
       <table style="width:100%;border-collapse:collapse">
         <thead><tr style="background:rgba(26,22,18,0.04)">
-          <th style="padding:6px 10px;font-size:8.5px;font-weight:500;color:#1A1612;text-align:left;border-right:1px solid rgba(26,22,18,0.08)">Scénario</th>
-          <th style="padding:6px 8px;font-size:8.5px;font-weight:500;color:#1A1612;text-align:right;border-right:1px solid rgba(26,22,18,0.08)">Prix de vente</th>
-          <th style="padding:6px 8px;font-size:8.5px;font-weight:500;color:#1A1612;text-align:right;border-right:1px solid rgba(26,22,18,0.08)">CRD crédit</th>
-          <th style="padding:6px 8px;font-size:8.5px;font-weight:500;color:#1A1612;text-align:right;border-right:1px solid rgba(26,22,18,0.08)">Impôt PV</th>
-          <th style="padding:6px 10px;font-size:8.5px;font-weight:600;color:#4E1F12;text-align:right">Net dans la poche</th>
+          <th style="padding:6px 10px;font-size:8px;font-weight:500;color:#1A1612;text-align:left;border-right:1px solid rgba(26,22,18,0.08)">Scénario</th>
+          <th style="padding:6px 8px;font-size:8px;font-weight:500;color:#1A1612;text-align:right;border-right:1px solid rgba(26,22,18,0.08)">Prix de vente</th>
+          <th style="padding:6px 8px;font-size:8px;font-weight:500;color:#1A1612;text-align:right;border-right:1px solid rgba(26,22,18,0.08)">Crédit restant dû</th>
+          <th style="padding:6px 8px;font-size:8px;font-weight:500;color:#1A1612;text-align:right;border-right:1px solid rgba(26,22,18,0.08)">Impôt sur la plus-value (IR 19 %)*</th>
+          <th style="padding:6px 8px;font-size:8px;font-weight:500;color:#1A1612;text-align:right;border-right:1px solid rgba(26,22,18,0.08)">Prélèvements sociaux (17,2 %)**</th>
+          <th style="padding:6px 10px;font-size:8px;font-weight:600;color:#4E1F12;text-align:right">Net dans la poche</th>
         </tr></thead>
         <tbody>${scenRows}</tbody>
       </table>
@@ -1146,28 +1155,31 @@ ${(() => {
 <h2 class="ch"><span class="num">6.</span>Scénarios de revente</h2>
 
 <div style="font-size:10px;line-height:1.7;color:#1A1612;margin-bottom:16px;background:#EDE7DC;border-radius:7px;padding:12px 14px">
-  <strong>Avantage LMNP :</strong> la plus-value est calculée sur la différence entre le prix de vente et le <strong>prix d'acquisition initial</strong> (sans réintégration des amortissements déduits). Les abattements pour durée de détention s'appliquent dès la 6<sup>e</sup> année — <strong>exonération IR totale à 22 ans, PS totale à 30 ans</strong>.
+  ${isMicro
+    ? `<strong>Plus-value en Micro-BIC :</strong> Aucun amortissement n'est réintégré dans l'assiette de plus-value. La plus-value brute = prix de vente − prix d'acquisition initial. Les abattements pour durée de détention s'appliquent dès la 6<sup>e</sup> année — <strong>exonération Impôt sur le Revenu totale à 22 ans, Prélèvements sociaux totaux à 30 ans</strong>.`
+    : `<strong>Plus-value en régime réel (Loi de finances 2025) :</strong> Depuis 2025, les amortissements déduits fiscalement sont <strong>réintégrés</strong> dans le calcul de la plus-value imposable. La plus-value brute = prix de vente − (prix d'acquisition − amortissements cumulés déduits). Les abattements pour durée de détention s'appliquent dès la 6<sup>e</sup> année — <strong>exonération Impôt sur le Revenu totale à 22 ans, Prélèvements sociaux totaux à 30 ans</strong>.`
+  }
 </div>
 
 ${yearCards}
 
-<div style="font-size:9px;color:#1A1612;line-height:1.7;margin-bottom:12px;display:grid;grid-template-columns:1fr 1fr;gap:8px">
+<div style="font-size:9px;color:#1A1612;line-height:1.7;margin-bottom:10px;display:grid;grid-template-columns:1fr 1fr;gap:8px">
   <div style="background:#EDE7DC;border-radius:6px;padding:9px 11px">
-    <div style="font-weight:700;color:#4E1F12;margin-bottom:4px">Abattements IR (taux : 19 %)</div>
+    <div style="font-weight:700;color:#4E1F12;margin-bottom:4px">* Impôt sur le Revenu — plus-value immobilière (taux fixe : 19 %)</div>
     <div>Ans 1–5 : 0 %</div>
-    <div>Ans 6–21 : 6 % par an (max 96 %)</div>
+    <div>Ans 6–21 : 6 % d'abattement par an (max 96 %)</div>
     <div>An 22 : + 4 % → <strong>100 % exonéré</strong></div>
   </div>
   <div style="background:#EDE7DC;border-radius:6px;padding:9px 11px">
-    <div style="font-weight:700;color:#4E1F12;margin-bottom:4px">Abattements PS (taux : 17,2 %)</div>
+    <div style="font-weight:700;color:#4E1F12;margin-bottom:4px">** Prélèvements sociaux — plus-value immobilière (taux : 17,2 %)</div>
     <div>Ans 1–5 : 0 %</div>
-    <div>Ans 6–21 : 1,65 % / an · An 22 : 1,6 %</div>
-    <div>Ans 23–30 : 9 % / an → <strong>100 % à 30 ans</strong></div>
+    <div>Ans 6–21 : 1,65 % d'abattement par an · An 22 : 1,6 %</div>
+    <div>Ans 23–30 : 9 % par an → <strong>100 % exonéré à 30 ans</strong></div>
   </div>
 </div>
 
 <div class="beige-note">
-  <strong>Hypothèses.</strong> Base d'acquisition : ${fE(investTotal)} (bien + travaux + notaire). La revalorisation s'applique uniformément. Le CRD est déduit si la revente intervient avant la fin du crédit (${duree} ans). Simulation indicative — consulter un expert-comptable LMNP.
+  <strong>Hypothèses.</strong> Base d'acquisition : ${fE(investTotal)} (bien + travaux + notaire).${!isMicro ? ` Amortissements cumulés réintégrés (Loi de finances 2025).` : ""} La revalorisation s'applique uniformément. Le crédit restant dû est déduit si la revente intervient avant la fin du crédit (${duree} ans). Simulation indicative — consulter un expert-comptable LMNP.
 </div>
 </div>`;
 })()}
@@ -2348,8 +2360,8 @@ ${isMicro ? `
 
 <div style="background:#EDE7DC;border-radius:8px;padding:12px 14px;margin-bottom:14px;font-size:9.5px;line-height:1.7">
   ${isMicro
-    ? `<strong>Avantage LMNP Micro-BIC :</strong> La plus-value immobilière est calculée sur la différence entre le prix de vente et le <strong>prix d'acquisition initial</strong>. Contrairement au régime réel, aucun amortissement n'est réintégré dans l'assiette de plus-value. Les abattements pour durée de détention s'appliquent dès la 6e année — exonération IR totale à 22 ans, PS à 30 ans.`
-    : `<strong>Avantage LMNP réel :</strong> La plus-value est calculée sur la différence entre le prix de vente et le <strong>prix d'acquisition initial</strong>, <em>sans réintégration des amortissements</em> déduits fiscalement (spécificité LMNP vs LMP). Les abattements pour durée de détention s'appliquent dès la 6e année — exonération IR totale à 22 ans, PS à 30 ans.`
+    ? `<strong>Plus-value en Micro-BIC :</strong> Aucun amortissement n'est réintégré dans l'assiette de plus-value. Plus-value brute = prix de vente − prix d'acquisition initial. Exonération Impôt sur le Revenu totale à 22 ans, Prélèvements sociaux totaux à 30 ans.`
+    : `<strong>Plus-value en régime réel (Loi de finances 2025) :</strong> Les amortissements déduits fiscalement sont <strong>réintégrés</strong> dans le calcul de la plus-value imposable. Plus-value brute = prix de vente − (prix d'acquisition − amortissements cumulés déduits). Exonération Impôt sur le Revenu totale à 22 ans, Prélèvements sociaux totaux à 30 ans.`
   }
 </div>
 
@@ -2361,6 +2373,10 @@ ${(() => {
     if (N >= 22) return 0.28 + (N - 22) * 0.09;
     return (N - 5) * 0.0165;
   };
+  // Amortissements cumulés (réintégration Loi de finances 2025)
+  const amortCumulByYear2: Record<number, number> = {};
+  let cumul2 = 0;
+  for (const ro of rows) { cumul2 += ro.amortTotalA; amortCumulByYear2[ro.year] = cumul2; }
   const reventeYears = [10, 20, 30];
   return `<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:14px">
     ${reventeYears.map(yr => {
@@ -2368,22 +2384,22 @@ ${(() => {
       const abPS = abattPS(yr);
       const ro = rows.find(r => r.year === yr) ?? rows[rows.length - 1];
       const crd = yr <= duree ? (ro?.capitalFin ?? 0) : 0;
-      const prixVente = investTotal;
-      const pvBrute = Math.max(0, prixVente - investTotal);
+      const amortCumul2 = isMicro ? 0 : (amortCumulByYear2[yr] ?? amortCumulByYear2[Math.max(...Object.keys(amortCumulByYear2).map(Number).filter(k => k <= yr))] ?? 0);
       const prixVentePlus = investTotal * 1.01 ** yr;
-      const pvBrutePlus = Math.max(0, prixVentePlus - investTotal);
+      const pvBrutePlus = Math.max(0, prixVentePlus - investTotal + amortCumul2);
       const taxIR = pvBrutePlus * (1 - abIR) * 0.19;
       const taxPS = pvBrutePlus * (1 - abPS) * 0.172;
       const net = prixVentePlus - crd - taxIR - taxPS;
       return `<div style="background:#EDE7DC;border-radius:8px;overflow:hidden">
         <div style="background:#1A2D45;color:#F5F0E8;padding:8px 12px;font-size:11px;font-weight:700">Revente à ${yr} ans</div>
         <div style="padding:10px 12px;font-size:9px">
-          <div style="display:flex;justify-content:space-between;margin-bottom:4px"><span>Abatt. IR</span><span style="font-weight:700">${Math.round(abIR * 100)} %${abIR >= 1 ? " ✓" : ""}</span></div>
-          <div style="display:flex;justify-content:space-between;margin-bottom:6px"><span>Abatt. PS</span><span style="font-weight:700">${Math.round(abPS * 100)} %${abPS >= 1 ? " ✓" : ""}</span></div>
+          <div style="display:flex;justify-content:space-between;margin-bottom:2px"><span>Abatt. IR (19 %)</span><span style="font-weight:700">${Math.round(abIR * 100)} %${abIR >= 1 ? " ✓" : ""}</span></div>
+          <div style="display:flex;justify-content:space-between;margin-bottom:6px"><span>Abatt. Prél. sociaux (17,2 %)</span><span style="font-weight:700">${Math.round(abPS * 100)} %${abPS >= 1 ? " ✓" : ""}</span></div>
           <div style="font-size:8px;color:#1A1612;margin-bottom:4px;font-style:italic">Scénario +1 %/an :</div>
           <div style="display:flex;justify-content:space-between;margin-bottom:3px"><span>Prix de vente</span><span>${fE(prixVentePlus)}</span></div>
-          ${crd > 0 ? `<div style="display:flex;justify-content:space-between;margin-bottom:3px"><span>− CRD crédit</span><span style="color:#B03A2A">−${fE(crd)}</span></div>` : ""}
-          <div style="display:flex;justify-content:space-between;margin-bottom:3px"><span>− Impôt PV</span><span style="color:${taxIR + taxPS > 0 ? "#B03A2A" : "#1A7A52"}">${taxIR + taxPS > 0 ? "−" + fE(taxIR + taxPS) : "0 € ✓"}</span></div>
+          ${crd > 0 ? `<div style="display:flex;justify-content:space-between;margin-bottom:3px"><span>− Crédit restant dû</span><span style="color:#B03A2A">−${fE(crd)}</span></div>` : ""}
+          <div style="display:flex;justify-content:space-between;margin-bottom:2px"><span>− Impôt plus-value IR</span><span style="color:${taxIR > 0 ? "#B03A2A" : "#1A7A52"}">${taxIR > 0 ? "−" + fE(taxIR) : "0 € ✓"}</span></div>
+          <div style="display:flex;justify-content:space-between;margin-bottom:3px"><span>− Prélèvements sociaux</span><span style="color:${taxPS > 0 ? "#B03A2A" : "#1A7A52"}">${taxPS > 0 ? "−" + fE(taxPS) : "0 € ✓"}</span></div>
           <div style="display:flex;justify-content:space-between;background:#1A2D45;color:#F5F0E8;padding:5px 7px;border-radius:4px;margin-top:4px;font-weight:700"><span>Net dans la poche</span><span style="color:${net >= 0 ? "#4ADE80" : "#FCA5A5"}">${fE(net)}</span></div>
         </div>
       </div>`;

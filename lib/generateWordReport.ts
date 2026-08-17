@@ -254,6 +254,11 @@ export async function generateWordReport(input: WordReportInput): Promise<Buffer
     if (N >= 22) return 0.28 + (N - 22) * 0.09;
     return (N - 5) * 0.0165;
   };
+  // Amortissements cumulés par année (réintégration Loi de finances 2025 — LMNP réel)
+  const amortCumulWordByYear: Record<number, number> = {};
+  let amortWordCumul = 0;
+  for (const ro of rows) { amortWordCumul += ro.amortTotalA; amortCumulWordByYear[ro.year] = amortWordCumul; }
+  const getAmortCumul = (yr: number) => isMicro ? 0 : (amortCumulWordByYear[yr] ?? amortCumulWordByYear[Math.max(...Object.keys(amortCumulWordByYear).map(Number).filter((k: number) => k <= yr))] ?? 0);
 
   // ─────────────────────────────────────────────────────────────────────────
   // PAGE BUILDER (portrait sections)
@@ -568,36 +573,47 @@ export async function generateWordReport(input: WordReportInput): Promise<Buffer
     { label: "Valeur stable (0 %/an)", pct: 0 },
     { label: "Revalorisation +1 %/an", pct: 0.01 },
   ];
+  const introRevente = isMicro
+    ? "Plus-value en Micro-BIC : aucun amortissement réintégré. Plus-value brute = prix de vente − prix d'acquisition. Exonération Impôt sur le Revenu à 22 ans, Prélèvements sociaux à 30 ans."
+    : "Plus-value en régime réel (Loi de finances 2025) : les amortissements déduits sont réintégrés dans l'assiette imposable. Plus-value brute = prix de vente − (prix d'acquisition − amortissements cumulés). Exonération Impôt sur le Revenu à 22 ans, Prélèvements sociaux à 30 ans.";
+  const colW = [Math.round(FULL * 0.28), Math.round(FULL * 0.13), Math.round(FULL * 0.13), Math.round(FULL * 0.18), Math.round(FULL * 0.15), Math.round(FULL * 0.13)];
   const page7: (Paragraph | Table)[] = [
     heading(`${chNum + 1}. Scénarios de revente`, HeadingLevel.HEADING_1),
-    body("Avantage LMNP : la plus-value est calculée sur la différence entre prix de vente et prix d'acquisition initial (sans réintégration des amortissements). Exonération IR totale à 22 ans, PS totale à 30 ans."),
+    body(introRevente),
     blank(),
     ...reventeYears.flatMap(yr => {
-      const getRow = (y: number) => rows.find(ro => ro.year === y) ?? rows[rows.length - 1];
-      const ro = getRow(yr);
+      const ro = rows.find((r: any) => r.year === yr) ?? rows[rows.length - 1];
       const crd = yr <= duree ? (ro?.capitalFin ?? 0) : 0;
+      const amortCumulYr = getAmortCumul(yr);
       const exoIR = abattIR(yr) >= 1 ? " [IR exonéré]" : abattIR(yr) > 0 ? ` [Abatt. IR ${Math.round(abattIR(yr) * 100)} %]` : "";
-      const exoPS = abattPS(yr) >= 1 ? " [PS exonérés]" : "";
+      const exoPS = abattPS(yr) >= 1 ? " [Prél. soc. exonérés]" : "";
       return [
         body(`Revente à ${yr} ans${exoIR}${exoPS}`, true, DARK),
         new Table({
           width: { size: FULL, type: WidthType.DXA },
-          columnWidths: [Math.round(FULL * 0.35), Math.round(FULL * 0.16), Math.round(FULL * 0.16), Math.round(FULL * 0.16), Math.round(FULL * 0.17)],
+          columnWidths: colW,
           rows: [
-            trow([th("Scénario", Math.round(FULL * 0.35)), th("Prix de vente", Math.round(FULL * 0.16), true), th("CRD crédit", Math.round(FULL * 0.16), true), th("Impôt PV", Math.round(FULL * 0.16), true), th("Net dans la poche", Math.round(FULL * 0.17), true)]),
+            trow([
+              th("Scénario", colW[0]),
+              th("Prix de vente", colW[1], true),
+              th("Crédit restant dû", colW[2], true),
+              th("Impôt plus-value IR (19 %)*", colW[3], true),
+              th("Prélèvements sociaux (17,2 %)**", colW[4], true),
+              th("Net dans la poche", colW[5], true),
+            ]),
             ...growthScenarios.map(sc => {
               const prixVente = investTotal * Math.pow(1 + sc.pct, yr);
-              const pvBrute = Math.max(0, prixVente - investTotal);
+              const pvBrute = Math.max(0, prixVente - investTotal + amortCumulYr);
               const taxIR = pvBrute * (1 - abattIR(yr)) * 0.19;
               const taxPS = pvBrute * (1 - abattPS(yr)) * 0.172;
-              const impotPV = taxIR + taxPS;
-              const net = prixVente - crd - impotPV;
+              const net = prixVente - crd - taxIR - taxPS;
               return trow([
-                td(sc.label, Math.round(FULL * 0.35)),
-                td(fE(prixVente), Math.round(FULL * 0.16), { right: true }),
-                td(crd > 0 ? "−" + fE(crd) : "—", Math.round(FULL * 0.16), { right: true, color: crd > 0 ? RED : "888888" }),
-                td(impotPV > 0 ? "−" + fE(impotPV) : "0 € ✓", Math.round(FULL * 0.16), { right: true, color: impotPV > 0 ? RED : GREEN }),
-                td(fE(net), Math.round(FULL * 0.17), { right: true, bold: true, color: net >= investTotal ? GREEN : net >= 0 ? "B08A2A" : RED }),
+                td(sc.label, colW[0]),
+                td(fE(prixVente), colW[1], { right: true }),
+                td(crd > 0 ? "−" + fE(crd) : "—", colW[2], { right: true, color: crd > 0 ? RED : "888888" }),
+                td(taxIR > 0 ? "−" + fE(taxIR) : "0 € ✓", colW[3], { right: true, color: taxIR > 0 ? RED : GREEN }),
+                td(taxPS > 0 ? "−" + fE(taxPS) : "0 € ✓", colW[4], { right: true, color: taxPS > 0 ? RED : GREEN }),
+                td(fE(net), colW[5], { right: true, bold: true, color: net >= investTotal ? GREEN : net >= 0 ? "B08A2A" : RED }),
               ]);
             }),
           ],
@@ -606,7 +622,10 @@ export async function generateWordReport(input: WordReportInput): Promise<Buffer
         blank(),
       ];
     }),
-    note(`Hypothèses : Base d'acquisition ${fE(investTotal)}. CRD déduit si revente avant ${duree} ans. Simulation indicative — consulter un expert-comptable LMNP.`),
+    body("* Impôt sur le Revenu — plus-value immobilière (taux fixe 19 %) : 0 % ans 1–5 · 6 %/an dès an 6 (max 96 %) · +4 % an 22 → 100 % exonéré à 22 ans.", false, "555555", 18),
+    body("** Prélèvements sociaux — plus-value immobilière (taux 17,2 %) : 0 % ans 1–5 · 1,65 %/an dès an 6 · 1,6 % an 22 · 9 %/an ans 23–30 → 100 % exonéré à 30 ans.", false, "555555", 18),
+    blank(),
+    note(`Hypothèses : Base d'acquisition ${fE(investTotal)}.${!isMicro ? " Amortissements cumulés réintégrés (Loi de finances 2025)." : ""} Crédit restant dû déduit si revente avant ${duree} ans. Simulation indicative — consulter un expert-comptable LMNP.`),
     new Paragraph({ children: [new PageBreak()] }),
   ];
 
