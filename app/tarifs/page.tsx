@@ -39,7 +39,7 @@ export default function TarifsPage() {
           <h1 className="font-light mb-3" style={{ fontSize: "clamp(1.8rem,4vw,2.5rem)", color: "#4E1F12", letterSpacing: "-0.025em" }}>
             Abonnements simples et transparents
           </h1>
-          <p style={{ color: "rgba(26,22,18,0.45)" }}>Commencez gratuitement. Évoluez quand vous en avez besoin.</p>
+          <p style={{ color: "rgba(26,22,18,0.45)" }}>Commencez gratuitement. Évoluez quand vous en avez besoin. <strong style={{ color: "rgba(26,22,18,0.7)" }}>Chaque abonnement peut être résilié à tout moment.</strong></p>
         </div>
       </div>
 
