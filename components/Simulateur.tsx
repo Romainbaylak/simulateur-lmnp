@@ -1294,9 +1294,9 @@ export default function Simulateur({ onShowResults }: { onShowResults?: () => vo
                   </div>
                   <div className="rounded-lg px-3 py-2.5" style={cardStyle}>
                     <div className={LABEL}>Impôt estimé /an</div>
-                    <div className="text-lg font-bold mt-0.5" style={{ color: "#1A1612", letterSpacing: "-0.02em" }}>{formatEuro(displayImpot)}</div>
+                    <div className="text-lg font-bold mt-0.5" style={{ color: displayImpot > 0 ? "#B03A2A" : "#1A7A52", letterSpacing: "-0.02em" }}>{formatEuro(displayImpot)}</div>
                     <div className="text-[12px] mt-0" style={{ color: "rgba(26,22,18,0.40)" }}>TMI {form.tmi}% + PS 18,6%</div>
-                    <div className="text-[12px] mt-1" style={{ color: "rgba(26,22,18,0.50)" }}>Soit <span className="font-semibold" style={{ color: "#1A1612" }}>{formatEuro(displayImpotMensuel)}</span>/mois</div>
+                    <div className="text-[12px] mt-1" style={{ color: "rgba(26,22,18,0.50)" }}>Soit <span className="font-semibold" style={{ color: displayImpot > 0 ? "#B03A2A" : "#1A7A52" }}>{formatEuro(displayImpotMensuel)}</span>/mois</div>
                   </div>
                   <div className="rounded-lg px-3 py-2.5" style={cardStyle}>
                     <div className={LABEL}>Cash-flow <strong>Mensuel</strong></div>
@@ -1307,11 +1307,11 @@ export default function Simulateur({ onShowResults }: { onShowResults?: () => vo
 
                 {/* Régime fiscal + Amortissement */}
                 {(() => {
-                  const FRow = ({ label, val, color, bold, sep, indent, tight }: { label: string; val: string; color?: string; bold?: boolean; sep?: boolean; indent?: boolean; tight?: boolean }) => (
+                  const FRow = ({ label, val, color, bold, labelBold, bg, sep, indent, tight }: { label: string; val: string; color?: string; bold?: boolean; labelBold?: boolean; bg?: string; sep?: boolean; indent?: boolean; tight?: boolean }) => (
                     <div className={`flex justify-between items-baseline ${tight ? "py-1.5" : "py-2.5"}${indent ? " pl-4" : ""}${sep ? " mt-0.5" : ""}`}
-                      style={{ borderTop: sep ? "1px solid rgba(26,22,18,0.09)" : undefined }}>
-                      <span style={{ color: indent ? "rgba(26,22,18,0.6)" : "rgba(26,22,18,0.78)", fontSize: indent ? 12 : 13 }}>{label}</span>
-                      <span className="whitespace-nowrap" style={{ fontSize: 13, fontWeight: bold ? 600 : 400, color: color ?? "#1A1612" }}>{val}</span>
+                      style={{ borderTop: sep ? "1px solid rgba(26,22,18,0.09)" : undefined, background: bg, borderRadius: bg ? 5 : undefined, marginLeft: bg ? -8 : undefined, marginRight: bg ? -8 : undefined, paddingLeft: bg ? 8 : undefined, paddingRight: bg ? 8 : undefined }}>
+                      <span style={{ color: indent ? "rgba(26,22,18,0.6)" : "rgba(26,22,18,0.78)", fontSize: indent ? 12 : 13, fontWeight: labelBold ? 700 : 400 }}>{label}</span>
+                      <span className="whitespace-nowrap" style={{ fontSize: 13, fontWeight: bold ? 700 : 400, color: color ?? "#1A1612" }}>{val}</span>
                     </div>
                   );
                   const prixVal2 = parseFloat(form.prix) || 0;
@@ -1415,7 +1415,7 @@ export default function Simulateur({ onShowResults }: { onShowResults?: () => vo
                                       <FRow tight label="Emprunt" val={`−${formatEuro(r.creditAnnuel)}`} color="#B03A2A" />
                                       <FRow tight label="Charges déduct." val={`−${formatEuro(r.chargesDeductibles)}`} color="#B03A2A" />
                                       <FRow tight label="Résultat avant amort." val={formatEuro(r.resultatAvantAmort)} bold sep color={r.resultatAvantAmort >= 0 ? "#1A7A52" : "#B03A2A"} />
-                                      <FRow tight label="Amortissements" val={`−${formatEuro(r.amortTotal)}`} color="#B03A2A" />
+                                      <FRow tight label="Amortissements" val={`−${formatEuro(r.amortTotal)}`} color="#8B1A1A" bold labelBold bg="rgba(139,26,26,0.05)" />
                                       <FRow tight label="Base imposable" val={formatEuro(r.baseImposableReel)} bold sep color={r.baseImposableReel === 0 ? "#1A7A52" : "#1A1612"} />
                                       <FRow tight label="Impôt estimé" val={formatEuro(r.impotReel)} color="#B03A2A" />
                                       {(() => { const cfColor = cf >= 0 ? "#1A7A52" : "#B03A2A"; return (
@@ -1491,7 +1491,7 @@ export default function Simulateur({ onShowResults }: { onShowResults?: () => vo
                               <div className="pl-3 -mt-1 pb-2"><span style={{ fontSize: 12, color: "rgba(26,22,18,0.6)" }}>Dont frais d&apos;emprunt </span><span style={{ fontSize: 13, fontWeight: 600, color: "#B03A2A" }}>{formatEuro(resultats.interetsAnnee1)}</span></div>
                               <FRow label="Charges déductibles" val={`−${formatEuro(resultats.chargesDeductibles)}`} color="#B03A2A" />
                               <FRow label="Résultat avant amortissement" val={formatEuro(resultats.resultatAvantAmort)} bold color={resultats.resultatAvantAmort >= 0 ? "#1A7A52" : "#B03A2A"} sep />
-                              <FRow label="Amortissements" val={`−${formatEuro(resultats.amortTotal)}`} color="#B03A2A" />
+                              <FRow label="Amortissements" val={`−${formatEuro(resultats.amortTotal)}`} color="#8B1A1A" bold labelBold bg="rgba(139,26,26,0.05)" />
                               <FRow label="Base imposable" val={formatEuro(resultats.baseImposableReel)} bold sep />
                               <FRow label="Impôt estimé" val={formatEuro(resultats.impotReel)} color="#B03A2A" />
                               <FRow label="Amortissement à reporter N+1" val={formatEuro(resultats.amortAReporter)} color="#B08A2A" />

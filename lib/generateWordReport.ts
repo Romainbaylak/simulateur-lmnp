@@ -15,6 +15,7 @@ const DARK = "4E1F12";
 const ORANGE = "C95B2A";
 const GREEN = "1A7A52";
 const RED = "B03A2A";
+const DEEPRED = "8B1A1A";
 const BEIGE = "EDE7DC";
 const CREAM = "F5F0E8";
 
@@ -337,7 +338,7 @@ export async function generateWordReport(input: WordReportInput): Promise<Buffer
         trow([th("Indicateur", Math.round(FULL * 0.45)), th("Régime réel simplifié", Math.round(FULL * 0.275), true), th("Micro-BIC", Math.round(FULL * 0.275), true)]),
         trow([td("Loyers imposables", Math.round(FULL * 0.45)), td(fE(loyerAnnuel), Math.round(FULL * 0.275), { right: true }), td(fE(loyerAnnuel), Math.round(FULL * 0.275), { right: true })]),
         trow([td("Charges / abattement", Math.round(FULL * 0.45)), td("Charges réelles : " + fE(chargesDeductibles), Math.round(FULL * 0.275), { right: true }), td(`Abattement ${isSaisonnier ? "30" : "50"} % : ` + fE(loyerAnnuel * abattBIC), Math.round(FULL * 0.275), { right: true })]),
-        trow([td("Amortissements déduits", Math.round(FULL * 0.45)), td(fE(amortTotalAn1), Math.round(FULL * 0.275), { right: true }), td("—", Math.round(FULL * 0.275), { right: true })]),
+        trow([td("Amortissements déduits", Math.round(FULL * 0.45), { bold: true, color: DEEPRED }), td(fE(amortTotalAn1), Math.round(FULL * 0.275), { right: true, bold: true, color: DEEPRED }), td("—", Math.round(FULL * 0.275), { right: true })]),
         trow([td("Base imposable", Math.round(FULL * 0.45), { bold: true }), td(fE(baseImposableReel), Math.round(FULL * 0.275), { right: true, bold: true, color: baseImposableReel === 0 ? GREEN : RED }), td(fE(baseBIC), Math.round(FULL * 0.275), { right: true, bold: true })]),
         trow([td("Fiscalité totale estimée", Math.round(FULL * 0.45), { bold: true }), td(fE(impotReel), Math.round(FULL * 0.275), { right: true, bold: true, color: impotReel === 0 ? GREEN : RED }), td(fE(impotBIC), Math.round(FULL * 0.275), { right: true, bold: true, color: RED })]),
         trow([td("Cash-flow mensuel net", Math.round(FULL * 0.45), { bold: true }), td(fE(cashflowReelMensuel) + "/mois", Math.round(FULL * 0.275), { right: true, bold: true, color: cashflowReelMensuel >= 0 ? GREEN : RED }), td(fE(cashflowBICMensuel) + "/mois", Math.round(FULL * 0.275), { right: true, bold: true, color: cashflowBICMensuel >= 0 ? GREEN : RED })]),
@@ -486,7 +487,7 @@ export async function generateWordReport(input: WordReportInput): Promise<Buffer
           trow([td("− Intérêts d'emprunt", Math.round(FULL * 0.65)), td("−" + fE(interetsAnnee1), Math.round(FULL * 0.35), { right: true, color: RED })]),
           ...(assuranceEmprunteurAnnuel > 0 ? [trow([td("− Assurance emprunteur", Math.round(FULL * 0.65)), td("−" + fE(assuranceEmprunteurAnnuel), Math.round(FULL * 0.35), { right: true, color: RED })])] : []),
           trow([td("= Résultat avant amortissement", Math.round(FULL * 0.65), { bold: true }), td(fE(resultatAvantAmort), Math.round(FULL * 0.35), { right: true, bold: true })]),
-          trow([td("− Amortissements déduits (an. 1)", Math.round(FULL * 0.65)), td("−" + fE(amortTotalAn1), Math.round(FULL * 0.35), { right: true, color: RED })]),
+          trow([td("− Amortissements déduits (an. 1)", Math.round(FULL * 0.65), { bold: true, color: DEEPRED }), td("−" + fE(amortTotalAn1), Math.round(FULL * 0.35), { right: true, bold: true, color: DEEPRED })]),
           trow([td("= Base imposable", Math.round(FULL * 0.65), { bold: true }), td(fE(baseImposableReel), Math.round(FULL * 0.35), { right: true, bold: true, color: baseImposableReel === 0 ? GREEN : RED })]),
           trow([td("Impôt IR estimé (TMI " + tmi + " %)", Math.round(FULL * 0.65)), td(fE(impotReel * (tmi / (tmi + 18.6))), Math.round(FULL * 0.35), { right: true })]),
           trow([td("Prélèvements sociaux (18,6 %)", Math.round(FULL * 0.65)), td(fE(impotReel * (18.6 / (tmi + 18.6))), Math.round(FULL * 0.35), { right: true })]),
