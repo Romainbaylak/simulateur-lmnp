@@ -285,6 +285,7 @@ export default function Simulateur({ onShowResults }: { onShowResults?: () => vo
   const [showPDFStarter, setShowPDFStarter] = useState(false);
   const [pdfWeekCount, setPdfWeekCount] = useState(0);
   const [showSauvegarder, setShowSauvegarder] = useState(false);
+  const [showRegimeExplainer, setShowRegimeExplainer] = useState(true);
 
   // ── Persistance formulaire dans sessionStorage ────────────────────────────
   const FORM_KEY = "lmnp_form_draft";
@@ -1851,6 +1852,25 @@ export default function Simulateur({ onShowResults }: { onShowResults?: () => vo
 
                     return (
                       <>
+                        {/* Explication régimes fiscaux — disparaît après sélection */}
+                        {selectedRegime === null && showRegimeExplainer && (
+                          <div className="rounded-xl px-5 py-4 mb-3" style={{ background: "#F5F0E8", border: "1.5px solid rgba(26,22,18,0.10)" }}>
+                            <p className="text-[14px] leading-relaxed" style={{ color: "#1A1612", margin: 0 }}>
+                              En LMNP, deux régimes fiscaux s&apos;offrent à toi. Ce choix est déterminant : il impacte directement le montant de ton impôt, et donc ton cash-flow chaque mois.{" "}
+                              Le <strong style={{ color: "#1A4A35" }}>Micro-BIC</strong> applique un abattement forfaitaire de 30% sur tes loyers puis te donne ta base imposable.{" "}
+                              Le <strong style={{ color: "#C95B2A" }}>Régime Réel</strong> déduit tes vraies charges et — point essentiel — te permet d&apos;amortir une partie de ton bien, réduisant souvent ton impôt.{" "}
+                              Pour la majorité des investisseurs avec un crédit, le <strong style={{ color: "#C95B2A" }}>Régime Réel</strong> est plus avantageux.
+                            </p>
+                            <div className="flex justify-end mt-2.5">
+                              <button onClick={() => setShowRegimeExplainer(false)}
+                                className="text-[11px] font-medium px-3 py-1 rounded-md transition-opacity hover:opacity-70"
+                                style={{ color: "rgba(26,22,18,0.45)", background: "rgba(26,22,18,0.06)", border: "none" }}>
+                                − Réduire
+                              </button>
+                            </div>
+                          </div>
+                        )}
+
                         {/* Recommandation banner — visible uniquement avant le choix du régime */}
                         {selectedRegime === null && (
                           <div className="rounded-xl px-5 py-4 mb-4" style={{ background: bestBg, border: `1.5px solid ${bestBorder}` }}>
@@ -2061,8 +2081,11 @@ export default function Simulateur({ onShowResults }: { onShowResults?: () => vo
                           <>
                           <div>
                             {/* Explication principale */}
-                            <p className="text-[15px] leading-relaxed font-medium" style={{ color: "#4E1F12" }}>
-                              En LMNP au réel, vous pouvez amortir comptablement votre bien — <strong>hors terrain (~{100 - amortPct}%)</strong> — sur sa durée d&apos;usage. Chaque année, cet amortissement est déduit de vos revenus locatifs, ce qui <strong>réduit la base imposable et donc l&apos;impôt</strong>.
+                            <p className="text-[15px] leading-relaxed" style={{ color: "#4E1F12" }}>
+                              En LMNP au réel, tu peux donc amortir ton bien chaque année qui vient réduire ta base imposable.{" "}
+                              Tu peux amortir uniquement{" "}
+                              <strong>la partie Bâti de ton bien mais qui représente déjà <span style={{ color: "#C95B2A" }}>{amortPct}%</span> de sa valeur</strong>.{" "}
+                              Le terrain, les {100 - amortPct}% restants, ne s&apos;amortit pas.
                             </p>
 
                             {/* Calcul en ligne — formule mathématique */}
@@ -2090,8 +2113,18 @@ export default function Simulateur({ onShowResults }: { onShowResults?: () => vo
                             </div>
 
                             {/* Titre choix type amortissement */}
-                            <div className="text-center mt-14 mb-8">
+                            <div className="text-center mt-14 mb-4">
                               <span className="text-base font-semibold" style={{ color: "#1A1612" }}>Fais ton choix de méthode d&apos;Amortissement</span>
+                            </div>
+
+                            {/* Explication méthodes */}
+                            <div className="rounded-xl px-5 py-4 mb-6" style={{ background: "#F5F0E8", border: "1.5px solid rgba(26,22,18,0.10)" }}>
+                              <p className="text-[14px] leading-relaxed" style={{ color: "#1A1612", margin: 0 }}>
+                                Le choix de ta méthode d&apos;amortissement influence directement le montant que tu pourras déduire chaque année — et donc ton impôt.{" "}
+                                La <strong>méthode par composants</strong> est plus précise et fiscalement optimisée.{" "}
+                                La <strong>méthode globale</strong> est plus simple et s&apos;applique aux petits biens (en dessous de 200 000 €).{" "}
+                                Clique sur <strong>&ldquo;Détails&rdquo;</strong> sous chaque option pour voir comment chaque méthode fonctionne.
+                              </p>
                             </div>
 
                             {/* Grille 2 colonnes : Composant | Global */}
