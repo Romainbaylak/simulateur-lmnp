@@ -651,8 +651,23 @@ export default function Simulateur({ onShowResults }: { onShowResults?: () => vo
 
             {/* ── LEFT : Bien & Financement ── */}
             <div className="space-y-4">
-              <div className="flex items-center" style={{ minHeight: 38 }}>
+              <div className="flex items-center justify-between" style={{ minHeight: 38 }}>
                 <p className={LABEL} style={{ opacity: 1, color: "#1A1612", marginBottom: 0 }}>Bien &amp; Financement</p>
+                {/* Saisonnier button — mobile only, top-right of form */}
+                <button
+                  onClick={() => { const next = !isSaisonnier; setIsSaisonnier(next); setResultatsTriple(null); if (next) { updateField("loyer", ""); setLoyerSlider(0); } }}
+                  className="lg:hidden flex items-center gap-2 px-3 py-1.5 rounded-md text-xs font-medium transition-all"
+                  style={{
+                    background: isSaisonnier ? "rgba(26,82,122,0.1)" : "#F5F0E8",
+                    border: isSaisonnier ? "1.5px solid #26527A" : "0.5px solid rgba(26,22,18,0.18)",
+                    color: isSaisonnier ? "#26527A" : "rgba(26,22,18,0.55)",
+                  }}>
+                  <span className="w-3.5 h-3.5 rounded flex items-center justify-center flex-shrink-0"
+                    style={{ background: isSaisonnier ? "#26527A" : "transparent", border: isSaisonnier ? "none" : "1.5px solid rgba(26,22,18,0.3)" }}>
+                    {isSaisonnier && <span className="text-white text-[9px] leading-none font-bold">✓</span>}
+                  </span>
+                  Saisonnier
+                </button>
               </div>
 
               <div className="grid grid-cols-2 gap-4">
@@ -781,7 +796,7 @@ export default function Simulateur({ onShowResults }: { onShowResults?: () => vo
                 <p className={LABEL} style={{ opacity: 1, color: "#1A1612", marginBottom: 0 }}>Loyer</p>
                 <button
                   onClick={() => { const next = !isSaisonnier; setIsSaisonnier(next); setResultatsTriple(null); if (next) { updateField("loyer", ""); setLoyerSlider(0); } }}
-                  className="flex items-center gap-2 px-3.5 py-2 rounded-md text-sm font-medium transition-all"
+                  className="hidden lg:flex items-center gap-2 px-3.5 py-2 rounded-md text-sm font-medium transition-all"
                   style={{
                     background: isSaisonnier ? "rgba(26,82,122,0.1)" : "#F5F0E8",
                     border: isSaisonnier ? "1.5px solid #26527A" : "0.5px solid rgba(26,22,18,0.18)",
@@ -844,8 +859,8 @@ export default function Simulateur({ onShowResults }: { onShowResults?: () => vo
                 </div>
               ) : (
                 <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className={LABEL}>Loyer HC / mois (€)</label>
+                  <div className="flex flex-col">
+                    <label className={LABEL} style={{ minHeight: "2.5em" }}>Loyer HC / mois (€)</label>
                     <input type="number" value={form.loyer}
                       onChange={e => {
                         updateField("loyer", e.target.value);
@@ -855,8 +870,8 @@ export default function Simulateur({ onShowResults }: { onShowResults?: () => vo
                       placeholder="Ex : 1 100" className={INPUT} style={INPUT_STYLE} />
                     <p className="text-[10px] mt-1" style={{ color: "rgba(26,22,18,0.4)" }}>Hors charges locataire</p>
                   </div>
-                  <div>
-                    <label className={LABEL}>Charges locataire / mois (€)</label>
+                  <div className="flex flex-col">
+                    <label className={LABEL} style={{ minHeight: "2.5em" }}>Charges locataire / mois (€)</label>
                     <input type="number" value={form.chargesLoyer}
                       onChange={e => updateField("chargesLoyer", e.target.value)}
                       onBlur={() => handleBlur("chargesLoyer")}
@@ -2076,66 +2091,71 @@ export default function Simulateur({ onShowResults }: { onShowResults?: () => vo
                                             style={{ color: amortMode === "composant" ? "#F5F0E8" : C2 }}>{formatEuro(valAmort2)}</div>
                                         </div>
                                       </div>
-                                      {/* Table column headers */}
-                                      <div className="px-4 py-2 flex items-center gap-2" style={{ background: "rgba(42,112,128,0.08)", borderBottom: "1px solid rgba(42,112,128,0.12)" }}>
-                                        <span className="text-[11px] font-semibold uppercase tracking-wider" style={{ color: "rgba(42,112,128,0.7)", width: 140 }}>Composant</span>
-                                        <span className="text-[11px] font-semibold uppercase tracking-wider" style={{ color: "rgba(42,112,128,0.7)", width: 160 }}>Quote part en %</span>
-                                        <span className="text-[11px] font-semibold uppercase tracking-wider" style={{ color: "rgba(42,112,128,0.7)", width: 85 }}>Durée</span>
-                                        <span className="text-[11px] font-semibold uppercase tracking-wider text-right" style={{ color: C2, width: 75 }}>Amort / an</span>
+                                      {/* Table column headers — hidden on mobile, shown on md+ */}
+                                      <div className="hidden md:flex px-4 py-2 items-center gap-2" style={{ background: "rgba(42,112,128,0.08)", borderBottom: "1px solid rgba(42,112,128,0.12)" }}>
+                                        <span className="text-[11px] font-semibold uppercase tracking-wider" style={{ color: "rgba(42,112,128,0.7)", width: 100 }}>Composant</span>
+                                        <span className="text-[11px] font-semibold uppercase tracking-wider" style={{ color: "rgba(42,112,128,0.7)", flex: 1 }}>Quote-part %</span>
+                                        <span className="text-[11px] font-semibold uppercase tracking-wider" style={{ color: "rgba(42,112,128,0.7)", width: 80 }}>Durée</span>
+                                        <span className="text-[11px] font-semibold uppercase tracking-wider text-right" style={{ color: C2, width: 70 }}>Amort/an</span>
                                       </div>
                                       {/* Rows */}
                                       {composants.map((c, i) => {
                                         const val = valAmort2 * c.pct / 100;
                                         return (
-                                          <div key={c.label} className="flex items-center gap-2 px-4 py-2.5"
+                                          <div key={c.label} className="px-3 py-2"
                                             style={{ borderBottom: "0.5px solid rgba(26,22,18,0.06)", background: i % 2 === 0 ? "#FDFAF6" : "#F8F4EE" }}>
-                                            <span className="text-[14px] font-semibold" style={{ color: "#1A1612", width: 140 }}>{c.label}</span>
-                                            <div className="flex items-center gap-1" style={{ width: 160 }}>
-                                              <input type="number" min={0} max={100} value={c.pct === 0 ? "" : c.pct}
-                                                placeholder="0"
-                                                onClick={e => e.stopPropagation()}
-                                                onChange={e => {
-                                                  const raw = e.target.value;
-                                                  const v = raw === "" ? 0 : Math.min(100, Math.max(0, parseInt(raw) || 0));
-                                                  setComposants(prev => prev.map((x, j) => j === i ? { ...x, pct: v } : x));
-                                                }}
-                                                className={inputCls} style={INPUT_STYLE} />
-                                              <span className="text-[13px] font-medium" style={{ color: "rgba(26,22,18,0.5)" }}>%</span>
-                                              <span className="text-[12px] ml-1" style={{ color: "rgba(26,22,18,0.4)" }}>soit</span>
-                                              <span className="text-[13px] font-bold" style={{ color: C2 }}>{formatEuro(val)}</span>
+                                            {/* Mobile layout: label on top, inputs in a row */}
+                                            <div className="md:hidden mb-1">
+                                              <span className="text-[13px] font-semibold" style={{ color: "#1A1612" }}>{c.label}</span>
                                             </div>
-                                            <div className="flex items-center gap-1" style={{ width: 85 }}>
-                                              <span className="text-[12px]" style={{ color: "rgba(26,22,18,0.4)" }}>sur</span>
-                                              <input type="number" min={0} max={100} value={c.duree === 0 ? "" : c.duree}
-                                                placeholder="0"
-                                                onClick={e => e.stopPropagation()}
-                                                onChange={e => {
-                                                  const raw = e.target.value;
-                                                  const v = raw === "" ? 0 : Math.min(100, Math.max(0, parseInt(raw) || 0));
-                                                  setComposants(prev => prev.map((x, j) => j === i ? { ...x, duree: v } : x));
-                                                }}
-                                                className={inputCls} style={INPUT_STYLE} />
-                                              <span className="text-[13px] font-medium" style={{ color: "rgba(26,22,18,0.5)" }}>ans</span>
-                                            </div>
-                                            <div className="flex items-center gap-1.5" style={{ width: 75, justifyContent: "flex-end" }}>
-                                              <span className="text-[14px] font-light" style={{ color: "rgba(26,22,18,0.25)" }}>=</span>
-                                              <span className="text-[13px] font-bold" style={{ color: C2 }}>{formatEuro(c.duree > 0 ? val / c.duree : 0)}</span>
+                                            <div className="flex items-center gap-1.5">
+                                              {/* Name — desktop only */}
+                                              <span className="hidden md:inline text-[13px] font-semibold" style={{ color: "#1A1612", width: 100 }}>{c.label}</span>
+                                              {/* % input */}
+                                              <div className="flex items-center gap-1 flex-1">
+                                                <input type="number" min={0} max={100} value={c.pct === 0 ? "" : c.pct}
+                                                  placeholder="0"
+                                                  onClick={e => e.stopPropagation()}
+                                                  onChange={e => {
+                                                    const raw = e.target.value;
+                                                    const v = raw === "" ? 0 : Math.min(100, Math.max(0, parseInt(raw) || 0));
+                                                    setComposants(prev => prev.map((x, j) => j === i ? { ...x, pct: v } : x));
+                                                  }}
+                                                  className={inputCls} style={{ ...INPUT_STYLE, width: 44 }} />
+                                                <span className="text-[12px]" style={{ color: "rgba(26,22,18,0.5)" }}>%</span>
+                                                <span className="text-[11px] hidden sm:inline" style={{ color: "rgba(26,22,18,0.4)" }}>soit</span>
+                                                <span className="text-[12px] font-bold" style={{ color: C2 }}>{formatEuro(val)}</span>
+                                              </div>
+                                              {/* durée input */}
+                                              <div className="flex items-center gap-1" style={{ width: 80 }}>
+                                                <span className="text-[11px]" style={{ color: "rgba(26,22,18,0.4)" }}>sur</span>
+                                                <input type="number" min={0} max={100} value={c.duree === 0 ? "" : c.duree}
+                                                  placeholder="0"
+                                                  onClick={e => e.stopPropagation()}
+                                                  onChange={e => {
+                                                    const raw = e.target.value;
+                                                    const v = raw === "" ? 0 : Math.min(100, Math.max(0, parseInt(raw) || 0));
+                                                    setComposants(prev => prev.map((x, j) => j === i ? { ...x, duree: v } : x));
+                                                  }}
+                                                  className={inputCls} style={{ ...INPUT_STYLE, width: 40 }} />
+                                                <span className="text-[12px]" style={{ color: "rgba(26,22,18,0.5)" }}>ans</span>
+                                              </div>
+                                              {/* amort/an */}
+                                              <div className="flex items-center gap-1" style={{ width: 70, justifyContent: "flex-end" }}>
+                                                <span className="text-[11px] font-light" style={{ color: "rgba(26,22,18,0.25)" }}>=</span>
+                                                <span className="text-[12px] font-bold" style={{ color: C2 }}>{formatEuro(c.duree > 0 ? val / c.duree : 0)}</span>
+                                              </div>
                                             </div>
                                           </div>
                                         );
                                       })}
                                       {/* Total row */}
-                                      <div className="flex items-center gap-2 px-4 py-3" style={{ background: "rgba(42,112,128,0.1)", borderTop: "1px solid rgba(42,112,128,0.15)" }}>
-                                        <span className="text-[16px] font-bold" style={{ color: "#1A1612", width: 140 }}>Total</span>
-                                        <div style={{ width: 160 }}>
-                                          <span className="text-[16px] font-bold" style={{ color: totalPct === 100 ? "#1A7A52" : "#B03A2A" }}>
-                                            {totalPct} %{totalPct !== 100 && " ⚠"}
-                                          </span>
-                                        </div>
-                                        <div style={{ width: 85 }} />
-                                        <div className="flex items-center gap-1.5" style={{ width: 75, justifyContent: "flex-end" }}>
-                                          <span className="text-[16px] font-bold" style={{ color: C2 }}>{formatEuro(composants.reduce((s, c) => s + (valAmort2 * c.pct / 100) / (c.duree || 1), 0))}/an</span>
-                                        </div>
+                                      <div className="flex items-center gap-2 px-3 py-3" style={{ background: "rgba(42,112,128,0.1)", borderTop: "1px solid rgba(42,112,128,0.15)" }}>
+                                        <span className="text-[15px] font-bold" style={{ color: "#1A1612", flex: 1 }}>Total</span>
+                                        <span className="text-[15px] font-bold" style={{ color: totalPct === 100 ? "#1A7A52" : "#B03A2A" }}>
+                                          {totalPct} %{totalPct !== 100 && " ⚠"}
+                                        </span>
+                                        <span className="text-[15px] font-bold ml-auto" style={{ color: C2 }}>{formatEuro(composants.reduce((s, c) => s + (valAmort2 * c.pct / 100) / (c.duree || 1), 0))}/an</span>
                                       </div>
                                       {/* Warnings */}
                                       {totalPct !== 100 && (
