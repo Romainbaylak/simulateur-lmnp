@@ -159,8 +159,10 @@ export function computeResultats(
   const amortAReporter = Math.max(0, amortTotal - Math.max(0, resultatAvantAmort));
   const cashflowReelMensuel = (loyerAnnuel - creditAnnuel - chargesAnnuelles - assuranceEmprunteurAnnuel - impotReel) / 12;
 
-  const abattBIC = isSaisonnier ? 0.30 : 0.50;
-  const baseBIC = loyerAnnuel * abattBIC;
+  // abattPct = taux d'abattement forfaitaire (30% saisonnier non classé, 50% classique)
+  // Base imposable = loyers × (1 − abattPct)
+  const abattPct = isSaisonnier ? 0.30 : 0.50;
+  const baseBIC = loyerAnnuel * (1 - abattPct);
   const impotBIC = baseBIC * (form.tmi / 100 + 0.186);
   const cashflowBICMensuel = (loyerAnnuel - creditAnnuel - chargesAnnuelles - assuranceEmprunteurAnnuel - impotBIC) / 12;
 

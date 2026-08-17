@@ -195,6 +195,8 @@ export async function generateWordReport(input: WordReportInput): Promise<Buffer
   const amortDureeMobilier = input.amortDureeMobilier ?? 7;
   const amortDureeTravaux = input.amortDureeTravaux ?? 15;
   const amortDureeNotaire = input.amortDureeNotaire ?? 20;
+  // abattBIC = taux d'abattement (30% saisonnier non classé, 50% classique)
+  // MONTANT affiché = loyerAnnuel * abattBIC ; BASE IMPOSABLE = loyerAnnuel * (1 - abattBIC)
   const abattBIC = isSaisonnier ? 0.30 : 0.50;
 
   const prix = parseFloat(form.prix) || 0;
@@ -253,9 +255,9 @@ export async function generateWordReport(input: WordReportInput): Promise<Buffer
       if (val > 0) annexeCols.push({ label: c.label, annuel: val / c.duree, duree: c.duree, initial: val });
     }
   }
-  if (mobilier > 0) annexeCols.push({ label: "Mobilier", annuel: mobilier / 7, duree: 7, initial: mobilier });
-  if (travaux > 0) annexeCols.push({ label: "Travaux", annuel: travaux / 15, duree: 15, initial: travaux });
-  if (notaire > 0) annexeCols.push({ label: "Frais notaire", annuel: notaire / 20, duree: 20, initial: notaire });
+  if (mobilier > 0) annexeCols.push({ label: "Mobilier", annuel: mobilier / amortDureeMobilier, duree: amortDureeMobilier, initial: mobilier });
+  if (travaux > 0) annexeCols.push({ label: "Travaux", annuel: travaux / amortDureeTravaux, duree: amortDureeTravaux, initial: travaux });
+  if (notaire > 0) annexeCols.push({ label: "Frais notaire", annuel: notaire / amortDureeNotaire, duree: amortDureeNotaire, initial: notaire });
 
   // Plus-value helpers
   const abattIR = (N: number) => N < 6 ? 0 : N >= 22 ? 1 : (N - 5) * 0.06;
@@ -528,7 +530,7 @@ export async function generateWordReport(input: WordReportInput): Promise<Buffer
     heading(`${chNum}. Évolution de l'investissement dans le temps`, HeadingLevel.HEADING_1),
   ];
   if (isMicro) {
-    const bicBase = loyerAnnuel * abattBIC;
+    const bicBase = loyerAnnuel * (1 - abattBIC);
     const bicImpot = bicBase * (tmi / 100 + 0.186);
     page6.push(
       new Table({

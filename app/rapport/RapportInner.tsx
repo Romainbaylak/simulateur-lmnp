@@ -120,7 +120,8 @@ export default function RapportInner() {
         res = data.resultatsTriple.moyen;
       } else {
         const loyer = parseFloat(data.form.loyer) || 0;
-        res = computeResultats(data.form, loyer, data.amortPct, data.amortMode, data.amortDureeEnsemble, composantsRef.current);
+        res = computeResultats(data.form, loyer, data.amortPct, data.amortMode, data.amortDureeEnsemble, composantsRef.current,
+          false, amortDureeMobilierRef.current, amortDureeTravauxRef.current, amortDureeNotaireRef.current);
       }
       setForm(data.form);
       setResultats(res);
@@ -151,7 +152,8 @@ export default function RapportInner() {
     const amortDureeNotaire = amortDureeNotaireRef.current;
     const composants = composantsRef.current;
     const isSaisonnier = isSaisonnierRef.current;
-    const abattBIC = isSaisonnier ? 0.30 : 0.50;
+    // abattPct = taux d'abattement (30% saisonnier non classé, 50% classique)
+    const abattPct = isSaisonnier ? 0.30 : 0.50;
     const prixNuitee = prixNuiteeRef.current;
     const tauxOccBas = tauxOccBasRef.current;
     const tauxOccMoyen = tauxOccMoyenRef.current;
@@ -287,9 +289,9 @@ export default function RapportInner() {
         if (val > 0) annexeCols.push({ label: c.label, annuel: val / c.duree, duree: c.duree, initial: val });
       }
     }
-    if (mobilier > 0) annexeCols.push({ label: "Mobilier", annuel: mobilier / 7, duree: 7, initial: mobilier });
-    if (travaux > 0) annexeCols.push({ label: "Travaux", annuel: travaux / 15, duree: 15, initial: travaux });
-    if (notaire > 0) annexeCols.push({ label: "Frais notaire", annuel: notaire / 20, duree: 20, initial: notaire });
+    if (mobilier > 0) annexeCols.push({ label: "Mobilier", annuel: mobilier / amortDureeMobilier, duree: amortDureeMobilier, initial: mobilier });
+    if (travaux > 0) annexeCols.push({ label: "Travaux", annuel: travaux / amortDureeTravaux, duree: amortDureeTravaux, initial: travaux });
+    if (notaire > 0) annexeCols.push({ label: "Frais notaire", annuel: notaire / amortDureeNotaire, duree: amortDureeNotaire, initial: notaire });
 
     // Terrain (non amortissable)
     const terrainVal = prix * (1 - amortPct / 100);
@@ -309,9 +311,9 @@ export default function RapportInner() {
             a += yr <= c.duree ? (valeurAmortissable * c.pct / 100) / c.duree : 0;
           }
         }
-        if (yr <= 7 && mobilier > 0) a += mobilier / 7;
-        if (yr <= 15 && travaux > 0) a += travaux / 15;
-        if (yr <= 20 && notaire > 0) a += notaire / 20;
+        if (amortDureeMobilier > 0 && yr <= amortDureeMobilier && mobilier > 0) a += mobilier / amortDureeMobilier;
+        if (amortDureeTravaux > 0 && yr <= amortDureeTravaux && travaux > 0) a += travaux / amortDureeTravaux;
+        if (amortDureeNotaire > 0 && yr <= amortDureeNotaire && notaire > 0) a += notaire / amortDureeNotaire;
         return { yr, a };
       });
       const maxVal = Math.max(...barData.map(d => d.a), 1);
@@ -754,7 +756,7 @@ ${!isSaisonnier ? `<!-- ══════════════════�
   </tr></thead>
   <tbody>
     <tr><td class="lbl">Loyers imposables</td><td class="r">${fE(loyerAnnuel)}</td><td class="r">${fE(loyerAnnuel)}</td></tr>
-    <tr><td class="lbl">Charges / abattement</td><td class="r">Charges réelles : ${fE(chargesDeductibles)}</td><td class="r">Abattement ${isSaisonnier ? "30" : "50"} % : ${fE(loyerAnnuel * abattBIC)}</td></tr>
+    <tr><td class="lbl">Charges / abattement</td><td class="r">Charges réelles : ${fE(chargesDeductibles)}</td><td class="r">Abattement ${isSaisonnier ? "30" : "50"} % : ${fE(loyerAnnuel * abattPct)}</td></tr>
     <tr><td class="lbl">Amortissements déduits</td><td class="r">${fE(amortTotalAn1)}</td><td class="r">—</td></tr>
     <tr class="sep"><td class="lbl">Base imposable</td>
       <td class="r" style="color:${baseImposableReel === 0 ? "#1A7A52" : "#B03A2A"}">${fE(baseImposableReel)}</td>
@@ -945,7 +947,7 @@ ${isMicro ? `
   <thead><tr><th>Étape</th><th class="r">Montant</th></tr></thead>
   <tbody>
     <tr><td class="lbl">Revenus locatifs annuels (HC)</td><td class="r">${fE(loyerAnnuel)}</td></tr>
-    <tr><td class="lbl">− Abattement forfaitaire (${isSaisonnier ? "30" : "50"} %)</td><td class="r red">−${fE(loyerAnnuel * abattBIC)}</td></tr>
+    <tr><td class="lbl">− Abattement forfaitaire (${isSaisonnier ? "30" : "50"} %)</td><td class="r red">−${fE(loyerAnnuel * abattPct)}</td></tr>
     <tr class="sep"><td class="lbl">= Base imposable</td><td class="r">${fE(baseBIC)}</td></tr>
     <tr><td class="lbl">Impôt IR estimé (TMI ${tmi} %)</td><td class="r">${fE(impotBIC * (tmi / (tmi + 18.6)))}</td></tr>
     <tr><td class="lbl">Prélèvements sociaux (18,6 %)</td><td class="r">${fE(impotBIC * (18.6 / (tmi + 18.6)))}</td></tr>
@@ -1024,7 +1026,7 @@ ${makeAmortBarChart()}
 
 ${(() => {
   if (isMicro) {
-    const bicBase = loyerAnnuel * abattBIC;
+    const bicBase = loyerAnnuel * (1 - abattPct);
     const bicImpot = bicBase * (tmi / 100 + 0.186);
     return `<table class="tbl" style="margin-bottom:14px">
   <thead><tr>
@@ -1204,7 +1206,7 @@ ${yearCards}
 <p style="font-size:9px;color:#1A1612;margin-bottom:8px">${isMicro ? `Micro-BIC · Abattement ${isSaisonnier ? "30" : "50"} % constant · Loyers et charges supposés constants` : "Régime réel simplifié · Loyers et charges constants · Amortissement variable selon les durées"}</p>
 
 ${isMicro ? (() => {
-  const bicBase = loyerAnnuel * abattBIC;
+  const bicBase = loyerAnnuel * (1 - abattPct);
   const bicImpot = bicBase * (tmi / 100 + 0.186);
   return `<table class="tbl">
   <thead><tr>
@@ -1312,7 +1314,8 @@ ${!isMicro && annexeCols.length > 0 ? `<div class="page landscape">
     const amortDureeNotaire = amortDureeNotaireRef.current;
     const composants = composantsRef.current;
     const isSaisonnier = isSaisonnierRef.current;
-    const abattBIC = isSaisonnier ? 0.30 : 0.50;
+    // abattPct = taux d'abattement (30% saisonnier non classé, 50% classique)
+    const abattPct = isSaisonnier ? 0.30 : 0.50;
     const prixNuitee = prixNuiteeRef.current;
     const tauxOccBas = tauxOccBasRef.current;
     const tauxOccMoyen = tauxOccMoyenRef.current;
@@ -1449,9 +1452,9 @@ ${!isMicro && annexeCols.length > 0 ? `<div class="page landscape">
         if (val > 0) annexeCols.push({ label: c.label, annuel: val / c.duree, duree: c.duree, initial: val });
       }
     }
-    if (mobilier > 0) annexeCols.push({ label: "Mobilier", annuel: mobilier / 7, duree: 7, initial: mobilier });
-    if (travaux > 0) annexeCols.push({ label: "Travaux", annuel: travaux / 15, duree: 15, initial: travaux });
-    if (notaire > 0) annexeCols.push({ label: "Frais notaire", annuel: notaire / 20, duree: 20, initial: notaire });
+    if (mobilier > 0) annexeCols.push({ label: "Mobilier", annuel: mobilier / amortDureeMobilier, duree: amortDureeMobilier, initial: mobilier });
+    if (travaux > 0) annexeCols.push({ label: "Travaux", annuel: travaux / amortDureeTravaux, duree: amortDureeTravaux, initial: travaux });
+    if (notaire > 0) annexeCols.push({ label: "Frais notaire", annuel: notaire / amortDureeNotaire, duree: amortDureeNotaire, initial: notaire });
 
     const chargesLoyer = parseFloat(f.chargesLoyer ?? "0") || 0;
     const taxeFonciere = parseFloat(f.taxeFonciere) || 0;
@@ -2070,7 +2073,7 @@ ${!isSaisonnier ? `<!-- PAGE 1 — COUVERTURE -->
       <tbody>
         ${isMicro ? `
         <tr><td class="lbl">Loyers imposables</td><td class="r">${fE(loyerAnnuel)}</td></tr>
-        <tr><td class="lbl">Abattement forfaitaire ${isSaisonnier ? "30" : "50"} %</td><td class="r" style="color:#B03A2A">−${fE(loyerAnnuel * abattBIC)}</td></tr>
+        <tr><td class="lbl">Abattement forfaitaire ${isSaisonnier ? "30" : "50"} %</td><td class="r" style="color:#B03A2A">−${fE(loyerAnnuel * abattPct)}</td></tr>
         <tr class="sep"><td class="lbl">Base imposable BIC</td><td class="r">${fE(baseBIC)}</td></tr>
         <tr class="total"><td>Fiscalité totale</td><td class="r" style="color:${impotBIC === 0 ? "#1A7A52" : "#B03A2A"}">${fE(impotBIC)}</td></tr>
         ` : `
@@ -2227,7 +2230,7 @@ ${isMicro ? `
 <table class="tbl" style="margin-bottom:14px;max-width:400px">
   <tbody>
     <tr><td class="lbl">Loyers imposables bruts</td><td class="r">${fE(loyerAnnuel)}</td></tr>
-    <tr><td class="lbl">− Abattement forfaitaire ${isSaisonnier ? "30" : "50"} %</td><td class="r" style="color:#B03A2A">−${fE(loyerAnnuel * abattBIC)}</td></tr>
+    <tr><td class="lbl">− Abattement forfaitaire ${isSaisonnier ? "30" : "50"} %</td><td class="r" style="color:#B03A2A">−${fE(loyerAnnuel * abattPct)}</td></tr>
     <tr class="sep"><td class="lbl">= Base imposable</td><td class="r">${fE(baseBIC)}</td></tr>
     <tr><td class="lbl">Impôt IR (TMI ${tmi} %)</td><td class="r">${fE(impotBIC * tmi / (tmi + 18.6))}</td></tr>
     <tr><td class="lbl">Prélèvements sociaux (18,6 %)</td><td class="r">${fE(impotBIC * 18.6 / (tmi + 18.6))}</td></tr>
@@ -2297,7 +2300,7 @@ ${isMicro ? `
     ${keyYears.map(yr => {
       const ro = rows.find(r => r.year === yr);
       if (!ro) return "";
-      const bicBase = loyerAnnuel * abattBIC;
+      const bicBase = loyerAnnuel * (1 - abattPct);
       const bicImpot = bicBase * (tmi / 100 + 0.186);
       const impotYr = isMicro ? bicImpot : ro.impot;
       const cfAv = (noi - (yr <= duree ? serviceDebt : 0)) / 12;
@@ -2342,7 +2345,7 @@ ${isMicro ? `
       const cfAvSc = (noiSc - serviceDebt) / 12;
       let fiscSc = 0;
       if (isMicro) {
-        fiscSc = loyerSc * abattBIC * (tmi / 100 + 0.186);
+        fiscSc = loyerSc * (1 - abattPct) * (tmi / 100 + 0.186);
       } else {
         const resAvAmortSc = loyerSc - chargesDeductibles;
         const baseImposSc = Math.max(0, resAvAmortSc - amortTotalAn1);
@@ -2449,7 +2452,7 @@ ${(() => {
 <p style="font-size:9px;color:#1A1612;margin-bottom:8px">${isMicro ? `Micro-BIC · Abattement ${isSaisonnier ? "30" : "50"} % constant · Loyers et charges supposés constants` : "Régime réel simplifié · Amortissement variable · Loyers et charges constants"}</p>
 
 ${isMicro ? (() => {
-  const bicBase = loyerAnnuel * abattBIC;
+  const bicBase = loyerAnnuel * (1 - abattPct);
   const bicImpot = bicBase * (tmi / 100 + 0.186);
   return `<table class="tbl">
   <thead><tr>
