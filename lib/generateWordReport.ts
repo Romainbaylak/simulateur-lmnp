@@ -18,20 +18,23 @@ const RED = "B03A2A";
 const BEIGE = "EDE7DC";
 const CREAM = "F5F0E8";
 
-const pt = (n: number) => n * 20; // half-points
+// half-points: 1pt = 2 half-points (docx size unit)
+const hp = (pt: number) => pt * 2;
 
 // ── Small building blocks ─────────────────────────────────────────────────────
 const blank = () => new Paragraph({ text: "", spacing: { after: 60 } });
 
-const heading = (text: string, level: (typeof HeadingLevel)[keyof typeof HeadingLevel] = HeadingLevel.HEADING_2) =>
-  new Paragraph({
-    text,
-    heading: level,
+// Heading: explicit size (no Word built-in style) — max 15pt
+const heading = (text: string, level: (typeof HeadingLevel)[keyof typeof HeadingLevel] = HeadingLevel.HEADING_2) => {
+  const size = level === HeadingLevel.HEADING_1 ? hp(14) : hp(12);
+  return new Paragraph({
+    children: [new TextRun({ text, bold: true, color: DARK, size })],
     spacing: { before: 200, after: 100 },
     border: { bottom: { color: ORANGE, size: 8, style: BorderStyle.SINGLE } },
   });
+};
 
-const body = (text: string, bold = false, color = "1A1612", size = 20) =>
+const body = (text: string, bold = false, color = "1A1612", size = hp(11)) =>
   new Paragraph({
     children: [new TextRun({ text, bold, color, size })],
     spacing: { after: 60 },
@@ -39,7 +42,7 @@ const body = (text: string, bold = false, color = "1A1612", size = 20) =>
 
 const note = (text: string) =>
   new Paragraph({
-    children: [new TextRun({ text, size: 18, color: "1A1612", italics: true })],
+    children: [new TextRun({ text, size: hp(11), color: "1A1612", italics: true })],
     shading: { type: ShadingType.CLEAR, fill: BEIGE },
     spacing: { before: 80, after: 80 },
     indent: { left: 100, right: 100 },
@@ -55,7 +58,7 @@ const FULL_L = 12800;
 const th = (text: string, w: number, right = false) =>
   new TableCell({
     children: [new Paragraph({
-      children: [new TextRun({ text, bold: true, color: CREAM, size: 18 })],
+      children: [new TextRun({ text, bold: true, color: CREAM, size: hp(11) })],
       alignment: right ? AlignmentType.RIGHT : AlignmentType.LEFT,
     })],
     shading: { type: ShadingType.CLEAR, fill: DARK },
@@ -67,7 +70,7 @@ const th = (text: string, w: number, right = false) =>
 const td = (text: string, w: number, opts: { right?: boolean; bold?: boolean; color?: string; shade?: string } = {}) =>
   new TableCell({
     children: [new Paragraph({
-      children: [new TextRun({ text, bold: opts.bold ?? false, color: opts.color ?? "1A1612", size: 18 })],
+      children: [new TextRun({ text, bold: opts.bold ?? false, color: opts.color ?? "1A1612", size: hp(11) })],
       alignment: opts.right ? AlignmentType.RIGHT : AlignmentType.LEFT,
     })],
     shading: opts.shade ? { type: ShadingType.CLEAR, fill: opts.shade } : undefined,
@@ -268,17 +271,17 @@ export async function generateWordReport(input: WordReportInput): Promise<Buffer
   // ── PAGE 1 — COUVERTURE ──────────────────────────────────────────────────
   const page1: (Paragraph | Table)[] = [
     new Paragraph({
-      children: [new TextRun({ text: "toutlmnp", bold: true, size: pt(18), color: ORANGE })],
+      children: [new TextRun({ text: "toutlmnp", bold: true, size: hp(15), color: ORANGE })],
       alignment: AlignmentType.CENTER,
       spacing: { after: 80 },
     }),
     new Paragraph({
-      children: [new TextRun({ text: "Rapport LMNP – Simulation de rentabilité", bold: true, size: pt(16), color: DARK })],
+      children: [new TextRun({ text: "Rapport LMNP – Simulation de rentabilité", bold: true, size: hp(14), color: DARK })],
       alignment: AlignmentType.CENTER,
       spacing: { after: 60 },
     }),
     new Paragraph({
-      children: [new TextRun({ text: `Généré le ${today}  ·  ${regimeLabel}`, size: pt(9), color: "888888" })],
+      children: [new TextRun({ text: `Généré le ${today}  ·  ${regimeLabel}`, size: hp(11), color: "888888" })],
       alignment: AlignmentType.CENTER,
       spacing: { after: 200 },
     }),
@@ -286,7 +289,7 @@ export async function generateWordReport(input: WordReportInput): Promise<Buffer
     ...(form.villeLabel || form.surface || form.type ? [
       new Paragraph({
         children: [
-          new TextRun({ text: typeLabel + (form.villeLabel ? "  –  " + form.villeLabel : "") + (form.surface ? "  ·  " + form.surface + " m²" : ""), size: pt(10), color: "1A1612" }),
+          new TextRun({ text: typeLabel + (form.villeLabel ? "  –  " + form.villeLabel : "") + (form.surface ? "  ·  " + form.surface + " m²" : ""), size: hp(11), color: "1A1612" }),
         ],
         shading: { type: ShadingType.CLEAR, fill: BEIGE },
         spacing: { before: 60, after: 200 },
@@ -737,7 +740,7 @@ export async function generateWordReport(input: WordReportInput): Promise<Buffer
     styles: {
       default: {
         document: {
-          run: { font: "Calibri", size: 20, color: "1A1612" },
+          run: { font: "Calibri", size: hp(11), color: "1A1612" },
           paragraph: { spacing: { line: 276 } },
         },
       },
@@ -747,7 +750,7 @@ export async function generateWordReport(input: WordReportInput): Promise<Buffer
           name: "Heading 1",
           basedOn: "Normal",
           next: "Normal",
-          run: { bold: true, size: pt(14), color: DARK },
+          run: { bold: true, size: hp(14), color: DARK },
           paragraph: { spacing: { before: 200, after: 120 }, border: { bottom: { color: ORANGE, size: 8, style: BorderStyle.SINGLE } } },
         },
         {
@@ -755,7 +758,7 @@ export async function generateWordReport(input: WordReportInput): Promise<Buffer
           name: "Heading 2",
           basedOn: "Normal",
           next: "Normal",
-          run: { bold: true, size: pt(12), color: DARK },
+          run: { bold: true, size: hp(12), color: DARK },
           paragraph: { spacing: { before: 160, after: 80 } },
         },
       ],
