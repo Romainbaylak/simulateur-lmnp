@@ -43,8 +43,8 @@ export default function TarifsPage() {
         </div>
       </div>
 
-      <div className="max-w-6xl mx-auto px-4 py-16">
-        <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 items-start">
+      <div className="max-w-5xl mx-auto px-4 py-16">
+        <div className="grid md:grid-cols-3 gap-6 items-start">
 
           {/* Gratuit */}
           <div className="rounded-xl p-8 flex flex-col" style={{ background: "#F5F0E8", border: "0.5px solid rgba(26,22,18,0.12)" }}>
@@ -149,45 +149,38 @@ export default function TarifsPage() {
             </p>
           </div>
 
-          {/* Pro+ */}
-          <div className="rounded-xl p-8 flex flex-col relative"
-            style={{ background: "#2C1A10", border: "1.5px solid rgba(201,91,42,0.6)", boxShadow: "0 0 0 3px rgba(201,91,42,0.12)" }}>
-            <div className="absolute -top-3 left-6">
-              <span className="text-[10px] uppercase tracking-[0.12em] font-medium px-3 py-1 rounded"
-                style={{ background: "#C95B2A", color: "#F5F0E8" }}>PROFESSIONNEL</span>
-            </div>
-            <div className="mb-6">
-              <h2 className="font-light text-2xl mb-2" style={{ color: "#F5F0E8", letterSpacing: "-0.02em" }}>Pro+</h2>
-              <div className="flex items-baseline gap-1 mb-1">
-                <span className="text-4xl font-light" style={{ color: "#C95B2A", letterSpacing: "-0.03em" }}>149,99 €</span>
-                <span style={{ color: "rgba(245,240,232,0.35)", fontSize: 14 }}>/mois</span>
+        </div>
+
+        {/* Pro+ — bannière compacte en dessous */}
+        <div className="mt-8 rounded-xl relative"
+          style={{ background: "#2C1A10", border: "1.5px solid rgba(201,91,42,0.6)", boxShadow: "0 0 0 3px rgba(201,91,42,0.12)" }}>
+          <div className="absolute -top-3 left-6">
+            <span className="text-[10px] uppercase tracking-[0.12em] font-medium px-3 py-1 rounded"
+              style={{ background: "#C95B2A", color: "#F5F0E8" }}>PROFESSIONNEL</span>
+          </div>
+          <div className="flex flex-col md:flex-row md:items-center gap-6 px-8 py-6">
+            {/* Titre + prix */}
+            <div className="flex-shrink-0">
+              <h2 className="font-light text-2xl mb-1" style={{ color: "#F5F0E8", letterSpacing: "-0.02em" }}>Pro+</h2>
+              <div className="flex items-baseline gap-1">
+                <span className="text-3xl font-light" style={{ color: "#C95B2A", letterSpacing: "-0.03em" }}>149,99 €</span>
+                <span style={{ color: "rgba(245,240,232,0.35)", fontSize: 13 }}>/mois</span>
               </div>
-              <div className="text-sm" style={{ color: "rgba(245,240,232,0.35)" }}>Sans engagement</div>
+              <div className="text-xs mt-0.5" style={{ color: "rgba(245,240,232,0.35)" }}>Sans engagement</div>
             </div>
-            <p className="text-sm leading-relaxed mb-6" style={{ color: "rgba(245,240,232,0.7)" }}>
+            {/* Séparateur vertical */}
+            <div className="hidden md:block w-px self-stretch" style={{ background: "rgba(245,240,232,0.1)" }} />
+            {/* Description */}
+            <p className="text-sm leading-relaxed flex-1" style={{ color: "rgba(245,240,232,0.7)" }}>
               Vous êtes un professionnel ? Donnez un accès premium à tous vos clients qui auront accès à l&apos;outil complet et pourront faire leurs propres simulations.
             </p>
-            <ul className="space-y-3 mb-8 flex-1">
-              {[
-                "Tout le plan Pro inclus",
-                "Accès multi-clients illimité",
-                "Chaque client simule en autonomie",
-                "Outil complet pour vos clients",
-                "Personal branding — votre marque",
-                "Dashboard de gestion clients",
-                "Support dédié prioritaire",
-              ].map(f => (
-                <li key={f} className="flex items-center gap-3 text-sm" style={{ color: "rgba(245,240,232,0.65)" }}>
-                  <span className="w-4 h-4 rounded-full flex items-center justify-center text-[10px] flex-shrink-0"
-                    style={{ background: "rgba(201,91,42,0.35)", color: "#C95B2A" }}>✓</span>
-                  {f}
-                </li>
-              ))}
-            </ul>
-            <ProPlusButton />
-            <p className="text-xs text-center mt-3" style={{ color: "rgba(245,240,232,0.2)" }}>
-              Paiement sécurisé via Stripe · Sans engagement
-            </p>
+            {/* Bouton */}
+            <div className="flex-shrink-0 w-full md:w-56">
+              <ProPlusButton />
+              <p className="text-xs text-center mt-2" style={{ color: "rgba(245,240,232,0.2)" }}>
+                Paiement sécurisé via Stripe
+              </p>
+            </div>
           </div>
         </div>
 
