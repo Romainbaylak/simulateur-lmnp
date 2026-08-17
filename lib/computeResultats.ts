@@ -53,7 +53,9 @@ export interface Resultats {
   impotBIC: number;
   cashflowBICMensuel: number;
   rendementBrut: number;
-  rendementNet: number;
+  rendementNet: number;        // net de charges (avant impôt) — utilisé pour le verdict
+  rendementNetReel: number;    // net de charges ET d'impôt réel
+  rendementNetBIC: number;     // net de charges ET d'impôt Micro-BIC
 }
 
 export interface SimulationData {
@@ -104,7 +106,11 @@ export function computeResultats(
   amortPct: number,
   amortMode: "ensemble" | "composant",
   amortDureeEnsemble: number,
-  composants: { label: string; pct: number; duree: number }[]
+  composants: { label: string; pct: number; duree: number }[],
+  isSaisonnier = false,
+  amortDureeMobilier = 7,
+  amortDureeTravaux = 15,
+  amortDureeNotaire = 20,
 ): Resultats | null {
   const prix = parseFloat(form.prix) || 0;
   const travaux = parseFloat(form.travaux) || 0;
@@ -139,9 +145,9 @@ export function computeResultats(
   const amortBien = amortMode === "ensemble"
     ? valeurAmortissable / amortDureeEnsemble
     : composants.reduce((sum, c) => sum + (valeurAmortissable * c.pct / 100) / c.duree, 0);
-  const amortMobilier = mobilier / 7;
-  const amortTravaux = travaux / 15;
-  const amortNotaire = notaire / 20;
+  const amortMobilier = amortDureeMobilier > 0 ? mobilier / amortDureeMobilier : 0;
+  const amortTravaux = amortDureeTravaux > 0 ? travaux / amortDureeTravaux : 0;
+  const amortNotaire = amortDureeNotaire > 0 ? notaire / amortDureeNotaire : 0;
   const amortTotal = amortBien + amortMobilier + amortTravaux + amortNotaire;
 
   // Assurance emprunteur = charge financière déductible (comme les intérêts)
@@ -153,13 +159,16 @@ export function computeResultats(
   const amortAReporter = Math.max(0, amortTotal - Math.max(0, resultatAvantAmort));
   const cashflowReelMensuel = (loyerAnnuel - creditAnnuel - chargesAnnuelles - assuranceEmprunteurAnnuel - impotReel) / 12;
 
-  const baseBIC = loyerAnnuel * 0.50;
+  const abattBIC = isSaisonnier ? 0.30 : 0.50;
+  const baseBIC = loyerAnnuel * abattBIC;
   const impotBIC = baseBIC * (form.tmi / 100 + 0.186);
   const cashflowBICMensuel = (loyerAnnuel - creditAnnuel - chargesAnnuelles - assuranceEmprunteurAnnuel - impotBIC) / 12;
 
-  // Rendement calculé sur loyer HC uniquement (sans charges locataire)
+  // Rendements
   const rendementBrut = (loyerAnnuel / investTotal) * 100;
-  const rendementNet = ((loyerAnnuel - chargesAnnuelles) / investTotal) * 100;
+  const rendementNet = ((loyerAnnuel - chargesAnnuelles) / investTotal) * 100;                          // avant impôt
+  const rendementNetReel = ((loyerAnnuel - chargesAnnuelles - impotReel) / investTotal) * 100;          // après impôt réel
+  const rendementNetBIC = ((loyerAnnuel - chargesAnnuelles - impotBIC) / investTotal) * 100;            // après impôt BIC
 
   return {
     investTotal, montantCredit, mensualite, creditAnnuel, interetsAnnee1,
@@ -167,7 +176,7 @@ export function computeResultats(
     loyerAnnuel, amortBien, amortMobilier, amortTravaux, amortNotaire, amortTotal,
     chargesDeductibles, resultatAvantAmort, baseImposableReel, impotReel, impotReelMensuel,
     amortAReporter, cashflowReelMensuel, baseBIC, impotBIC, cashflowBICMensuel,
-    rendementBrut, rendementNet,
+    rendementBrut, rendementNet, rendementNetReel, rendementNetBIC,
   };
 }
 

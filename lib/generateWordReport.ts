@@ -108,6 +108,9 @@ interface WordReportInput {
   amortPct: number;
   amortMode: "ensemble" | "composant";
   amortDureeEnsemble: number;
+  amortDureeMobilier?: number;
+  amortDureeTravaux?: number;
+  amortDureeNotaire?: number;
   composants: Composant[];
   isSaisonnier?: boolean;
   prixNuitee?: string;
@@ -120,7 +123,7 @@ interface WordReportInput {
 }
 
 // ── PROJECTION (same logic as buildPdfHtml) ───────────────────────────────────
-function buildRows(f: Form, res: Resultats, amortPct: number, amortMode: string, amortDureeEnsemble: number, composants: Composant[]) {
+function buildRows(f: Form, res: Resultats, amortPct: number, amortMode: string, amortDureeEnsemble: number, composants: Composant[], amortDureeMobilier = 7, amortDureeTravaux = 15, amortDureeNotaire = 20) {
   const prix = parseFloat(f.prix) || 0;
   const travaux = parseFloat(f.travaux) || 0;
   const notaire = parseFloat(f.notaire) || 0;
@@ -166,9 +169,9 @@ function buildRows(f: Form, res: Resultats, amortPct: number, amortMode: string,
     } else {
       for (const c of composants) amortBienA += year <= c.duree ? (valeurAmortissable * c.pct / 100) / c.duree : 0;
     }
-    const amortMobilierA = year <= 7 ? mobilier / 7 : 0;
-    const amortTravauxA = year <= 15 ? travaux / 15 : 0;
-    const amortNotaireA = year <= 20 ? notaire / 20 : 0;
+    const amortMobilierA = amortDureeMobilier > 0 && year <= amortDureeMobilier ? mobilier / amortDureeMobilier : 0;
+    const amortTravauxA = amortDureeTravaux > 0 && year <= amortDureeTravaux ? travaux / amortDureeTravaux : 0;
+    const amortNotaireA = amortDureeNotaire > 0 && year <= amortDureeNotaire ? notaire / amortDureeNotaire : 0;
     const amortTotalA = amortBienA + amortMobilierA + amortTravauxA + amortNotaireA;
     const chargesDed = chargesAnnuelles + interetsAnnee + assuranceEmprunteurAnnuel;
     const resAvAmort = loyerAnnuel - chargesDed;
@@ -189,6 +192,10 @@ export async function generateWordReport(input: WordReportInput): Promise<Buffer
   const { form, resultats: res, selectedRegime, amortPct, amortMode, amortDureeEnsemble, composants } = input;
   const isMicro = selectedRegime === "micro";
   const isSaisonnier = input.isSaisonnier ?? false;
+  const amortDureeMobilier = input.amortDureeMobilier ?? 7;
+  const amortDureeTravaux = input.amortDureeTravaux ?? 15;
+  const amortDureeNotaire = input.amortDureeNotaire ?? 20;
+  const abattBIC = isSaisonnier ? 0.30 : 0.50;
 
   const prix = parseFloat(form.prix) || 0;
   const travaux = parseFloat(form.travaux) || 0;
@@ -233,7 +240,7 @@ export async function generateWordReport(input: WordReportInput): Promise<Buffer
   const regimeLabel = isMicro ? "Micro-BIC" : "Régime réel simplifié";
 
   // Projection
-  const { rows, totalYears } = buildRows(form, res, amortPct, amortMode, amortDureeEnsemble, composants);
+  const { rows, totalYears } = buildRows(form, res, amortPct, amortMode, amortDureeEnsemble, composants, amortDureeMobilier, amortDureeTravaux, amortDureeNotaire);
   const keyYears = [1, 5, 10, 15, 20, 21, 25, 30, 35, 40].filter(y => y <= totalYears);
 
   // Amort composants
@@ -327,7 +334,7 @@ export async function generateWordReport(input: WordReportInput): Promise<Buffer
       rows: [
         trow([th("Indicateur", Math.round(FULL * 0.45)), th("Régime réel simplifié", Math.round(FULL * 0.275), true), th("Micro-BIC", Math.round(FULL * 0.275), true)]),
         trow([td("Loyers imposables", Math.round(FULL * 0.45)), td(fE(loyerAnnuel), Math.round(FULL * 0.275), { right: true }), td(fE(loyerAnnuel), Math.round(FULL * 0.275), { right: true })]),
-        trow([td("Charges / abattement", Math.round(FULL * 0.45)), td("Charges réelles : " + fE(chargesDeductibles), Math.round(FULL * 0.275), { right: true }), td("Abattement 50 % : " + fE(loyerAnnuel * 0.5), Math.round(FULL * 0.275), { right: true })]),
+        trow([td("Charges / abattement", Math.round(FULL * 0.45)), td("Charges réelles : " + fE(chargesDeductibles), Math.round(FULL * 0.275), { right: true }), td(`Abattement ${isSaisonnier ? "30" : "50"} % : ` + fE(loyerAnnuel * abattBIC), Math.round(FULL * 0.275), { right: true })]),
         trow([td("Amortissements déduits", Math.round(FULL * 0.45)), td(fE(amortTotalAn1), Math.round(FULL * 0.275), { right: true }), td("—", Math.round(FULL * 0.275), { right: true })]),
         trow([td("Base imposable", Math.round(FULL * 0.45), { bold: true }), td(fE(baseImposableReel), Math.round(FULL * 0.275), { right: true, bold: true, color: baseImposableReel === 0 ? GREEN : RED }), td(fE(baseBIC), Math.round(FULL * 0.275), { right: true, bold: true })]),
         trow([td("Fiscalité totale estimée", Math.round(FULL * 0.45), { bold: true }), td(fE(impotReel), Math.round(FULL * 0.275), { right: true, bold: true, color: impotReel === 0 ? GREEN : RED }), td(fE(impotBIC), Math.round(FULL * 0.275), { right: true, bold: true, color: RED })]),
@@ -395,7 +402,7 @@ export async function generateWordReport(input: WordReportInput): Promise<Buffer
     }),
     blank(),
     note(isMicro
-      ? `À retenir : En Micro-BIC, un abattement forfaitaire de 50 % remplace toutes les déductions. Le remboursement du capital (${fE(capitalRembourseAn1)}/an en année 1) constitue un enrichissement patrimonial.`
+      ? `À retenir : En Micro-BIC, un abattement forfaitaire de ${isSaisonnier ? "30" : "50"} % remplace toutes les déductions. Le remboursement du capital (${fE(capitalRembourseAn1)}/an en année 1) constitue un enrichissement patrimonial.`
       : `À retenir : Seuls les intérêts d'emprunt et l'assurance emprunteur sont déductibles fiscalement. Le remboursement du capital (${fE(capitalRembourseAn1)}/an en année 1) constitue un enrichissement patrimonial.`),
     new Paragraph({ children: [new PageBreak()] }),
   ];
@@ -410,7 +417,8 @@ export async function generateWordReport(input: WordReportInput): Promise<Buffer
         trow([th("Indicateur", Math.round(FULL * 0.45)), th("Calcul", Math.round(FULL * 0.35)), th("Résultat", Math.round(FULL * 0.2), true)]),
         trow([td("Rentabilité brute sur prix d'achat", Math.round(FULL * 0.45)), td(fE(loyerAnnuel) + " / " + fE(prix) + " × 100", Math.round(FULL * 0.35)), td(fP((loyerAnnuel / prix) * 100), Math.round(FULL * 0.2), { right: true, bold: true })]),
         trow([td("Rentabilité brute acte en main", Math.round(FULL * 0.45)), td(fE(loyerAnnuel) + " / " + fE(investTotal) + " × 100", Math.round(FULL * 0.35)), td(fP(rendementBrut), Math.round(FULL * 0.2), { right: true, bold: true })]),
-        trow([td("Rentabilité nette avant financement", Math.round(FULL * 0.45)), td("(" + fE(loyerAnnuel) + " − " + fE(chargesAnnuelles) + ") / " + fE(investTotal), Math.round(FULL * 0.35)), td(fP(rentaNetteAvFinancement), Math.round(FULL * 0.2), { right: true, bold: true })]),
+        trow([td("Rentabilité nette de charges", Math.round(FULL * 0.45)), td("(" + fE(loyerAnnuel) + " − " + fE(chargesAnnuelles) + ") / " + fE(investTotal), Math.round(FULL * 0.35)), td(fP(rentaNetteAvFinancement), Math.round(FULL * 0.2), { right: true, bold: true })]),
+        trow([td("Rentabilité nette d'impôt", Math.round(FULL * 0.45)), td("(Loyers − charges − impôt) / " + fE(investTotal), Math.round(FULL * 0.35)), td(fP(isMicro ? (loyerAnnuel - chargesAnnuelles - impotBIC) / investTotal * 100 : (loyerAnnuel - chargesAnnuelles - impotReel) / investTotal * 100), Math.round(FULL * 0.2), { right: true, bold: true, color: ORANGE })]),
         trow([td("Cash-flow avant impôt", Math.round(FULL * 0.45)), td("Loyers − crédit − charges", Math.round(FULL * 0.35)), td(fE(cashflowAvantImpot) + "/mois", Math.round(FULL * 0.2), { right: true, bold: true, color: cashflowAvantImpot >= 0 ? GREEN : RED })]),
         trow([td("Cash-flow après impôt (an. 1)", Math.round(FULL * 0.45)), td("CF av. impôt − " + fE((isMicro ? impotBIC : impotReel) / 12) + "/mois", Math.round(FULL * 0.35)), td(fE(isMicro ? cashflowBICMensuel : cashflowReelMensuel) + "/mois", Math.round(FULL * 0.2), { right: true, bold: true, color: (isMicro ? cashflowBICMensuel : cashflowReelMensuel) >= 0 ? GREEN : RED })]),
       ],
@@ -450,7 +458,7 @@ export async function generateWordReport(input: WordReportInput): Promise<Buffer
         rows: [
           trow([th("Étape", Math.round(FULL * 0.65)), th("Montant", Math.round(FULL * 0.35), true)]),
           trow([td("Revenus locatifs annuels (HC)", Math.round(FULL * 0.65)), td(fE(loyerAnnuel), Math.round(FULL * 0.35), { right: true })]),
-          trow([td("− Abattement forfaitaire (50 %)", Math.round(FULL * 0.65)), td("−" + fE(loyerAnnuel * 0.5), Math.round(FULL * 0.35), { right: true, color: RED })]),
+          trow([td(`− Abattement forfaitaire (${isSaisonnier ? "30" : "50"} %)`, Math.round(FULL * 0.65)), td("−" + fE(loyerAnnuel * abattBIC), Math.round(FULL * 0.35), { right: true, color: RED })]),
           trow([td("= Base imposable", Math.round(FULL * 0.65), { bold: true }), td(fE(baseBIC), Math.round(FULL * 0.35), { right: true, bold: true })]),
           trow([td("Impôt IR estimé (TMI " + tmi + " %)", Math.round(FULL * 0.65)), td(fE(impotBIC * (tmi / (tmi + 18.6))), Math.round(FULL * 0.35), { right: true })]),
           trow([td("Prélèvements sociaux (18,6 %)", Math.round(FULL * 0.65)), td(fE(impotBIC * (18.6 / (tmi + 18.6))), Math.round(FULL * 0.35), { right: true })]),
@@ -460,7 +468,7 @@ export async function generateWordReport(input: WordReportInput): Promise<Buffer
         layout: TableLayoutType.FIXED,
       }),
       blank(),
-      note(`En Micro-BIC, un abattement forfaitaire de 50 % est appliqué sur vos revenus. La base imposable restante est taxée au taux global TMI + PS = ${(tmi + 18.6).toFixed(1)} %. Ce régime est simple mais ne permet pas de déduire les charges réelles ni les amortissements.`),
+      note(`En Micro-BIC, un abattement forfaitaire de ${isSaisonnier ? "30" : "50"} % est appliqué sur vos revenus. La base imposable restante est taxée au taux global TMI + PS = ${(tmi + 18.6).toFixed(1)} %. Ce régime est simple mais ne permet pas de déduire les charges réelles ni les amortissements.`),
     );
   } else {
     const firstTaxRow = rows.find(ro => ro.baseImposable > 0);
@@ -520,7 +528,7 @@ export async function generateWordReport(input: WordReportInput): Promise<Buffer
     heading(`${chNum}. Évolution de l'investissement dans le temps`, HeadingLevel.HEADING_1),
   ];
   if (isMicro) {
-    const bicBase = loyerAnnuel * 0.50;
+    const bicBase = loyerAnnuel * abattBIC;
     const bicImpot = bicBase * (tmi / 100 + 0.186);
     page6.push(
       new Table({
@@ -637,7 +645,7 @@ export async function generateWordReport(input: WordReportInput): Promise<Buffer
     ? [Math.round(FULL_L * 0.05), Math.round(FULL_L * 0.11), Math.round(FULL_L * 0.11), Math.round(FULL_L * 0.11), Math.round(FULL_L * 0.11), Math.round(FULL_L * 0.11), Math.round(FULL_L * 0.11), Math.round(FULL_L * 0.11), Math.round(FULL_L * 0.18)]
     : [Math.round(FULL_L * 0.04), Math.round(FULL_L * 0.09), Math.round(FULL_L * 0.09), Math.round(FULL_L * 0.09), Math.round(FULL_L * 0.09), Math.round(FULL_L * 0.09), Math.round(FULL_L * 0.10), Math.round(FULL_L * 0.10), Math.round(FULL_L * 0.10), Math.round(FULL_L * 0.10), Math.round(FULL_L * 0.11)];
 
-  const bicBase = loyerAnnuel * 0.50;
+  const bicBase = loyerAnnuel * abattBIC;
   const bicImpot = bicBase * (tmi / 100 + 0.186);
 
   const annexeAHeaderMicro = [th("An", annexeACols[0]), th("Capital restant dû", annexeACols[1], true), th("Annuité", annexeACols[2], true), th("Intérêts", annexeACols[3], true), th("Cap. remb.", annexeACols[4], true), th("Charges", annexeACols[5], true), th("Base BIC", annexeACols[6], true), th("Impôt", annexeACols[7], true), th("CF/mois", annexeACols[8], true)];
@@ -722,7 +730,7 @@ export async function generateWordReport(input: WordReportInput): Promise<Buffer
   // Annexe A — landscape
   const annexeASection = [
     heading("Annexe A — Projection détaillée sur " + totalYears + " ans", HeadingLevel.HEADING_1),
-    body(isMicro ? "Micro-BIC · Abattement 50 % constant · Loyers et charges supposés constants" : "Régime réel simplifié · Loyers et charges constants · Amortissement variable"),
+    body(isMicro ? `Micro-BIC · Abattement ${isSaisonnier ? "30" : "50"} % constant · Loyers et charges supposés constants` : "Régime réel simplifié · Loyers et charges constants · Amortissement variable"),
     blank(),
     new Table({
       width: { size: FULL_L, type: WidthType.DXA },

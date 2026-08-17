@@ -32,6 +32,9 @@ export default function RapportInner() {
   const amortPctRef = useRef(85);
   const amortModeRef = useRef<"ensemble" | "composant">("ensemble");
   const amortDureeEnsembleRef = useRef(25);
+  const amortDureeMobilierRef = useRef(7);
+  const amortDureeTravauxRef = useRef(15);
+  const amortDureeNotaireRef = useRef(20);
   const composantsRef = useRef([
     { label: "Gros œuvre", pct: 40, duree: 50 },
     { label: "Toiture", pct: 10, duree: 25 },
@@ -97,6 +100,9 @@ export default function RapportInner() {
       amortPctRef.current = data.amortPct;
       amortModeRef.current = data.amortMode;
       amortDureeEnsembleRef.current = data.amortDureeEnsemble;
+      if (data.amortDureeMobilier) amortDureeMobilierRef.current = data.amortDureeMobilier;
+      if (data.amortDureeTravaux) amortDureeTravauxRef.current = data.amortDureeTravaux;
+      if (data.amortDureeNotaire) amortDureeNotaireRef.current = data.amortDureeNotaire;
       if (data.composants?.length) composantsRef.current = data.composants;
       if (data.isSaisonnier) {
         isSaisonnierRef.current = true;
@@ -140,8 +146,12 @@ export default function RapportInner() {
     const amortPct = amortPctRef.current;
     const amortMode = amortModeRef.current;
     const amortDureeEnsemble = amortDureeEnsembleRef.current;
+    const amortDureeMobilier = amortDureeMobilierRef.current;
+    const amortDureeTravaux = amortDureeTravauxRef.current;
+    const amortDureeNotaire = amortDureeNotaireRef.current;
     const composants = composantsRef.current;
     const isSaisonnier = isSaisonnierRef.current;
+    const abattBIC = isSaisonnier ? 0.30 : 0.50;
     const prixNuitee = prixNuiteeRef.current;
     const tauxOccBas = tauxOccBasRef.current;
     const tauxOccMoyen = tauxOccMoyenRef.current;
@@ -241,9 +251,9 @@ export default function RapportInner() {
           amortBienA += year <= c.duree ? (valeurAmortissable * c.pct / 100) / c.duree : 0;
         }
       }
-      const amortMobilierA = year <= 7 ? mobilier / 7 : 0;
-      const amortTravauxA = year <= 15 ? travaux / 15 : 0;
-      const amortNotaireA = year <= 20 ? notaire / 20 : 0;
+      const amortMobilierA = amortDureeMobilier > 0 && year <= amortDureeMobilier ? mobilier / amortDureeMobilier : 0;
+      const amortTravauxA = amortDureeTravaux > 0 && year <= amortDureeTravaux ? travaux / amortDureeTravaux : 0;
+      const amortNotaireA = amortDureeNotaire > 0 && year <= amortDureeNotaire ? notaire / amortDureeNotaire : 0;
       const amortTotalA = amortBienA + amortMobilierA + amortTravauxA + amortNotaireA;
       const chargesDed = chargesAnnuelles + interetsAnnee + assuranceEmprunteurAnnuel;
       const resAvAmort = loyerAnnuel - chargesDed;
@@ -744,7 +754,7 @@ ${!isSaisonnier ? `<!-- ══════════════════�
   </tr></thead>
   <tbody>
     <tr><td class="lbl">Loyers imposables</td><td class="r">${fE(loyerAnnuel)}</td><td class="r">${fE(loyerAnnuel)}</td></tr>
-    <tr><td class="lbl">Charges / abattement</td><td class="r">Charges réelles : ${fE(chargesDeductibles)}</td><td class="r">Abattement 50 % : ${fE(loyerAnnuel * 0.50)}</td></tr>
+    <tr><td class="lbl">Charges / abattement</td><td class="r">Charges réelles : ${fE(chargesDeductibles)}</td><td class="r">Abattement ${isSaisonnier ? "30" : "50"} % : ${fE(loyerAnnuel * abattBIC)}</td></tr>
     <tr><td class="lbl">Amortissements déduits</td><td class="r">${fE(amortTotalAn1)}</td><td class="r">—</td></tr>
     <tr class="sep"><td class="lbl">Base imposable</td>
       <td class="r" style="color:${baseImposableReel === 0 ? "#1A7A52" : "#B03A2A"}">${fE(baseImposableReel)}</td>
@@ -761,7 +771,7 @@ ${!isSaisonnier ? `<!-- ══════════════════�
 </table>
 
 <div class="beige-note">
-  <strong>Hypothèse :</strong> Simulation sur ${totalYears} ans en ${isMicro ? "Micro-BIC" : "régime réel simplifié"}. Loyers, charges et valeur du bien supposés constants.${isMicro ? " Abattement forfaitaire 50 % appliqué sur les loyers." : " L'amortissement est calculé selon les durées fiscalement reconnues."} TMI appliquée : <strong>${tmi} %</strong> + prélèvements sociaux <strong>18,6 %</strong>. Cette simulation est indicative et ne constitue pas un conseil fiscal.
+  <strong>Hypothèse :</strong> Simulation sur ${totalYears} ans en ${isMicro ? "Micro-BIC" : "régime réel simplifié"}. Loyers, charges et valeur du bien supposés constants.${isMicro ? ` Abattement forfaitaire ${isSaisonnier ? "30" : "50"} % appliqué sur les loyers.` : " L'amortissement est calculé selon les durées fiscalement reconnues."} TMI appliquée : <strong>${tmi} %</strong> + prélèvements sociaux <strong>18,6 %</strong>. Cette simulation est indicative et ne constitue pas un conseil fiscal.
 </div>
 
 <!-- Recap fiscal + barre régime choisi -->
@@ -791,7 +801,7 @@ ${!isSaisonnier ? `<!-- ══════════════════�
   <div>
     <div style="font-size:13px;font-weight:700;margin-bottom:4px">${isMicro ? "Micro-BIC" : "Régime réel simplifié"}</div>
     <div style="font-size:9px;opacity:.85;line-height:1.6">${isMicro
-      ? "Abattement forfaitaire 50 % · Déclaration simplifiée · Aucune comptabilité obligatoire · Idéal si charges réelles inférieures à l'abattement"
+      ? `Abattement forfaitaire ${isSaisonnier ? "30" : "50"} % · Déclaration simplifiée · Aucune comptabilité obligatoire · Idéal si charges réelles inférieures à l'abattement`
       : "Déduction des charges réelles · Amortissement du bien, mobilier, travaux et notaire · Report illimité du déficit · Optimisation fiscale sur le long terme"
     }</div>
   </div>
@@ -855,7 +865,7 @@ ${!isSaisonnier ? `<!-- ══════════════════�
 
 <div class="note">
   ${isMicro
-    ? `<strong>À retenir :</strong> En <strong>Micro-BIC</strong>, un abattement forfaitaire de <strong>50 %</strong> remplace toutes les déductions (charges réelles, intérêts, amortissements). Le remboursement du capital (${fE(capitalRembourseAn1)}/an en année 1) constitue un enrichissement patrimonial : vous reconstituez votre capital tout au long du crédit.`
+    ? `<strong>À retenir :</strong> En <strong>Micro-BIC</strong>, un abattement forfaitaire de <strong>${isSaisonnier ? "30" : "50"} %</strong> remplace toutes les déductions (charges réelles, intérêts, amortissements). Le remboursement du capital (${fE(capitalRembourseAn1)}/an en année 1) constitue un enrichissement patrimonial : vous reconstituez votre capital tout au long du crédit.`
     : `<strong>À retenir :</strong> Seuls les <strong>intérêts d'emprunt</strong> et l'<strong>assurance emprunteur</strong> sont déductibles fiscalement. Le remboursement du capital (${fE(capitalRembourseAn1)}/an en année 1) constitue un enrichissement patrimonial : vous reconstituez votre capital tout au long du crédit.`
   }
 </div>
@@ -935,7 +945,7 @@ ${isMicro ? `
   <thead><tr><th>Étape</th><th class="r">Montant</th></tr></thead>
   <tbody>
     <tr><td class="lbl">Revenus locatifs annuels (HC)</td><td class="r">${fE(loyerAnnuel)}</td></tr>
-    <tr><td class="lbl">− Abattement forfaitaire (50 %)</td><td class="r red">−${fE(loyerAnnuel * 0.50)}</td></tr>
+    <tr><td class="lbl">− Abattement forfaitaire (${isSaisonnier ? "30" : "50"} %)</td><td class="r red">−${fE(loyerAnnuel * abattBIC)}</td></tr>
     <tr class="sep"><td class="lbl">= Base imposable</td><td class="r">${fE(baseBIC)}</td></tr>
     <tr><td class="lbl">Impôt IR estimé (TMI ${tmi} %)</td><td class="r">${fE(impotBIC * (tmi / (tmi + 18.6)))}</td></tr>
     <tr><td class="lbl">Prélèvements sociaux (18,6 %)</td><td class="r">${fE(impotBIC * (18.6 / (tmi + 18.6)))}</td></tr>
@@ -944,7 +954,7 @@ ${isMicro ? `
   </tbody>
 </table>
 <div class="note">
-  <strong>Comment est calculé l'impôt ?</strong> En Micro-BIC, un abattement forfaitaire de <strong>50 %</strong> est appliqué sur vos revenus. La base imposable restante est taxée au taux global TMI + PS = <strong>${(tmi + 18.6).toFixed(1)} %</strong>. Ce régime est simple mais ne permet pas de déduire les charges réelles ni les amortissements.
+  <strong>Comment est calculé l'impôt ?</strong> En Micro-BIC, un abattement forfaitaire de <strong>${isSaisonnier ? "30" : "50"} %</strong> est appliqué sur vos revenus. La base imposable restante est taxée au taux global TMI + PS = <strong>${(tmi + 18.6).toFixed(1)} %</strong>. Ce régime est simple mais ne permet pas de déduire les charges réelles ni les amortissements.
 </div>
 ` : `
 <div class="section-label" style="margin-bottom:6px">Calcul fiscal – année 1 (régime réel simplifié)</div>
@@ -1014,7 +1024,7 @@ ${makeAmortBarChart()}
 
 ${(() => {
   if (isMicro) {
-    const bicBase = loyerAnnuel * 0.50;
+    const bicBase = loyerAnnuel * abattBIC;
     const bicImpot = bicBase * (tmi / 100 + 0.186);
     return `<table class="tbl" style="margin-bottom:14px">
   <thead><tr>
@@ -1191,10 +1201,10 @@ ${yearCards}
 <div class="page landscape">
 <div class="hdr"><div><div class="hdr-brand"><span class="hdr-light">tout</span><span class="hdr-bold">lmnp</span></div><div class="hdr-sub">Rapport Client · Simulation LMNP</div></div><div class="hdr-right">${today}</div></div>
 <h2 class="ch">Annexe A — Projection détaillée sur ${totalYears} ans</h2>
-<p style="font-size:9px;color:#1A1612;margin-bottom:8px">${isMicro ? "Micro-BIC · Abattement 50 % constant · Loyers et charges supposés constants" : "Régime réel simplifié · Loyers et charges constants · Amortissement variable selon les durées"}</p>
+<p style="font-size:9px;color:#1A1612;margin-bottom:8px">${isMicro ? `Micro-BIC · Abattement ${isSaisonnier ? "30" : "50"} % constant · Loyers et charges supposés constants` : "Régime réel simplifié · Loyers et charges constants · Amortissement variable selon les durées"}</p>
 
 ${isMicro ? (() => {
-  const bicBase = loyerAnnuel * 0.50;
+  const bicBase = loyerAnnuel * abattBIC;
   const bicImpot = bicBase * (tmi / 100 + 0.186);
   return `<table class="tbl">
   <thead><tr>
@@ -1297,8 +1307,12 @@ ${!isMicro && annexeCols.length > 0 ? `<div class="page landscape">
     const amortPct = amortPctRef.current;
     const amortMode = amortModeRef.current;
     const amortDureeEnsemble = amortDureeEnsembleRef.current;
+    const amortDureeMobilier = amortDureeMobilierRef.current;
+    const amortDureeTravaux = amortDureeTravauxRef.current;
+    const amortDureeNotaire = amortDureeNotaireRef.current;
     const composants = composantsRef.current;
     const isSaisonnier = isSaisonnierRef.current;
+    const abattBIC = isSaisonnier ? 0.30 : 0.50;
     const prixNuitee = prixNuiteeRef.current;
     const tauxOccBas = tauxOccBasRef.current;
     const tauxOccMoyen = tauxOccMoyenRef.current;
@@ -1403,9 +1417,9 @@ ${!isMicro && annexeCols.length > 0 ? `<div class="page landscape">
           amortBienA += year <= c.duree ? (valeurAmortissable * c.pct / 100) / c.duree : 0;
         }
       }
-      const amortMobilierA = year <= 7 ? mobilier / 7 : 0;
-      const amortTravauxA = year <= 15 ? travaux / 15 : 0;
-      const amortNotaireA = year <= 20 ? notaire / 20 : 0;
+      const amortMobilierA = amortDureeMobilier > 0 && year <= amortDureeMobilier ? mobilier / amortDureeMobilier : 0;
+      const amortTravauxA = amortDureeTravaux > 0 && year <= amortDureeTravaux ? travaux / amortDureeTravaux : 0;
+      const amortNotaireA = amortDureeNotaire > 0 && year <= amortDureeNotaire ? notaire / amortDureeNotaire : 0;
       const amortTotalA = amortBienA + amortMobilierA + amortTravauxA + amortNotaireA;
       const chargesDed = chargesAnnuelles + interetsAnnee + assuranceEmprunteurAnnuel;
       const resAvAmort = loyerAnnuel - chargesDed;
@@ -2056,7 +2070,7 @@ ${!isSaisonnier ? `<!-- PAGE 1 — COUVERTURE -->
       <tbody>
         ${isMicro ? `
         <tr><td class="lbl">Loyers imposables</td><td class="r">${fE(loyerAnnuel)}</td></tr>
-        <tr><td class="lbl">Abattement forfaitaire 50 %</td><td class="r" style="color:#B03A2A">−${fE(loyerAnnuel * 0.5)}</td></tr>
+        <tr><td class="lbl">Abattement forfaitaire ${isSaisonnier ? "30" : "50"} %</td><td class="r" style="color:#B03A2A">−${fE(loyerAnnuel * abattBIC)}</td></tr>
         <tr class="sep"><td class="lbl">Base imposable BIC</td><td class="r">${fE(baseBIC)}</td></tr>
         <tr class="total"><td>Fiscalité totale</td><td class="r" style="color:${impotBIC === 0 ? "#1A7A52" : "#B03A2A"}">${fE(impotBIC)}</td></tr>
         ` : `
@@ -2206,14 +2220,14 @@ ${!isSaisonnier ? `<!-- PAGE 1 — COUVERTURE -->
 ${isMicro ? `
 <div style="background:#EDE7DC;border-radius:8px;padding:14px;margin-bottom:14px">
   <div style="font-size:10px;font-weight:700;color:#1A2D45;margin-bottom:6px">Principe du Micro-BIC</div>
-  <div style="font-size:9.5px;line-height:1.7;color:#1A1612">En Micro-BIC, un <strong>abattement forfaitaire de 50 %</strong> est appliqué sur l'ensemble des loyers perçus. La base imposable est taxée au taux global TMI + Prélèvements Sociaux. Ce régime ne permet pas de déduire les charges réelles ni les amortissements, mais offre une grande simplicité déclarative.</div>
+  <div style="font-size:9.5px;line-height:1.7;color:#1A1612">En Micro-BIC, un <strong>abattement forfaitaire de ${isSaisonnier ? "30" : "50"} %</strong> est appliqué sur l'ensemble des loyers perçus. La base imposable est taxée au taux global TMI + Prélèvements Sociaux. Ce régime ne permet pas de déduire les charges réelles ni les amortissements, mais offre une grande simplicité déclarative.</div>
 </div>
 
 <div class="section-label">Calcul fiscal — Année 1</div>
 <table class="tbl" style="margin-bottom:14px;max-width:400px">
   <tbody>
     <tr><td class="lbl">Loyers imposables bruts</td><td class="r">${fE(loyerAnnuel)}</td></tr>
-    <tr><td class="lbl">− Abattement forfaitaire 50 %</td><td class="r" style="color:#B03A2A">−${fE(loyerAnnuel * 0.5)}</td></tr>
+    <tr><td class="lbl">− Abattement forfaitaire ${isSaisonnier ? "30" : "50"} %</td><td class="r" style="color:#B03A2A">−${fE(loyerAnnuel * abattBIC)}</td></tr>
     <tr class="sep"><td class="lbl">= Base imposable</td><td class="r">${fE(baseBIC)}</td></tr>
     <tr><td class="lbl">Impôt IR (TMI ${tmi} %)</td><td class="r">${fE(impotBIC * tmi / (tmi + 18.6))}</td></tr>
     <tr><td class="lbl">Prélèvements sociaux (18,6 %)</td><td class="r">${fE(impotBIC * 18.6 / (tmi + 18.6))}</td></tr>
@@ -2283,7 +2297,7 @@ ${isMicro ? `
     ${keyYears.map(yr => {
       const ro = rows.find(r => r.year === yr);
       if (!ro) return "";
-      const bicBase = loyerAnnuel * 0.50;
+      const bicBase = loyerAnnuel * abattBIC;
       const bicImpot = bicBase * (tmi / 100 + 0.186);
       const impotYr = isMicro ? bicImpot : ro.impot;
       const cfAv = (noi - (yr <= duree ? serviceDebt : 0)) / 12;
@@ -2328,7 +2342,7 @@ ${isMicro ? `
       const cfAvSc = (noiSc - serviceDebt) / 12;
       let fiscSc = 0;
       if (isMicro) {
-        fiscSc = loyerSc * 0.5 * (tmi / 100 + 0.186);
+        fiscSc = loyerSc * abattBIC * (tmi / 100 + 0.186);
       } else {
         const resAvAmortSc = loyerSc - chargesDeductibles;
         const baseImposSc = Math.max(0, resAvAmortSc - amortTotalAn1);
@@ -2418,7 +2432,7 @@ ${(() => {
     ["Taux d'emprunt", f.taux + " %"],
     ["Durée crédit", duree + " ans"],
     ["Mensualité", fE(mensualite) + "/mois"],
-    !isMicro ? ["Amortissement bien", amortPct + " % sur " + (amortMode === "ensemble" ? amortDureeEnsemble + " ans" : "composants")] : ["Abattement forfaitaire", "50 %"],
+    !isMicro ? ["Amortissement bien", amortPct + " % sur " + (amortMode === "ensemble" ? amortDureeEnsemble + " ans" : "composants")] : ["Abattement forfaitaire", isSaisonnier ? "30 %" : "50 %"],
     ["Horizon de projection", totalYears + " ans"],
   ].filter(Boolean).map(([k, v]) => `<div style="background:#EDE7DC;border-radius:5px;padding:6px 10px;display:flex;justify-content:space-between"><span style="color:#1A1612">${k}</span><span style="font-weight:600">${v}</span></div>`).join("")}
 </div>
@@ -2432,10 +2446,10 @@ ${(() => {
 <div class="page landscape">
 <div class="hdr"><div><div class="hdr-brand"><span class="hdr-light">tout</span><span class="hdr-bold">lmnp</span></div><div class="hdr-sub">Dossier de Financement · LMNP</div></div><div class="hdr-right">${today} · ${regimeLabel}</div></div>
 <h2 class="ch">Annexe A — Projection détaillée sur ${totalYears} ans</h2>
-<p style="font-size:9px;color:#1A1612;margin-bottom:8px">${isMicro ? "Micro-BIC · Abattement 50 % constant · Loyers et charges supposés constants" : "Régime réel simplifié · Amortissement variable · Loyers et charges constants"}</p>
+<p style="font-size:9px;color:#1A1612;margin-bottom:8px">${isMicro ? `Micro-BIC · Abattement ${isSaisonnier ? "30" : "50"} % constant · Loyers et charges supposés constants` : "Régime réel simplifié · Amortissement variable · Loyers et charges constants"}</p>
 
 ${isMicro ? (() => {
-  const bicBase = loyerAnnuel * 0.50;
+  const bicBase = loyerAnnuel * abattBIC;
   const bicImpot = bicBase * (tmi / 100 + 0.186);
   return `<table class="tbl">
   <thead><tr>

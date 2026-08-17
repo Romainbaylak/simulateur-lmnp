@@ -24,12 +24,16 @@ export async function POST(req: NextRequest) {
     resultatsTriple, selectedRegime,
   } = body;
 
+
   if (!form) {
     return NextResponse.json({ error: "Missing form data" }, { status: 400 });
   }
 
   const loyerMensuel = parseFloat(form.loyer) || 0;
-  const resultats = computeResultats(form, loyerMensuel, amortPct ?? 80, amortMode ?? "ensemble", amortDureeEnsemble ?? 30, composants ?? []);
+  const resultats = computeResultats(
+    form, loyerMensuel, amortPct ?? 80, amortMode ?? "ensemble", amortDureeEnsemble ?? 30, composants ?? [],
+    isSaisonnier ?? false, amortDureeMobilier ?? 7, amortDureeTravaux ?? 15, amortDureeNotaire ?? 20,
+  );
   if (!resultats) {
     return NextResponse.json({ error: "Could not compute results" }, { status: 400 });
   }
@@ -43,6 +47,9 @@ export async function POST(req: NextRequest) {
     amortDureeEnsemble: amortDureeEnsemble ?? 30,
     composants: composants ?? [],
     isSaisonnier: isSaisonnier ?? false,
+    amortDureeMobilier: amortDureeMobilier ?? 7,
+    amortDureeTravaux: amortDureeTravaux ?? 15,
+    amortDureeNotaire: amortDureeNotaire ?? 20,
     prixNuitee,
     tauxOccBas,
     tauxOccMoyen,

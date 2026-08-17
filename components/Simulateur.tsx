@@ -67,6 +67,8 @@ interface Resultats {
   cashflowBICMensuel: number;
   rendementBrut: number;
   rendementNet: number;
+  rendementNetReel: number;
+  rendementNetBIC: number;
 }
 
 function formatEuro(n: number, decimals = 0): string {
@@ -179,10 +181,10 @@ function computeResultats(
   const impotBIC = baseBIC * (form.tmi / 100 + 0.186);
   const cashflowBICMensuel = (recettesAnnuelles - creditAnnuel - chargesAnnuelles - assuranceEmprunteurAnnuel - impotBIC) / 12;
 
-  // Rendement brut : loyer HC / investissement total
   const rendementBrut = (loyerAnnuel / investTotal) * 100;
-  // Rendement net : (loyer HC - charges réelles bailleur) / investissement — charges locataires exclues (pass-through neutre)
-  const rendementNet = ((loyerAnnuel - chargesAnnuelles) / investTotal) * 100;
+  const rendementNet = ((loyerAnnuel - chargesAnnuelles) / investTotal) * 100;                       // avant impôt
+  const rendementNetReel = ((loyerAnnuel - chargesAnnuelles - impotReel) / investTotal) * 100;       // après impôt réel
+  const rendementNetBIC = ((loyerAnnuel - chargesAnnuelles - impotBIC) / investTotal) * 100;         // après impôt BIC
 
   return {
     investTotal, montantCredit, mensualite, creditAnnuel, interetsAnnee1,
@@ -191,7 +193,7 @@ function computeResultats(
     amortBien, amortMobilier, amortTravaux, amortNotaire, amortTotal,
     chargesDeductibles, resultatAvantAmort, baseImposableReel, impotReel, impotReelMensuel,
     amortAReporter, cashflowReelMensuel, baseBIC, impotBIC, cashflowBICMensuel,
-    rendementBrut, rendementNet,
+    rendementBrut, rendementNet, rendementNetReel, rendementNetBIC,
   };
 }
 
@@ -1240,7 +1242,7 @@ export default function Simulateur({ onShowResults }: { onShowResults?: () => vo
                   <div className="rounded-lg px-3 py-2.5" style={cardStyle}>
                     <div className={LABEL}>Rendement</div>
                     <div className="mt-0.5"><span className="text-lg font-bold" style={{ color: "#1A1612", letterSpacing: "-0.02em" }}>{formatPct(resultats.rendementBrut)}</span><span className="text-[12px] font-medium ml-1" style={{ color: "rgba(26,22,18,0.45)" }}>Brut</span></div>
-                    <div className="mt-1"><span className="text-lg font-bold" style={{ color: "#C95B2A", letterSpacing: "-0.02em" }}>{formatPct(resultats.rendementNet)}</span><span className="text-[12px] font-medium ml-1" style={{ color: "rgba(26,22,18,0.45)" }}>Net</span></div>
+                    <div className="mt-1"><span className="text-lg font-bold" style={{ color: "#C95B2A", letterSpacing: "-0.02em" }}>{formatPct(selectedRegime === "micro" ? resultats.rendementNetBIC : resultats.rendementNetReel)}</span><span className="text-[12px] font-medium ml-1" style={{ color: "rgba(26,22,18,0.45)" }}>Net d&apos;impôt</span></div>
                   </div>
                   <div className="rounded-lg px-3 py-2.5" style={cardStyle}>
                     <div className={LABEL}>Revenus annuels</div>
