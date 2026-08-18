@@ -1855,13 +1855,12 @@ export default function Simulateur({ onShowResults }: { onShowResults?: () => vo
                         {/* Explication régimes fiscaux — disparaît après sélection */}
                         {selectedRegime === null && showRegimeExplainer && (
                           <div className="mb-3">
-                            <p className="text-base font-semibold leading-relaxed" style={{ color: "#1A1612", margin: 0 }}>
-                              En LMNP, le choix du régime fiscal est déterminant car il impacte directement le montant de ton impôt, et donc ton cash-flow à la fin de chaque mois.
+                            <p className="text-[15px] leading-relaxed" style={{ color: "#4E1F12", margin: 0 }}>
+                              En LMNP, le choix du régime fiscal est déterminant car il impacte directement le montant de ton impôt, et donc ton cash-flow à la fin de chaque mois. Il existe deux régimes :
                             </p>
-                            <p className="text-base font-semibold leading-relaxed mt-2" style={{ color: "#1A1612", margin: "8px 0 0" }}>
-                              Il existe deux régimes :{" "}
-                              Le <strong style={{ color: "#1A4A35" }}>Micro-BIC</strong> applique un abattement forfaitaire de 30% sur tes loyers puis te donne ta base imposable.{" "}
-                              Le <strong style={{ color: "#C95B2A" }}>Régime Réel</strong> déduit tes vraies charges et — point essentiel — te permet d&apos;amortir une partie de ton bien, réduisant souvent ton impôt.{" "}
+                            <p className="text-[15px] leading-relaxed" style={{ color: "#4E1F12", margin: "8px 0 0" }}>
+                              Le <strong style={{ color: "#2A6E80" }}>Micro-BIC</strong> applique un abattement forfaitaire de <strong style={{ color: "#2A6E80" }}>30%</strong> sur tes loyers puis te donne ta base imposable.{" "}
+                              Le <strong style={{ color: "#C95B2A" }}>Régime Réel</strong> déduit tes vraies charges et te permet <strong><u>d&apos;amortir une partie de ton bien</u></strong>, réduisant souvent ton impôt.{" "}
                               Pour la majorité des investisseurs avec un crédit, le <strong style={{ color: "#C95B2A" }}>Régime Réel</strong> est plus avantageux.
                             </p>
                             <div className="flex justify-end mt-2">
@@ -2121,14 +2120,15 @@ export default function Simulateur({ onShowResults }: { onShowResults?: () => vo
                             </div>
 
                             {/* Explication méthodes */}
-                            <div className="rounded-xl px-5 py-4 mb-6" style={{ background: "#F5F0E8", border: "1.5px solid rgba(26,22,18,0.10)" }}>
-                              <p className="text-[14px] leading-relaxed" style={{ color: "#1A1612", margin: 0 }}>
+                            <div className="mb-6">
+                              <p className="text-[15px] leading-relaxed" style={{ color: "#4E1F12", margin: 0 }}>
                                 Le choix de ta méthode d&apos;amortissement influence directement le montant que tu pourras déduire chaque année — et donc ton impôt.{" "}
                                 La <strong>méthode par composants</strong> est plus précise et fiscalement optimisée.{" "}
                                 La <strong>méthode globale</strong> est plus simple et s&apos;applique aux petits biens (en dessous de 200 000 €).{" "}
                                 Clique sur <strong>&ldquo;Détails&rdquo;</strong> sous chaque option pour voir comment chaque méthode fonctionne.
                               </p>
                             </div>
+
 
                             {/* Grille 2 colonnes : Composant | Global */}
                             <div ref={amortContentRef} className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-12" style={{ scrollMarginTop: "80px" }}>
