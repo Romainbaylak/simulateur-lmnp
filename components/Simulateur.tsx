@@ -1883,8 +1883,10 @@ export default function Simulateur({ onShowResults }: { onShowResults?: () => vo
                         {/* Recommandation banner — visible uniquement avant le choix du régime */}
                         {selectedRegime === null && (
                           <div className="rounded-xl px-5 py-4 mb-4" style={{ background: bestBg, border: `1.5px solid ${bestBorder}` }}>
-                            <div className="text-xs font-semibold uppercase tracking-[0.14em] mb-1" style={{ color: "rgba(26,22,18,0.45)" }}>Régime le plus adapté à votre situation</div>
-                            <div className="text-2xl font-black" style={{ color: bestColor, letterSpacing: "-0.02em" }}>{bestLabel}</div>
+                            <div className="flex items-baseline flex-wrap gap-x-2">
+                              <span className="text-xs font-semibold uppercase tracking-[0.14em]" style={{ color: "rgba(26,22,18,0.45)" }}>Régime le plus adapté à votre situation</span>
+                              <span className="text-lg font-black" style={{ color: bestColor, letterSpacing: "-0.02em" }}>{bestLabel}</span>
+                            </div>
                             <div className="text-base mt-1.5 font-semibold" style={{ color: reelBetter ? "#1A7A52" : "rgba(26,22,18,0.6)" }}>
                               {reelBetter
                                 ? `${economy > 0 ? `${formatEuro(economy)}/an d'impôt économisé` : ""}${cfDiff > 0 ? `${economy > 0 ? " · " : ""}Cash-flow supérieur de ${formatEuro(cfDiff)}/mois` : ""}`
