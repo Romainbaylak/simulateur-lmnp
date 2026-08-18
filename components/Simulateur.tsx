@@ -487,7 +487,7 @@ export default function Simulateur({ onShowResults }: { onShowResults?: () => vo
     if (scrollToAmort.current) {
       scrollToAmort.current = false;
       if (amortContentRef.current) {
-        const top = amortContentRef.current.getBoundingClientRect().top + window.scrollY - 80;
+        const top = amortContentRef.current.getBoundingClientRect().top + window.scrollY - 160;
         window.scrollTo({ top, behavior: "smooth" });
       }
     }
@@ -799,9 +799,10 @@ export default function Simulateur({ onShowResults }: { onShowResults?: () => vo
             </div>
 
             {/* ── RIGHT : Loyer ── */}
-            <div className="space-y-4">
+            <div>
               {/* Mobile separator */}
-              <div className="lg:hidden" style={{ borderTop: "1.5px solid rgba(26,22,18,0.1)", marginTop: 8 }} />
+              <div className="lg:hidden" style={{ borderTop: "1.5px solid rgba(26,22,18,0.1)", marginTop: 8, marginBottom: 16 }} />
+              <div className="space-y-4">
               <div className="flex items-center justify-between" style={{ minHeight: 38 }}>
                 <p className={LABEL} style={{ opacity: 1, color: "#1A1612", marginBottom: 0 }}>Loyer</p>
                 <button
@@ -1089,6 +1090,7 @@ export default function Simulateur({ onShowResults }: { onShowResults?: () => vo
                   </div>
                 );
               })()}
+              </div>
             </div>
           </div>
         </div>}
