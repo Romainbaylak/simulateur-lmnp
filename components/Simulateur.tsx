@@ -1165,10 +1165,9 @@ export default function Simulateur({ onShowResults }: { onShowResults?: () => vo
                   const montantCredit = Math.max(0, p - ap);
                   const tmi         = form.tmi                    || 0;
 
-                  // Formattage avec points (1.000.000 €)
                   const fDot = (n: number) => {
                     const rounded = Math.round(n);
-                    return rounded.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".") + " €";
+                    return rounded.toString().replace(/\B(?=(\d{3})+(?!\d))/g, " ") + " €";
                   };
 
                   type ColDef = { bg: string; border: string; titleColor: string };
