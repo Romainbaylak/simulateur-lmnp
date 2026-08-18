@@ -682,7 +682,7 @@ export default function Simulateur({ onShowResults }: { onShowResults?: () => vo
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="flex flex-col">
-                  <label className={LABEL} style={{ minHeight: "2.5em" }}>Prix d&apos;achat (€)</label>
+                  <label className={LABEL} style={{ minHeight: "2.5em", display: "block" }}>Prix d&apos;achat (€)</label>
                   <input type="number" value={form.prix}
                     onChange={e => updateField("prix", e.target.value)}
                     onBlur={() => handleBlur("prix")}
@@ -802,7 +802,7 @@ export default function Simulateur({ onShowResults }: { onShowResults?: () => vo
             <div className="space-y-4">
               {/* Mobile separator */}
               <div className="lg:hidden" style={{ borderTop: "1.5px solid rgba(26,22,18,0.1)", marginTop: 8 }} />
-              <div className="flex items-center justify-between">
+              <div className="flex items-center justify-between" style={{ minHeight: 38 }}>
                 <p className={LABEL} style={{ opacity: 1, color: "#1A1612", marginBottom: 0 }}>Loyer</p>
                 <button
                   onClick={() => { const next = !isSaisonnier; setIsSaisonnier(next); setResultatsTriple(null); if (next) { updateField("loyer", ""); setLoyerSlider(0); } }}
