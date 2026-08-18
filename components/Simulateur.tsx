@@ -680,16 +680,16 @@ export default function Simulateur({ onShowResults }: { onShowResults?: () => vo
                 </button>
               </div>
 
-              <div className="grid grid-cols-2 gap-4 lg:mt-5">
-                <div>
-                  <label className={LABEL}>Prix d&apos;achat (€)</label>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="flex flex-col">
+                  <label className={LABEL} style={{ minHeight: "2.5em" }}>Prix d&apos;achat (€)</label>
                   <input type="number" value={form.prix}
                     onChange={e => updateField("prix", e.target.value)}
                     onBlur={() => handleBlur("prix")}
                     placeholder="250 000" className={INPUT} style={INPUT_STYLE} />
                 </div>
-                <div>
-                  <label className={LABEL}>Travaux (€)</label>
+                <div className="flex flex-col">
+                  <label className={LABEL} style={{ minHeight: "2.5em" }}>Travaux (€)</label>
                   <input type="number" value={form.travaux}
                     onChange={e => updateField("travaux", e.target.value)}
                     onBlur={() => handleBlur("travaux")}
