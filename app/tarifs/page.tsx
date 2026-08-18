@@ -129,11 +129,11 @@ export default function TarifsPage() {
                 "Tout le plan Investisseur inclus",
                 "Tableau d'amortissement complet et illimité",
                 "Simulations et exports illimités",
-                "Export Word (modifiable)",
+
                 "Comparaison multi-biens (jusqu'à 5 biens)",
                 "Sauvegarde illimitée",
                 "Personal branding des rapports selon votre marque (couleur / logo)",
-                "Possibilité d'extraction .WORD",
+
                 "Support prioritaire",
               ].map(f => (
                 <li key={f} className="flex items-center gap-3 text-sm" style={{ color: "rgba(245,240,232,0.65)" }}>

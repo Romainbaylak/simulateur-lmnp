@@ -51,55 +51,7 @@ export default function RapportInner() {
   const resultatsTripleRef = useRef<{ bas: Resultats | null; moyen: Resultats | null; haut: Resultats | null } | null>(null);
   const selectedRegimeRef = useRef<"micro" | "reel" | null>(null);
 
-  const [isPro, setIsPro] = useState(false);
-  const [wordLoading, setWordLoading] = useState(false);
-
   const sessionId = params.get("session_id") ?? "";
-
-  useEffect(() => {
-    setIsPro(localStorage.getItem("lmnp_plan") === "pro");
-  }, []);
-
-  const downloadWord = async () => {
-    if (wordLoading) return;
-    setWordLoading(true);
-    try {
-      const data = {
-        form,
-        amortPct: amortPctRef.current,
-        amortMode: amortModeRef.current,
-        amortDureeEnsemble: amortDureeEnsembleRef.current,
-        amortDureeMobilier: amortDureeMobilierRef.current,
-        amortDureeTravaux: amortDureeTravauxRef.current,
-        amortDureeNotaire: amortDureeNotaireRef.current,
-        composants: composantsRef.current,
-        isSaisonnier: isSaisonnierRef.current,
-        prixNuitee: prixNuiteeRef.current,
-        tauxOccBas: tauxOccBasRef.current,
-        tauxOccMoyen: tauxOccMoyenRef.current,
-        tauxOccHaut: tauxOccHautRef.current,
-        resultatsTriple: resultatsTripleRef.current,
-        selectedRegime: selectedRegimeRef.current,
-      };
-      const res = await fetch("/api/generate-word", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data),
-      });
-      if (!res.ok) throw new Error("Erreur");
-      const blob = await res.blob();
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `rapport-lmnp-${new Date().toISOString().slice(0, 10)}.docx`;
-      a.click();
-      URL.revokeObjectURL(url);
-    } catch {
-      alert("Impossible de générer le fichier Word. Veuillez réessayer.");
-    } finally {
-      setWordLoading(false);
-    }
-  };
 
   useEffect(() => {
     if (!sessionId) { router.replace("/"); return; }
@@ -2737,61 +2689,6 @@ ${!isMicro && annexeCols.length > 0 ? `
               <span style={{ color: "#4A9FCA", fontSize: 18, fontWeight: 800, lineHeight: 1, flexShrink: 0 }}>→</span>
             </button>
 
-            {/* Synthèse Word */}
-            {isPro ? (
-              <button onClick={downloadWord} disabled={wordLoading}
-                className="rounded-xl flex items-center gap-3 text-left transition-all hover:scale-[1.01] active:scale-[0.99]"
-                style={{ background: "#1E3A5F", padding: "16px 20px", border: "none", cursor: wordLoading ? "wait" : "pointer", minHeight: 72 }}>
-                <span className="text-xs font-bold px-2.5 py-0.5 rounded-full flex-shrink-0"
-                  style={{ background: "rgba(100,160,210,0.3)", color: "#A8D0F0" }}>Word</span>
-                <span className="text-sm font-bold leading-snug flex-1" style={{ color: "#F5F0E8" }}>
-                  {wordLoading ? "Génération…" : <>Synthèse<br />d&apos;investissement</>}
-                </span>
-                <span style={{ color: "#A8D0F0", fontSize: 18, fontWeight: 800, lineHeight: 1, flexShrink: 0 }}>→</span>
-              </button>
-            ) : (
-              <div className="rounded-xl flex items-center gap-3"
-                style={{ background: "#EDE7DC", padding: "16px 20px", opacity: 0.45, cursor: "not-allowed", minHeight: 72 }}>
-                <div className="flex items-center gap-1.5 flex-shrink-0">
-                  <span className="text-xs font-bold px-2.5 py-0.5 rounded-full"
-                    style={{ background: "rgba(42,112,128,0.18)", color: "#2A7080" }}>Word</span>
-                  <span className="text-xs font-bold px-2 py-0.5 rounded-full"
-                    style={{ background: "#1A1612", color: "#F5F0E8" }}>Pro</span>
-                </div>
-                <span className="text-sm font-bold leading-snug flex-1" style={{ color: "#1A1612" }}>
-                  Synthèse<br />d&apos;investissement
-                </span>
-                <span style={{ fontSize: 16, flexShrink: 0 }}>🔒</span>
-              </div>
-            )}
-
-            {/* Banque Word */}
-            {isPro ? (
-              <button onClick={downloadWord} disabled={wordLoading}
-                className="rounded-xl flex items-center gap-3 text-left transition-all hover:scale-[1.01] active:scale-[0.99]"
-                style={{ background: "#1E3A5F", padding: "16px 20px", border: "none", cursor: wordLoading ? "wait" : "pointer", minHeight: 72 }}>
-                <span className="text-xs font-bold px-2.5 py-0.5 rounded-full flex-shrink-0"
-                  style={{ background: "rgba(100,160,210,0.3)", color: "#A8D0F0" }}>Word</span>
-                <span className="text-sm font-bold leading-snug flex-1" style={{ color: "#F5F0E8" }}>
-                  {wordLoading ? "Génération…" : <>Synthèse financière<br />– Banque</>}
-                </span>
-                <span style={{ color: "#A8D0F0", fontSize: 18, fontWeight: 800, lineHeight: 1, flexShrink: 0 }}>→</span>
-              </button>
-            ) : (
-              <div className="rounded-xl flex items-center gap-3"
-                style={{ background: "#EDE7DC", padding: "16px 20px", opacity: 0.45, cursor: "not-allowed", minHeight: 72 }}>
-                <div className="flex items-center gap-1.5 flex-shrink-0">
-                  <span className="text-xs font-bold px-2.5 py-0.5 rounded-full"
-                    style={{ background: "rgba(42,112,128,0.18)", color: "#2A7080" }}>Word</span>
-                  <span className="text-xs font-bold px-2 py-0.5 rounded-full"
-                    style={{ background: "#1A1612", color: "#F5F0E8" }}>Pro</span>
-                </div>
-                <span className="text-sm font-bold leading-snug flex-1" style={{ color: "#1A1612" }}>
-                  Synthèse financière<br />– Banque
-                </span>
-                <span style={{ fontSize: 16, flexShrink: 0 }}>🔒</span>
-              </div>
-            )}
 
           </div>
         </div>
