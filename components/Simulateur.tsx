@@ -1731,9 +1731,9 @@ export default function Simulateur({ onShowResults }: { onShowResults?: () => vo
                       { label: "Moyenne", r: resultatsTriple.moyen, taux: parseFloat(tauxOccMoyen)||0, color: "#C95B2A", accent: "rgba(201,91,42,0.08)", border: "rgba(201,91,42,0.28)" },
                       { label: "Haute", r: resultatsTriple.haut, taux: parseFloat(tauxOccHaut)||0, color: "#1A7A52", accent: "rgba(26,122,82,0.08)", border: "rgba(26,122,82,0.22)" },
                     ];
-                    const TRow = ({ label, val, color, bold, sep }: { label: string; val: string; color?: string; bold?: boolean; sep?: boolean }) => (
-                      <div className="flex justify-between" style={{ paddingTop: sep ? 6 : 3, marginTop: sep ? 4 : 0, borderTop: sep ? "0.5px solid rgba(26,22,18,0.1)" : "none" }}>
-                        <span style={{ color: "rgba(26,22,18,0.7)", fontSize: 12.5 }}>{label}</span>
+                    const TRow = ({ label, val, color, bold, labelBold, bg, sep }: { label: string; val: string; color?: string; bold?: boolean; labelBold?: boolean; bg?: string; sep?: boolean }) => (
+                      <div className="flex justify-between" style={{ paddingTop: sep ? 6 : 3, marginTop: sep ? 4 : 0, borderTop: sep ? "0.5px solid rgba(26,22,18,0.1)" : "none", background: bg, borderRadius: bg ? 4 : undefined, paddingLeft: bg ? 4 : undefined, paddingRight: bg ? 4 : undefined }}>
+                        <span style={{ color: labelBold ? (color ?? "rgba(26,22,18,0.7)") : "rgba(26,22,18,0.7)", fontWeight: labelBold ? 700 : 400, fontSize: 12.5 }}>{label}</span>
                         <span style={{ color: color ?? "#1A1612", fontWeight: bold ? 700 : 400, fontSize: 12.5 }}>{val}</span>
                       </div>
                     );
@@ -1782,7 +1782,7 @@ export default function Simulateur({ onShowResults }: { onShowResults?: () => vo
                                   <TRow label="Revenus annuels" val={formatEuro(r.loyerAnnuel)} bold />
                                   <TRow label="Emprunt" val={`−${formatEuro(r.creditAnnuel)}`} color="#B03A2A" />
                                   <TRow label="Charges" val={`−${formatEuro(r.chargesDeductibles - r.interetsAnnee1)}`} color="#B03A2A" />
-                                  <TRow label="Amortissements" val={`−${formatEuro(r.amortTotal)}`} color="#B03A2A" />
+                                  <TRow label="Amortissements" val={`−${formatEuro(r.amortTotal)}`} color="#8B1A1A" bold labelBold bg="rgba(139,26,26,0.05)" />
                                   <TRow label="Base imposable" val={formatEuro(r.baseImposableReel)} bold sep color={r.baseImposableReel === 0 ? "#1A7A52" : "#1A1612"} />
                                   <TRow label="Impôt estimé" val={formatEuro(r.impotReel)} color="#B03A2A" />
                                   {(() => { const cfVal = r.cashflowReelMensuel; const cfColor = cfVal >= 0 ? "#1A7A52" : "#B03A2A"; return (
@@ -1842,10 +1842,10 @@ export default function Simulateur({ onShowResults }: { onShowResults?: () => vo
                     const bestBg = reelBetter ? "rgba(201,91,42,0.06)" : "rgba(26,22,18,0.04)";
                     const bestBorder = reelBetter ? "rgba(201,91,42,0.3)" : "rgba(26,22,18,0.2)";
 
-                    const Row = ({ label, val, color, bold, sep, indent }: { label: string; val: string; color?: string; bold?: boolean; sep?: boolean; indent?: boolean }) => (
+                    const Row = ({ label, val, color, bold, labelBold, bg, sep, indent }: { label: string; val: string; color?: string; bold?: boolean; labelBold?: boolean; bg?: string; sep?: boolean; indent?: boolean }) => (
                       <div className={`flex justify-between items-baseline py-2.5${indent ? " pl-4" : ""}${sep ? " mt-1" : ""}`}
-                        style={{ borderTop: sep ? "1px solid rgba(26,22,18,0.09)" : undefined }}>
-                        <span className="text-sm pr-3" style={{ color: indent ? "rgba(26,22,18,0.6)" : "rgba(26,22,18,0.78)", fontSize: indent ? 12 : 13 }}>{label}</span>
+                        style={{ borderTop: sep ? "1px solid rgba(26,22,18,0.09)" : undefined, background: bg, borderRadius: bg ? 5 : undefined, marginLeft: bg ? -8 : undefined, paddingLeft: bg ? (indent ? 20 : 8) : undefined, paddingRight: bg ? 8 : undefined }}>
+                        <span className="text-sm pr-3" style={{ color: labelBold ? (color ?? (indent ? "rgba(26,22,18,0.6)" : "rgba(26,22,18,0.78)")) : (indent ? "rgba(26,22,18,0.6)" : "rgba(26,22,18,0.78)"), fontWeight: labelBold ? 700 : 400, fontSize: indent ? 12 : 13 }}>{label}</span>
                         <span className="text-sm whitespace-nowrap" style={{ fontSize: 13, fontWeight: bold ? 600 : 400, color: color ?? "#1A1612" }}>{val}</span>
                       </div>
                     );
@@ -1914,7 +1914,7 @@ export default function Simulateur({ onShowResults }: { onShowResults?: () => vo
                                     <span className="text-[13px] font-semibold" style={{ color: "#4E1F12" }}>{formatEuro(resultats.interetsAnnee1)}</span>
                                   </div>
                                   <Row label="Charges déductibles" val={`−${formatEuro(resultats.chargesDeductibles)}`} color="#B03A2A" />
-                                  <Row label="Amortissements" val={`−${formatEuro(resultats.amortTotal)}`} color="#B03A2A" />
+                                  <Row label="Amortissements" val={`−${formatEuro(resultats.amortTotal)}`} color="#8B1A1A" bold labelBold bg="rgba(139,26,26,0.05)" />
                                   <Row label="Base imposable" val={formatEuro(resultats.baseImposableReel)} bold sep />
                                   <Row label="Impôt estimé" val={formatEuro(resultats.impotReel)} color="#B03A2A" />
                                   {(() => { const cfVal = resultats.cashflowReelMensuel; const cfColor = cfVal >= 0 ? "#1A7A52" : "#B03A2A"; return (
@@ -2004,7 +2004,7 @@ export default function Simulateur({ onShowResults }: { onShowResults?: () => vo
                                     </div>
                                     <Row label="Charges déductibles" val={`−${formatEuro(resultats.chargesDeductibles)}`} color="#B03A2A" />
                                     <Row label="Résultat avant amortissement" val={formatEuro(resultats.resultatAvantAmort)} bold color={resultats.resultatAvantAmort >= 0 ? "#1A7A52" : "#B03A2A"} sep />
-                                    <Row label="Amortissements" val={`−${formatEuro(resultats.amortTotal)}`} color="#B03A2A" />
+                                    <Row label="Amortissements" val={`−${formatEuro(resultats.amortTotal)}`} color="#8B1A1A" bold labelBold bg="rgba(139,26,26,0.05)" />
                                     <Row label="Base imposable" val={formatEuro(resultats.baseImposableReel)} bold sep />
                                     <Row label="Impôt estimé" val={formatEuro(resultats.impotReel)} color="#B03A2A" />
                                     <Row label="Amortissement à reporter N+1" val={formatEuro(resultats.amortAReporter)} color="#B08A2A" />
