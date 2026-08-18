@@ -64,8 +64,23 @@ export default function RapportInner() {
     if (wordLoading) return;
     setWordLoading(true);
     try {
-      const raw = sessionStorage.getItem("lmnp_simulation_data");
-      const data = raw ? JSON.parse(raw) : {};
+      const data = {
+        form,
+        amortPct: amortPctRef.current,
+        amortMode: amortModeRef.current,
+        amortDureeEnsemble: amortDureeEnsembleRef.current,
+        amortDureeMobilier: amortDureeMobilierRef.current,
+        amortDureeTravaux: amortDureeTravauxRef.current,
+        amortDureeNotaire: amortDureeNotaireRef.current,
+        composants: composantsRef.current,
+        isSaisonnier: isSaisonnierRef.current,
+        prixNuitee: prixNuiteeRef.current,
+        tauxOccBas: tauxOccBasRef.current,
+        tauxOccMoyen: tauxOccMoyenRef.current,
+        tauxOccHaut: tauxOccHautRef.current,
+        resultatsTriple: resultatsTripleRef.current,
+        selectedRegime: selectedRegimeRef.current,
+      };
       const res = await fetch("/api/generate-word", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
