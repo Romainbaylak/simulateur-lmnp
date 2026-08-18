@@ -55,12 +55,11 @@ export default function TarifsPage() {
             </div>
             <ul className="space-y-3 mb-8 flex-1">
               {[
-                "2 simulations par jour",
-                "Tous les calculs LMNP",
+                "6 simulations par jour",
                 "Comparaison réel vs micro-BIC",
-                "Fourchette de loyers officiels",
-                "Curseur loyer interactif",
-                "Verdict coloré instantané",
+                "Calculs de rentabilité LMNP",
+                "Loyer interactif",
+                "Accès limité aux modes d'amortissement",
               ].map(f => (
                 <li key={f} className="flex items-center gap-3 text-sm" style={{ color: "rgba(26,22,18,0.7)" }}>
                   <span className="w-4 h-4 rounded-full flex items-center justify-center text-[10px] flex-shrink-0"
@@ -94,11 +93,14 @@ export default function TarifsPage() {
             <ul className="space-y-3 mb-8 flex-1">
               {[
                 "Simulations illimitées",
+                "Comparaison réel vs micro-BIC",
+                "Calculs de rentabilité LMNP",
+                "Loyer interactif",
                 "Tableau d'amortissement ajustable",
-                "Export PDF (3 par semaine)",
                 "Sauvegarde jusqu'à 10 simulations",
-                "Comparaison réel vs micro-BIC détaillée",
-                "Tout le plan Gratuit inclus",
+                "Accès à un rapport d'investissement détaillé",
+                "Accès à un rapport Financement (Banque)",
+                "Export PDF (4 par semaine)",
               ].map(f => (
                 <li key={f} className="flex items-center gap-3 text-sm" style={{ color: "rgba(26,22,18,0.7)" }}>
                   <span className="w-4 h-4 rounded-full flex items-center justify-center text-[10px] flex-shrink-0"
@@ -126,14 +128,17 @@ export default function TarifsPage() {
             </div>
             <ul className="space-y-3 mb-8 flex-1">
               {[
-                "Tout le plan Investisseur inclus",
-                "Tableau d'amortissement complet et illimité",
-                "Simulations et exports illimités",
-
-                "Comparaison multi-biens (jusqu'à 5 biens)",
-                "Sauvegarde illimitée",
+                "Simulations illimitées",
+                "Comparaison réel vs micro-BIC",
+                "Calculs de rentabilité LMNP",
+                "Loyer interactif",
+                "Tableau d'amortissement ajustable",
+                "Sauvegarde simulations illimitée",
+                "Accès à un rapport d'investissement détaillé",
+                "Accès à un rapport Financement (Banque)",
+                "Export des rapports illimité",
+                "Comparaison multi-biens",
                 "Personal branding des rapports selon votre marque (couleur / logo)",
-
                 "Support prioritaire",
               ].map(f => (
                 <li key={f} className="flex items-center gap-3 text-sm" style={{ color: "rgba(245,240,232,0.65)" }}>
