@@ -1283,7 +1283,7 @@ export default function Simulateur({ onShowResults }: { onShowResults?: () => vo
                   <div className="rounded-lg px-3 py-2.5" style={cardStyle}>
                     <div className={LABEL}>Rendement</div>
                     <div className="mt-0.5"><span className="text-lg font-bold" style={{ color: "#1A1612", letterSpacing: "-0.02em" }}>{formatPct(resultats.rendementBrut)}</span><span className="text-[12px] font-medium ml-1" style={{ color: "rgba(26,22,18,0.45)" }}>Brut</span></div>
-                    <div className="mt-1"><span className="text-lg font-bold" style={{ color: "#C95B2A", letterSpacing: "-0.02em" }}>{formatPct(selectedRegime === "micro" ? resultats.rendementNetBIC : resultats.rendementNetReel)}</span><span className="text-[12px] font-medium ml-1" style={{ color: "rgba(26,22,18,0.45)" }}>Net d&apos;impôt</span></div>
+                    <div className="mt-1"><span className="text-lg font-bold" style={{ color: "#C95B2A", letterSpacing: "-0.02em" }}>{formatPct(selectedRegime === "micro" ? resultats.rendementNetBIC : resultats.rendementNetReel)}</span><span className="text-[12px] font-medium ml-1" style={{ color: "rgba(26,22,18,0.45)" }}>Net</span></div>
                   </div>
                   <div className="rounded-lg px-3 py-2.5" style={cardStyle}>
                     <div className={LABEL}>Revenus annuels</div>
@@ -1627,7 +1627,7 @@ export default function Simulateur({ onShowResults }: { onShowResults?: () => vo
                     </div>
                     <div className="mt-1">
                       <span className="text-lg font-bold" style={{ color: "#C95B2A", letterSpacing: "-0.02em" }}>{formatPct(selectedRegime === "micro" ? resultats.rendementNetBIC : resultats.rendementNetReel)}</span>
-                      <span className="text-[12px] font-medium ml-1" style={{ color: "rgba(26,22,18,0.45)" }}>Net d&apos;impôt</span>
+                      <span className="text-[12px] font-medium ml-1" style={{ color: "rgba(26,22,18,0.45)" }}>Net</span>
                     </div>
                   </div>
 
