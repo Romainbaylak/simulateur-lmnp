@@ -1378,7 +1378,7 @@ export default function Simulateur({ onShowResults }: { onShowResults?: () => vo
                       { label: "Haute", r: resultatsTriple.haut, taux: parseFloat(tauxOccHaut)||0, color: "#1A7A52", accent: "rgba(26,122,82,0.08)", border: "rgba(26,122,82,0.22)" },
                     ];
                     const headerBg = isReel ? "#C95B2A" : "#1A1612";
-                    const headerLabel = isReel ? "Régime réel simplifié" : "Micro-BIC";
+                    const headerLabel = isReel ? "Régime réel simplifié" : "Régime Micro-BIC";
                     const headerBadge = isReel ? "RECOMMANDÉ" : "ABATT. 30%";
                     return (
                       <div className="space-y-4">
@@ -1942,7 +1942,7 @@ export default function Simulateur({ onShowResults }: { onShowResults?: () => vo
                                   <div className="w-5 h-5 rounded-full flex-shrink-0 flex items-center justify-center" style={{ border: "2px solid rgba(26,22,18,0.35)", background: "#fff" }}>
                                     <div className="w-2 h-2 rounded-full opacity-0 group-hover:opacity-40 transition-opacity" style={{ background: "#1A1612" }} />
                                   </div>
-                                  <span className="font-bold text-[15px]" style={{ color: "#1A1612" }}>Micro-BIC</span>
+                                  <span className="font-bold text-[15px]" style={{ color: "#1A1612" }}>Régime Micro-BIC</span>
                                   <span className="ml-auto text-[10px] font-semibold px-2.5 py-1 rounded" style={{ background: "rgba(26,22,18,0.1)", color: "rgba(26,22,18,0.55)" }}>{isSaisonnier ? "ABATTEMENT 30%" : "ABATTEMENT 50%"}</span>
                                 </div>
                                 <div className="px-5 pb-2" style={{ background: "#FDFAF6" }}>
@@ -2162,9 +2162,8 @@ export default function Simulateur({ onShowResults }: { onShowResults?: () => vo
                                             style={{ color: amortMode === "composant" ? "#F5F0E8" : C2 }}>{formatEuro(valAmort2)}</div>
                                         </div>
                                       </div>
-                                      {/* ── Table unique responsive (CSS grid) ── */}
-                                      <div style={{ display: "grid", gridTemplateColumns: "1fr 80px 80px 64px", columnGap: 4 }}>
-                                        {/* Header */}
+                                      {/* ── Version mobile (< md) : grille compacte ── */}
+                                      <div className="md:hidden" style={{ display: "grid", gridTemplateColumns: "1fr 80px 80px 64px", columnGap: 4 }}>
                                         {[
                                           { label: "Composant", align: "left" as const },
                                           { label: "% / Valeur", align: "center" as const },
@@ -2176,14 +2175,13 @@ export default function Simulateur({ onShowResults }: { onShowResults?: () => vo
                                             {label}
                                           </div>
                                         ))}
-                                        {/* Data rows */}
                                         {composants.map((c, i) => {
                                           const val = valAmort2 * c.pct / 100;
                                           const rowBg = i % 2 === 0 ? "#FDFAF6" : "#F8F4EE";
                                           const border = "0.5px solid rgba(26,22,18,0.06)";
                                           return [
-                                            <div key={`${c.label}-n`} className="px-2 flex items-center text-[12px] font-semibold" style={{ color: "#1A1612", background: rowBg, borderBottom: border, minHeight: 42 }}>{c.label}</div>,
-                                            <div key={`${c.label}-p`} className="flex flex-col items-center justify-center gap-0.5 py-1" style={{ background: rowBg, borderBottom: border }}>
+                                            <div key={`m-${c.label}-n`} className="px-2 flex items-center text-[12px] font-semibold" style={{ color: "#1A1612", background: rowBg, borderBottom: border, minHeight: 42 }}>{c.label}</div>,
+                                            <div key={`m-${c.label}-p`} className="flex flex-col items-center justify-center gap-0.5 py-1" style={{ background: rowBg, borderBottom: border }}>
                                               <div className="flex items-center gap-0.5">
                                                 <input type="number" min={0} max={100} value={c.pct === 0 ? "" : c.pct} placeholder="0"
                                                   onClick={e => e.stopPropagation()}
@@ -2193,7 +2191,7 @@ export default function Simulateur({ onShowResults }: { onShowResults?: () => vo
                                               </div>
                                               <span className="text-[10px] font-bold" style={{ color: C2 }}>{formatEuro(val)}</span>
                                             </div>,
-                                            <div key={`${c.label}-d`} className="flex flex-col items-center justify-center gap-0.5 py-1" style={{ background: rowBg, borderBottom: border }}>
+                                            <div key={`m-${c.label}-d`} className="flex flex-col items-center justify-center gap-0.5 py-1" style={{ background: rowBg, borderBottom: border }}>
                                               <div className="flex items-center gap-0.5">
                                                 <input type="number" min={0} max={100} value={c.duree === 0 ? "" : c.duree} placeholder="0"
                                                   onClick={e => e.stopPropagation()}
@@ -2202,14 +2200,58 @@ export default function Simulateur({ onShowResults }: { onShowResults?: () => vo
                                                 <span className="text-[11px]" style={{ color: "rgba(26,22,18,0.5)" }}>ans</span>
                                               </div>
                                             </div>,
-                                            <div key={`${c.label}-a`} className="flex items-center justify-center text-[12px] font-bold" style={{ color: C2, background: rowBg, borderBottom: border }}>{formatEuro(c.duree > 0 ? val / c.duree : 0)}</div>,
+                                            <div key={`m-${c.label}-a`} className="flex items-center justify-center text-[12px] font-bold" style={{ color: C2, background: rowBg, borderBottom: border }}>{formatEuro(c.duree > 0 ? val / c.duree : 0)}</div>,
                                           ];
                                         })}
-                                        {/* Total row */}
                                         <div className="px-2 py-2 text-[13px] font-bold" style={{ background: "rgba(42,112,128,0.1)", borderTop: "1px solid rgba(42,112,128,0.15)", color: "#1A1612" }}>Total</div>
                                         <div className="py-2 flex items-center justify-center text-[13px] font-bold" style={{ background: "rgba(42,112,128,0.1)", borderTop: "1px solid rgba(42,112,128,0.15)", color: totalPct === 100 ? "#1A7A52" : "#B03A2A" }}>{totalPct} %{totalPct !== 100 && " ⚠"}</div>
                                         <div className="py-2" style={{ background: "rgba(42,112,128,0.1)", borderTop: "1px solid rgba(42,112,128,0.15)" }} />
                                         <div className="py-2 flex items-center justify-center text-[12px] font-bold" style={{ background: "rgba(42,112,128,0.1)", borderTop: "1px solid rgba(42,112,128,0.15)", color: C2 }}>{formatEuro(composants.reduce((s, c) => s + (valAmort2 * c.pct / 100) / (c.duree || 1), 0))}/an</div>
+                                      </div>
+
+                                      {/* ── Version desktop (≥ md) : layout Photo 2 avec "soit X € sur" ── */}
+                                      <div className="hidden md:grid" style={{ gridTemplateColumns: "1.4fr 2.2fr 1fr 1fr", columnGap: 0 }}>
+                                        {[
+                                          { label: "Composant", align: "left" as const },
+                                          { label: "Quote part en %", align: "left" as const },
+                                          { label: "Durée", align: "center" as const },
+                                          { label: "Amort / an", align: "right" as const },
+                                        ].map(({ label, align }) => (
+                                          <div key={label} className="px-3 py-2 text-[10px] font-semibold uppercase tracking-wider"
+                                            style={{ background: "rgba(42,112,128,0.08)", borderBottom: "1px solid rgba(42,112,128,0.12)", color: label === "Amort / an" ? C2 : "rgba(42,112,128,0.7)", textAlign: align }}>
+                                            {label}
+                                          </div>
+                                        ))}
+                                        {composants.map((c, i) => {
+                                          const val = valAmort2 * c.pct / 100;
+                                          const rowBg = i % 2 === 0 ? "#FDFAF6" : "#F8F4EE";
+                                          const border = "0.5px solid rgba(26,22,18,0.06)";
+                                          const amortAn = c.duree > 0 ? val / c.duree : 0;
+                                          return [
+                                            <div key={`d-${c.label}-n`} className="px-3 flex items-center text-[13px] font-semibold" style={{ color: "#1A1612", background: rowBg, borderBottom: border, minHeight: 48 }}>{c.label}</div>,
+                                            <div key={`d-${c.label}-p`} className="px-3 flex items-center gap-1.5 py-1" style={{ background: rowBg, borderBottom: border }}>
+                                              <input type="number" min={0} max={100} value={c.pct === 0 ? "" : c.pct} placeholder="0"
+                                                onClick={e => e.stopPropagation()}
+                                                onChange={e => { const raw = e.target.value; const v = raw === "" ? 0 : Math.min(100, Math.max(0, parseInt(raw) || 0)); setComposants(prev => prev.map((x, j) => j === i ? { ...x, pct: v } : x)); }}
+                                                className={inputCls} style={{ ...INPUT_STYLE, width: 42, fontSize: 13, padding: "4px 5px" }} />
+                                              <span className="text-[12px]" style={{ color: "rgba(26,22,18,0.5)" }}>% soit</span>
+                                              <span className="text-[12px] font-bold" style={{ color: C2 }}>{formatEuro(val)}</span>
+                                              <span className="text-[12px]" style={{ color: "rgba(26,22,18,0.5)" }}>sur</span>
+                                            </div>,
+                                            <div key={`d-${c.label}-d`} className="flex items-center justify-center gap-1 py-1" style={{ background: rowBg, borderBottom: border }}>
+                                              <input type="number" min={0} max={100} value={c.duree === 0 ? "" : c.duree} placeholder="0"
+                                                onClick={e => e.stopPropagation()}
+                                                onChange={e => { const raw = e.target.value; const v = raw === "" ? 0 : Math.min(100, Math.max(0, parseInt(raw) || 0)); setComposants(prev => prev.map((x, j) => j === i ? { ...x, duree: v } : x)); }}
+                                                className={inputCls} style={{ ...INPUT_STYLE, width: 42, fontSize: 13, padding: "4px 5px" }} />
+                                              <span className="text-[12px]" style={{ color: "rgba(26,22,18,0.5)" }}>ans</span>
+                                            </div>,
+                                            <div key={`d-${c.label}-a`} className="flex items-center justify-end px-3 text-[13px] font-bold" style={{ color: C2, background: rowBg, borderBottom: border }}>= {formatEuro(amortAn)}</div>,
+                                          ];
+                                        })}
+                                        <div className="px-3 py-2 text-[13px] font-bold" style={{ background: "rgba(42,112,128,0.1)", borderTop: "1px solid rgba(42,112,128,0.15)", color: "#1A1612" }}>Total</div>
+                                        <div className="px-3 py-2 text-[13px] font-bold" style={{ background: "rgba(42,112,128,0.1)", borderTop: "1px solid rgba(42,112,128,0.15)", color: totalPct === 100 ? "#1A7A52" : "#B03A2A" }}>{totalPct} %{totalPct !== 100 && " ⚠"}</div>
+                                        <div style={{ background: "rgba(42,112,128,0.1)", borderTop: "1px solid rgba(42,112,128,0.15)" }} />
+                                        <div className="px-3 py-2 text-right text-[13px] font-bold" style={{ background: "rgba(42,112,128,0.1)", borderTop: "1px solid rgba(42,112,128,0.15)", color: C2 }}>{formatEuro(composants.reduce((s, c) => s + (valAmort2 * c.pct / 100) / (c.duree || 1), 0))}/an</div>
                                       </div>
                                       {/* Warnings */}
                                       {totalPct !== 100 && (
