@@ -184,12 +184,6 @@ export default function TarifsPage() {
           </div>
         </div>
 
-        <div className="mt-14 text-center">
-          <p className="text-sm" style={{ color: "rgba(26,22,18,0.5)", lineHeight: 1.75 }}>
-            Le simulateur est et restera gratuit pour les cas d&apos;usage essentiels.<br />
-            Les plans Investisseur et Pro sont pour les investisseurs qui analysent plusieurs biens régulièrement.
-          </p>
-        </div>
       </div>
 
       <footer style={{ borderTop: "0.5px solid rgba(26,22,18,0.08)" }} className="py-10 px-4">
