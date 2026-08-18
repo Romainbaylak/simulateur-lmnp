@@ -57,13 +57,14 @@ export default function Home() {
       <footer style={{ borderTop: "0.5px solid rgba(26,22,18,0.08)" }} className="py-10 px-4">
         <div className="max-w-6xl mx-auto flex flex-col md:flex-row justify-between items-center gap-4">
           <Logo />
-          <nav className="flex gap-6 text-sm" style={{ color: "rgba(26,22,18,0.4)" }}>
-            <Link href="/comment-ca-marche" className="hover:text-[#1A1612] transition-colors">
-              LMNP
-            </Link>
+          <nav className="flex flex-wrap justify-center gap-6 text-sm" style={{ color: "rgba(26,22,18,0.4)" }}>
+            <Link href="/comment-ca-marche" className="hover:text-[#1A1612] transition-colors">LMNP</Link>
             <Link href="/blog" className="hover:text-[#1A1612] transition-colors">Articles</Link>
             <Link href="/tarifs" className="hover:text-[#1A1612] transition-colors">Abonnements</Link>
             <Link href="/contact" className="hover:text-[#1A1612] transition-colors">Contact</Link>
+            <Link href="/legal#mentions" className="hover:text-[#1A1612] transition-colors">Mentions légales</Link>
+            <Link href="/legal#confidentialite" className="hover:text-[#1A1612] transition-colors">Confidentialité</Link>
+            <Link href="/legal#cgv" className="hover:text-[#1A1612] transition-colors">CGV</Link>
           </nav>
           <p className="text-xs" style={{ color: "rgba(26,22,18,0.35)" }}>
             © 2026 toutlmnp · Outil indicatif, non un conseil fiscal
