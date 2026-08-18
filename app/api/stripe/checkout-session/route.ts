@@ -28,7 +28,10 @@ export async function POST(req: NextRequest) {
       success_url: successUrl,
       cancel_url: `${origin}/tarifs`,
       ...(userId ? { client_reference_id: userId } : {}),
-      ...(isRapport ? { metadata: { type: "rapport_pdf" } } : {}),
+      metadata: {
+        ...(isRapport ? { type: "rapport_pdf" } : {}),
+        ...(userId ? { userId } : {}),
+      },
       locale: "fr",
     });
 
