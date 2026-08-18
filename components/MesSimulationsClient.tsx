@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { useUser } from "@clerk/nextjs";
+import { supabase } from "@/lib/supabase";
 import { getSavedSimulations, type SavedSimulation } from "./PopupSauvegarder";
 
 function formatDate(ts: number) {
@@ -179,14 +181,39 @@ function SimulationCard({ sim, onDelete }: { sim: SavedSimulation; onDelete: () 
 }
 
 export default function MesSimulationsClient() {
+  const { user, isLoaded: userLoaded } = useUser();
   const [sims, setSims] = useState<SavedSimulation[]>([]);
   const [loaded, setLoaded] = useState(false);
   const [query, setQuery] = useState("");
 
   useEffect(() => {
-    setSims(getSavedSimulations());
-    setLoaded(true);
-  }, []);
+    if (!userLoaded) return;
+    if (!user) {
+      setSims(getSavedSimulations());
+      setLoaded(true);
+      return;
+    }
+    supabase
+      .from("simulations")
+      .select("id, name, data, saved_at")
+      .eq("user_id", user.id)
+      .order("saved_at", { ascending: false })
+      .then(({ data, error }) => {
+        if (error || !data) {
+          setSims(getSavedSimulations());
+        } else {
+          const mapped: SavedSimulation[] = data.map((row) => ({
+            id: row.id as string,
+            name: row.name as string,
+            data: row.data as Record<string, unknown>,
+            savedAt: typeof row.saved_at === "number" ? row.saved_at : Number(row.saved_at),
+          }));
+          setSims(mapped);
+          localStorage.setItem("lmnp_saved_simulations", JSON.stringify(mapped));
+        }
+        setLoaded(true);
+      });
+  }, [user, userLoaded]);
 
   const filtered = query.trim()
     ? sims.filter((s) => {
@@ -203,9 +230,19 @@ export default function MesSimulationsClient() {
     : sims;
 
   function deleteSim(name: string, savedAt: number) {
+    const target = sims.find((s) => s.name === name && s.savedAt === savedAt);
     const updated = sims.filter((s) => !(s.name === name && s.savedAt === savedAt));
     localStorage.setItem("lmnp_saved_simulations", JSON.stringify(updated));
     setSims(updated);
+    if (user && target?.id) {
+      supabase.from("simulations").delete().eq("id", target.id).then(({ error }) => {
+        if (error) console.error("Supabase delete error:", error);
+      });
+    } else if (user) {
+      supabase.from("simulations").delete().eq("user_id", user.id).eq("name", name).then(({ error }) => {
+        if (error) console.error("Supabase delete error:", error);
+      });
+    }
   }
 
   if (!loaded) return null;

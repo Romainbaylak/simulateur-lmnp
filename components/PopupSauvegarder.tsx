@@ -3,8 +3,10 @@
 import { useState } from "react";
 import Link from "next/link";
 import { SignUpButton } from "@clerk/nextjs";
+import { supabase } from "@/lib/supabase";
 
 export interface SavedSimulation {
+  id?: string;
   name: string;
   data: Record<string, unknown>;
   savedAt: number;
@@ -28,6 +30,7 @@ const LBL_STYLE = { color: "rgba(26,22,18,0.45)" };
 interface Props {
   plan: Plan;
   isSignedIn: boolean;
+  userId?: string;
   simulationData: object;
   onClose: () => void;
   onSaved: () => void;
@@ -44,7 +47,7 @@ function getInitialView(isSignedIn: boolean, plan: Plan): View {
   return "choice";
 }
 
-export default function PopupSauvegarder({ plan, isSignedIn, simulationData, onClose, onSaved }: Props) {
+export default function PopupSauvegarder({ plan, isSignedIn, userId, simulationData, onClose, onSaved }: Props) {
   const [view, setView] = useState<View>(() =>
     typeof window !== "undefined" ? getInitialView(isSignedIn, plan) : "new"
   );
@@ -61,13 +64,24 @@ export default function PopupSauvegarder({ plan, isSignedIn, simulationData, onC
     if (!name.trim()) return;
     const bienInfo = { type, ville: ville.trim(), surface: surface.trim(), description: description.trim() };
     const dataWithBien = { ...(simulationData as object), bienInfo };
+    const savedAt = Date.now();
     const existing = getSavedSimulations();
     const updated: SavedSimulation[] = [
-      { name: name.trim(), data: dataWithBien as Record<string, unknown>, savedAt: Date.now() },
+      { name: name.trim(), data: dataWithBien as Record<string, unknown>, savedAt },
       ...existing.filter(s => s.name !== name.trim()),
     ].slice(0, maxSlots === 999 ? 9999 : maxSlots);
     localStorage.setItem("lmnp_saved_simulations", JSON.stringify(updated));
     if (plan === "free") localStorage.setItem(FREE_KEY, "1");
+    if (userId) {
+      supabase.from("simulations").upsert({
+        user_id: userId,
+        name: name.trim(),
+        data: dataWithBien,
+        saved_at: savedAt,
+      }, { onConflict: "user_id,name" }).then(({ error }) => {
+        if (error) console.error("Supabase save error:", error);
+      });
+    }
     setView("success");
     setTimeout(() => { onSaved(); onClose(); }, 1200);
   };
@@ -75,13 +89,24 @@ export default function PopupSauvegarder({ plan, isSignedIn, simulationData, onC
   const saveReplace = (existingName: string) => {
     const bienInfo = { type, ville: ville.trim(), surface: surface.trim(), description: description.trim() };
     const dataWithBien = { ...(simulationData as object), bienInfo };
+    const savedAt = Date.now();
     const existing = getSavedSimulations();
     const updated = existing.map(s =>
       s.name === existingName
-        ? { name: existingName, data: dataWithBien as Record<string, unknown>, savedAt: Date.now() }
+        ? { name: existingName, data: dataWithBien as Record<string, unknown>, savedAt }
         : s
     );
     localStorage.setItem("lmnp_saved_simulations", JSON.stringify(updated));
+    if (userId) {
+      supabase.from("simulations").upsert({
+        user_id: userId,
+        name: existingName,
+        data: dataWithBien,
+        saved_at: savedAt,
+      }, { onConflict: "user_id,name" }).then(({ error }) => {
+        if (error) console.error("Supabase replace error:", error);
+      });
+    }
     setView("success");
     setTimeout(() => { onSaved(); onClose(); }, 1200);
   };

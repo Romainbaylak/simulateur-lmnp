@@ -7,6 +7,7 @@ import PopupPaiementUnite from "./PopupPaiementUnite";
 import PopupAmortLimite from "./PopupAmortLimite";
 import PopupPDFStarter from "./PopupPDFStarter";
 import PopupSauvegarder, { type Plan } from "./PopupSauvegarder";
+import { usePlan } from "./PlanBadge";
 import PopupSimLimite from "./PopupSimLimite";
 
 type TypeBien = "ap" | "ma";
@@ -203,9 +204,8 @@ const LABEL = "block text-[11px] font-medium uppercase tracking-[0.14em] text-[r
 const AUTO_STYLE = { ...INPUT_STYLE, background: "rgba(201,91,42,0.06)" };
 
 export default function Simulateur({ onShowResults }: { onShowResults?: () => void } = {}) {
-  const { isSignedIn } = useUser();
-  const [currentPlan, setCurrentPlan] = useState<string | null>(null);
-  useEffect(() => { setCurrentPlan(localStorage.getItem("lmnp_plan")); }, []);
+  const { isSignedIn, user } = useUser();
+  const { plan: currentPlan } = usePlan();
   const isSubscribed = currentPlan === "starter" || currentPlan === "pro";
 
   // Applique le bonus de simulations dès que l'utilisateur crée son compte
@@ -393,12 +393,9 @@ export default function Simulateur({ onShowResults }: { onShowResults?: () => vo
   }, [pendingAutoSimulate]);
 
   // Helpers pour lire le plan et les compteurs localStorage
-  const getPlan = () => (typeof window !== "undefined" ? localStorage.getItem("lmnp_plan") : null);
-
   const isAmortBlocked = (): boolean => {
     if (typeof window === "undefined") return false;
-    const plan = getPlan();
-    if (plan === "starter" || plan === "pro") return false;
+    if (currentPlan === "starter" || currentPlan === "pro") return false;
     const last = localStorage.getItem("lmnp_amort_last_used");
     const today = new Date().toISOString().slice(0, 10);
     return last === today;
@@ -406,8 +403,7 @@ export default function Simulateur({ onShowResults }: { onShowResults?: () => vo
 
   const markAmortUsed = () => {
     if (typeof window === "undefined") return;
-    const plan = getPlan();
-    if (plan === "starter" || plan === "pro") return;
+    if (currentPlan === "starter" || currentPlan === "pro") return;
     const today = new Date().toISOString().slice(0, 10);
     localStorage.setItem("lmnp_amort_last_used", today);
   };
@@ -449,8 +445,7 @@ export default function Simulateur({ onShowResults }: { onShowResults?: () => vo
   };
   const isSimBlocked = (): boolean => {
     if (typeof window === "undefined") return false;
-    const plan = getPlan();
-    if (plan === "starter" || plan === "pro") return false;
+    if (currentPlan === "starter" || currentPlan === "pro") return false;
     return getSimDayCount() >= SIM_LIMIT;
   };
 
@@ -1577,9 +1572,8 @@ export default function Simulateur({ onShowResults }: { onShowResults?: () => vo
                 {/* Boutons PDF + Sauvegarder */}
                 <div className="flex flex-wrap justify-center items-center gap-3 pt-2">
                   <button onClick={() => {
-                    const plan = getPlan();
-                    if (plan === "pro") { redirectToRapport(); return; }
-                    if (plan === "starter") { setPdfWeekCount(getPdfWeekCount()); setShowPDFStarter(true); return; }
+                    if (currentPlan === "pro") { redirectToRapport(); return; }
+                    if (currentPlan === "starter") { setPdfWeekCount(getPdfWeekCount()); setShowPDFStarter(true); return; }
                     setShowPayPopup(true);
                   }}
                     className="px-10 py-4 text-base font-medium transition-opacity hover:opacity-[0.88] rounded-lg"
@@ -2522,7 +2516,8 @@ export default function Simulateur({ onShowResults }: { onShowResults?: () => vo
       {showSauvegarder && (
         <PopupSauvegarder
           isSignedIn={!!isSignedIn}
-          plan={(getPlan() || "free") as Plan}
+          plan={(currentPlan || "free") as Plan}
+          userId={user?.id}
           simulationData={{ form, amortPct, amortMode, amortDureeEnsemble, amortDureeMobilier, amortDureeTravaux, amortDureeNotaire, composants, savedAt: Date.now(), isSaisonnier, prixNuitee, tauxOccBas, tauxOccMoyen, tauxOccHaut, resultatsTriple, resultats, selectedRegime }}
           onClose={() => setShowSauvegarder(false)}
           onSaved={() => setShowSauvegarder(false)}
