@@ -199,16 +199,20 @@ export default function LegalPage() {
       <footer style={{ borderTop: "0.5px solid rgba(26,22,18,0.08)" }} className="py-10 px-4">
         <div className="max-w-6xl mx-auto flex flex-col md:flex-row justify-between items-center gap-4">
           <Link href="/"><Logo /></Link>
-          <nav className="flex flex-wrap justify-center gap-6 text-xs" style={{ color: "rgba(26,22,18,0.4)" }}>
+          <nav className="hidden md:flex flex-wrap justify-center gap-6 text-xs" style={{ color: "rgba(26,22,18,0.4)" }}>
             <Link href="/comment-ca-marche" className="hover:opacity-80">LMNP</Link>
             <Link href="/blog" className="hover:opacity-80">Articles</Link>
             <Link href="/tarifs" className="hover:opacity-80">Abonnements</Link>
             <Link href="/contact" className="hover:opacity-80">Contact</Link>
-            <Link href="/legal#mentions" className="hover:opacity-80">Mentions légales</Link>
-            <Link href="/legal#confidentialite" className="hover:opacity-80">Confidentialité</Link>
-            <Link href="/legal#cgv" className="hover:opacity-80">CGV</Link>
           </nav>
           <p className="text-xs" style={{ color: "rgba(26,22,18,0.35)" }}>© 2026 toutlmnp</p>
+        </div>
+        <div className="max-w-6xl mx-auto mt-4 pt-4 flex justify-center gap-4" style={{ borderTop: "0.5px solid rgba(26,22,18,0.06)" }}>
+          <Link href="/legal#mentions" className="text-xs hover:opacity-80 transition-opacity" style={{ color: "rgba(26,22,18,0.35)" }}>Mentions légales</Link>
+          <span style={{ color: "rgba(26,22,18,0.2)" }}>·</span>
+          <Link href="/legal#confidentialite" className="text-xs hover:opacity-80 transition-opacity" style={{ color: "rgba(26,22,18,0.35)" }}>Confidentialité</Link>
+          <span style={{ color: "rgba(26,22,18,0.2)" }}>·</span>
+          <Link href="/legal#cgv" className="text-xs hover:opacity-80 transition-opacity" style={{ color: "rgba(26,22,18,0.35)" }}>CGV</Link>
         </div>
       </footer>
     </main>

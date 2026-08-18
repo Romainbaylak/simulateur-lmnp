@@ -62,13 +62,17 @@ export default function Home() {
             <Link href="/blog" className="hover:text-[#1A1612] transition-colors">Articles</Link>
             <Link href="/tarifs" className="hover:text-[#1A1612] transition-colors">Abonnements</Link>
             <Link href="/contact" className="hover:text-[#1A1612] transition-colors">Contact</Link>
-            <Link href="/legal#mentions" className="hover:text-[#1A1612] transition-colors">Mentions légales</Link>
-            <Link href="/legal#confidentialite" className="hover:text-[#1A1612] transition-colors">Confidentialité</Link>
-            <Link href="/legal#cgv" className="hover:text-[#1A1612] transition-colors">CGV</Link>
           </nav>
           <p className="text-xs" style={{ color: "rgba(26,22,18,0.35)" }}>
             © 2026 toutlmnp · Outil indicatif, non un conseil fiscal
           </p>
+        </div>
+        <div className="max-w-6xl mx-auto mt-4 pt-4 flex justify-center gap-4" style={{ borderTop: "0.5px solid rgba(26,22,18,0.06)" }}>
+          <Link href="/legal#mentions" className="text-xs hover:opacity-80 transition-opacity" style={{ color: "rgba(26,22,18,0.35)" }}>Mentions légales</Link>
+          <span style={{ color: "rgba(26,22,18,0.2)" }}>·</span>
+          <Link href="/legal#confidentialite" className="text-xs hover:opacity-80 transition-opacity" style={{ color: "rgba(26,22,18,0.35)" }}>Confidentialité</Link>
+          <span style={{ color: "rgba(26,22,18,0.2)" }}>·</span>
+          <Link href="/legal#cgv" className="text-xs hover:opacity-80 transition-opacity" style={{ color: "rgba(26,22,18,0.35)" }}>CGV</Link>
         </div>
       </footer>
     </main>
