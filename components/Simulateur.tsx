@@ -1854,14 +1854,17 @@ export default function Simulateur({ onShowResults }: { onShowResults?: () => vo
                       <>
                         {/* Explication régimes fiscaux — disparaît après sélection */}
                         {selectedRegime === null && showRegimeExplainer && (
-                          <div className="rounded-xl px-5 py-4 mb-3" style={{ background: "#F5F0E8", border: "1.5px solid rgba(26,22,18,0.10)" }}>
-                            <p className="text-[14px] leading-relaxed" style={{ color: "#1A1612", margin: 0 }}>
-                              En LMNP, deux régimes fiscaux s&apos;offrent à toi. Ce choix est déterminant : il impacte directement le montant de ton impôt, et donc ton cash-flow chaque mois.{" "}
+                          <div className="mb-3">
+                            <p className="text-base font-semibold leading-relaxed" style={{ color: "#1A1612", margin: 0 }}>
+                              En LMNP, le choix du régime fiscal est déterminant car il impacte directement le montant de ton impôt, et donc ton cash-flow à la fin de chaque mois.
+                            </p>
+                            <p className="text-base font-semibold leading-relaxed mt-2" style={{ color: "#1A1612", margin: "8px 0 0" }}>
+                              Il existe deux régimes :{" "}
                               Le <strong style={{ color: "#1A4A35" }}>Micro-BIC</strong> applique un abattement forfaitaire de 30% sur tes loyers puis te donne ta base imposable.{" "}
                               Le <strong style={{ color: "#C95B2A" }}>Régime Réel</strong> déduit tes vraies charges et — point essentiel — te permet d&apos;amortir une partie de ton bien, réduisant souvent ton impôt.{" "}
                               Pour la majorité des investisseurs avec un crédit, le <strong style={{ color: "#C95B2A" }}>Régime Réel</strong> est plus avantageux.
                             </p>
-                            <div className="flex justify-end mt-2.5">
+                            <div className="flex justify-end mt-2">
                               <button onClick={() => setShowRegimeExplainer(false)}
                                 className="text-[11px] font-medium px-3 py-1 rounded-md transition-opacity hover:opacity-70"
                                 style={{ color: "rgba(26,22,18,0.45)", background: "rgba(26,22,18,0.06)", border: "none" }}>
