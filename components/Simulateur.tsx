@@ -2086,7 +2086,7 @@ export default function Simulateur({ onShowResults }: { onShowResults?: () => vo
                             <p className="text-[15px] leading-relaxed" style={{ color: "#4E1F12" }}>
                               En LMNP au réel, tu peux donc amortir ton bien chaque année qui vient réduire ta base imposable.{" "}
                               Tu peux amortir uniquement{" "}
-                              <strong>la partie Bâti de ton bien mais qui représente déjà <span style={{ color: "#C95B2A" }}>{amortPct}%</span> de sa valeur</strong>.{" "}
+                              <strong>la partie Bâti de ton bien mais qui représente déjà <span style={{ color: "#C95B2A" }}>~{amortPct}%</span> <span style={{ color: "#C95B2A" }}>(ajustable)</span> de sa valeur</strong>.{" "}
                               Le terrain, les {100 - amortPct}% restants, ne s&apos;amortit pas.
                             </p>
 
