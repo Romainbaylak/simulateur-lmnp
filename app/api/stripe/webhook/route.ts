@@ -6,7 +6,7 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
   apiVersion: "2026-06-24.dahlia",
 });
 
-const supabase = createClient(
+const supabaseAdmin = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.SUPABASE_SERVICE_ROLE_KEY!,
 );
@@ -48,7 +48,7 @@ export async function POST(req: NextRequest) {
     if (userId && priceId) {
       const plan = PLAN_BY_PRICE[priceId];
       if (plan) {
-        const { error } = await supabase.from("user_plans").upsert({
+        const { error } = await supabaseAdmin.from("user_plans").upsert({
           user_id: userId,
           plan,
           stripe_customer_id: session.customer as string ?? null,
