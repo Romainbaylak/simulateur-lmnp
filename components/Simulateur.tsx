@@ -680,7 +680,7 @@ export default function Simulateur({ onShowResults }: { onShowResults?: () => vo
                 </button>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-2 gap-4 lg:mt-5">
                 <div>
                   <label className={LABEL}>Prix d&apos;achat (€)</label>
                   <input type="number" value={form.prix}
