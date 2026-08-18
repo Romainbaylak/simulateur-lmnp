@@ -487,7 +487,7 @@ export default function Simulateur({ onShowResults }: { onShowResults?: () => vo
     if (scrollToAmort.current) {
       scrollToAmort.current = false;
       if (amortContentRef.current) {
-        const top = amortContentRef.current.getBoundingClientRect().top + window.scrollY - 160;
+        const top = amortContentRef.current.getBoundingClientRect().top + window.scrollY - 120;
         window.scrollTo({ top, behavior: "smooth" });
       }
     }
