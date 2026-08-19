@@ -209,27 +209,13 @@ function renderInline(text: string) {
   );
 }
 
-// Palette de couleurs pour les titres de section — une par numéro, harmonisée avec la DA du site
-const SECTION_COLORS = [
-  "#C95B2A", // 01 — rouille (couleur brand)
-  "#2A6B55", // 02 — vert sauge
-  "#2A4E7A", // 03 — bleu ardoise
-  "#7A3A1A", // 04 — ambre profond
-  "#5C2A7A", // 05 — prune
-  "#1A6B6B", // 06 — canard
-  "#6B3A1A", // 07 — terre cuite foncée
-  "#3A4E6B", // 08 — marine
-  "#6B2A4A", // 09 — bordeaux
-  "#2A6B3A", // 10 — émeraude
-  "#4E4A1A", // 11 — olive
-  "#3A2A6B", // 12 — indigo
-];
+const SECTION_COLOR = "#C95B2A";
 
 function renderBlock(block: Block, i: number, sectionNumbers?: Map<string, number>) {
   switch (block.type) {
     case "h1": {
       const num = sectionNumbers?.get(block.id);
-      const color = num !== undefined ? (SECTION_COLORS[(num - 1) % SECTION_COLORS.length]) : "#4E1F12";
+      const color = SECTION_COLOR;
       return (
         <div key={i} id={block.id} className="mt-12 mb-5 scroll-mt-28 flex items-start gap-4"
           style={{ borderTop: `1.5px solid ${color}30`, paddingTop: "20px" }}>
@@ -375,7 +361,7 @@ export default async function ArticlePage({ params }: { params: Promise<{ slug: 
                 <div className="px-6 py-5" style={{ background: "#EDE7DC" }}>
                   <ol className="space-y-2">
                     {article.sections.map((s, i) => {
-                      const color = SECTION_COLORS[i % SECTION_COLORS.length];
+                      const color = SECTION_COLOR;
                       return (
                         <li key={s.id}>
                           <a
