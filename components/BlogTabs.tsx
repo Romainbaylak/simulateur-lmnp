@@ -81,23 +81,19 @@ function ArticleList({ articles }: { articles: Article[] }) {
                 boxShadow: "0 1px 8px rgba(26,22,18,0.04)",
               }}
             >
-              <div className="text-[10px] uppercase tracking-[0.14em] font-medium mb-2" style={{ color: "rgba(26,22,18,0.35)" }}>
+              <div className="text-[9px] uppercase tracking-[0.14em] font-medium mb-1.5" style={{ color: "rgba(26,22,18,0.35)" }}>
                 {a.date}
               </div>
               <h2
-                className="font-light mb-3 leading-snug group-hover:opacity-75 transition-opacity"
+                className="font-light mb-2 leading-snug group-hover:opacity-75 transition-opacity"
                 style={{ fontSize: "clamp(1.05rem,2vw,1.25rem)", color: "#4E1F12", letterSpacing: "-0.02em" }}
               >
                 {a.titre}
               </h2>
-              <div className="mb-3" style={{ borderTop: "0.5px solid rgba(26,22,18,0.08)" }} />
-              <p className="text-xs leading-relaxed mb-4" style={{ color: "rgba(26,22,18,0.55)" }}>
+              <div className="mb-2" style={{ borderTop: "0.5px solid rgba(26,22,18,0.08)" }} />
+              <p className="text-xs leading-relaxed" style={{ color: "rgba(26,22,18,0.55)" }}>
                 {a.extrait}
               </p>
-              <div className="flex items-center gap-1.5 text-xs font-medium" style={{ color: "#C95B2A" }}>
-                Lire l&apos;article
-                <span className="transition-transform group-hover:translate-x-1">→</span>
-              </div>
             </div>
           </Link>
         ))}
