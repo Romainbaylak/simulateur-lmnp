@@ -13,6 +13,7 @@ interface Section {
 interface Article {
   titre: string;
   date: string;
+  intro?: string[];
   sections: Section[];
   contenu: Block[];
 }
@@ -191,6 +192,12 @@ const articles: Record<string, Article> = {
   "amortissement-lmnp": {
     titre: "Amortissement LMNP : comment fonctionne-t-il et comment le calculer ?",
     date: "Mis à jour en août 2026",
+    intro: [
+      "L'amortissement LMNP constitue l'un des mécanismes fiscaux les plus importants de la location meublée au régime réel.",
+      "Contrairement à une charge classique, l'amortissement ne correspond pas nécessairement à une somme payée chaque année. Il consiste à répartir comptablement le coût d'un bien ou d'un équipement sur sa durée d'utilisation.",
+      "En LMNP au régime réel, il est notamment possible d'amortir le logement (à l'exception de la valeur du terrain), certains travaux, le mobilier, les équipements, et selon leur traitement comptable, certains frais liés à l'acquisition.",
+      "Ces amortissements peuvent réduire fortement le bénéfice BIC imposable généré par la location meublée. Leur utilisation répond cependant à plusieurs règles : décomposition du logement en composants, durées d'utilisation cohérentes, plafonnement des amortissements déductibles et, depuis 2025, prise en compte lors du calcul de la plus-value en cas de revente.",
+    ],
     sections: [
       { id: "definition", titre: "Qu'est-ce que l'amortissement en LMNP ?" },
       { id: "pourquoi-reel", titre: "Pourquoi le régime réel permet-il d'amortir un bien LMNP ?" },
@@ -211,11 +218,6 @@ const articles: Record<string, Article> = {
       { id: "a-retenir", titre: "Ce qu'il faut retenir" },
     ],
     contenu: [
-      { type: "p", text: "L'**amortissement LMNP** constitue l'un des mécanismes fiscaux les plus importants de la location meublée au régime réel." },
-      { type: "p", text: "Contrairement à une charge classique, l'amortissement ne correspond pas nécessairement à une somme payée chaque année. Il consiste à répartir comptablement le coût d'un bien ou d'un équipement sur sa durée d'utilisation." },
-      { type: "p", text: "En **LMNP au régime réel**, il est notamment possible d'amortir le logement (à l'exception de la valeur du terrain), certains travaux, le mobilier, les équipements, et selon leur traitement comptable, certains frais liés à l'acquisition." },
-      { type: "p", text: "Ces amortissements peuvent réduire fortement le bénéfice BIC imposable généré par la location meublée. Leur utilisation répond cependant à plusieurs règles : décomposition du logement en composants, durées d'utilisation cohérentes, plafonnement des amortissements déductibles et, depuis 2025, prise en compte lors du calcul de la plus-value en cas de revente." },
-
       { type: "h1", id: "definition", text: "Qu'est-ce que l'amortissement en LMNP ?" },
       { type: "p", text: "En comptabilité, un actif destiné à être utilisé pendant plusieurs années n'est généralement pas déduit intégralement du résultat au moment de son acquisition. Son coût est réparti sur sa **durée d'utilisation prévisible**. Cette répartition constitue l'amortissement." },
       { type: "h2", id: "ex-equipement", text: "Un exemple très simple" },
@@ -578,6 +580,17 @@ export default async function ArticlePage({ params }: { params: Promise<{ slug: 
       </div>
 
       <div className="max-w-3xl mx-auto px-4 py-12">
+
+        {/* Intro avant sommaire */}
+        {article.intro && article.intro.length > 0 && (
+          <div className="mb-10 space-y-4">
+            {article.intro.map((para, i) => (
+              <p key={i} className="text-sm leading-relaxed" style={{ color: "rgba(26,22,18,0.72)" }}>
+                {para}
+              </p>
+            ))}
+          </div>
+        )}
 
         {/* Sommaire */}
         {(() => {
