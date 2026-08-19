@@ -13,9 +13,9 @@ export async function GET(req: NextRequest) {
 
   const { data, error } = await supabaseAdmin
     .from("simulations")
-    .select("id, name, data, saved_at")
+    .select("id, name, data, updated_at")
     .eq("user_id", userId)
-    .order("saved_at", { ascending: false });
+    .order("updated_at", { ascending: false });
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
   return NextResponse.json({ simulations: data });
@@ -28,7 +28,7 @@ export async function POST(req: NextRequest) {
 
   const { error } = await supabaseAdmin
     .from("simulations")
-    .upsert({ user_id: userId, name, data, saved_at: savedAt ?? Date.now() }, { onConflict: "user_id,name" });
+    .upsert({ user_id: userId, name, data, updated_at: new Date(savedAt ?? Date.now()).toISOString() }, { onConflict: "user_id,name" });
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
   return NextResponse.json({ ok: true });

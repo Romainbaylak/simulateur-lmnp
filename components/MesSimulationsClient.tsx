@@ -199,7 +199,7 @@ export default function MesSimulationsClient() {
           id: row.id as string,
           name: row.name as string,
           data: row.data as Record<string, unknown>,
-          savedAt: typeof row.saved_at === "number" ? row.saved_at : Number(row.saved_at),
+          savedAt: row.updated_at ? new Date(row.updated_at as string).getTime() : Date.now(),
         }));
         setSims(mapped);
         localStorage.setItem("lmnp_saved_simulations", JSON.stringify(mapped));
