@@ -276,14 +276,14 @@ const articles: Record<string, Article> = {
 
       { type: "h1", id: "durees", text: "Quelles durées d'amortissement utiliser en LMNP ?" },
       { type: "p", text: "Il n'existe pas, pour tous les logements LMNP, une grille réglementaire imposant automatiquement des durées fixes. La durée doit rester cohérente avec la **durée normale d'utilisation de l'élément concerné**." },
-      { type: "table", head: ["Élément", "Horizon indicatif"], rows: [
-        ["Gros œuvre / structure", "Très longue durée"],
-        ["Façade, toiture, étanchéité", "Longue durée"],
-        ["Plomberie, chauffage, électricité", "Durée intermédiaire à longue"],
-        ["Aménagements intérieurs", "Durée intermédiaire"],
-        ["Cuisine et équipements", "Durée plus courte"],
-        ["Mobilier", "Durée plus courte"],
-        ["Informatique / certains appareils", "Durée courte"],
+      { type: "table", head: ["Élément", "Durée indicative"], rows: [
+        ["Gros œuvre / structure", "~ 75–100 ans"],
+        ["Façade, toiture, étanchéité", "~ 25–40 ans"],
+        ["Plomberie, chauffage, électricité", "~ 20–30 ans"],
+        ["Aménagements intérieurs", "~ 10–15 ans"],
+        ["Cuisine et équipements", "~ 5–10 ans"],
+        ["Mobilier", "~ 5–10 ans"],
+        ["Informatique / certains appareils", "~ 3–5 ans"],
       ]},
       { type: "note", text: "Ce qui importe est avant tout la cohérence entre la nature de l'élément, sa durée normale d'utilisation, sa proportion dans la valeur du logement et les méthodes comptables appliquées d'un exercice à l'autre." },
 
