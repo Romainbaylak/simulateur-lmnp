@@ -3,6 +3,7 @@ import Link from "next/link";
 import type { Metadata } from "next";
 import HeaderAuth from "@/components/HeaderAuth";
 import MobileHeader from "@/components/MobileHeader";
+import BlogClient from "@/components/BlogClient";
 
 export const metadata: Metadata = {
   title: "Articles LMNP – Conseils investissement immobilier meublé",
@@ -46,92 +47,18 @@ export default function BlogPage() {
         <MobileHeader />
       </header>
 
-      {/* Intro */}
-      <div className="py-10 px-4 text-center" style={{ borderBottom: "1px solid rgba(26,22,18,0.07)" }}>
+      <div className="py-8 px-4 text-center" style={{ borderBottom: "1px solid rgba(26,22,18,0.07)" }}>
         <div className="max-w-2xl mx-auto">
-          <h1 className="font-light mb-3" style={{ fontSize: "clamp(1.6rem,3.5vw,2.2rem)", color: "#4E1F12", letterSpacing: "-0.025em" }}>
+          <h1 className="font-light mb-2" style={{ fontSize: "clamp(1.5rem,3vw,2rem)", color: "#4E1F12", letterSpacing: "-0.025em" }}>
             Articles
           </h1>
-          <p className="text-sm" style={{ color: "rgba(26,22,18,0.45)" }}>
+          <p className="text-sm" style={{ color: "rgba(26,22,18,0.4)" }}>
             Guides pratiques et analyses fiscales sur le statut LMNP.
           </p>
         </div>
       </div>
 
-      {/* Layout 1/3 + 2/3 */}
-      <div className="max-w-6xl mx-auto px-4 py-14">
-        <div className="flex gap-12 items-start">
-
-          {/* Colonne gauche — liste des titres */}
-          <div className="hidden md:block w-1/3 flex-shrink-0 sticky top-28">
-            <p className="text-[10px] uppercase tracking-[0.14em] font-medium mb-4" style={{ color: "rgba(26,22,18,0.35)" }}>
-              Tous les articles
-            </p>
-            <ul className="space-y-1">
-              {articles.map(a => (
-                <li key={a.slug}>
-                  <Link
-                    href={`/blog/${a.slug}`}
-                    className="block text-sm py-2.5 pr-3 transition-colors leading-snug"
-                    style={{ color: "#1A1612", borderLeft: "2px solid #C95B2A", paddingLeft: "12px" }}
-                  >
-                    {a.titre}
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          </div>
-
-          {/* Colonne droite — cartes articles */}
-          <div className="flex-1 space-y-6">
-            {articles.map(a => (
-              <Link
-                key={a.slug}
-                href={`/blog/${a.slug}`}
-                className="block group transition-all"
-                style={{ textDecoration: "none" }}
-              >
-                <div
-                  className="rounded-2xl p-8 transition-all"
-                  style={{
-                    background: "#EDE7DC",
-                    border: "0.5px solid rgba(26,22,18,0.1)",
-                    boxShadow: "0 2px 16px rgba(26,22,18,0.05)",
-                  }}
-                >
-                  {/* Date */}
-                  <div className="text-[11px] uppercase tracking-[0.12em] mb-4 font-medium" style={{ color: "rgba(26,22,18,0.35)" }}>
-                    {a.date}
-                  </div>
-
-                  {/* Titre */}
-                  <h2
-                    className="font-light mb-4 leading-snug group-hover:opacity-80 transition-opacity"
-                    style={{ fontSize: "clamp(1.2rem,2.5vw,1.55rem)", color: "#4E1F12", letterSpacing: "-0.025em" }}
-                  >
-                    {a.titre}
-                  </h2>
-
-                  {/* Séparateur */}
-                  <div className="mb-4" style={{ borderTop: "0.5px solid rgba(26,22,18,0.1)" }} />
-
-                  {/* Extrait */}
-                  <p className="text-sm leading-relaxed mb-6" style={{ color: "rgba(26,22,18,0.6)" }}>
-                    {a.extrait}
-                  </p>
-
-                  {/* CTA */}
-                  <div className="flex items-center gap-2 text-sm font-medium" style={{ color: "#C95B2A" }}>
-                    Lire l&apos;article
-                    <span className="transition-transform group-hover:translate-x-1">→</span>
-                  </div>
-                </div>
-              </Link>
-            ))}
-          </div>
-
-        </div>
-      </div>
+      <BlogClient articles={articles} />
 
       <footer style={{ borderTop: "0.5px solid rgba(26,22,18,0.08)" }} className="py-10 px-4">
         <div className="max-w-6xl mx-auto flex flex-col md:flex-row justify-between items-center gap-4">

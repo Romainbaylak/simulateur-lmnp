@@ -8,7 +8,6 @@ import MobileHeader from "@/components/MobileHeader";
 interface Section {
   id: string;
   titre: string;
-  niveau: 1 | 2;
 }
 
 interface Article {
@@ -33,19 +32,18 @@ const articles: Record<string, Article> = {
     titre: "Revente d'un bien LMNP : comment est calculée la plus-value ?",
     date: "Mis à jour en août 2026",
     sections: [
-      { id: "regime-pv", titre: "La revente LMNP : une fiscalité à bien comprendre", niveau: 2 },
-      { id: "calcul-pv", titre: "Comment calculer la plus-value d'un bien LMNP ?", niveau: 2 },
-      { id: "calcul-reel", titre: "Le calcul réel est plus favorable que la formule simplifiée", niveau: 2 },
-      { id: "abattements-amort", titre: "Les amortissements bénéficient-ils de l'abattement pour durée de détention ?", niveau: 1 },
-      { id: "abattements-duree", titre: "Comment fonctionnent les abattements pour durée de détention ?", niveau: 1 },
-      { id: "exemple-10ans", titre: "Exemple : revente après 10 ans", niveau: 1 },
-      { id: "taux-imposition", titre: "Quel est le taux d'imposition de la plus-value LMNP ?", niveau: 1 },
-      { id: "surtaxe", titre: "La surtaxe sur les plus-values élevées", niveau: 1 },
-      { id: "interet-lmnp", titre: "La réintégration supprime-t-elle l'intérêt du LMNP au réel ?", niveau: 1 },
-      { id: "exemple-jamais-taxe", titre: "Pourquoi les amortissements ne sont pas « toujours taxés »", niveau: 1 },
-      { id: "cas-particuliers", titre: "Cas particuliers : certains LMNP non concernés", niveau: 1 },
-      { id: "lmnp-vs-lmp", titre: "LMNP et LMP : deux régimes différents", niveau: 1 },
-      { id: "a-retenir", titre: "Ce qu'il faut retenir", niveau: 1 },
+      { id: "regime-pv", titre: "La revente LMNP : une fiscalité à bien comprendre" },
+      { id: "calcul-pv", titre: "Comment calculer la plus-value d'un bien LMNP ?" },
+      { id: "calcul-reel", titre: "Le calcul réel est plus favorable que la formule simplifiée" },
+      { id: "abattements-amort", titre: "Les amortissements bénéficient-ils de l'abattement pour durée de détention ?" },
+      { id: "abattements-duree", titre: "Comment fonctionnent les abattements pour durée de détention ?" },
+      { id: "taux-imposition", titre: "Quel est le taux d'imposition de la plus-value LMNP ?" },
+      { id: "surtaxe", titre: "La surtaxe sur les plus-values élevées" },
+      { id: "interet-lmnp", titre: "La réintégration supprime-t-elle l'intérêt du LMNP au réel ?" },
+      { id: "exemple-jamais-taxe", titre: "Pourquoi les amortissements ne sont pas « toujours taxés »" },
+      { id: "cas-particuliers", titre: "Cas particuliers : certains LMNP non concernés" },
+      { id: "lmnp-vs-lmp", titre: "LMNP et LMP : deux régimes différents" },
+      { id: "a-retenir", titre: "Ce qu'il faut retenir" },
     ],
     contenu: [
       { type: "h2", id: "regime-pv", text: "La revente d'un bien LMNP : une fiscalité à bien comprendre" },
@@ -211,19 +209,30 @@ function renderInline(text: string) {
   );
 }
 
-function renderBlock(block: Block, i: number) {
+function renderBlock(block: Block, i: number, sectionNumbers?: Map<string, number>) {
   switch (block.type) {
-    case "h1":
+    case "h1": {
+      const num = sectionNumbers?.get(block.id);
       return (
-        <h2 key={i} id={block.id} className="font-medium mt-12 mb-4 scroll-mt-28"
-          style={{ fontSize: "1.3rem", color: "#4E1F12", letterSpacing: "-0.02em" }}>
-          {block.text}
-        </h2>
+        <div key={i} id={block.id} className="mt-12 mb-5 scroll-mt-28 flex items-start gap-4"
+          style={{ borderTop: "1.5px solid rgba(201,91,42,0.25)", paddingTop: "20px" }}>
+          {num !== undefined && (
+            <span className="flex-shrink-0 text-sm font-mono font-semibold mt-0.5 tabular-nums"
+              style={{ color: "#C95B2A", minWidth: "1.5rem" }}>
+              {String(num).padStart(2, "0")}
+            </span>
+          )}
+          <h2 className="font-semibold leading-snug"
+            style={{ fontSize: "1.15rem", color: "#4E1F12", letterSpacing: "-0.02em" }}>
+            {block.text}
+          </h2>
+        </div>
       );
+    }
     case "h2":
       return (
-        <h3 key={i} id={block.id} className="font-medium mt-8 mb-3 scroll-mt-28"
-          style={{ fontSize: "1.05rem", color: "#1A1612" }}>
+        <h3 key={i} id={block.id} className="font-medium mt-6 mb-3 scroll-mt-28"
+          style={{ fontSize: "1rem", color: "#1A1612" }}>
           {block.text}
         </h3>
       );
@@ -285,7 +294,7 @@ function renderBlock(block: Block, i: number) {
         </div>
       );
     case "hr":
-      return <hr key={i} style={{ border: "none", borderTop: "0.5px solid rgba(26,22,18,0.1)", margin: "40px 0" }} />;
+      return null; // les h1 ont déjà leur séparateur intégré
     default:
       return null;
   }
@@ -335,36 +344,45 @@ export default async function ArticlePage({ params }: { params: Promise<{ slug: 
       <div className="max-w-3xl mx-auto px-4 py-12">
 
         {/* Sommaire */}
-        <div className="mb-12 rounded-2xl overflow-hidden" style={{ border: "0.5px solid rgba(26,22,18,0.1)" }}>
-          <div className="px-6 py-4" style={{ background: "#1A1612" }}>
-            <p className="text-xs uppercase tracking-[0.14em] font-medium" style={{ color: "rgba(245,240,232,0.5)" }}>
-              Sommaire
-            </p>
-          </div>
-          <div className="px-6 py-5" style={{ background: "#EDE7DC" }}>
-            <ol className="space-y-2">
-              {article.sections.map((s, i) => (
-                <li key={s.id}>
-                  <a
-                    href={`#${s.id}`}
-                    className="flex items-start gap-3 text-sm transition-colors hover:opacity-70 group"
-                    style={{ color: s.niveau === 1 ? "#1A1612" : "rgba(26,22,18,0.6)", paddingLeft: s.niveau === 2 ? "16px" : "0" }}
-                  >
-                    <span className="flex-shrink-0 font-mono text-xs mt-0.5 tabular-nums" style={{ color: "rgba(26,22,18,0.3)", minWidth: "1.4rem" }}>
-                      {(i + 1).toString().padStart(2, "0")}
-                    </span>
-                    <span className="group-hover:underline leading-snug">{s.titre}</span>
-                  </a>
-                </li>
-              ))}
-            </ol>
-          </div>
-        </div>
+        {(() => {
+          const sectionNumbers = new Map<string, number>();
+          article.sections.forEach((s, idx) => sectionNumbers.set(s.id, idx + 1));
+          return (
+            <>
+              <div className="mb-12 rounded-2xl overflow-hidden" style={{ border: "0.5px solid rgba(26,22,18,0.1)" }}>
+                <div className="px-6 py-4" style={{ background: "#1A1612" }}>
+                  <p className="text-xs uppercase tracking-[0.14em] font-medium" style={{ color: "rgba(245,240,232,0.5)" }}>
+                    Sommaire
+                  </p>
+                </div>
+                <div className="px-6 py-5" style={{ background: "#EDE7DC" }}>
+                  <ol className="space-y-2">
+                    {article.sections.map((s, i) => (
+                      <li key={s.id}>
+                        <a
+                          href={`#${s.id}`}
+                          className="flex items-start gap-3 text-sm transition-opacity hover:opacity-60 group"
+                          style={{ color: "#1A1612" }}
+                        >
+                          <span className="flex-shrink-0 font-mono text-xs mt-0.5 tabular-nums font-medium"
+                            style={{ color: "#C95B2A", minWidth: "1.6rem" }}>
+                            {(i + 1).toString().padStart(2, "0")}
+                          </span>
+                          <span className="group-hover:underline leading-snug">{s.titre}</span>
+                        </a>
+                      </li>
+                    ))}
+                  </ol>
+                </div>
+              </div>
 
-        {/* Corps de l'article */}
-        <div>
-          {article.contenu.map((block, i) => renderBlock(block, i))}
-        </div>
+              {/* Corps de l'article */}
+              <div>
+                {article.contenu.map((block, i) => renderBlock(block, i, sectionNumbers))}
+              </div>
+            </>
+          );
+        })()}
 
         {/* CTA */}
         <div className="mt-16 rounded-2xl p-8 text-center" style={{ background: "#1A1612" }}>
