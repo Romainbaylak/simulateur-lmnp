@@ -18,6 +18,12 @@ const articlesLmnp = [
     date: "Mis à jour en août 2026",
   },
   {
+    slug: "csg-prelevements-sociaux-lmnp-2026",
+    titre: "2026 : CSG et prélèvements sociaux en LMNP",
+    extrait: "Le taux des prélèvements sociaux applicable aux revenus LMNP passe de 17,2 % à 18,6 % en 2026 — une hausse qui s'applique dès les revenus 2025. Comprendre la base de calcul, la CSG déductible, et la différence avec les cotisations sociales et la fiscalité de la plus-value.",
+    date: "Mis à jour en août 2026",
+  },
+  {
     slug: "lmnp-definition-statut-2026",
     titre: "LMNP : Définition et conditions du statut de location meublée (2026)",
     extrait: "Le statut LMNP permet à un particulier de louer un logement meublé dans un cadre fiscal spécifique. Découvrez les conditions à respecter en 2026, les régimes fiscaux disponibles (micro-BIC et régime réel), et les différences avec la location nue ou le statut LMP.",
