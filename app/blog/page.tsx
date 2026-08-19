@@ -18,6 +18,12 @@ const articlesLmnp = [
     date: "Mis à jour en août 2026",
   },
   {
+    slug: "limites-airbnb-lmnp-2026",
+    titre: "Limites Airbnb en LMNP en 2026 : quelles sont les règles et restrictions ?",
+    extrait: "Le statut LMNP ne donne pas automatiquement le droit de louer en courte durée. Plafond de 90 ou 120 jours, changement d'usage, enregistrement national, copropriété, DPE et sanctions : le point complet sur toutes les restrictions Airbnb à connaître en 2026.",
+    date: "Mis à jour en août 2026",
+  },
+  {
     slug: "airbnb-lmnp-2026",
     titre: "Airbnb et LMNP en 2026 : compatibilité, fiscalité, avantages et règles à connaître",
     extrait: "Louer sur Airbnb est compatible avec le statut LMNP. Mais la fiscalité du meublé de tourisme a évolué en 2026 : abattement de 30 % (non classé) ou 50 % (classé), règles locales, cotisations sociales au-delà de 23 000 € et impact des amortissements sur la plus-value à la revente.",
