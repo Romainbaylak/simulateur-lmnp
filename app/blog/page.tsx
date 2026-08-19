@@ -39,6 +39,12 @@ const articlesLmnp = [
 
 const articlesActualite: typeof articlesLmnp = [
   {
+    slug: "revente-lmnp-2026",
+    titre: "Revente d'un bien LMNP en 2026 : fiscalité, plus-value et amortissements",
+    extrait: "Depuis le 15 février 2025, les amortissements LMNP admis en déduction au régime réel augmentent la plus-value brute à la revente. Mais ils bénéficient des mêmes abattements pour durée de détention que le reste de la plus-value. Le point complet sur la fiscalité de sortie du LMNP en 2026.",
+    date: "Mis à jour en août 2026",
+  },
+  {
     slug: "actualite-lmnp-2026",
     titre: "Actualité LMNP 2026 : Ce qui change vraiment pour les bailleurs",
     extrait: "Le statut LMNP reste en vigueur en 2026, mais son environnement fiscal évolue : revalorisation du plafond micro-BIC à 83 600 €, prélèvements sociaux à 18,6 %, réforme de la plus-value, nouveau dispositif Jeanbrun en location nue, et durcissement des règles pour les meublés touristiques.",
