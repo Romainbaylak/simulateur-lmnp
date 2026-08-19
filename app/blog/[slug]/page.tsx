@@ -46,18 +46,18 @@ const articles: Record<string, Article> = {
       { id: "a-retenir", titre: "Ce qu'il faut retenir" },
     ],
     contenu: [
-      { type: "h2", id: "regime-pv", text: "La revente d'un bien LMNP : une fiscalité à bien comprendre" },
+      { type: "h1", id: "regime-pv", text: "La revente d'un bien LMNP : une fiscalité à bien comprendre" },
       { type: "p", text: "Lorsqu'un investisseur revend un logement exploité sous le statut de **Loueur en Meublé Non Professionnel (LMNP)**, la plus-value relève en principe du régime des **plus-values immobilières des particuliers**." },
       { type: "p", text: "Depuis le **15 février 2025**, une modification importante concerne toutefois les biens exploités en **LMNP au régime réel** : les amortissements admis en déduction pendant la période de location sont désormais pris en compte dans le calcul de la plus-value lors de la revente." },
       { type: "p", text: "Concrètement, les amortissements LMNP viennent **réduire le prix d'acquisition retenu pour le calcul de la plus-value**, ce qui augmente mécaniquement la plus-value brute." },
       { type: "note", text: "Cette règle résulte de l'article 150 VB du Code général des impôts. Elle concerne les cessions réalisées depuis le 15 février 2025, sous réserve de certaines exceptions, notamment pour certaines résidences-services." },
       { type: "hr" },
 
-      { type: "h2", id: "calcul-pv", text: "Comment calculer la plus-value d'un bien LMNP ?" },
+      { type: "h1", id: "calcul-pv", text: "Comment calculer la plus-value d'un bien LMNP ?" },
       { type: "p", text: "Dans une présentation simplifiée, le calcul peut être résumé ainsi :" },
       { type: "formula", text: "Plus-value brute LMNP = Prix de vente − (Prix d'achat − Amortissements LMNP réintégrés)" },
       { type: "p", text: "Autrement dit, les amortissements LMNP qui ont été admis en déduction pendant la détention viennent diminuer le prix d'acquisition fiscal retenu lors de la revente." },
-      { type: "h1", id: "exemple-simple", text: "Exemple simple" },
+      { type: "h2", id: "exemple-simple", text: "Exemple simple" },
       { type: "p", text: "Un investisseur achète un appartement :" },
       { type: "ul", items: ["Prix d'achat : **200 000 €**", "Prix de vente : **250 000 €**", "Amortissements LMNP admis en déduction : **20 000 €**"] },
       { type: "p", text: "Le prix d'acquisition fiscal corrigé devient : **200 000 € − 20 000 € = 180 000 €**" },
@@ -66,7 +66,7 @@ const articles: Record<string, Article> = {
       { type: "note", text: "Les 20 000 € d'amortissements LMNP augmentent donc ici la plus-value brute de 20 000 €." },
       { type: "hr" },
 
-      { type: "h2", id: "calcul-reel", text: "Le calcul réel est toutefois plus favorable que cette formule simplifiée" },
+      { type: "h1", id: "calcul-reel", text: "Le calcul réel est toutefois plus favorable que cette formule simplifiée" },
       { type: "p", text: "Dans la réalité, le calcul de la plus-value immobilière ne se limite pas au prix d'achat inscrit dans l'acte. Le prix d'acquisition peut notamment être majoré :" },
       { type: "ul", items: [
         "des frais d'acquisition réellement supportés ou, dans certains cas, d'un **forfait de 7,5 % du prix d'achat** ;",
@@ -106,7 +106,7 @@ const articles: Record<string, Article> = {
       ]},
       { type: "hr" },
 
-      { type: "h1", id: "exemple-10ans", text: "Exemple : revente d'un LMNP après 10 ans" },
+      { type: "h2", id: "exemple-10ans", text: "Exemple : revente d'un LMNP après 10 ans" },
       { type: "ul", items: [
         "Achat : **200 000 €**",
         "Vente : **250 000 €**",
@@ -209,21 +209,38 @@ function renderInline(text: string) {
   );
 }
 
+// Palette de couleurs pour les titres de section — une par numéro, harmonisée avec la DA du site
+const SECTION_COLORS = [
+  "#C95B2A", // 01 — rouille (couleur brand)
+  "#2A6B55", // 02 — vert sauge
+  "#2A4E7A", // 03 — bleu ardoise
+  "#7A3A1A", // 04 — ambre profond
+  "#5C2A7A", // 05 — prune
+  "#1A6B6B", // 06 — canard
+  "#6B3A1A", // 07 — terre cuite foncée
+  "#3A4E6B", // 08 — marine
+  "#6B2A4A", // 09 — bordeaux
+  "#2A6B3A", // 10 — émeraude
+  "#4E4A1A", // 11 — olive
+  "#3A2A6B", // 12 — indigo
+];
+
 function renderBlock(block: Block, i: number, sectionNumbers?: Map<string, number>) {
   switch (block.type) {
     case "h1": {
       const num = sectionNumbers?.get(block.id);
+      const color = num !== undefined ? (SECTION_COLORS[(num - 1) % SECTION_COLORS.length]) : "#4E1F12";
       return (
         <div key={i} id={block.id} className="mt-12 mb-5 scroll-mt-28 flex items-start gap-4"
-          style={{ borderTop: "1.5px solid rgba(201,91,42,0.25)", paddingTop: "20px" }}>
+          style={{ borderTop: `1.5px solid ${color}30`, paddingTop: "20px" }}>
           {num !== undefined && (
             <span className="flex-shrink-0 text-sm font-mono font-semibold mt-0.5 tabular-nums"
-              style={{ color: "#C95B2A", minWidth: "1.5rem" }}>
+              style={{ color, minWidth: "1.5rem" }}>
               {String(num).padStart(2, "0")}
             </span>
           )}
           <h2 className="font-semibold leading-snug"
-            style={{ fontSize: "1.15rem", color: "#4E1F12", letterSpacing: "-0.02em" }}>
+            style={{ fontSize: "1.15rem", color, letterSpacing: "-0.02em" }}>
             {block.text}
           </h2>
         </div>
@@ -357,21 +374,24 @@ export default async function ArticlePage({ params }: { params: Promise<{ slug: 
                 </div>
                 <div className="px-6 py-5" style={{ background: "#EDE7DC" }}>
                   <ol className="space-y-2">
-                    {article.sections.map((s, i) => (
-                      <li key={s.id}>
-                        <a
-                          href={`#${s.id}`}
-                          className="flex items-start gap-3 text-sm transition-opacity hover:opacity-60 group"
-                          style={{ color: "#1A1612" }}
-                        >
-                          <span className="flex-shrink-0 font-mono text-xs mt-0.5 tabular-nums font-medium"
-                            style={{ color: "#C95B2A", minWidth: "1.6rem" }}>
-                            {(i + 1).toString().padStart(2, "0")}
-                          </span>
-                          <span className="group-hover:underline leading-snug">{s.titre}</span>
-                        </a>
-                      </li>
-                    ))}
+                    {article.sections.map((s, i) => {
+                      const color = SECTION_COLORS[i % SECTION_COLORS.length];
+                      return (
+                        <li key={s.id}>
+                          <a
+                            href={`#${s.id}`}
+                            className="flex items-start gap-3 text-sm transition-opacity hover:opacity-60 group"
+                            style={{ color: "#1A1612" }}
+                          >
+                            <span className="flex-shrink-0 font-mono text-xs mt-0.5 tabular-nums font-semibold"
+                              style={{ color, minWidth: "1.6rem" }}>
+                              {(i + 1).toString().padStart(2, "0")}
+                            </span>
+                            <span className="group-hover:underline leading-snug">{s.titre}</span>
+                          </a>
+                        </li>
+                      );
+                    })}
                   </ol>
                 </div>
               </div>
