@@ -18,6 +18,12 @@ const articlesLmnp = [
     date: "Mis à jour en août 2026",
   },
   {
+    slug: "lmnp-definition-statut-2026",
+    titre: "LMNP : Définition et conditions du statut de location meublée (2026)",
+    extrait: "Le statut LMNP permet à un particulier de louer un logement meublé dans un cadre fiscal spécifique. Découvrez les conditions à respecter en 2026, les régimes fiscaux disponibles (micro-BIC et régime réel), et les différences avec la location nue ou le statut LMP.",
+    date: "Mis à jour en août 2026",
+  },
+  {
     slug: "revente-lmnp-plus-value",
     titre: "Revente d'un bien LMNP : comment est calculée la plus-value ?",
     extrait: "Depuis le 15 février 2025, les amortissements LMNP admis en déduction viennent réduire le prix d'acquisition retenu pour le calcul de la plus-value. Comprendre ce mécanisme est indispensable pour anticiper la fiscalité à la revente.",
