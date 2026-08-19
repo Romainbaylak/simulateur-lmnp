@@ -18,6 +18,12 @@ const articlesLmnp = [
     date: "Mis à jour en août 2026",
   },
   {
+    slug: "airbnb-lmnp-2026",
+    titre: "Airbnb et LMNP en 2026 : compatibilité, fiscalité, avantages et règles à connaître",
+    extrait: "Louer sur Airbnb est compatible avec le statut LMNP. Mais la fiscalité du meublé de tourisme a évolué en 2026 : abattement de 30 % (non classé) ou 50 % (classé), règles locales, cotisations sociales au-delà de 23 000 € et impact des amortissements sur la plus-value à la revente.",
+    date: "Mis à jour en août 2026",
+  },
+  {
     slug: "csg-prelevements-sociaux-lmnp-2026",
     titre: "2026 : CSG et prélèvements sociaux en LMNP",
     extrait: "Le taux des prélèvements sociaux applicable aux revenus LMNP passe de 17,2 % à 18,6 % en 2026 — une hausse qui s'applique dès les revenus 2025. Comprendre la base de calcul, la CSG déductible, et la différence avec les cotisations sociales et la fiscalité de la plus-value.",
