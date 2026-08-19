@@ -1,162 +1,294 @@
 import Logo from "@/components/Logo";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import type { Metadata } from "next";
 import HeaderAuth from "@/components/HeaderAuth";
 import MobileHeader from "@/components/MobileHeader";
 
-const articles: Record<string, { titre: string; contenu: string; date: string; tag: string }> = {
-  "reforme-micro-bic-2025": {
-    titre: "Réforme micro-BIC 2025 : ce qui change pour les LMNP",
-    date: "15 janvier 2025",
-    tag: "Fiscalité",
-    contenu: `## L'abattement micro-BIC passe à 30 %
+interface Section {
+  id: string;
+  titre: string;
+  niveau: 1 | 2;
+}
 
-Depuis le 1er janvier 2025, les loueurs en meublé non professionnels (LMNP) optant pour le régime micro-BIC ne bénéficient plus que d'un abattement de **30 %** sur leurs revenus locatifs bruts, contre 50 % auparavant.
+interface Article {
+  titre: string;
+  date: string;
+  sections: Section[];
+  contenu: Block[];
+}
 
-### Ce que cela signifie concrètement
+type Block =
+  | { type: "h1"; id: string; text: string }
+  | { type: "h2"; id: string; text: string }
+  | { type: "p"; text: string }
+  | { type: "ul"; items: string[] }
+  | { type: "table"; head: string[]; rows: string[][] }
+  | { type: "hr" }
+  | { type: "formula"; text: string }
+  | { type: "note"; text: string };
 
-Pour un bien générant **12 000 € de loyers par an** :
-
-- **Avant 2025** : base imposable = 12 000 × 50 % = **6 000 €**
-- **Après 2025** : base imposable = 12 000 × 70 % = **8 400 €**
-
-Soit **2 400 € supplémentaires** imposés, représentant plusieurs centaines d'euros d'impôt selon votre TMI.
-
-### Pourquoi le régime réel devient incontournable
-
-Avec le régime réel simplifié, vous déduisez :
-- Les **intérêts d'emprunt**
-- La **taxe foncière**
-- Les **charges de copropriété**
-- L'**amortissement** du bien (bâti + mobilier)
-
-Dans la plupart des cas, la base imposable tombe à **0 €** pendant 10 à 15 ans.`,
-  },
-  "amortissement-lmnp-explique": {
-    titre: "L'amortissement LMNP expliqué simplement",
-    date: "8 janvier 2025",
-    tag: "Guide",
-    contenu: `## Qu'est-ce que l'amortissement en LMNP ?
-
-En régime réel LMNP, vous pouvez déduire chaque année la **perte de valeur** de votre bien immobilier et de son mobilier.
-
-### Pour le bâti (les murs)
-
-- Base : 85 % du prix d'achat (le terrain n'est pas amortissable)
-- Durée : 30 ans
-
-### Pour le mobilier
-
-- Base : 15 % du prix d'achat
-- Durée : 7 ans
-
-### Exemple concret
-
-Pour un bien acheté **200 000 €** :
-- Bâti : 200 000 × 85 % / 30 = **5 667 €/an**
-- Mobilier : 200 000 × 15 % / 7 = **4 286 €/an**
-- **Total : 9 952 €/an** déductibles
-
-### La règle d'or
-
-Les amortissements non utilisés une année peuvent être **reportés** sur les années suivantes. Vous ne perdez jamais ces déductions.`,
-  },
-  "regime-reel-vs-micro-bic": {
-    titre: "Régime réel vs Micro-BIC : quel est le meilleur choix en 2026 ?",
-    date: "2 janvier 2025",
-    tag: "Comparatif",
-    contenu: `## Comparatif 2026 : Régime réel vs Micro-BIC
-
-Avec la réforme fiscale de janvier 2025, le choix entre les deux régimes est plus tranché que jamais.
-
-### Le micro-BIC en 2025
-
-- **Abattement** : 30 % (contre 50 % avant 2025)
-- **Simplicité** : pas de comptabilité complexe
-- **Idéal pour** : petits investissements sans crédit
-
-### Le régime réel simplifié
-
-- **Déductions** : toutes les charges réelles + amortissements
-- **Avantage** : impôt souvent nul pendant 10–15 ans
-- **Idéal pour** : tout investissement avec crédit immobilier
-
-### Conclusion
-
-Dès que vous avez un crédit immobilier et une TMI ≥ 11 %, le régime réel est quasiment toujours plus avantageux.`,
-  },
+const articles: Record<string, Article> = {
   "revente-lmnp-plus-value": {
     titre: "Revente d'un bien LMNP : comment est calculée la plus-value ?",
-    date: "8 juillet 2026",
-    tag: "Fiscalité",
-    contenu: `## La revente LMNP : une fiscalité spécifique
+    date: "Mis à jour en août 2026",
+    sections: [
+      { id: "regime-pv", titre: "La revente LMNP : une fiscalité à bien comprendre", niveau: 2 },
+      { id: "calcul-pv", titre: "Comment calculer la plus-value d'un bien LMNP ?", niveau: 2 },
+      { id: "calcul-reel", titre: "Le calcul réel est plus favorable que la formule simplifiée", niveau: 2 },
+      { id: "abattements-amort", titre: "Les amortissements bénéficient-ils de l'abattement pour durée de détention ?", niveau: 1 },
+      { id: "abattements-duree", titre: "Comment fonctionnent les abattements pour durée de détention ?", niveau: 1 },
+      { id: "exemple-10ans", titre: "Exemple : revente après 10 ans", niveau: 1 },
+      { id: "taux-imposition", titre: "Quel est le taux d'imposition de la plus-value LMNP ?", niveau: 1 },
+      { id: "surtaxe", titre: "La surtaxe sur les plus-values élevées", niveau: 1 },
+      { id: "interet-lmnp", titre: "La réintégration supprime-t-elle l'intérêt du LMNP au réel ?", niveau: 1 },
+      { id: "exemple-jamais-taxe", titre: "Pourquoi les amortissements ne sont pas « toujours taxés »", niveau: 1 },
+      { id: "cas-particuliers", titre: "Cas particuliers : certains LMNP non concernés", niveau: 1 },
+      { id: "lmnp-vs-lmp", titre: "LMNP et LMP : deux régimes différents", niveau: 1 },
+      { id: "a-retenir", titre: "Ce qu'il faut retenir", niveau: 1 },
+    ],
+    contenu: [
+      { type: "h2", id: "regime-pv", text: "La revente d'un bien LMNP : une fiscalité à bien comprendre" },
+      { type: "p", text: "Lorsqu'un investisseur revend un logement exploité sous le statut de **Loueur en Meublé Non Professionnel (LMNP)**, la plus-value relève en principe du régime des **plus-values immobilières des particuliers**." },
+      { type: "p", text: "Depuis le **15 février 2025**, une modification importante concerne toutefois les biens exploités en **LMNP au régime réel** : les amortissements admis en déduction pendant la période de location sont désormais pris en compte dans le calcul de la plus-value lors de la revente." },
+      { type: "p", text: "Concrètement, les amortissements LMNP viennent **réduire le prix d'acquisition retenu pour le calcul de la plus-value**, ce qui augmente mécaniquement la plus-value brute." },
+      { type: "note", text: "Cette règle résulte de l'article 150 VB du Code général des impôts. Elle concerne les cessions réalisées depuis le 15 février 2025, sous réserve de certaines exceptions, notamment pour certaines résidences-services." },
+      { type: "hr" },
 
-Lorsque vous revendez un bien loué en meublé non professionnel, la plus-value imposable n'est pas calculée comme pour une résidence principale. Le mécanisme de **réintégration des amortissements** change radicalement la donne.
+      { type: "h2", id: "calcul-pv", text: "Comment calculer la plus-value d'un bien LMNP ?" },
+      { type: "p", text: "Dans une présentation simplifiée, le calcul peut être résumé ainsi :" },
+      { type: "formula", text: "Plus-value brute LMNP = Prix de vente − (Prix d'achat − Amortissements LMNP réintégrés)" },
+      { type: "p", text: "Autrement dit, les amortissements LMNP qui ont été admis en déduction pendant la détention viennent diminuer le prix d'acquisition fiscal retenu lors de la revente." },
+      { type: "h1", id: "exemple-simple", text: "Exemple simple" },
+      { type: "p", text: "Un investisseur achète un appartement :" },
+      { type: "ul", items: ["Prix d'achat : **200 000 €**", "Prix de vente : **250 000 €**", "Amortissements LMNP admis en déduction : **20 000 €**"] },
+      { type: "p", text: "Le prix d'acquisition fiscal corrigé devient : **200 000 € − 20 000 € = 180 000 €**" },
+      { type: "p", text: "La plus-value brute est donc : **250 000 € − 180 000 € = 70 000 €**" },
+      { type: "p", text: "Sans prise en compte des amortissements LMNP, la plus-value aurait été de seulement : **250 000 € − 200 000 € = 50 000 €**" },
+      { type: "note", text: "Les 20 000 € d'amortissements LMNP augmentent donc ici la plus-value brute de 20 000 €." },
+      { type: "hr" },
 
-### Comment se calcule la plus-value taxable ?
+      { type: "h2", id: "calcul-reel", text: "Le calcul réel est toutefois plus favorable que cette formule simplifiée" },
+      { type: "p", text: "Dans la réalité, le calcul de la plus-value immobilière ne se limite pas au prix d'achat inscrit dans l'acte. Le prix d'acquisition peut notamment être majoré :" },
+      { type: "ul", items: [
+        "des frais d'acquisition réellement supportés ou, dans certains cas, d'un **forfait de 7,5 % du prix d'achat** ;",
+        "de certaines dépenses de construction, reconstruction, agrandissement ou amélioration ;",
+        "lorsque le bien est détenu depuis plus de cinq ans, d'un **forfait travaux de 15 % du prix d'acquisition**, sous les conditions prévues par la réglementation.",
+      ]},
+      { type: "p", text: "Ces éléments peuvent réduire sensiblement la plus-value brute imposable. Le calcul réel est donc plus précisément de la forme :" },
+      { type: "formula", text: "Plus-value brute = Prix de cession corrigé − [Prix d'acquisition + frais et majorations admissibles − amortissements à réintégrer]" },
+      { type: "hr" },
 
-En LMNP régime réel, chaque année vous déduisez des amortissements de vos revenus locatifs. À la revente, ces amortissements viennent **s'ajouter à votre plus-value** imposable.
+      { type: "h1", id: "abattements-amort", text: "Les amortissements LMNP réintégrés bénéficient-ils de l'abattement pour durée de détention ?" },
+      { type: "note", text: "Oui. C'est un point essentiel." },
+      { type: "p", text: "Les amortissements LMNP réintégrés ne constituent pas une catégorie de plus-value séparée qui serait systématiquement taxée jusqu'à la revente. Ils servent d'abord à déterminer la **plus-value brute totale**." },
+      { type: "p", text: "Ensuite, les abattements pour durée de détention s'appliquent à cette plus-value brute, **y compris à la fraction provenant de la réintégration des amortissements LMNP**." },
+      { type: "p", text: "L'administration fiscale indique expressément que les amortissements LMNP sont réintégrés dans le calcul de la plus-value **avant l'application de l'abattement pour durée de détention**." },
+      { type: "p", text: "Il est donc incorrect d'affirmer que : *« La plus-value classique bénéficie des abattements, mais les amortissements réintégrés restent toujours taxables. »* Ce n'est pas le mécanisme applicable au LMNP." },
+      { type: "hr" },
 
-La formule est la suivante :
+      { type: "h1", id: "abattements-duree", text: "Comment fonctionnent les abattements LMNP pour durée de détention ?" },
+      { type: "p", text: "La plus-value d'un bien LMNP bénéficie de deux calendriers d'abattement différents : un pour l'impôt sur le revenu, un pour les prélèvements sociaux." },
+      { type: "table", head: ["Durée de détention", "Abattement IR", "Abattement PS"], rows: [
+        ["Jusqu'à 5 ans", "0 %", "0 %"],
+        ["De la 6e à la 21e année", "6 % par année", "1,65 % par année"],
+        ["22e année", "+4 %, soit 100 % IR", "+1,60 %, soit 28 % cumulés"],
+        ["De la 23e à la 30e année", "IR totalement exonéré", "9 % supplémentaires par année"],
+        ["Après 30 ans", "100 % exonéré", "100 % exonéré"],
+      ]},
+      { type: "p", text: "Ainsi : après **22 ans de détention**, la plus-value LMNP est totalement exonérée d'impôt sur le revenu ; après **30 ans de détention**, elle est également totalement exonérée de prélèvements sociaux." },
+      { type: "table", head: ["Durée", "Abattement IR", "Abattement PS"], rows: [
+        ["5 ans", "0 %", "0 %"],
+        ["10 ans", "30 %", "8,25 %"],
+        ["15 ans", "60 %", "16,50 %"],
+        ["20 ans", "90 %", "24,75 %"],
+        ["22 ans", "100 %", "28 %"],
+        ["25 ans", "100 %", "55 %"],
+        ["30 ans", "100 %", "100 %"],
+      ]},
+      { type: "hr" },
 
-**Plus-value taxable = Prix de vente − (Prix d'achat − Amortissements déduits)**
+      { type: "h1", id: "exemple-10ans", text: "Exemple : revente d'un LMNP après 10 ans" },
+      { type: "ul", items: [
+        "Achat : **200 000 €**",
+        "Vente : **250 000 €**",
+        "Amortissements LMNP réintégrés : **20 000 €**",
+        "Plus-value brute simplifiée : **70 000 €**",
+        "Durée de détention : **10 ans**",
+      ]},
+      { type: "p", text: "À 10 ans, l'abattement est de **30 % pour l'impôt sur le revenu** et **8,25 % pour les prélèvements sociaux**." },
+      { type: "h2", id: "base-ir-ex", text: "Base taxable à l'impôt sur le revenu" },
+      { type: "formula", text: "70 000 € × 70 % = 49 000 €" },
+      { type: "h2", id: "base-ps-ex", text: "Base taxable aux prélèvements sociaux" },
+      { type: "formula", text: "70 000 € × 91,75 % = 64 225 €" },
+      { type: "p", text: "On voit donc immédiatement que les 20 000 € d'amortissements réintégrés **ne sont pas taxés séparément et intégralement**. Ils sont incorporés dans les 70 000 € de plus-value brute, puis cette plus-value bénéficie des abattements correspondant aux 10 années de détention." },
+      { type: "hr" },
 
-### Exemple concret
+      { type: "h1", id: "taux-imposition", text: "Quel est le taux d'imposition de la plus-value LMNP ?" },
+      { type: "p", text: "Après application des abattements pour durée de détention, la plus-value immobilière LMNP est en principe soumise à :" },
+      { type: "ul", items: ["**19 %** d'impôt sur le revenu", "**17,2 %** de prélèvements sociaux"] },
+      { type: "formula", text: "Taux facial maximal : 36,2 %" },
+      { type: "note", text: "Depuis 2026, le taux des prélèvements sociaux a été porté à 18,6 % pour plusieurs catégories de revenus. Toutefois, les plus-values immobilières relevant des articles 150 U à 150 UC du CGI restent soumises à 17,2 %. Ne pas confondre la fiscalité des revenus locatifs LMNP avec celle de la plus-value immobilière à la revente." },
+      { type: "hr" },
 
-Vous achetez un bien **200 000 €** et le revendez **250 000 €** après avoir déduit **20 000 €** d'amortissements cumulés sur 5 ans.
+      { type: "h1", id: "surtaxe", text: "Qu'en est-il de la surtaxe sur les plus-values immobilières élevées ?" },
+      { type: "p", text: "Une taxe supplémentaire peut s'appliquer lorsque la **plus-value immobilière nette imposable** dépasse **50 000 €**. Le barème de cette taxe est progressif et peut atteindre **6 %** pour les plus-values les plus élevées, avec des mécanismes de lissage à certains seuils." },
+      { type: "p", text: "Il est donc incorrect de présenter la fiscalité comme *36,2 % ou 37,2 % au-delà de 50 000 €*. La situation dépend du montant exact de la plus-value nette imposable." },
+      { type: "hr" },
 
-- Prix de vente : 250 000 €
-- Base de calcul : 200 000 € − 20 000 € = 180 000 €
-- **Plus-value taxable : 70 000 €** (au lieu de 50 000 € sans réintégration)
+      { type: "h1", id: "interet-lmnp", text: "La réintégration des amortissements supprime-t-elle l'intérêt du LMNP au réel ?" },
+      { type: "p", text: "Pas nécessairement, mais il faut désormais raisonner sur l'ensemble de la durée de l'investissement. Pendant la détention, les amortissements LMNP permettent de diminuer le résultat BIC imposable et peuvent réduire fortement la fiscalité sur les revenus locatifs. Plusieurs éléments doivent être mis en balance :" },
+      { type: "ul", items: [
+        "les économies fiscales obtenues grâce aux amortissements LMNP pendant la détention ;",
+        "le montant total des amortissements effectivement admis en déduction ;",
+        "la durée de détention du LMNP ;",
+        "les abattements pour durée de détention ;",
+        "les frais d'acquisition pris en compte ;",
+        "les éventuels travaux ou forfaits applicables ;",
+        "l'évolution du prix du bien ;",
+        "l'éventuelle surtaxe sur les plus-values élevées.",
+      ]},
+      { type: "p", text: "Il n'est donc pas exact de considérer automatiquement que chaque euro amorti entraîne ultérieurement une taxation fixe de 19 % ou de 36,2 %. **L'imposition réelle dépend notamment de la durée de détention.** À partir de 22 ans, il n'existe plus d'impôt sur le revenu sur la plus-value immobilière. À partir de 30 ans, les prélèvements sociaux sont également totalement exonérés." },
+      { type: "hr" },
 
-Les 20 000 € d'amortissements sont ainsi "repris" et viennent gonfler la plus-value.
+      { type: "h1", id: "exemple-jamais-taxe", text: "Exemple : pourquoi les amortissements LMNP ne sont pas « toujours taxés »" },
+      { type: "p", text: "Supposons un bien LMNP ayant généré **50 000 € d'amortissements admis en déduction**." },
+      { type: "p", text: "Si le bien est vendu après seulement **5 ans**, ces amortissements augmentent la plus-value brute de 50 000 € et aucun abattement ne s'applique encore." },
+      { type: "p", text: "En revanche, si le même bien est vendu après **20 ans** : l'assiette soumise à l'impôt sur le revenu bénéficie de **90 % d'abattement** ; l'assiette soumise aux prélèvements sociaux bénéficie de **24,75 % d'abattement**." },
+      { type: "p", text: "Après **22 ans** : la partie imposée à 19 % est totalement exonérée. Après **30 ans** : la plus-value est également totalement exonérée de prélèvements sociaux." },
+      { type: "note", text: "Les amortissements LMNP réintégrés ne sont donc absolument pas une somme qui resterait taxable indéfiniment indépendamment de la durée de détention." },
+      { type: "hr" },
 
-### Quel taux d'imposition ?
+      { type: "h1", id: "cas-particuliers", text: "Cas particuliers : certains LMNP ne sont pas concernés par la réintégration" },
+      { type: "p", text: "La réglementation prévoit certaines exceptions. Le mécanisme de minoration du prix d'acquisition par les amortissements ne s'applique notamment pas à certains biens situés dans des résidences spécifiques, telles que certaines :" },
+      { type: "ul", items: [
+        "résidences étudiantes ;",
+        "résidences seniors ;",
+        "résidences destinées aux personnes handicapées ;",
+        "structures médicalisées et établissements visés par les textes.",
+      ]},
+      { type: "p", text: "Ces exceptions sont précisément définies à l'article 150 VB du CGI. Pour un LMNP classique — appartement ou maison loué meublé au régime réel — la réintégration des amortissements constitue en revanche désormais la règle." },
+      { type: "hr" },
 
-La plus-value LMNP est soumise au régime des **plus-values immobilières des particuliers** :
+      { type: "h1", id: "lmnp-vs-lmp", text: "LMNP et LMP : deux régimes de plus-value différents" },
+      { type: "p", text: "En LMNP, la cession relève en principe du régime des **plus-values immobilières des particuliers**. En LMP, lorsque les conditions sont réunies, la cession relève du régime des **plus-values professionnelles**." },
+      { type: "p", text: "Le régime LMP peut notamment permettre, sous certaines conditions, de bénéficier de l'exonération prévue à l'article 151 septies du CGI. Pour les loueurs en meublé professionnels, une exonération peut être totale lorsque les recettes remplissent le seuil applicable de **90 000 €**, ou partielle entre **90 000 € et 126 000 €**, sous réserve notamment d'une durée d'exercice d'au moins cinq ans." },
+      { type: "note", text: "La fiscalité d'une vente en LMP doit être étudiée séparément : elle ne doit pas être assimilée au calcul de plus-value applicable en LMNP." },
+      { type: "hr" },
 
-- **19 %** d'impôt sur le revenu
-- **17,2 %** de prélèvements sociaux (dont PS LFSS 2026 : 18,6 %)
-- **Total : 36,2 %** (voire 37,2 % avec surtaxe au-delà de 50 000 €)
-
-### Les abattements pour durée de détention
-
-La réintégration des amortissements ne bénéficie **pas** des abattements pour durée de détention. En revanche, la plus-value "pure" (hors amortissements) bénéficie des abattements habituels :
-
-- **Exonération IR** après 22 ans de détention
-- **Exonération PS** après 30 ans de détention
-
-En pratique, seule la partie "réintégration des amortissements" reste taxable à 36,2 % quelle que soit la durée de détention.
-
-### Est-ce vraiment pénalisant ?
-
-Non, si l'on raisonne en net. Les amortissements déduits chaque année ont **économisé de l'impôt au taux marginal** (souvent 30 à 41 %). À la revente, ils sont réintégrés à **19 %**. L'opération reste globalement avantageuse.
-
-### Exemple de bilan net
-
-Pour 20 000 € d'amortissements déduits à une TMI de 30 % :
-
-- **Économie réalisée** : 20 000 × 30 % = 6 000 €
-- **Impôt à la revente** : 20 000 × 19 % = 3 800 €
-- **Gain net** : 6 000 − 3 800 = **2 200 € de bénéfice fiscal net**
-
-L'amortissement LMNP reste donc un avantage fiscal même en tenant compte de la réintégration à la revente.
-
-### LMP vs LMNP : une différence majeure
-
-Si vous êtes Loueur en Meublé **Professionnel** (LMP), la plus-value de revente suit un régime différent (plus-values professionnelles), potentiellement plus favorable après 5 ans d'activité avec une exonération possible si les recettes sont inférieures à 90 000 €.
-
-### Ce qu'il faut retenir
-
-- La réintégration des amortissements est inévitable en LMNP réel
-- Elle ne remet pas en cause l'intérêt fiscal global du dispositif
-- La plus-value "pure" bénéficie des abattements classiques (22 et 30 ans)
-- Un bilan net reste favorable grâce à l'écart de taux (TMI déduction > 19 % réintégration)`,
+      { type: "h1", id: "a-retenir", text: "Ce qu'il faut retenir sur la revente d'un LMNP" },
+      { type: "ul", items: [
+        "**1.** Les amortissements LMNP admis en déduction augmentent désormais la plus-value brute lors de la revente.",
+        "**2.** Ils ne constituent pas une plus-value séparée taxée indépendamment du reste.",
+        "**3.** Les abattements pour durée de détention s'appliquent à la plus-value brute après réintégration des amortissements LMNP.",
+        "**4.** L'exonération d'impôt sur le revenu est totale après 22 ans de détention.",
+        "**5.** L'exonération des prélèvements sociaux est totale après 30 ans de détention.",
+        "**6.** Les plus-values immobilières LMNP restent soumises, en 2026, à 19 % d'impôt sur le revenu et 17,2 % de prélèvements sociaux avant abattements.",
+        "**7.** Une surtaxe spécifique peut s'ajouter lorsque la plus-value nette imposable dépasse 50 000 €, selon un barème progressif pouvant atteindre 6 %.",
+      ]},
+      { type: "p", text: "La réintégration des amortissements LMNP est un élément important du calcul de la plus-value, mais **elle ne signifie pas que les amortissements seront systématiquement taxés à la revente quelle que soit la durée de détention**. En LMNP, la durée de détention reste déterminante pour mesurer la fiscalité réelle de la revente." },
+    ],
   },
 };
 
 export function generateStaticParams() {
   return Object.keys(articles).map(slug => ({ slug }));
+}
+
+export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
+  const { slug } = await params;
+  const article = articles[slug];
+  if (!article) return {};
+  return { title: `${article.titre} – toutlmnp`, description: article.contenu.find(b => b.type === "p") ? (article.contenu.find(b => b.type === "p") as { type: "p"; text: string }).text.replace(/\*\*/g, "").slice(0, 160) : "" };
+}
+
+function renderInline(text: string) {
+  const parts = text.split(/\*\*(.*?)\*\*/g);
+  return parts.map((part, i) =>
+    i % 2 === 1
+      ? <strong key={i} style={{ color: "#1A1612", fontWeight: 600 }}>{part}</strong>
+      : part
+  );
+}
+
+function renderBlock(block: Block, i: number) {
+  switch (block.type) {
+    case "h1":
+      return (
+        <h2 key={i} id={block.id} className="font-medium mt-12 mb-4 scroll-mt-28"
+          style={{ fontSize: "1.3rem", color: "#4E1F12", letterSpacing: "-0.02em" }}>
+          {block.text}
+        </h2>
+      );
+    case "h2":
+      return (
+        <h3 key={i} id={block.id} className="font-medium mt-8 mb-3 scroll-mt-28"
+          style={{ fontSize: "1.05rem", color: "#1A1612" }}>
+          {block.text}
+        </h3>
+      );
+    case "p":
+      return (
+        <p key={i} className="mb-4 text-sm leading-relaxed" style={{ color: "rgba(26,22,18,0.72)" }}>
+          {renderInline(block.text)}
+        </p>
+      );
+    case "ul":
+      return (
+        <ul key={i} className="mb-5 space-y-2 pl-0">
+          {block.items.map((item, j) => (
+            <li key={j} className="flex items-start gap-3 text-sm" style={{ color: "rgba(26,22,18,0.72)" }}>
+              <span className="flex-shrink-0 mt-1.5 w-1.5 h-1.5 rounded-full" style={{ background: "#C95B2A" }} />
+              <span>{renderInline(item)}</span>
+            </li>
+          ))}
+        </ul>
+      );
+    case "formula":
+      return (
+        <div key={i} className="my-5 px-5 py-4 rounded-xl text-sm font-mono leading-relaxed"
+          style={{ background: "rgba(78,31,18,0.06)", borderLeft: "3px solid #C95B2A", color: "#4E1F12" }}>
+          {block.text}
+        </div>
+      );
+    case "note":
+      return (
+        <div key={i} className="my-5 px-5 py-4 rounded-xl text-sm leading-relaxed"
+          style={{ background: "rgba(201,91,42,0.07)", border: "0.5px solid rgba(201,91,42,0.2)", color: "rgba(26,22,18,0.72)" }}>
+          {renderInline(block.text)}
+        </div>
+      );
+    case "table":
+      return (
+        <div key={i} className="my-6 overflow-x-auto rounded-xl" style={{ border: "0.5px solid rgba(26,22,18,0.1)" }}>
+          <table className="w-full text-sm border-collapse">
+            <thead>
+              <tr style={{ background: "#1A1612" }}>
+                {block.head.map((h, j) => (
+                  <th key={j} className="px-4 py-3 text-left font-medium text-xs uppercase tracking-wider"
+                    style={{ color: "rgba(245,240,232,0.7)" }}>{h}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {block.rows.map((row, j) => (
+                <tr key={j} style={{ background: j % 2 === 0 ? "#F5F0E8" : "#EDE7DC", borderTop: "0.5px solid rgba(26,22,18,0.07)" }}>
+                  {row.map((cell, k) => (
+                    <td key={k} className="px-4 py-3" style={{ color: k === 0 ? "rgba(26,22,18,0.55)" : "#1A1612", fontWeight: k > 0 ? 500 : 400 }}>
+                      {renderInline(cell)}
+                    </td>
+                  ))}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      );
+    case "hr":
+      return <hr key={i} style={{ border: "none", borderTop: "0.5px solid rgba(26,22,18,0.1)", margin: "40px 0" }} />;
+    default:
+      return null;
+  }
 }
 
 export default async function ArticlePage({ params }: { params: Promise<{ slug: string }> }) {
@@ -168,7 +300,14 @@ export default async function ArticlePage({ params }: { params: Promise<{ slug: 
     <main className="min-h-screen" style={{ backgroundColor: "#F5F0E8" }}>
       <header style={{ backgroundColor: "#4E1F12", borderBottom: "2px solid rgba(245,240,232,0.18)" }} className="sticky top-0 z-50">
         <div className="hidden md:flex max-w-6xl mx-auto px-4 py-3 items-center justify-between">
-          <Link href="/"><Logo variant="light" /></Link>
+          <div className="flex items-center gap-5">
+            <Link href="/"><Logo variant="light" /></Link>
+            <div className="pl-5" style={{ borderLeft: "1px solid rgba(245,240,232,0.15)" }}>
+              <Link href="/blog" className="text-sm font-light leading-tight hover:opacity-80 transition-opacity" style={{ color: "rgba(245,240,232,0.6)" }}>
+                ← Articles
+              </Link>
+            </div>
+          </div>
           <div className="flex items-center gap-2">
             <HeaderAuth dark={true} />
             <a href="/#simulateur" className="text-sm font-medium px-4 py-2 transition-opacity hover:opacity-[0.88]"
@@ -180,60 +319,66 @@ export default async function ArticlePage({ params }: { params: Promise<{ slug: 
         <MobileHeader />
       </header>
 
-      <div className="py-8 px-4" style={{ borderBottom: "1px solid rgba(26,22,18,0.07)" }}>
-        <div className="max-w-3xl mx-auto relative">
-          <span className="absolute top-0 right-0 text-[10px] uppercase tracking-[0.12em] font-medium px-2.5 py-0.5 rounded"
-            style={{ background: "rgba(201,91,42,0.1)", color: "#C95B2A", border: "1px solid rgba(201,91,42,0.2)" }}>
-            {article.tag}
-          </span>
-          <Link href="/blog" className="inline-flex items-center gap-2 text-sm font-medium px-4 py-2 rounded-md mb-5 transition-opacity hover:opacity-80"
-            style={{ background: "rgba(201,91,42,0.08)", color: "#C95B2A", border: "1px solid rgba(201,91,42,0.2)" }}>
-            ← Retour au blog
-          </Link>
-          <h1 className="font-light mb-3"
-            style={{ fontSize: "clamp(1.5rem,3vw,2.2rem)", color: "#4E1F12", letterSpacing: "-0.025em" }}>
+      {/* Hero article */}
+      <div className="px-4 pt-12 pb-10" style={{ borderBottom: "1px solid rgba(26,22,18,0.07)" }}>
+        <div className="max-w-3xl mx-auto">
+          <div className="text-xs uppercase tracking-[0.14em] font-medium mb-4" style={{ color: "rgba(26,22,18,0.35)" }}>
+            {article.date}
+          </div>
+          <h1 className="font-light mb-0"
+            style={{ fontSize: "clamp(1.5rem,3.5vw,2.4rem)", color: "#4E1F12", letterSpacing: "-0.03em", lineHeight: 1.2 }}>
             {article.titre}
           </h1>
-          <div className="text-sm" style={{ color: "rgba(26,22,18,0.4)" }}>{article.date}</div>
         </div>
       </div>
 
       <div className="max-w-3xl mx-auto px-4 py-12">
-        <div>
-          {article.contenu.split("\n").map((line, i) => {
-            if (line.startsWith("## "))
-              return <h2 key={i} className="font-light mt-10 mb-4"
-                style={{ fontSize: "1.5rem", color: "#1A1612", letterSpacing: "-0.02em" }}>{line.slice(3)}</h2>;
-            if (line.startsWith("### "))
-              return <h3 key={i} className="font-medium mt-6 mb-3"
-                style={{ fontSize: "1.05rem", color: "#1A1612" }}>{line.slice(4)}</h3>;
-            if (line.startsWith("- "))
-              return <li key={i} className="ml-4 mb-1 text-sm"
-                style={{ color: "rgba(26,22,18,0.7)", lineHeight: 1.7 }}>
-                {line.slice(2).replace(/\*\*(.*?)\*\*/g, (_, m) => m)}
-              </li>;
-            if (line.trim() === "") return <br key={i} />;
-            return (
-              <p key={i} className="mb-4 text-sm" style={{ color: "rgba(26,22,18,0.7)", lineHeight: 1.75 }}>
-                {line.split(/\*\*(.*?)\*\*/).map((part, j) =>
-                  j % 2 === 1
-                    ? <strong key={j} style={{ color: "#1A1612", fontWeight: 500 }}>{part}</strong>
-                    : part
-                )}
-              </p>
-            );
-          })}
+
+        {/* Sommaire */}
+        <div className="mb-12 rounded-2xl overflow-hidden" style={{ border: "0.5px solid rgba(26,22,18,0.1)" }}>
+          <div className="px-6 py-4" style={{ background: "#1A1612" }}>
+            <p className="text-xs uppercase tracking-[0.14em] font-medium" style={{ color: "rgba(245,240,232,0.5)" }}>
+              Sommaire
+            </p>
+          </div>
+          <div className="px-6 py-5" style={{ background: "#EDE7DC" }}>
+            <ol className="space-y-2">
+              {article.sections.map((s, i) => (
+                <li key={s.id}>
+                  <a
+                    href={`#${s.id}`}
+                    className="flex items-start gap-3 text-sm transition-colors hover:opacity-70 group"
+                    style={{ color: s.niveau === 1 ? "#1A1612" : "rgba(26,22,18,0.6)", paddingLeft: s.niveau === 2 ? "16px" : "0" }}
+                  >
+                    <span className="flex-shrink-0 font-mono text-xs mt-0.5 tabular-nums" style={{ color: "rgba(26,22,18,0.3)", minWidth: "1.4rem" }}>
+                      {(i + 1).toString().padStart(2, "0")}
+                    </span>
+                    <span className="group-hover:underline leading-snug">{s.titre}</span>
+                  </a>
+                </li>
+              ))}
+            </ol>
+          </div>
         </div>
 
-        <div className="mt-12 rounded-xl p-6 text-center" style={{ background: "#1A1612" }}>
+        {/* Corps de l'article */}
+        <div>
+          {article.contenu.map((block, i) => renderBlock(block, i))}
+        </div>
+
+        {/* CTA */}
+        <div className="mt-16 rounded-2xl p-8 text-center" style={{ background: "#1A1612" }}>
+          <div className="text-xs uppercase tracking-[0.14em] font-medium mb-3" style={{ color: "rgba(245,240,232,0.35)" }}>
+            Simulateur LMNP
+          </div>
           <h3 className="font-light text-xl mb-3" style={{ color: "#F5F0E8", letterSpacing: "-0.02em" }}>
             Calculez votre situation personnelle
           </h3>
-          <p className="text-sm mb-5" style={{ color: "rgba(245,240,232,0.5)" }}>
-            Simulateur gratuit, résultats instantanés.
+          <p className="text-sm mb-6" style={{ color: "rgba(245,240,232,0.45)" }}>
+            Régime réel, micro-BIC, amortissements — simulation gratuite et instantanée.
           </p>
           <Link href="/#simulateur"
-            className="inline-block font-medium px-6 py-3 transition-opacity hover:opacity-[0.88]"
+            className="inline-block font-medium px-8 py-3 transition-opacity hover:opacity-[0.88]"
             style={{ backgroundColor: "#C95B2A", color: "#F5F0E8", borderRadius: 6 }}>
             Lancer le simulateur →
           </Link>
@@ -241,13 +386,20 @@ export default async function ArticlePage({ params }: { params: Promise<{ slug: 
       </div>
 
       <footer style={{ borderTop: "0.5px solid rgba(26,22,18,0.08)" }} className="py-10 px-4">
-        <div className="max-w-6xl mx-auto flex justify-between items-center">
+        <div className="max-w-6xl mx-auto flex flex-col md:flex-row justify-between items-center gap-4">
           <Link href="/"><Logo /></Link>
-          <nav className="hidden md:flex items-center gap-6 text-xs" style={{ color: "rgba(26,22,18,0.4)" }}>
-            <Link href="/comment-ca-marche" className="hover:opacity-80">LMNP</Link>
-            <Link href="/blog" className="hover:opacity-80">Articles</Link>
-            <Link href="/tarifs" className="hover:opacity-80">Abonnements</Link>
-            <Link href="/contact" className="hover:opacity-80">Contact</Link>
+          <nav className="hidden md:flex flex-col items-center gap-2 text-xs" style={{ color: "rgba(26,22,18,0.4)" }}>
+            <div className="flex flex-wrap justify-center gap-6">
+              <Link href="/comment-ca-marche" className="hover:opacity-80">LMNP</Link>
+              <Link href="/blog" className="hover:opacity-80">Articles</Link>
+              <Link href="/tarifs" className="hover:opacity-80">Abonnements</Link>
+              <Link href="/contact" className="hover:opacity-80">Contact</Link>
+            </div>
+            <div className="flex flex-wrap justify-center gap-4" style={{ color: "rgba(26,22,18,0.3)" }}>
+              <Link href="/legal#mentions" className="hover:opacity-80">Mentions légales</Link>
+              <Link href="/legal#confidentialite" className="hover:opacity-80">Confidentialité</Link>
+              <Link href="/legal#cgv" className="hover:opacity-80">CGV</Link>
+            </div>
           </nav>
           <p className="text-xs" style={{ color: "rgba(26,22,18,0.35)" }}>© 2026 toutlmnp</p>
         </div>

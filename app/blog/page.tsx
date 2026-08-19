@@ -11,32 +11,10 @@ export const metadata: Metadata = {
 
 const articles = [
   {
-    slug: "reforme-micro-bic-2025",
-    titre: "Réforme micro-BIC 2025 : ce qui change pour les LMNP",
-    extrait: "L'abattement micro-BIC passe de 50 % à 30 % au 1er janvier 2025. Découvrez comment cela impacte votre rentabilité et pourquoi le régime réel devient incontournable.",
-    date: "15 janvier 2025",
-    tag: "Fiscalité",
-  },
-  {
-    slug: "amortissement-lmnp-explique",
-    titre: "L'amortissement LMNP expliqué simplement",
-    extrait: "Comment déduire l'usure de votre bien immobilier et meubler sans payer d'impôt pendant 10 à 15 ans ? Tout comprendre en 5 minutes.",
-    date: "8 janvier 2025",
-    tag: "Guide",
-  },
-  {
     slug: "revente-lmnp-plus-value",
     titre: "Revente d'un bien LMNP : comment est calculée la plus-value ?",
-    extrait: "Réintégration des amortissements, taux d'imposition à 36,2 %, abattements pour durée de détention : tout comprendre sur la fiscalité à la revente d'un bien meublé non professionnel.",
-    date: "8 juillet 2026",
-    tag: "Fiscalité",
-  },
-  {
-    slug: "regime-reel-vs-micro-bic",
-    titre: "Régime réel vs Micro-BIC : quel est le meilleur choix en 2026 ?",
-    extrait: "Comparatif chiffré des deux régimes fiscaux LMNP avec des exemples concrets sur des biens de 150 000 € à 400 000 €.",
-    date: "2 janvier 2025",
-    tag: "Comparatif",
+    extrait: "Depuis le 15 février 2025, les amortissements LMNP admis en déduction viennent réduire le prix d'acquisition retenu pour le calcul de la plus-value. Comprendre ce mécanisme est indispensable pour anticiper la fiscalité à la revente.",
+    date: "Mis à jour en août 2026",
   },
 ];
 
@@ -49,13 +27,13 @@ export default function BlogPage() {
             <Link href="/"><Logo variant="light" /></Link>
             <div className="pl-5" style={{ borderLeft: "1px solid rgba(245,240,232,0.15)" }}>
               <div className="text-base font-light leading-tight" style={{ color: "#F5F0E8" }}>Articles</div>
-              <div className="text-[11px] leading-tight mt-0.5" style={{ color: "rgba(245,240,232,0.45)" }}>Guides, actualités fiscales et conseils</div>
+              <div className="text-[11px] leading-tight mt-0.5" style={{ color: "rgba(245,240,232,0.45)" }}>Guides et actualités fiscales</div>
             </div>
           </div>
           <nav className="flex items-center gap-6 text-base font-normal" style={{ color: "#F5F0E8" }}>
-            <Link href="/comment-ca-marche" className="hover:text-[#F5F0E8] transition-colors">LMNP</Link>
+            <Link href="/comment-ca-marche" className="hover:opacity-80 transition-opacity">LMNP</Link>
             <Link href="/blog" style={{ color: "#C95B2A" }}>Articles</Link>
-            <Link href="/tarifs" className="hover:text-[#F5F0E8] transition-colors">Abonnements</Link>
+            <Link href="/tarifs" className="hover:opacity-80 transition-opacity">Abonnements</Link>
           </nav>
           <div className="flex items-center gap-2">
             <HeaderAuth dark={true} />
@@ -68,37 +46,108 @@ export default function BlogPage() {
         <MobileHeader />
       </header>
 
-      <div className="max-w-4xl mx-auto px-4 py-12">
-        <div className="grid gap-4">
-          {articles.map(a => (
-            <Link key={a.slug} href={`/blog/${a.slug}`}
-              className="block rounded-xl p-6 transition-opacity hover:opacity-[0.88] group"
-              style={{ background: "#EDE7DC", border: "0.5px solid rgba(26,22,18,0.08)" }}>
-              <div className="flex items-start justify-between gap-4">
-                <div className="flex-1">
-                  <span className="inline-block text-[10px] uppercase tracking-[0.12em] font-medium px-2.5 py-0.5 rounded mb-3"
-                    style={{ background: "rgba(201,91,42,0.12)", color: "#C95B2A" }}>
-                    {a.tag}
-                  </span>
-                  <h2 className="font-medium text-[#1A1612] mb-2 text-lg leading-snug">{a.titre}</h2>
-                  <p className="text-sm" style={{ color: "rgba(26,22,18,0.6)", lineHeight: 1.65 }}>{a.extrait}</p>
-                  <div className="text-xs mt-3" style={{ color: "rgba(26,22,18,0.35)" }}>{a.date}</div>
+      {/* Intro */}
+      <div className="py-10 px-4 text-center" style={{ borderBottom: "1px solid rgba(26,22,18,0.07)" }}>
+        <div className="max-w-2xl mx-auto">
+          <h1 className="font-light mb-3" style={{ fontSize: "clamp(1.6rem,3.5vw,2.2rem)", color: "#4E1F12", letterSpacing: "-0.025em" }}>
+            Articles
+          </h1>
+          <p className="text-sm" style={{ color: "rgba(26,22,18,0.45)" }}>
+            Guides pratiques et analyses fiscales sur le statut LMNP.
+          </p>
+        </div>
+      </div>
+
+      {/* Layout 1/3 + 2/3 */}
+      <div className="max-w-6xl mx-auto px-4 py-14">
+        <div className="flex gap-12 items-start">
+
+          {/* Colonne gauche — liste des titres */}
+          <div className="hidden md:block w-1/3 flex-shrink-0 sticky top-28">
+            <p className="text-[10px] uppercase tracking-[0.14em] font-medium mb-4" style={{ color: "rgba(26,22,18,0.35)" }}>
+              Tous les articles
+            </p>
+            <ul className="space-y-1">
+              {articles.map(a => (
+                <li key={a.slug}>
+                  <Link
+                    href={`/blog/${a.slug}`}
+                    className="block text-sm py-2.5 pr-3 transition-colors leading-snug"
+                    style={{ color: "#1A1612", borderLeft: "2px solid #C95B2A", paddingLeft: "12px" }}
+                  >
+                    {a.titre}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          {/* Colonne droite — cartes articles */}
+          <div className="flex-1 space-y-6">
+            {articles.map(a => (
+              <Link
+                key={a.slug}
+                href={`/blog/${a.slug}`}
+                className="block group transition-all"
+                style={{ textDecoration: "none" }}
+              >
+                <div
+                  className="rounded-2xl p-8 transition-all"
+                  style={{
+                    background: "#EDE7DC",
+                    border: "0.5px solid rgba(26,22,18,0.1)",
+                    boxShadow: "0 2px 16px rgba(26,22,18,0.05)",
+                  }}
+                >
+                  {/* Date */}
+                  <div className="text-[11px] uppercase tracking-[0.12em] mb-4 font-medium" style={{ color: "rgba(26,22,18,0.35)" }}>
+                    {a.date}
+                  </div>
+
+                  {/* Titre */}
+                  <h2
+                    className="font-light mb-4 leading-snug group-hover:opacity-80 transition-opacity"
+                    style={{ fontSize: "clamp(1.2rem,2.5vw,1.55rem)", color: "#4E1F12", letterSpacing: "-0.025em" }}
+                  >
+                    {a.titre}
+                  </h2>
+
+                  {/* Séparateur */}
+                  <div className="mb-4" style={{ borderTop: "0.5px solid rgba(26,22,18,0.1)" }} />
+
+                  {/* Extrait */}
+                  <p className="text-sm leading-relaxed mb-6" style={{ color: "rgba(26,22,18,0.6)" }}>
+                    {a.extrait}
+                  </p>
+
+                  {/* CTA */}
+                  <div className="flex items-center gap-2 text-sm font-medium" style={{ color: "#C95B2A" }}>
+                    Lire l&apos;article
+                    <span className="transition-transform group-hover:translate-x-1">→</span>
+                  </div>
                 </div>
-                <div className="text-xl mt-1 transition-colors" style={{ color: "rgba(26,22,18,0.25)" }}>→</div>
-              </div>
-            </Link>
-          ))}
+              </Link>
+            ))}
+          </div>
+
         </div>
       </div>
 
       <footer style={{ borderTop: "0.5px solid rgba(26,22,18,0.08)" }} className="py-10 px-4">
         <div className="max-w-6xl mx-auto flex flex-col md:flex-row justify-between items-center gap-4">
           <Link href="/"><Logo /></Link>
-          <nav className="hidden md:flex items-center gap-6 text-xs" style={{ color: "rgba(26,22,18,0.4)" }}>
-            <Link href="/comment-ca-marche" className="hover:opacity-80">LMNP</Link>
-            <Link href="/blog" className="hover:opacity-80">Articles</Link>
-            <Link href="/tarifs" className="hover:opacity-80">Abonnements</Link>
-            <Link href="/contact" className="hover:opacity-80">Contact</Link>
+          <nav className="hidden md:flex flex-col items-center gap-2 text-xs" style={{ color: "rgba(26,22,18,0.4)" }}>
+            <div className="flex flex-wrap justify-center gap-6">
+              <Link href="/comment-ca-marche" className="hover:opacity-80">LMNP</Link>
+              <Link href="/blog" className="hover:opacity-80">Articles</Link>
+              <Link href="/tarifs" className="hover:opacity-80">Abonnements</Link>
+              <Link href="/contact" className="hover:opacity-80">Contact</Link>
+            </div>
+            <div className="flex flex-wrap justify-center gap-4" style={{ color: "rgba(26,22,18,0.3)" }}>
+              <Link href="/legal#mentions" className="hover:opacity-80">Mentions légales</Link>
+              <Link href="/legal#confidentialite" className="hover:opacity-80">Confidentialité</Link>
+              <Link href="/legal#cgv" className="hover:opacity-80">CGV</Link>
+            </div>
           </nav>
           <p className="text-xs" style={{ color: "rgba(26,22,18,0.35)" }}>© 2026 toutlmnp</p>
         </div>
