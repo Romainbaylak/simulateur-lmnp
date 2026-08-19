@@ -12,6 +12,12 @@ export const metadata: Metadata = {
 
 const articlesLmnp = [
   {
+    slug: "amortissement-lmnp",
+    titre: "Amortissement LMNP : comment fonctionne-t-il et comment le calculer ?",
+    extrait: "L'amortissement est l'un des mécanismes fiscaux les plus importants de la location meublée au régime réel. Il permet de répartir comptablement le coût du logement et de ses équipements sur leur durée d'utilisation, réduisant ainsi fortement le bénéfice BIC imposable.",
+    date: "Mis à jour en août 2026",
+  },
+  {
     slug: "revente-lmnp-plus-value",
     titre: "Revente d'un bien LMNP : comment est calculée la plus-value ?",
     extrait: "Depuis le 15 février 2025, les amortissements LMNP admis en déduction viennent réduire le prix d'acquisition retenu pour le calcul de la plus-value. Comprendre ce mécanisme est indispensable pour anticiper la fiscalité à la revente.",
