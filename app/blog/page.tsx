@@ -31,7 +31,14 @@ const articlesLmnp = [
   },
 ];
 
-const articlesActualite: typeof articlesLmnp = [];
+const articlesActualite: typeof articlesLmnp = [
+  {
+    slug: "actualite-lmnp-2026",
+    titre: "Actualité LMNP 2026 : Ce qui change vraiment pour les bailleurs",
+    extrait: "Le statut LMNP reste en vigueur en 2026, mais son environnement fiscal évolue : revalorisation du plafond micro-BIC à 83 600 €, prélèvements sociaux à 18,6 %, réforme de la plus-value, nouveau dispositif Jeanbrun en location nue, et durcissement des règles pour les meublés touristiques.",
+    date: "Mis à jour en août 2026",
+  },
+];
 
 export default function BlogPage() {
   return (
