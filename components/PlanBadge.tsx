@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from "react";
 import { useUser } from "@clerk/nextjs";
-import { supabase } from "@/lib/supabase";
 
 const PLANS: Record<string, { label: string; bg: string; color: string }> = {
   starter: { label: "Invest.", bg: "#C95B2A", color: "#F5F0E8" },
@@ -21,18 +20,19 @@ export function usePlan(): { plan: string | null; isLoading: boolean } {
       setIsLoading(false);
       return;
     }
-    supabase
-      .from("user_plans")
-      .select("plan")
-      .eq("user_id", user.id)
-      .maybeSingle()
-      .then(({ data, error }) => {
-        if (error || !data) {
-          setPlan(typeof window !== "undefined" ? localStorage.getItem("lmnp_plan") : null);
+    fetch(`/api/user-plan?userId=${encodeURIComponent(user.id)}`)
+      .then(r => r.ok ? r.json() : Promise.reject(r))
+      .then(({ plan: fetchedPlan }) => {
+        if (fetchedPlan) {
+          setPlan(fetchedPlan);
+          if (typeof window !== "undefined") localStorage.setItem("lmnp_plan", fetchedPlan);
         } else {
-          setPlan(data.plan);
-          if (typeof window !== "undefined") localStorage.setItem("lmnp_plan", data.plan);
+          setPlan(typeof window !== "undefined" ? localStorage.getItem("lmnp_plan") : null);
         }
+        setIsLoading(false);
+      })
+      .catch(() => {
+        setPlan(typeof window !== "undefined" ? localStorage.getItem("lmnp_plan") : null);
         setIsLoading(false);
       });
   }, [user, isLoaded]);

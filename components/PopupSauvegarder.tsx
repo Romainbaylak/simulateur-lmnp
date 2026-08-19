@@ -3,7 +3,6 @@
 import { useState } from "react";
 import Link from "next/link";
 import { SignUpButton } from "@clerk/nextjs";
-import { supabase } from "@/lib/supabase";
 
 export interface SavedSimulation {
   id?: string;
@@ -73,14 +72,11 @@ export default function PopupSauvegarder({ plan, isSignedIn, userId, simulationD
     localStorage.setItem("lmnp_saved_simulations", JSON.stringify(updated));
     if (plan === "free") localStorage.setItem(FREE_KEY, "1");
     if (userId) {
-      supabase.from("simulations").upsert({
-        user_id: userId,
-        name: name.trim(),
-        data: dataWithBien,
-        saved_at: savedAt,
-      }, { onConflict: "user_id,name" }).then(({ error }) => {
-        if (error) console.error("Supabase save error:", error);
-      });
+      fetch("/api/simulations", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ userId, name: name.trim(), data: dataWithBien, savedAt }),
+      }).then(r => { if (!r.ok) r.json().then(e => console.error("Simulation save error:", e)); });
     }
     setView("success");
     setTimeout(() => { onSaved(); onClose(); }, 1200);
@@ -98,14 +94,11 @@ export default function PopupSauvegarder({ plan, isSignedIn, userId, simulationD
     );
     localStorage.setItem("lmnp_saved_simulations", JSON.stringify(updated));
     if (userId) {
-      supabase.from("simulations").upsert({
-        user_id: userId,
-        name: existingName,
-        data: dataWithBien,
-        saved_at: savedAt,
-      }, { onConflict: "user_id,name" }).then(({ error }) => {
-        if (error) console.error("Supabase replace error:", error);
-      });
+      fetch("/api/simulations", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ userId, name: existingName, data: dataWithBien, savedAt }),
+      }).then(r => { if (!r.ok) r.json().then(e => console.error("Simulation replace error:", e)); });
     }
     setView("success");
     setTimeout(() => { onSaved(); onClose(); }, 1200);

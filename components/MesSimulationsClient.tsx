@@ -3,7 +3,6 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useUser } from "@clerk/nextjs";
-import { supabase } from "@/lib/supabase";
 import { getSavedSimulations, type SavedSimulation } from "./PopupSauvegarder";
 
 function formatDate(ts: number) {
@@ -193,24 +192,21 @@ export default function MesSimulationsClient() {
       setLoaded(true);
       return;
     }
-    supabase
-      .from("simulations")
-      .select("id, name, data, saved_at")
-      .eq("user_id", user.id)
-      .order("saved_at", { ascending: false })
-      .then(({ data, error }) => {
-        if (error || !data) {
-          setSims(getSavedSimulations());
-        } else {
-          const mapped: SavedSimulation[] = data.map((row) => ({
-            id: row.id as string,
-            name: row.name as string,
-            data: row.data as Record<string, unknown>,
-            savedAt: typeof row.saved_at === "number" ? row.saved_at : Number(row.saved_at),
-          }));
-          setSims(mapped);
-          localStorage.setItem("lmnp_saved_simulations", JSON.stringify(mapped));
-        }
+    fetch(`/api/simulations?userId=${encodeURIComponent(user.id)}`)
+      .then(r => r.ok ? r.json() : Promise.reject(r))
+      .then(({ simulations }) => {
+        const mapped: SavedSimulation[] = (simulations ?? []).map((row: Record<string, unknown>) => ({
+          id: row.id as string,
+          name: row.name as string,
+          data: row.data as Record<string, unknown>,
+          savedAt: typeof row.saved_at === "number" ? row.saved_at : Number(row.saved_at),
+        }));
+        setSims(mapped);
+        localStorage.setItem("lmnp_saved_simulations", JSON.stringify(mapped));
+        setLoaded(true);
+      })
+      .catch(() => {
+        setSims(getSavedSimulations());
         setLoaded(true);
       });
   }, [user, userLoaded]);
@@ -234,14 +230,14 @@ export default function MesSimulationsClient() {
     const updated = sims.filter((s) => !(s.name === name && s.savedAt === savedAt));
     localStorage.setItem("lmnp_saved_simulations", JSON.stringify(updated));
     setSims(updated);
-    if (user && target?.id) {
-      supabase.from("simulations").delete().eq("id", target.id).then(({ error }) => {
-        if (error) console.error("Supabase delete error:", error);
-      });
-    } else if (user) {
-      supabase.from("simulations").delete().eq("user_id", user.id).eq("name", name).then(({ error }) => {
-        if (error) console.error("Supabase delete error:", error);
-      });
+    if (user) {
+      fetch("/api/simulations", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(target?.id
+          ? { userId: user.id, id: target.id }
+          : { userId: user.id, name }),
+      }).then(r => { if (!r.ok) r.json().then(e => console.error("Simulation delete error:", e)); });
     }
   }
 

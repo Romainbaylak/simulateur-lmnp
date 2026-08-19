@@ -12,8 +12,9 @@ const supabaseAdmin = createClient(
 );
 
 const PLAN_BY_PRICE: Record<string, string> = {
-  price_1Ttn8vRkmRCKEt1coHEDX2yS: "starter",
-  price_1Ttn9rRkmRCKEt1cfdcRt1f7: "pro",
+  price_1U5T8GRkmRCKEt1c1fzR1ohu: "starter",
+  price_1U5T9JRkmRCKEt1ckBI94SLL: "pro",
+  price_1U5TACRkmRCKEt1csstjHr1c: "pro_plus",
   price_1TtnAdRkmRCKEt1c3M6Nnvu1: "rapport",
 };
 
