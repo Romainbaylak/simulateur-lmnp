@@ -3,10 +3,23 @@ import Link from "next/link";
 import type { Metadata } from "next";
 import HeaderAuth from "@/components/HeaderAuth";
 import MobileHeader from "@/components/MobileHeader";
+import BlogTabs from "@/components/BlogTabs";
+
 export const metadata: Metadata = {
   title: "Articles LMNP – Conseils investissement immobilier meublé",
   description: "Articles et guides sur le statut LMNP, la fiscalité, l'amortissement et l'investissement immobilier locatif meublé.",
 };
+
+const articlesLmnp = [
+  {
+    slug: "revente-lmnp-plus-value",
+    titre: "Revente d'un bien LMNP : comment est calculée la plus-value ?",
+    extrait: "Depuis le 15 février 2025, les amortissements LMNP admis en déduction viennent réduire le prix d'acquisition retenu pour le calcul de la plus-value. Comprendre ce mécanisme est indispensable pour anticiper la fiscalité à la revente.",
+    date: "Mis à jour en août 2026",
+  },
+];
+
+const articlesActualite: typeof articlesLmnp = [];
 
 export default function BlogPage() {
   return (
@@ -36,34 +49,18 @@ export default function BlogPage() {
         <MobileHeader />
       </header>
 
-      <div className="py-10 px-4 text-center" style={{ borderBottom: "1px solid rgba(26,22,18,0.07)" }}>
+      <div className="py-8 px-4 text-center" style={{ borderBottom: "1px solid rgba(26,22,18,0.07)" }}>
         <div className="max-w-2xl mx-auto">
           <h1 className="font-light mb-2" style={{ fontSize: "clamp(1.5rem,3vw,2rem)", color: "#4E1F12", letterSpacing: "-0.025em" }}>
             Articles
           </h1>
-          <p className="text-sm mb-7" style={{ color: "rgba(26,22,18,0.4)" }}>
+          <p className="text-sm" style={{ color: "rgba(26,22,18,0.4)" }}>
             Guides pratiques et analyses fiscales sur le statut LMNP.
           </p>
-          <div className="flex flex-col sm:flex-row justify-center gap-3">
-            <Link
-              href="/blog/lmnp"
-              className="inline-flex items-center justify-center gap-2 px-6 py-3 text-sm font-medium transition-opacity hover:opacity-[0.88]"
-              style={{ backgroundColor: "#4E1F12", color: "#F5F0E8", borderRadius: 8 }}
-            >
-              Articles LMNP
-              <span style={{ opacity: 0.6 }}>→</span>
-            </Link>
-            <Link
-              href="/blog/actualite"
-              className="inline-flex items-center justify-center gap-2 px-6 py-3 text-sm font-medium transition-opacity hover:opacity-[0.88]"
-              style={{ backgroundColor: "#C95B2A", color: "#F5F0E8", borderRadius: 8 }}
-            >
-              L&apos;actualité du LMNP
-              <span style={{ opacity: 0.6 }}>→</span>
-            </Link>
-          </div>
         </div>
       </div>
+
+      <BlogTabs articlesLmnp={articlesLmnp} articlesActualite={articlesActualite} />
 
       <footer style={{ borderTop: "0.5px solid rgba(26,22,18,0.08)" }} className="py-10 px-4">
         <div className="max-w-6xl mx-auto flex flex-col md:flex-row justify-between items-center gap-4">
