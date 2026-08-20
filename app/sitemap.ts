@@ -16,18 +16,17 @@ const blogSlugs = [
 
 export default function sitemap(): MetadataRoute.Sitemap {
   const staticPages: MetadataRoute.Sitemap = [
-    { url: BASE, priority: 1.0, changeFrequency: "weekly" },
-    { url: `${BASE}/comment-ca-marche`, priority: 0.8, changeFrequency: "monthly" },
-    { url: `${BASE}/blog`, priority: 0.9, changeFrequency: "weekly" },
-    { url: `${BASE}/tarifs`, priority: 0.7, changeFrequency: "monthly" },
-    { url: `${BASE}/contact`, priority: 0.5, changeFrequency: "yearly" },
-    { url: `${BASE}/legal#mentions`, priority: 0.3, changeFrequency: "yearly" },
-    { url: `${BASE}/legal#confidentialite`, priority: 0.3, changeFrequency: "yearly" },
-    { url: `${BASE}/legal#cgv`, priority: 0.3, changeFrequency: "yearly" },
+    { url: BASE, lastModified: new Date(), priority: 1.0, changeFrequency: "weekly" },
+    { url: `${BASE}/comment-ca-marche`, lastModified: new Date(), priority: 0.8, changeFrequency: "monthly" },
+    { url: `${BASE}/blog`, lastModified: new Date(), priority: 0.9, changeFrequency: "weekly" },
+    { url: `${BASE}/tarifs`, lastModified: new Date(), priority: 0.7, changeFrequency: "monthly" },
+    { url: `${BASE}/contact`, lastModified: new Date(), priority: 0.5, changeFrequency: "yearly" },
+    { url: `${BASE}/legal`, lastModified: new Date(), priority: 0.3, changeFrequency: "yearly" },
   ];
 
   const articlePages: MetadataRoute.Sitemap = blogSlugs.map((slug) => ({
     url: `${BASE}/blog/${slug}`,
+    lastModified: new Date(),
     priority: 0.7,
     changeFrequency: "monthly" as const,
   }));
