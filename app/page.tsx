@@ -20,6 +20,7 @@ export default function Home() {
             <Link href="/comment-ca-marche" className="hover:text-[#F5F0E8] transition-colors">LMNP</Link>
             <Link href="/blog" className="hover:text-[#F5F0E8] transition-colors">Articles</Link>
             <Link href="/tarifs" className="hover:text-[#F5F0E8] transition-colors">Abonnements</Link>
+            <Link href="/contact" className="hover:text-[#F5F0E8] transition-colors">Contact</Link>
           </nav>
           <div className="flex items-center gap-2">
             <HeaderAuth dark={true} />

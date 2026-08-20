@@ -30,6 +30,7 @@ export default function GrandesLignesPage() {
             <Link href="/comment-ca-marche" style={{ color: "#C95B2A" }}>LMNP</Link>
             <Link href="/blog" className="hover:text-[#F5F0E8] transition-colors">Articles</Link>
             <Link href="/tarifs" className="hover:text-[#F5F0E8] transition-colors">Abonnements</Link>
+            <Link href="/contact" className="hover:text-[#F5F0E8] transition-colors">Contact</Link>
           </nav>
           <div className="flex items-center gap-2">
             <HeaderAuth dark={true} />

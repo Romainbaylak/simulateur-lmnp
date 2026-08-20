@@ -20,6 +20,7 @@ export default function MerciPage() {
             <Link href="/comment-ca-marche" className="hover:opacity-80 transition-opacity">LMNP</Link>
             <Link href="/blog" className="hover:opacity-80 transition-opacity">Articles</Link>
             <Link href="/tarifs" className="hover:opacity-80 transition-opacity">Abonnements</Link>
+            <Link href="/contact" className="hover:opacity-80 transition-opacity">Contact</Link>
           </nav>
           <div className="flex items-center gap-2">
             <HeaderAuth dark={true} />
