@@ -18,6 +18,12 @@ const articlesLmnp = [
     date: "Mis à jour en août 2026",
   },
   {
+    slug: "loi-lmnp",
+    titre: "Qu'est-ce que la loi LMNP ?",
+    extrait: "Il n'existe pas une seule loi LMNP : le statut résulte de plusieurs textes fiscaux et locatifs. Conditions pour être LMNP en 2026, définition du logement meublé, décence, types de bail, déclaration au guichet unique, fiscalité BIC, amortissement et revente.",
+    date: "Mis à jour en juin 2026",
+  },
+  {
     slug: "limites-airbnb-lmnp-2026",
     titre: "Limites Airbnb en LMNP en 2026 : quelles sont les règles et restrictions ?",
     extrait: "Le statut LMNP ne donne pas automatiquement le droit de louer en courte durée. Plafond de 90 ou 120 jours, changement d'usage, enregistrement national, copropriété, DPE et sanctions : le point complet sur toutes les restrictions Airbnb à connaître en 2026.",
