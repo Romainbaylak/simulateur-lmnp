@@ -3,7 +3,7 @@ import Link from "next/link";
 import { useStripeCheckout } from "@/lib/useStripeCheckout";
 import type { SimulationData } from "@/lib/computeResultats";
 
-const PRICE_RAPPORT = "price_1TtnAdRkmRCKEt1c3M6Nnvu1";
+const PRICE_RAPPORT = "price_1U6XRgDnqWNMNvvGDs7dODoN";
 
 interface Props {
   onClose: () => void;
@@ -70,7 +70,7 @@ export default function PopupPaiementUnite({ onClose, simulationData }: Props) {
         >
           {loading ? "Redirection…" : (
             <>
-              <div>Payer 1,99 €</div>
+              <div>Payer 2,99 €</div>
               <div className="text-xs font-normal opacity-80 mt-0.5">paiement unique · accès immédiat</div>
             </>
           )}

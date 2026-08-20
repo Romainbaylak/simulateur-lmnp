@@ -69,7 +69,7 @@ export default function PopupPDFStarter({ onGenerate, onClose, onPayUnit, weekCo
               className="w-full py-3 rounded-lg font-medium text-sm transition-opacity hover:opacity-[0.88] flex items-center justify-center gap-2"
               style={{ backgroundColor: "#C95B2A", color: "#F5F0E8" }}
             >
-              <span>Générer ce rapport — 1,99 €</span>
+              <span>Générer ce rapport — 2,99 €</span>
             </button>
             <Link
               href="/tarifs"

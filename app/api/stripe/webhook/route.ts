@@ -12,10 +12,10 @@ const supabaseAdmin = createClient(
 );
 
 const PLAN_BY_PRICE: Record<string, string> = {
-  price_1U5T8GRkmRCKEt1c1fzR1ohu: "starter",
-  price_1U5T9JRkmRCKEt1ckBI94SLL: "pro",
-  price_1U5TACRkmRCKEt1csstjHr1c: "pro_plus",
-  price_1TtnAdRkmRCKEt1c3M6Nnvu1: "rapport",
+  price_1U6XS4DnqWNMNvvGfORZx3Hq: "starter",
+  price_1U6XSKDnqWNMNvvGkGPD3JED: "pro",
+  price_1U6XSaDnqWNMNvvGoANB6CSq: "pro_plus",
+  price_1U6XRgDnqWNMNvvGDs7dODoN: "rapport",
 };
 
 export async function POST(req: NextRequest) {

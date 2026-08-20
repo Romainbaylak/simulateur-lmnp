@@ -164,7 +164,7 @@ export default function LegalPage() {
 
         <SubTitle>2. Services proposés</SubTitle>
         <UL items={[
-          "Rapport à l'unité — 1,99 € : rapport complet (amortissement + PDF) pour une simulation. Paiement unique, non récurrent.",
+          "Rapport à l'unité — 2,99 € : rapport complet (amortissement + PDF) pour une simulation. Paiement unique, non récurrent.",
           "Offre Investisseur — 7,99 €/mois : simulations illimitées, tableau d'amortissement ajustable, 3 exports PDF/semaine, sauvegarde jusqu'à 10 simulations.",
           "Offre Pro — 24,99 €/mois : tout l'Investisseur + exports illimités + multi-biens + sauvegarde illimitée.",
           "Offre Pro+ — 149,99 €/mois : accès professionnel multi-clients.",

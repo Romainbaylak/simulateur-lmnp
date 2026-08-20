@@ -15,7 +15,7 @@ export default function MerciPlanSetter() {
     } else if (plan === "pro") {
       localStorage.setItem("lmnp_plan", "pro");
     }
-    // Pour le rapport à l'unité (1,99€) : pas de mise à jour du plan
+    // Pour le rapport à l'unité (2,99€) : pas de mise à jour du plan
   }, [params]);
 
   return null;
