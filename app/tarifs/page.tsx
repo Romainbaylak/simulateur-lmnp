@@ -60,7 +60,6 @@ export default function TarifsPage() {
                 "Comparaison réel vs micro-BIC",
                 "Calculs de rentabilité LMNP",
                 "Loyer interactif",
-                "Accès limité aux modes d'amortissement",
               ].map(f => (
                 <li key={f} className="flex items-center gap-3 text-sm" style={{ color: "rgba(26,22,18,0.7)" }}>
                   <span className="w-4 h-4 rounded-full flex items-center justify-center text-[10px] flex-shrink-0"
