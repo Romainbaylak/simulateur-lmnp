@@ -1075,7 +1075,7 @@ ${(() => {
   let cumul = 0;
   for (const ro of rows) { cumul += ro.amortTotalA; amortCumulByYear[ro.year] = cumul; }
 
-  const reventeYears = [10, 25, 35];
+  const reventeYears = [10, 20, 35];
   const growthScenarios = [
     { label: "Valeur stable (0 %/an)", pct: 0, color: "#6B4226" },
     { label: "Revalorisation +1 %/an", pct: 0.01, color: "#2A7080" },
