@@ -158,7 +158,7 @@ export default function TarifsPage() {
 
         {/* Pro+ — bannière compacte en dessous */}
         <div className="mt-8 rounded-xl relative"
-          style={{ background: "#2C1A10", border: "1.5px solid rgba(201,91,42,0.6)", boxShadow: "0 0 0 3px rgba(201,91,42,0.12)" }}>
+          style={{ background: "#2C1A10" }}>
           <div className="absolute -top-3 left-6">
             <span className="text-[10px] uppercase tracking-[0.12em] font-medium px-3 py-1 rounded"
               style={{ background: "#C95B2A", color: "#F5F0E8" }}>PROFESSIONNEL</span>
@@ -177,7 +177,7 @@ export default function TarifsPage() {
             <div className="hidden md:block w-px self-stretch" style={{ background: "rgba(245,240,232,0.1)" }} />
             {/* Description */}
             <p className="text-sm leading-relaxed flex-1" style={{ color: "rgba(245,240,232,0.7)" }}>
-              Vous êtes un professionnel ? Donnez un accès premium à tous vos clients qui auront accès à l&apos;outil complet et pourront faire leurs propres simulations.
+              Vous êtes un professionnel ? Donnez un accès premium à tous vos clients ou collaborateurs qui auront accès à l&apos;outil complet et pourront faire leurs propres simulations.
             </p>
             {/* Bouton */}
             <div className="flex-shrink-0 w-full md:w-56">
