@@ -671,7 +671,7 @@ export default function Simulateur({ onShowResults }: { onShowResults?: () => vo
                     style={{ background: isSaisonnier ? "#26527A" : "transparent", border: isSaisonnier ? "none" : "1.5px solid rgba(26,22,18,0.3)" }}>
                     {isSaisonnier && <span className="text-white text-[9px] leading-none font-bold">✓</span>}
                   </span>
-                  Saisonnier
+                  Location saisonnière
                 </button>
               </div>
 
@@ -1741,6 +1741,27 @@ export default function Simulateur({ onShowResults }: { onShowResults?: () => vo
                     );
                     return (
                       <div className="space-y-3">
+                        {/* Explication régimes fiscaux saisonnier — disparaît après sélection */}
+                        {selectedRegime === null && showRegimeExplainer && (
+                          <div className="mb-3">
+                            <p className="text-[15px] leading-relaxed" style={{ color: "#4E1F12", margin: 0 }}>
+                              En LMNP, le choix du régime fiscal est déterminant car il impacte directement le montant de ton impôt, et donc ton cash-flow à la fin de chaque mois.<br />Il existe deux régimes :
+                            </p>
+                            <p className="text-[15px] leading-relaxed" style={{ color: "#4E1F12", margin: "8px 0 0" }}>
+                              Le <strong style={{ color: "#2A6E80" }}>Micro-BIC</strong> applique un abattement forfaitaire de <strong style={{ color: "#2A6E80" }}>30%</strong> sur tes recettes (meublé de tourisme non classé) puis te donne ta base imposable.<br />
+                              Le <strong style={{ color: "#C95B2A" }}>Régime Réel</strong> déduit tes vraies charges et te permet <strong><u>d&apos;amortir une partie de ton bien</u></strong>, réduisant souvent ton impôt.{" "}
+                              Pour la majorité des investisseurs avec un crédit, le <strong style={{ color: "#C95B2A" }}>Régime Réel</strong> est plus avantageux.
+                            </p>
+                            <div className="flex justify-end mt-2">
+                              <button onClick={() => setShowRegimeExplainer(false)}
+                                className="text-[11px] font-medium px-3 py-1 rounded-md transition-opacity hover:opacity-70"
+                                style={{ color: "rgba(26,22,18,0.45)", background: "rgba(26,22,18,0.06)", border: "none" }}>
+                                − Réduire
+                              </button>
+                            </div>
+                          </div>
+                        )}
+
                         {/* Title */}
                         <div className="text-center text-sm font-semibold mb-1" style={{ color: "#1A1612" }}>Choisissez votre régime fiscal</div>
 
