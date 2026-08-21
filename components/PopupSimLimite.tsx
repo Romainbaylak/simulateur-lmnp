@@ -76,7 +76,7 @@ export default function PopupSimLimite({ isSignedIn, onClose, onAccountBonus }: 
               Abonnez-vous pour des simulations illimitées et accès aux rapports PDF
             </div>
             <div className="text-base font-bold">
-              À partir de 4,99 €/mois →
+              À partir de 7,99 €/mois →
             </div>
           </Link>
 

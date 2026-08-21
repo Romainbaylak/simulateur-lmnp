@@ -87,7 +87,7 @@ export default function PopupPaiementUnite({ onClose, simulationData }: Props) {
           className="w-full py-4 rounded-xl font-semibold text-base transition-opacity hover:opacity-[0.88] flex flex-col items-center"
           style={{ backgroundColor: "#1A1612", color: "#F5F0E8", display: "flex" }}
         >
-          <span>Abonnement à partir de 4,99 €</span>
+          <span>Abonnement à partir de 7,99 €</span>
           <span className="text-xs font-normal opacity-60 mt-0.5">simulations illimitées + PDF inclus</span>
         </Link>
       </div>

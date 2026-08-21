@@ -40,7 +40,7 @@ export default function PopupAmortLimite({ onClose }: Props) {
           style={{ backgroundColor: "#C95B2A", color: "#F5F0E8" }}
           onClick={onClose}
         >
-          Voir les offres — dès 4,99 €/mois
+          Voir les offres — dès 7,99 €/mois
         </Link>
 
         <button
