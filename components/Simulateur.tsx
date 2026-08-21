@@ -585,7 +585,7 @@ export default function Simulateur({ onShowResults }: { onShowResults?: () => vo
       if (loyerMensuel > 0) setSliderMax(Math.max(loyerMensuel * 2, 200));
     }
     setSimulationValidated(true);
-    window.scrollTo({ top: 0, behavior: "smooth" });
+    setTimeout(() => window.scrollTo({ top: 0, behavior: "smooth" }), 50);
   };
 
   const displayCashflow = resultats
@@ -1394,8 +1394,8 @@ export default function Simulateur({ onShowResults }: { onShowResults?: () => vo
                           <span className="ml-auto text-[10px] font-bold px-2.5 py-1 rounded" style={{ background: "rgba(245,240,232,0.2)", color: "#F5F0E8" }}>✓ {headerBadge}</span>
                         </div>
 
-                        {/* 3 colonnes côte à côte */}
-                        <div className="grid grid-cols-3 gap-3">
+                        {/* 3 colonnes côte à côte (desktop) / empilées (mobile) */}
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                           {scenarios.map(sc => {
                             const r = sc.r;
                             const loyer = loyerSaisonnier(parseFloat(prixNuitee)||0, sc.taux);
@@ -1741,8 +1741,103 @@ export default function Simulateur({ onShowResults }: { onShowResults?: () => vo
                     );
                     return (
                       <div className="space-y-3">
-                        {/* Title + clickable regime headers */}
+                        {/* Title */}
                         <div className="text-center text-sm font-semibold mb-1" style={{ color: "#1A1612" }}>Choisissez votre régime fiscal</div>
+
+                        {/* ── MOBILE ONLY: Réel puis BIC empilés ── */}
+                        <div className="md:hidden space-y-4">
+                          {/* RÉGIME RÉEL */}
+                          <div className="space-y-2">
+                            <button type="button" onClick={() => { setSelectedRegime("reel"); scrollToAmort.current = true; }}
+                              className="w-full flex items-center gap-2 text-[13px] font-bold uppercase tracking-[0.1em] py-3 px-4 rounded-xl"
+                              style={{ background: "#C95B2A", color: "#F5F0E8", cursor: "pointer" }}>
+                              <span className="w-4 h-4 rounded-full flex-shrink-0 flex items-center justify-center" style={{ border: "2px solid #F5F0E8" }}>
+                                <span className="w-2 h-2 rounded-full" style={{ background: "#F5F0E8", display: "block" }} />
+                              </span>
+                              Régime Réel
+                              <span className="ml-auto px-2 py-0.5 rounded text-[10px]" style={{ background: "rgba(245,240,232,0.25)", color: "#F5F0E8" }}>RECOMMANDÉ</span>
+                            </button>
+                            {scenarios.map(sc => {
+                              const r = sc.r;
+                              const loyer = loyerSaisonnier(parseFloat(prixNuitee)||0, sc.taux);
+                              const nuits = Math.round(sc.taux / 100 * 365);
+                              const cfVal = r ? r.cashflowReelMensuel : 0;
+                              const cfColor = cfVal >= 0 ? "#1A7A52" : "#B03A2A";
+                              return (
+                                <div key={`mob-reel-${sc.label}`} className="rounded-xl overflow-hidden" style={{ border: `1.5px solid ${sc.border}` }}>
+                                  <div className="px-4 py-2.5" style={{ background: sc.accent, borderBottom: `1px solid ${sc.border}` }}>
+                                    <div className="text-[10px] font-bold uppercase tracking-[0.12em]" style={{ color: sc.color }}>Estimation {sc.label}</div>
+                                    <div className="flex items-baseline gap-2 mt-0.5 flex-wrap">
+                                      <span className="text-lg font-bold" style={{ color: sc.color, letterSpacing: "-0.02em" }}>{formatEuro(loyer)}/mois</span>
+                                      <span className="text-xs font-semibold" style={{ color: "#1A1612" }}>{sc.taux}% occ. · {nuits} nuits/an · {formatEuro(loyer * 12)}/an</span>
+                                    </div>
+                                  </div>
+                                  <div className="px-4 py-2" style={{ background: "#FDFAF6" }}>
+                                    {r ? <>
+                                      <TRow label="Revenus annuels" val={formatEuro(r.loyerAnnuel)} bold />
+                                      <TRow label="Emprunt" val={`−${formatEuro(r.creditAnnuel)}`} color="#B03A2A" />
+                                      <TRow label="Charges" val={`−${formatEuro(r.chargesDeductibles - r.interetsAnnee1)}`} color="#B03A2A" />
+                                      <TRow label="Amortissements" val={`−${formatEuro(r.amortTotal)}`} color="#8B1A1A" bold labelBold bg="rgba(139,26,26,0.05)" />
+                                      <TRow label="Base imposable" val={formatEuro(r.baseImposableReel)} bold sep color={r.baseImposableReel === 0 ? "#1A7A52" : "#1A1612"} />
+                                      <TRow label="Impôt estimé" val={formatEuro(r.impotReel)} color="#B03A2A" />
+                                      <div style={{ borderTop: "0.5px solid rgba(26,22,18,0.1)", paddingTop: 6, marginTop: 4 }}>
+                                        <div className="flex justify-between"><span style={{ color: "rgba(26,22,18,0.7)", fontSize: 12.5, fontWeight: 700 }}>Cash-flow <strong>Mensuel</strong></span><span style={{ fontSize: 12.5, fontWeight: 700, color: cfColor }}>{formatEuro(cfVal)}</span></div>
+                                        <div className="mt-1"><span style={{ fontSize: 11, color: "rgba(26,22,18,0.55)" }}>Soit annuel : </span><span style={{ fontSize: 11, color: cfColor }}>{formatEuro(cfVal * 12)}</span></div>
+                                      </div>
+                                    </> : <div className="text-xs text-center py-4" style={{ color: "rgba(26,22,18,0.4)" }}>–</div>}
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+                          {/* MICRO-BIC */}
+                          <div className="space-y-2">
+                            <button type="button" onClick={() => { setSelectedRegime("micro"); setSimulationValidated(true); setTimeout(() => window.scrollTo({ top: 0, behavior: "smooth" }), 50); }}
+                              className="w-full flex items-center gap-2 text-[13px] font-bold uppercase tracking-[0.1em] py-3 px-4 rounded-xl"
+                              style={{ background: "#1A1612", color: "#F5F0E8", cursor: "pointer" }}>
+                              <span className="w-4 h-4 rounded-full flex-shrink-0" style={{ border: "2px solid rgba(245,240,232,0.5)" }} />
+                              Micro-BIC
+                              <span className="ml-auto px-2 py-0.5 rounded text-[10px]" style={{ background: "rgba(245,240,232,0.2)", color: "#F5F0E8" }}>ABATT. 30%</span>
+                            </button>
+                            {scenarios.map(sc => {
+                              const r = sc.r;
+                              const loyer = loyerSaisonnier(parseFloat(prixNuitee)||0, sc.taux);
+                              const nuits = Math.round(sc.taux / 100 * 365);
+                              const cfVal = r ? r.cashflowBICMensuel : 0;
+                              const cfColor = cfVal >= 0 ? "#1A7A52" : "#B03A2A";
+                              return (
+                                <div key={`mob-bic-${sc.label}`} className="rounded-xl overflow-hidden" style={{ border: `1.5px solid ${sc.border}` }}>
+                                  <div className="px-4 py-2.5" style={{ background: sc.accent, borderBottom: `1px solid ${sc.border}` }}>
+                                    <div className="text-[10px] font-bold uppercase tracking-[0.12em]" style={{ color: sc.color }}>Estimation {sc.label}</div>
+                                    <div className="flex items-baseline gap-2 mt-0.5 flex-wrap">
+                                      <span className="text-lg font-bold" style={{ color: sc.color, letterSpacing: "-0.02em" }}>{formatEuro(loyer)}/mois</span>
+                                      <span className="text-xs font-semibold" style={{ color: "#1A1612" }}>{sc.taux}% occ. · {nuits} nuits/an · {formatEuro(loyer * 12)}/an</span>
+                                    </div>
+                                  </div>
+                                  <div className="px-4 py-2" style={{ background: "#FDFAF6" }}>
+                                    {r ? <>
+                                      <TRow label="Revenus annuels" val={formatEuro(r.loyerAnnuel)} bold />
+                                      <TRow label="Emprunt" val={`−${formatEuro(r.creditAnnuel)}`} color="#B03A2A" />
+                                      <TRow label="Ensemble des charges" val={`−${formatEuro(r.chargesAnnuelles + r.assuranceEmprunteurAnnuel)}`} color="#B03A2A" />
+                                      <div className="mt-1 pt-1" style={{ borderTop: "0.5px solid rgba(26,22,18,0.1)" }}>
+                                        <div className="flex justify-between py-1.5"><span style={{ color: "rgba(26,22,18,0.7)", fontSize: 12.5, fontWeight: 600 }}>Base imposable</span><span style={{ fontSize: 12.5, fontWeight: 600, color: "#1A1612" }}>{formatEuro(r.baseBIC)}</span></div>
+                                        <div className="text-[10px] mb-1 px-1.5 py-0.5 rounded" style={{ color: "rgba(26,22,18,0.5)", background: "rgba(26,22,18,0.04)" }}>Abatt. 30% sur {formatEuro(r.recettesAnnuelles)}</div>
+                                      </div>
+                                      <TRow label="Impôt estimé" val={formatEuro(r.impotBIC)} color="#B03A2A" />
+                                      <div style={{ borderTop: "0.5px solid rgba(26,22,18,0.1)", paddingTop: 6, marginTop: 4 }}>
+                                        <div className="flex justify-between"><span style={{ color: "rgba(26,22,18,0.7)", fontSize: 12.5, fontWeight: 700 }}>Cash-flow <strong>Mensuel</strong></span><span style={{ fontSize: 12.5, fontWeight: 700, color: cfColor }}>{formatEuro(cfVal)}</span></div>
+                                        <div className="mt-1"><span style={{ fontSize: 11, color: "rgba(26,22,18,0.55)" }}>Soit annuel : </span><span style={{ fontSize: 11, color: cfColor }}>{formatEuro(cfVal * 12)}</span></div>
+                                      </div>
+                                    </> : <div className="text-xs text-center py-4" style={{ color: "rgba(26,22,18,0.4)" }}>–</div>}
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </div>
+
+                        {/* ── DESKTOP ONLY: grille 3 colonnes ── */}
+                        <div className="hidden md:block space-y-3">
                         <div className="grid gap-2" style={{ gridTemplateColumns: "0.6fr 1.5fr 1.5fr" }}>
                           <div />
                           <button type="button" onClick={() => { setSelectedRegime("reel"); scrollToAmort.current = true; }}
@@ -1753,7 +1848,7 @@ export default function Simulateur({ onShowResults }: { onShowResults?: () => vo
                             </span>
                             Régime Réel&nbsp;<span className="px-1.5 py-0.5 rounded text-[9px]" style={{ background: selectedRegime === "reel" ? "rgba(245,240,232,0.25)" : "#C95B2A", color: "#F5F0E8" }}>{selectedRegime === "reel" ? "✓ Sélect." : "Recommandé"}</span>
                           </button>
-                          <button type="button" onClick={() => { setSelectedRegime("micro"); setSimulationValidated(true); window.scrollTo({ top: 0, behavior: "smooth" }); }}
+                          <button type="button" onClick={() => { setSelectedRegime("micro"); setSimulationValidated(true); setTimeout(() => window.scrollTo({ top: 0, behavior: "smooth" }), 50); }}
                             className="flex items-center justify-center gap-2 text-[11px] font-bold uppercase tracking-[0.1em] py-2 px-3 rounded-lg transition-all"
                             style={{ background: selectedRegime === "micro" ? "#1A1612" : "rgba(26,22,18,0.08)", color: selectedRegime === "micro" ? "#F5F0E8" : "#1A1612", border: selectedRegime === "micro" ? "none" : "1.5px solid rgba(26,22,18,0.15)", cursor: "pointer" }}>
                             <span className="flex-shrink-0 w-4 h-4 rounded-full flex items-center justify-center" style={{ border: `2px solid ${selectedRegime === "micro" ? "#F5F0E8" : "rgba(26,22,18,0.4)"}` }}>
@@ -1763,6 +1858,7 @@ export default function Simulateur({ onShowResults }: { onShowResults?: () => vo
                           </button>
                         </div>
 
+                        {/* One row per scenario */}
                         {/* One row per scenario */}
                         {scenarios.map(sc => {
                           const r = sc.r;
@@ -1832,6 +1928,7 @@ export default function Simulateur({ onShowResults }: { onShowResults?: () => vo
                             </div>
                           );
                         })}
+                        </div>{/* end desktop wrapper */}
 
                       </div>
                     );
@@ -1939,7 +2036,7 @@ export default function Simulateur({ onShowResults }: { onShowResults?: () => vo
                               </button>
 
                               {/* Micro-BIC — clickable */}
-                              <button type="button" onClick={() => { setSelectedRegime("micro"); setSimulationValidated(true); window.scrollTo({ top: 0, behavior: "smooth" }); }}
+                              <button type="button" onClick={() => { setSelectedRegime("micro"); setSimulationValidated(true); setTimeout(() => window.scrollTo({ top: 0, behavior: "smooth" }), 50); }}
                                 className="rounded-xl overflow-hidden text-left w-full transition-all hover:shadow-md focus:outline-none group"
                                 style={{ border: "1.5px solid rgba(26,22,18,0.15)" }}>
                                 <div className="flex items-center gap-3 px-5 py-3.5" style={{ background: "#EDE7DC", borderBottom: "0.5px solid rgba(26,22,18,0.12)" }}>

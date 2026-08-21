@@ -41,10 +41,10 @@ export default function ContactPage() {
           Tout type de retour ou d&apos;avis est le bienvenu — que ce soit une suggestion, un bug ou une question sur le simulateur.
           <br />Merci de nous écrire à cet email :
         </p>
-        <a href="mailto:toutlmnp@gmail.com"
+        <a href="mailto:contact@toutlmnp.fr"
           className="inline-block font-medium text-xl tracking-wide transition-opacity hover:opacity-80"
           style={{ color: "#C95B2A" }}>
-          toutlmnp@gmail.com
+          contact@toutlmnp.fr
         </a>
       </div>
 
