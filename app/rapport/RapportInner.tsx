@@ -862,7 +862,7 @@ ${!isSaisonnier ? `<!-- ══════════════════�
       <td class="r"><strong>${fP(rendementBrut, 2)}</strong></td>
     </tr>
     <tr>
-      <td class="lbl">Rentabilité nette avant financement</td>
+      <td class="lbl">Rentabilité nette</td>
       <td style="font-size:9px;color:#1A1612">(${fE(loyerAnnuel)} − ${fE(chargesAnnuelles)}) / ${fE(investTotal)} × 100</td>
       <td class="r"><strong>${fP(rentaNetteAvFinancement, 2)}</strong></td>
     </tr>
