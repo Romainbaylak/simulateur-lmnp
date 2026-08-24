@@ -8,6 +8,7 @@ import BlogTabs from "@/components/BlogTabs";
 export const metadata: Metadata = {
   title: "Articles LMNP – Conseils investissement immobilier meublé",
   description: "Articles et guides sur le statut LMNP, la fiscalité, l'amortissement et l'investissement immobilier locatif meublé.",
+  alternates: { canonical: "/blog" },
 };
 
 const articlesLmnp = [

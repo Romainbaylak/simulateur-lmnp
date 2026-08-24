@@ -7,6 +7,7 @@ import MobileHeader from "@/components/MobileHeader";
 export const metadata: Metadata = {
   title: "Informations légales – toutlmnp",
   description: "Mentions légales, politique de confidentialité et conditions générales de vente de ToutLMNP.",
+  alternates: { canonical: "/legal" },
 };
 
 const DIVIDER = <hr style={{ border: "none", borderTop: "1px solid rgba(26,22,18,0.1)", margin: "48px 0" }} />;

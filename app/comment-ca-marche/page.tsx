@@ -7,6 +7,7 @@ import MobileHeader from "@/components/MobileHeader";
 export const metadata: Metadata = {
   title: "Tout savoir sur le LMNP – Guide complet 2026",
   description: "Comprendre le statut LMNP : conditions, amortissement par composants, régime réel vs micro-BIC, calcul fiscal, revente. Guide mis à jour 2026.",
+  alternates: { canonical: "/comment-ca-marche" },
 };
 
 const SectionTitle = ({ num, children }: { num: number; children: React.ReactNode }) => (

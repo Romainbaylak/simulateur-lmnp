@@ -8,6 +8,7 @@ import { InvestisseurButton, ProButton, ProPlusButton } from "@/components/Tarif
 export const metadata: Metadata = {
   title: "Abonnements – toutlmnp",
   description: "Simulez votre LMNP gratuitement. Évoluez avec Investisseur ou Pro pour des simulations illimitées, l'export PDF et le tableau d'amortissement complet.",
+  alternates: { canonical: "/tarifs" },
 };
 
 export default function TarifsPage() {

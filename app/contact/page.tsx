@@ -7,6 +7,7 @@ import MobileHeader from "@/components/MobileHeader";
 export const metadata: Metadata = {
   title: "Contact – toutlmnp",
   description: "Contactez l'équipe toutlmnp pour tout retour, avis ou question sur le simulateur LMNP.",
+  alternates: { canonical: "/contact" },
 };
 
 export default function ContactPage() {
