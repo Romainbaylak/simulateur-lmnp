@@ -626,10 +626,10 @@ table.tbl tr.total td{background:rgba(78,31,18,.07);font-weight:700}
 .big-result .val{font-size:16px;font-weight:700;color:#C95B2A}
 .bien-badge{display:inline-block;background:#EDE7DC;border-radius:4px;padding:2px 7px;font-size:9px;color:#1A1612;margin-right:6px}
 @media print{
-  html,body{background:none;padding:0;margin:0}
+  html,body{background:#F5F0E8;padding:0;margin:0}
   body{padding:0}
   .no-print{display:none}
-  .page{margin:0;box-shadow:none;padding:14mm 15mm;page-break-after:always;min-height:0;width:100%}
+  .page{margin:0;box-shadow:none;padding:14mm 15mm;page-break-after:always;min-height:297mm;width:100%;background:#F5F0E8}
   .page.landscape{padding:12mm 14mm}
   .page:last-child{page-break-after:avoid}
 }
