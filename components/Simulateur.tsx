@@ -139,7 +139,7 @@ function computeResultats(
   if (prix <= 0 || loyerMensuel <= 0) return null;
 
   const mobilier = parseFloat(form.mobilier) || 0;
-  const investTotal = prix + travaux + notaire;
+  const investTotal = prix + travaux + notaire + mobilier;
   const montantCredit = Math.max(0, investTotal - apport);
   const assuranceEmprunteurAnnuel = montantCredit * (assuranceEmprunteurPct / 100);
   const mensualite = calcMensualite(montantCredit, taux, form.duree);
@@ -1157,7 +1157,7 @@ export default function Simulateur({ onShowResults }: { onShowResults?: () => vo
                   const gestion     = parseFloat(form.gestionLocativePct)  || 0;
                   const compta      = parseFloat(form.comptabilite)        || 0;
                   const nuitee      = parseFloat(prixNuitee)               || 0;
-                  const montantCredit = Math.max(0, p - ap);
+                  const montantCredit = Math.max(0, p + tr + not + mob - ap);
                   const tmi         = form.tmi                    || 0;
 
                   const fDot = (n: number) => {
