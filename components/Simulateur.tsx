@@ -1006,7 +1006,7 @@ export default function Simulateur({ onShowResults }: { onShowResults?: () => vo
                                 placeholder="~2.5%"
                                 onChange={e => {
                                   const v = e.target.value.replace(",", ".");
-                                  if (/^\d*\.?\d*$/.test(v))
+                                  if (/^\d*\.?\d*$/.test(v) && parseFloat(v) <= 10)
                                     updateField("assurancePNO", v);
                                 }}
                                 onBlur={() => handleBlur("assurancePNO")}
