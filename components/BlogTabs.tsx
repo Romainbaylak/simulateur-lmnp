@@ -102,45 +102,48 @@ function ArticleList({ articles }: { articles: Article[] }) {
   );
 }
 
+type Tab = "simulations" | "lmnp" | "actualite";
+
 export default function BlogTabs({
   articlesLmnp,
   articlesActualite,
+  articlesSimulations = [],
 }: {
   articlesLmnp: Article[];
   articlesActualite: Article[];
+  articlesSimulations?: Article[];
 }) {
-  const [activeTab, setActiveTab] = useState<"lmnp" | "actualite">("lmnp");
+  const [activeTab, setActiveTab] = useState<Tab>("simulations");
+
+  const tabs: { id: Tab; label: string }[] = [
+    { id: "simulations", label: "Simulations" },
+    { id: "lmnp", label: "Articles LMNP" },
+    { id: "actualite", label: "Actualité" },
+  ];
 
   return (
     <div className="max-w-6xl mx-auto px-4">
       {/* Onglets */}
       <div className="flex gap-2 pt-8 pb-6">
-        <button
-          onClick={() => setActiveTab("lmnp")}
-          className="px-5 py-2.5 text-sm font-medium rounded-lg transition-all"
-          style={
-            activeTab === "lmnp"
-              ? { backgroundColor: "#4E1F12", color: "#F5F0E8" }
-              : { backgroundColor: "#EDE7DC", color: "rgba(26,22,18,0.55)", border: "0.5px solid rgba(26,22,18,0.1)" }
-          }
-        >
-          Articles LMNP
-        </button>
-        <button
-          onClick={() => setActiveTab("actualite")}
-          className="px-5 py-2.5 text-sm font-medium rounded-lg transition-all"
-          style={
-            activeTab === "actualite"
-              ? { backgroundColor: "#C95B2A", color: "#F5F0E8" }
-              : { backgroundColor: "#EDE7DC", color: "rgba(26,22,18,0.55)", border: "0.5px solid rgba(26,22,18,0.1)" }
-          }
-        >
-          L&apos;actualité du LMNP
-        </button>
+        {tabs.map(tab => (
+          <button
+            key={tab.id}
+            onClick={() => setActiveTab(tab.id)}
+            className="px-5 py-2.5 text-sm font-medium rounded-lg transition-all"
+            style={
+              activeTab === tab.id
+                ? { backgroundColor: tab.id === "actualite" ? "#C95B2A" : "#4E1F12", color: "#F5F0E8" }
+                : { backgroundColor: "#EDE7DC", color: "rgba(26,22,18,0.55)", border: "0.5px solid rgba(26,22,18,0.1)" }
+            }
+          >
+            {tab.label}
+          </button>
+        ))}
       </div>
 
       {/* Contenu */}
       <div className="pb-14">
+        {activeTab === "simulations" && <ArticleList articles={articlesSimulations} />}
         {activeTab === "lmnp" && <ArticleList articles={articlesLmnp} />}
         {activeTab === "actualite" && <ArticleList articles={articlesActualite} />}
       </div>
