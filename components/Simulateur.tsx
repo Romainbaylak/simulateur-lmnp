@@ -1343,17 +1343,8 @@ export default function Simulateur({ onShowResults }: { onShowResults?: () => vo
 
                   const AmortBlock = () => amortMode !== null ? (
                     <div>
-                      {/* Connecteur visuel (non-saisonnier réel seulement) */}
-                      {!isSaisonnier && (
-                        <div className="flex items-center gap-2 mb-2 mt-4">
-                          <div style={{ height: 2, flex: 1, background: `linear-gradient(to right, ${C2}, rgba(42,112,128,0.2))`, borderRadius: 2 }} />
-                          <span style={{ fontSize: 10, fontWeight: 700, color: C2, letterSpacing: "0.1em", whiteSpace: "nowrap", opacity: 0.8 }}>↳ DÉTAIL AMORTISSEMENTS</span>
-                          <div style={{ height: 2, flex: 1, background: `linear-gradient(to left, ${C2}, rgba(42,112,128,0.2))`, borderRadius: 2 }} />
-                        </div>
-                      )}
-                      <div className={!isSaisonnier ? "" : "rounded-xl overflow-hidden mt-4"}
-                        style={!isSaisonnier ? {} : { border: `2px solid ${C2}`, boxShadow: "0 0 0 3px rgba(42,112,128,0.1)" }}>
-                        <div className="px-5 py-3.5 flex items-center gap-3 rounded-xl overflow-hidden" style={{ background: C2, borderRadius: !isSaisonnier ? 10 : 0 }}>
+                      <div className="rounded-xl overflow-hidden" style={isSaisonnier ? { border: `2px solid ${C2}`, boxShadow: "0 0 0 3px rgba(42,112,128,0.1)", marginTop: 16 } : { border: `2px solid ${C2}`, boxShadow: "0 0 0 3px rgba(42,112,128,0.1)" }}>
+                        <div className="px-5 py-3.5 flex items-center gap-3" style={{ background: C2 }}>
                           <div className="w-5 h-5 rounded-full flex-shrink-0 flex items-center justify-center" style={{ border: "2px solid #F5F0E8" }}>
                             <div className="w-2.5 h-2.5 rounded-full" style={{ background: "#F5F0E8" }} />
                           </div>
@@ -1363,7 +1354,7 @@ export default function Simulateur({ onShowResults }: { onShowResults?: () => vo
                           <span className="ml-auto text-[10px] font-bold px-2.5 py-1 rounded" style={{ background: "rgba(245,240,232,0.2)", color: "#F5F0E8" }}>✓ CHOISI</span>
                         </div>
                         {amortMode === "ensemble" ? (
-                          <div className="px-5 py-4 flex items-center gap-6" style={{ background: "#FDFAF6", borderRadius: !isSaisonnier ? "0 0 10px 10px" : 0 }}>
+                          <div className="px-5 py-4 flex items-center gap-6" style={{ background: "#FDFAF6", borderRadius: 0 }}>
                             <div><div className="text-[11px] uppercase tracking-wider font-semibold mb-1" style={{ color: C2 }}>Valeur amortissable</div><div className="text-xl font-bold" style={{ color: C2 }}>{formatEuro(valAmort2)}</div></div>
                             <div className="w-px self-stretch" style={{ background: "rgba(42,112,128,0.2)" }} />
                             <div><div className="text-[11px] uppercase tracking-wider font-semibold mb-1" style={{ color: C2 }}>Amortissement / an</div><div className="text-xl font-bold" style={{ color: C2 }}>{formatEuro(amortDureeEnsemble > 0 ? valAmort2 / amortDureeEnsemble : 0)}</div></div>
@@ -1371,7 +1362,7 @@ export default function Simulateur({ onShowResults }: { onShowResults?: () => vo
                             <div><div className="text-[11px] uppercase tracking-wider font-semibold mb-1" style={{ color: "rgba(42,112,128,0.6)" }}>Sur</div><div className="text-xl font-bold" style={{ color: "#1A1612" }}>{amortDureeEnsemble} ans</div></div>
                           </div>
                         ) : (
-                          <div style={{ background: "#FDFAF6", borderRadius: !isSaisonnier ? "0 0 10px 10px" : 0 }}>
+                          <div style={{ background: "#FDFAF6", borderRadius: 0 }}>
                             <div className="px-4 py-2 flex items-center gap-2" style={{ background: "rgba(42,112,128,0.08)", borderBottom: "1px solid rgba(42,112,128,0.12)" }}>
                               <span className="text-[11px] font-semibold uppercase tracking-wider" style={{ color: "rgba(42,112,128,0.7)", width: 140 }}>Composant</span>
                               <span className="text-[11px] font-semibold uppercase tracking-wider" style={{ color: "rgba(42,112,128,0.7)", flex: 1 }}>Quote-part</span>
@@ -1545,10 +1536,11 @@ export default function Simulateur({ onShowResults }: { onShowResults?: () => vo
                     );
                   }
 
-                  /* ── NON-SAISONNIER : tableau fiscal + amortissement (réel = empilé, micro = seul) ── */
+                  /* ── NON-SAISONNIER : tableau fiscal | connecteur | amortissement côte à côte ── */
                   return (
-                    <div className={selectedRegime === "reel" ? "space-y-0" : "grid grid-cols-1 md:grid-cols-2 gap-4 items-start"}>
+                    <div style={{ display: "flex", alignItems: "stretch", gap: 0 }}>
                       {/* Tableau régime fiscal choisi */}
+                      <div style={{ flex: 1 }}>
                       <div className="rounded-xl overflow-hidden"
                         style={{ border: selectedRegime === "reel" ? "2.5px solid #C95B2A" : "2.5px solid #1A1612", boxShadow: selectedRegime === "reel" ? "0 0 0 3px rgba(201,91,42,0.12)" : "0 0 0 3px rgba(26,22,18,0.07)" }}>
                         <div className="flex items-center gap-3 px-5 py-3.5" style={{ background: selectedRegime === "reel" ? "#C95B2A" : "#1A1612" }}>
@@ -1607,8 +1599,24 @@ export default function Simulateur({ onShowResults }: { onShowResults?: () => vo
                           )}
                         </div>
                       </div>
+                      </div>
+
+                      {/* Connecteur V (lignes diagonales) — réel non-saisonnier uniquement */}
+                      {selectedRegime === "reel" && (
+                        <div style={{ width: 44, flexShrink: 0, position: "relative", alignSelf: "stretch" }}>
+                          <svg width="44" height="100%" preserveAspectRatio="none"
+                            style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%" }}>
+                            {/* point gauche ≈ hauteur de la ligne Amort (~67% du tableau fiscal) */}
+                            <line x1="0" y1="63%" x2="44" y2="3%" stroke="#2A7080" strokeWidth="1.5" strokeLinecap="round"/>
+                            <line x1="0" y1="63%" x2="44" y2="97%" stroke="#2A7080" strokeWidth="1.5" strokeLinecap="round"/>
+                          </svg>
+                        </div>
+                      )}
+
                       {/* Tableau amortissement — réel uniquement */}
-                      {selectedRegime === "reel" && <AmortBlock />}
+                      {selectedRegime === "reel" ? (
+                        <div style={{ flex: 1 }}><AmortBlock /></div>
+                      ) : null}
                     </div>
                   );
                 })()}
