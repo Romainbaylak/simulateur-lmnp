@@ -1343,12 +1343,12 @@ export default function Simulateur({ onShowResults }: { onShowResults?: () => vo
                   const C2 = "#2A7080";
 
                   const SubAmortTable = ({ label, valeur, amortAn, duree }: { label: string; valeur: number; amortAn: number; duree: number }) => (
-                    <div className="flex items-center gap-2 px-4 py-2.5"
-                      style={{ borderBottom: "0.5px solid rgba(26,22,18,0.06)", background: "#FDFAF6" }}>
-                      <span style={{ color: "#1A1612", fontSize: 13, fontWeight: 600, width: 140, flexShrink: 0 }}>{label}</span>
-                      <span style={{ color: C2, fontSize: 13, fontWeight: 600, flex: 1 }}>{formatEuro(valeur)}</span>
+                    <div className="flex items-center gap-2 px-4 py-3"
+                      style={{ borderBottom: "0.5px solid rgba(42,112,128,0.15)", background: "rgba(42,112,128,0.1)" }}>
+                      <span style={{ color: "#1A1612", fontSize: 14, fontWeight: 700, width: 140, flexShrink: 0 }}>{label}</span>
+                      <span style={{ color: C2, fontSize: 14, fontWeight: 700, flex: 1 }}>{formatEuro(valeur)}</span>
                       <span style={{ color: "rgba(26,22,18,0.5)", fontSize: 12, width: 90, flexShrink: 0 }}>Amort. {duree} ans</span>
-                      <span style={{ color: C2, fontSize: 13, fontWeight: 700, width: 75, textAlign: "right" as const, flexShrink: 0 }}>{formatEuro(amortAn)}/an</span>
+                      <span style={{ color: C2, fontSize: 14, fontWeight: 700, width: 75, textAlign: "right" as const, flexShrink: 0 }}>{formatEuro(amortAn)}/an</span>
                     </div>
                   );
 
@@ -1403,7 +1403,7 @@ export default function Simulateur({ onShowResults }: { onShowResults?: () => vo
 
                       {/* Mobilier / Travaux / Notaire — non-saisonnier réel uniquement, en lignes du même format */}
                       {!isSaisonnier && (amortMobilierDisplay > 0 || amortTravauxDisplay > 0 || amortNotaireDisplay > 0) && (
-                        <div style={{ marginTop: 8, borderTop: `1px solid rgba(42,112,128,0.2)` }}>
+                        <div className="rounded-xl overflow-hidden mt-3" style={{ border: `2px solid ${C2}`, boxShadow: "0 0 0 3px rgba(42,112,128,0.1)" }}>
                           {amortMobilierDisplay > 0 && (
                             <SubAmortTable label="Mobilier" valeur={parseFloat(form.mobilier) || 0} amortAn={amortMobilierDisplay} duree={amortDureeMobilier} />
                           )}
@@ -1419,7 +1419,7 @@ export default function Simulateur({ onShowResults }: { onShowResults?: () => vo
                       {/* Total amortissements — non-saisonnier réel uniquement */}
                       {!isSaisonnier && (
                         <div className="mt-3 px-5 py-3.5 rounded-xl flex items-center justify-between"
-                          style={{ background: "#C95B2A", boxShadow: "0 2px 8px rgba(201,91,42,0.25)" }}>
+                          style={{ background: C2, boxShadow: "0 2px 8px rgba(42,112,128,0.3)" }}>
                           <div>
                             <div className="text-[11px] font-semibold uppercase tracking-[0.1em] mb-0.5" style={{ color: "rgba(245,240,232,0.65)" }}>Total amortissements</div>
                             <div className="text-[12px]" style={{ color: "rgba(245,240,232,0.5)" }}>Déductible première année</div>
@@ -1602,7 +1602,7 @@ export default function Simulateur({ onShowResults }: { onShowResults?: () => vo
                       {/* Connecteur Bézier — réel non-saisonnier, caché sur mobile */}
                       {selectedRegime === "reel" && (
                         <div ref={connectorAreaRef} className="hidden md:block"
-                          style={{ width: 48, flexShrink: 0, position: "relative", alignSelf: "stretch" }}>
+                          style={{ width: 48, flexShrink: 0, position: "relative", alignSelf: "stretch", paddingLeft: 6, paddingRight: 6 }}>
                           {/* SVG uses a viewBox so coordinates are 0-100 */}
                           <svg viewBox="0 0 48 100" preserveAspectRatio="none"
                             style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%", overflow: "visible" }}>
