@@ -1569,8 +1569,16 @@ export default function Simulateur({ onShowResults }: { onShowResults?: () => vo
                               <div className="pl-3 -mt-1 pb-2"><span style={{ fontSize: 12, color: "rgba(26,22,18,0.6)" }}>Dont frais d&apos;emprunt </span><span style={{ fontSize: 13, fontWeight: 600, color: "#B03A2A" }}>{formatEuro(resultats.interetsAnnee1)}</span></div>
                               <FRow label="Charges déductibles" val={`−${formatEuro(resultats.chargesDeductibles)}`} color="#B03A2A" />
                               <FRow label="Résultat avant amortissement" val={formatEuro(resultats.resultatAvantAmort)} bold color={resultats.resultatAvantAmort >= 0 ? "#1A7A52" : "#B03A2A"} sep />
-                              <div ref={amortRowRef}>
-                                <FRow label="Amortissements" val={`−${formatEuro(resultats.amortTotal)}`} color="#2A7080" bold labelBold bg="rgba(42,112,128,0.09)" />
+                              <div ref={amortRowRef} className="flex justify-between items-center py-2.5"
+                                style={{ background: "rgba(42,112,128,0.09)", borderRadius: 5, marginLeft: -8, marginRight: -8, paddingLeft: 8, paddingRight: 4 }}>
+                                <span style={{ color: "rgba(26,22,18,0.78)", fontSize: 13, fontWeight: 700 }}>Amortissements</span>
+                                <div className="flex items-center gap-1.5">
+                                  <span className="whitespace-nowrap" style={{ fontSize: 13, fontWeight: 700, color: "#2A7080" }}>{`−${formatEuro(resultats.amortTotal)}`}</span>
+                                  <svg width="22" height="12" viewBox="0 0 22 12" style={{ flexShrink: 0, display: "block" }}>
+                                    <line x1="1" y1="6" x2="17" y2="6" stroke="#2A7080" strokeWidth="1.5" strokeLinecap="round"/>
+                                    <polyline points="12,2 17,6 12,10" fill="none" stroke="#2A7080" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                                  </svg>
+                                </div>
                               </div>
                               <FRow label="Base imposable" val={formatEuro(resultats.baseImposableReel)} bold sep />
                               <FRow label="Impôt estimé" val={formatEuro(resultats.impotReel)} color="#B03A2A" />
@@ -1631,7 +1639,6 @@ export default function Simulateur({ onShowResults }: { onShowResults?: () => vo
                               fill="none" stroke="#2A7080" strokeWidth="1.5" strokeLinecap="round"
                               vectorEffect="non-scaling-stroke"
                             />
-                            <circle cx="6" cy={connectorY} r="2.5" fill="#2A7080" vectorEffect="non-scaling-stroke"/>
                           </svg>
                         </div>
                       )}
