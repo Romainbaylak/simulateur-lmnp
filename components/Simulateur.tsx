@@ -103,6 +103,21 @@ function calcInteretsAnnee1(capital: number, tauxAnnuel: number, dureeAns: numbe
   return totalInterets;
 }
 
+function calcInteretsAnneeN(capital: number, tauxAnnuel: number, dureeAns: number, annee: number): number {
+  if (capital <= 0 || tauxAnnuel <= 0 || annee > dureeAns) return 0;
+  const r = tauxAnnuel / 12;
+  const n = dureeAns * 12;
+  const M = capital * r * Math.pow(1 + r, n) / (Math.pow(1 + r, n) - 1);
+  let capitalRestant = capital;
+  let totalInterets = 0;
+  for (let mois = 1; mois <= annee * 12; mois++) {
+    const interet = capitalRestant * r;
+    if (mois > (annee - 1) * 12) totalInterets += interet;
+    capitalRestant -= (M - interet);
+  }
+  return totalInterets;
+}
+
 function stripLeadingZeros(val: string): string {
   if (!val) return val;
   const n = parseFloat(val);
@@ -1606,24 +1621,15 @@ export default function Simulateur({ onShowResults }: { onShowResults?: () => vo
                           {/* SVG uses a viewBox so coordinates are 0-100 */}
                           <svg viewBox="0 0 48 100" preserveAspectRatio="none"
                             style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%", overflow: "visible" }}>
-                            <defs>
-                              <linearGradient id="bezGrad" x1="0%" y1="0%" x2="100%" y2="0%">
-                                <stop offset="0%" stopColor="rgba(42,112,128,0.7)"/>
-                                <stop offset="100%" stopColor="rgba(42,112,128,0.2)"/>
-                              </linearGradient>
-                            </defs>
-                            {/* Courbe supérieure : de la ligne Amort (point gauche) vers haut du bloc droit */}
                             <path
                               d={`M 0 ${connectorY} C 24 ${connectorY} 24 2 48 2`}
-                              fill="none" stroke="url(#bezGrad)" strokeWidth="1.5" strokeLinecap="round"
+                              fill="none" stroke="#2A7080" strokeWidth="1.5" strokeLinecap="round"
                             />
-                            {/* Courbe inférieure : de la ligne Amort vers bas du bloc droit */}
                             <path
                               d={`M 0 ${connectorY} C 24 ${connectorY} 24 98 48 98`}
-                              fill="none" stroke="url(#bezGrad)" strokeWidth="1.5" strokeLinecap="round"
+                              fill="none" stroke="#2A7080" strokeWidth="1.5" strokeLinecap="round"
                             />
-                            {/* Point de départ */}
-                            <circle cx="0" cy={connectorY} r="2.5" fill="#2A7080" opacity="0.8"/>
+                            <circle cx="0" cy={connectorY} r="2.5" fill="#2A7080"/>
                           </svg>
                         </div>
                       )}
@@ -1662,6 +1668,151 @@ export default function Simulateur({ onShowResults }: { onShowResults?: () => vo
                     </div>
                   </div>
                 )}
+
+                {/* Graphe Evolution des Cash-flow */}
+                {resultats && (() => {
+                  const CF_COLOR = "#2A7080";
+                  const CF_NEG = "#B03A2A";
+                  const dureeAns = form.duree || 20;
+                  const totalYears = dureeAns + 5;
+                  const taux = parseFloat(form.taux) / 100 || 0;
+                  const prix = parseFloat(form.prix) || 0;
+                  const travaux = parseFloat(form.travaux) || 0;
+                  const notaire = parseFloat(form.notaire) || 0;
+                  const mobilier = parseFloat(form.mobilier) || 0;
+                  const apport = parseFloat(form.apport) || 0;
+                  const investTot = prix + travaux + notaire + mobilier;
+                  const montantCreditCF = Math.max(0, investTot - apport);
+                  const mensualiteCF = resultats.mensualite;
+
+                  // Calcul année par année
+                  const data: { yr: number; cf: number }[] = [];
+                  for (let yr = 1; yr <= totalYears; yr++) {
+                    const inLoan = yr <= dureeAns;
+                    const interetsAn = inLoan ? calcInteretsAnneeN(montantCreditCF, taux, dureeAns, yr) : 0;
+                    const creditAn = inLoan ? mensualiteCF * 12 : 0;
+                    const assurAn = inLoan ? resultats.assuranceEmprunteurAnnuel : 0;
+                    let cf: number;
+                    if (selectedRegime === "reel") {
+                      const chargesDeduct = resultats.chargesAnnuelles + interetsAn + assurAn;
+                      const resultatAvAmort = resultats.recettesAnnuelles - chargesDeduct;
+                      const base = Math.max(0, resultatAvAmort - resultats.amortTotal);
+                      const impot = base * (form.tmi / 100 + 0.186);
+                      cf = (resultats.recettesAnnuelles - creditAn - resultats.chargesAnnuelles - assurAn - impot) / 12;
+                    } else {
+                      cf = (resultats.recettesAnnuelles - creditAn - resultats.chargesAnnuelles - assurAn - resultats.impotBIC) / 12;
+                    }
+                    data.push({ yr, cf });
+                  }
+
+                  // Dimensions SVG
+                  const W = 600; const H = 180; const PAD = { t: 18, r: 16, b: 32, l: 52 };
+                  const chartW = W - PAD.l - PAD.r;
+                  const chartH = H - PAD.t - PAD.b;
+                  const minCF = Math.min(0, ...data.map(d => d.cf));
+                  const maxCF = Math.max(0, ...data.map(d => d.cf));
+                  const range = maxCF - minCF || 1;
+                  const xOf = (i: number) => PAD.l + (i / (data.length - 1)) * chartW;
+                  const yOf = (v: number) => PAD.t + (1 - (v - minCF) / range) * chartH;
+                  const zeroY = yOf(0);
+
+                  // Polyline points
+                  const pts = data.map((d, i) => `${xOf(i)},${yOf(d.cf)}`).join(" ");
+
+                  // Area path
+                  const areaPath = `M ${xOf(0)},${zeroY} ` +
+                    data.map((d, i) => `L ${xOf(i)},${yOf(d.cf)}`).join(" ") +
+                    ` L ${xOf(data.length - 1)},${zeroY} Z`;
+
+                  // Analyse
+                  const posYears = data.filter(d => d.cf >= 0).length;
+                  const negYears = data.filter(d => d.cf < 0).length;
+                  const endLoanCF = data[dureeAns] ? data[dureeAns].cf : null;
+                  const firstNegIdx = data.findIndex(d => d.cf < 0);
+                  const firstPosAfterNeg = firstNegIdx >= 0 ? data.findIndex((d, i) => i > firstNegIdx && d.cf >= 0) : -1;
+
+                  let bandMsg = "";
+                  if (negYears === 0) {
+                    bandMsg = `Cash-flow positif sur toute la durée (${totalYears} ans). `;
+                  } else if (posYears === 0) {
+                    bandMsg = `Cash-flow négatif sur toute la durée. `;
+                  } else if (firstNegIdx === 0) {
+                    const recovYear = firstPosAfterNeg >= 0 ? data[firstPosAfterNeg].yr : null;
+                    if (recovYear) {
+                      bandMsg = `Cash-flow négatif jusqu'à l'année ${recovYear - 1}${recovYear - 1 === dureeAns ? " (fin du prêt)" : ""}. Retour au positif dès l'année ${recovYear}.`;
+                    } else {
+                      bandMsg = `Cash-flow négatif sur ${negYears} années.`;
+                    }
+                  } else {
+                    bandMsg = `Cash-flow positif pendant ${firstNegIdx} an${firstNegIdx > 1 ? "s" : ""}`;
+                    if (firstNegIdx === dureeAns) {
+                      bandMsg += ", puis amélioration nette après la fin du prêt (plus de mensualité).";
+                    } else {
+                      bandMsg += ` puis légère pression fiscale croissante.`;
+                    }
+                  }
+                  if (endLoanCF !== null && endLoanCF > 0) {
+                    bandMsg += ` Après remboursement du prêt (an ${dureeAns}) : +${Math.round(endLoanCF).toLocaleString("fr-FR")} €/mois.`;
+                  }
+
+                  // Y-axis ticks
+                  const tickStep = range <= 200 ? 50 : range <= 500 ? 100 : range <= 2000 ? 200 : 500;
+                  const tickMin = Math.ceil(minCF / tickStep) * tickStep;
+                  const tickMax = Math.floor(maxCF / tickStep) * tickStep;
+                  const ticks: number[] = [];
+                  for (let t = tickMin; t <= tickMax; t += tickStep) ticks.push(t);
+                  if (!ticks.includes(0)) ticks.push(0);
+
+                  // X-axis labels (every 5 years)
+                  const xLabels: number[] = [];
+                  for (let yr = 5; yr <= totalYears; yr += 5) xLabels.push(yr);
+                  if (!xLabels.includes(dureeAns)) xLabels.push(dureeAns);
+
+                  return (
+                    <div className="mt-4">
+                      <div className="text-sm font-semibold mb-3" style={{ color: "rgba(26,22,18,0.65)" }}>Evolution des Cash-flow :</div>
+                      <div className="rounded-xl overflow-hidden" style={{ border: "1px solid rgba(42,112,128,0.15)", background: "#FDFAF6" }}>
+                        <div className="w-full overflow-x-auto">
+                          <svg viewBox={`0 0 ${W} ${H}`} style={{ width: "100%", minWidth: 280, display: "block" }}>
+                            {/* Grid lines */}
+                            {ticks.map(t => (
+                              <g key={t}>
+                                <line x1={PAD.l} x2={W - PAD.r} y1={yOf(t)} y2={yOf(t)}
+                                  stroke={t === 0 ? "rgba(42,112,128,0.35)" : "rgba(26,22,18,0.06)"} strokeWidth={t === 0 ? 1 : 0.75} strokeDasharray={t === 0 ? "none" : "3,3"}/>
+                                <text x={PAD.l - 5} y={yOf(t) + 4} textAnchor="end" fontSize={9} fill="rgba(26,22,18,0.4)">
+                                  {t >= 0 ? `+${t}` : `${t}`}
+                                </text>
+                              </g>
+                            ))}
+                            {/* Loan end vertical marker */}
+                            <line x1={xOf(dureeAns - 1)} x2={xOf(dureeAns - 1)} y1={PAD.t} y2={H - PAD.b}
+                              stroke="rgba(42,112,128,0.3)" strokeWidth={1} strokeDasharray="4,3"/>
+                            <text x={xOf(dureeAns - 1) + 3} y={PAD.t + 9} fontSize={8} fill="rgba(42,112,128,0.6)">fin prêt</text>
+                            {/* Area fill */}
+                            <path d={areaPath} fill={posYears >= negYears ? "rgba(42,112,128,0.12)" : "rgba(176,58,42,0.10)"} />
+                            {/* Line */}
+                            <polyline points={pts} fill="none" stroke={posYears >= negYears ? CF_COLOR : CF_NEG} strokeWidth={1.8} strokeLinejoin="round" strokeLinecap="round"/>
+                            {/* X-axis */}
+                            <line x1={PAD.l} x2={W - PAD.r} y1={H - PAD.b} y2={H - PAD.b} stroke="rgba(26,22,18,0.1)" strokeWidth={0.75}/>
+                            {xLabels.sort((a,b)=>a-b).map(yr => (
+                              <g key={yr}>
+                                <line x1={xOf(yr - 1)} x2={xOf(yr - 1)} y1={H - PAD.b} y2={H - PAD.b + 3} stroke="rgba(26,22,18,0.2)" strokeWidth={0.75}/>
+                                <text x={xOf(yr - 1)} y={H - PAD.b + 11} textAnchor="middle" fontSize={9} fill="rgba(26,22,18,0.45)">an {yr}</text>
+                              </g>
+                            ))}
+                          </svg>
+                        </div>
+                        {/* Bande analyse */}
+                        <div className="px-4 py-2.5" style={{ borderTop: "1px solid rgba(42,112,128,0.12)", background: "rgba(42,112,128,0.05)" }}>
+                          <p className="text-[12px]" style={{ color: "#1A1612" }}>{bandMsg}</p>
+                        </div>
+                        <div className="px-4 py-2" style={{ borderTop: "1px solid rgba(26,22,18,0.06)" }}>
+                          <p className="text-[10px]" style={{ color: "rgba(26,22,18,0.4)" }}>* Projection sans évolution de loyer ni de charges dans le temps.</p>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })()}
 
                 {/* Boutons PDF + Sauvegarder */}
                 <div className="flex flex-wrap justify-center items-center gap-3 pt-2">
