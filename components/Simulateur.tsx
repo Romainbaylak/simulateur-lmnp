@@ -1622,14 +1622,16 @@ export default function Simulateur({ onShowResults }: { onShowResults?: () => vo
                           <svg viewBox="0 0 48 100" preserveAspectRatio="none"
                             style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%", overflow: "visible" }}>
                             <path
-                              d={`M 0 ${connectorY} C 24 ${connectorY} 24 2 48 2`}
+                              d={`M 6 ${connectorY} C 24 ${connectorY} 24 5 42 5`}
                               fill="none" stroke="#2A7080" strokeWidth="1.5" strokeLinecap="round"
+                              vectorEffect="non-scaling-stroke"
                             />
                             <path
-                              d={`M 0 ${connectorY} C 24 ${connectorY} 24 98 48 98`}
+                              d={`M 6 ${connectorY} C 24 ${connectorY} 24 95 42 95`}
                               fill="none" stroke="#2A7080" strokeWidth="1.5" strokeLinecap="round"
+                              vectorEffect="non-scaling-stroke"
                             />
-                            <circle cx="0" cy={connectorY} r="2.5" fill="#2A7080"/>
+                            <circle cx="6" cy={connectorY} r="2.5" fill="#2A7080" vectorEffect="non-scaling-stroke"/>
                           </svg>
                         </div>
                       )}
