@@ -6,10 +6,11 @@ export interface BienInfo {
   type: "ap" | "ma" | "im";
   ville: string;
   surface: string;
+  pieces: string;
   description: string;
 }
 
-export const defaultBienInfo: BienInfo = { type: "ap", ville: "", surface: "", description: "" };
+export const defaultBienInfo: BienInfo = { type: "ap", ville: "", surface: "", pieces: "", description: "" };
 
 interface Props {
   initial: BienInfo;
@@ -35,7 +36,7 @@ export default function PopupBienInfo({ initial, onConfirm, onClose, ctaLabel = 
   const [surface, setSurface] = useState(initial.surface);
   const [description, setDescription] = useState(initial.description);
 
-  const confirm = () => onConfirm({ type, ville, surface, description });
+  const confirm = () => onConfirm({ type, ville, surface, pieces: "", description });
 
   return (
     <div
