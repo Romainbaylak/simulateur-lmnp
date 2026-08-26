@@ -1485,7 +1485,7 @@ export default function Simulateur({ onShowResults }: { onShowResults?: () => vo
                           </div>
                           {amortMode === "ensemble" ? (
                             <div className="px-5 py-4 flex items-center gap-6" style={{ background: "#FDFAF6" }}>
-                              <div><div className="text-[11px] uppercase tracking-wider font-semibold mb-1" style={{ color: C2 }}>Valeur amortissable</div><div className="text-xl font-bold" style={{ color: C2 }}>{formatEuro(valAmort2mobile)}</div></div>
+                              <div><div className="text-[11px] uppercase tracking-wider font-semibold mb-1" style={{ color: C2 }}>Valeur amortissable</div><div className="text-xl font-bold" style={{ color: C2 }}>{formatEuro(valAmort2)}</div></div>
                               <div className="w-px self-stretch" style={{ background: "rgba(42,112,128,0.2)" }} />
                               <div><div className="text-[11px] uppercase tracking-wider font-semibold mb-1" style={{ color: C2 }}>Amortissement / an</div><div className="text-xl font-bold" style={{ color: C2 }}>{formatEuro(amortDureeEnsemble > 0 ? valAmort2 / amortDureeEnsemble : 0)}</div></div>
                               <div className="w-px self-stretch" style={{ background: "rgba(42,112,128,0.2)" }} />
