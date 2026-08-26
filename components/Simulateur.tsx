@@ -1725,6 +1725,7 @@ export default function Simulateur({ onShowResults }: { onShowResults?: () => vo
                 {/* AmortBlock mobile — non-saisonnier réel, visible seulement sur téléphone */}
                 {!isSaisonnier && selectedRegime === "reel" && amortMode !== null && resultats && (() => {
                   const AmortBlockMobileLocal = () => {
+                    const C2m = "#2A7080";
                     const IconBuilding2 = () => <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><rect x="8" y="8" width="3" height="3"/><rect x="13" y="8" width="3" height="3"/><rect x="8" y="13" width="3" height="3"/><rect x="13" y="13" width="3" height="3"/><line x1="12" y1="21" x2="12" y2="17"/></svg>;
                     const IconSofa2 = () => <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><path d="M5 8a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v2H5V8z"/><path d="M3 10a2 2 0 0 1 2 2v4h14v-4a2 2 0 0 1 2-2"/><line x1="8" y1="20" x2="8" y2="16"/><line x1="16" y1="20" x2="16" y2="16"/></svg>;
                     const IconHammer2 = () => <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><path d="M15 5l4 4-9 9-4-4 9-9z"/><line x1="3" y1="21" x2="10.5" y2="13.5"/></svg>;
@@ -1734,8 +1735,8 @@ export default function Simulateur({ onShowResults }: { onShowResults?: () => vo
                       ? composants.reduce((s, c) => s + (valAmort2mobile * c.pct / 100) / (c.duree || 1), 0)
                       : (amortDureeEnsemble > 0 ? valAmort2mobile / amortDureeEnsemble : 0);
                     return (
-                      <div className="rounded-xl overflow-hidden mt-4" style={{ border: `2px solid ${C2}`, boxShadow: "0 0 0 3px rgba(42,112,128,0.1)" }}>
-                        <div className="px-5 py-3.5 flex items-center gap-3" style={{ background: C2 }}>
+                      <div className="rounded-xl overflow-hidden mt-4" style={{ border: `2px solid ${C2m}`, boxShadow: "0 0 0 3px rgba(42,112,128,0.1)" }}>
+                        <div className="px-5 py-3.5 flex items-center gap-3" style={{ background: C2m }}>
                           <div className="w-5 h-5 rounded-full flex-shrink-0 flex items-center justify-center" style={{ border: "2px solid #F5F0E8" }}>
                             <div className="w-2.5 h-2.5 rounded-full" style={{ background: "#F5F0E8" }} />
                           </div>
@@ -1746,9 +1747,9 @@ export default function Simulateur({ onShowResults }: { onShowResults?: () => vo
                         </div>
                         {amortMode === "ensemble" ? (
                           <div className="px-5 py-4 flex items-center gap-6" style={{ background: "#FDFAF6" }}>
-                            <div><div className="text-[11px] uppercase tracking-wider font-semibold mb-1" style={{ color: C2 }}>Valeur amortissable</div><div className="text-xl font-bold" style={{ color: C2 }}>{formatEuro(valAmort2mobile)}</div></div>
+                            <div><div className="text-[11px] uppercase tracking-wider font-semibold mb-1" style={{ color: C2m }}>Valeur amortissable</div><div className="text-xl font-bold" style={{ color: C2m }}>{formatEuro(valAmort2mobile)}</div></div>
                             <div className="w-px self-stretch" style={{ background: "rgba(42,112,128,0.2)" }} />
-                            <div><div className="text-[11px] uppercase tracking-wider font-semibold mb-1" style={{ color: C2 }}>Amort./an</div><div className="text-xl font-bold" style={{ color: C2 }}>{formatEuro(totalAn)}</div></div>
+                            <div><div className="text-[11px] uppercase tracking-wider font-semibold mb-1" style={{ color: C2m }}>Amort./an</div><div className="text-xl font-bold" style={{ color: C2m }}>{formatEuro(totalAn)}</div></div>
                             <div className="w-px self-stretch" style={{ background: "rgba(42,112,128,0.2)" }} />
                             <div><div className="text-[11px] uppercase tracking-wider font-semibold mb-1" style={{ color: "rgba(42,112,128,0.6)" }}>Sur</div><div className="text-xl font-bold" style={{ color: "#1A1612" }}>{amortDureeEnsemble} ans</div></div>
                           </div>
@@ -1757,22 +1758,22 @@ export default function Simulateur({ onShowResults }: { onShowResults?: () => vo
                             <div className="px-4 py-2 flex items-center gap-2" style={{ background: "rgba(42,112,128,0.08)", borderBottom: "1px solid rgba(42,112,128,0.12)" }}>
                               <span className="text-[11px] font-semibold uppercase tracking-wider" style={{ color: "rgba(42,112,128,0.7)", width: 130 }}>Composant</span>
                               <span className="text-[11px] font-semibold uppercase tracking-wider" style={{ color: "rgba(42,112,128,0.7)", flex: 1 }}>Quote-part</span>
-                              <span className="text-[11px] font-semibold uppercase tracking-wider text-right" style={{ color: C2, width: 70 }}>Amort/an</span>
+                              <span className="text-[11px] font-semibold uppercase tracking-wider text-right" style={{ color: C2m, width: 70 }}>Amort/an</span>
                             </div>
                             {composants.map((c, i) => {
                               const val = valAmort2mobile * c.pct / 100;
                               return (
                                 <div key={c.label} className="flex items-center gap-2 px-4 py-2.5" style={{ borderBottom: "0.5px solid rgba(26,22,18,0.06)", background: i % 2 === 0 ? "#FDFAF6" : "#F8F4EE" }}>
                                   <span style={{ color: "#1A1612", fontSize: 13, fontWeight: 600, width: 130 }}>{c.label}</span>
-                                  <span style={{ color: C2, fontSize: 13, fontWeight: 700, flex: 1 }}>{c.pct}%<span style={{ color: "rgba(26,22,18,0.4)", fontWeight: 400, fontSize: 12 }}> soit {formatEuro(val)}</span></span>
-                                  <span style={{ color: C2, fontSize: 13, fontWeight: 700, width: 70, textAlign: "right" as const }}>{formatEuro(c.duree > 0 ? val / c.duree : 0)}</span>
+                                  <span style={{ color: C2m, fontSize: 13, fontWeight: 700, flex: 1 }}>{c.pct}%<span style={{ color: "rgba(26,22,18,0.4)", fontWeight: 400, fontSize: 12 }}> soit {formatEuro(val)}</span></span>
+                                  <span style={{ color: C2m, fontSize: 13, fontWeight: 700, width: 70, textAlign: "right" as const }}>{formatEuro(c.duree > 0 ? val / c.duree : 0)}</span>
                                 </div>
                               );
                             })}
                             <div className="flex items-center gap-2 px-4 py-3" style={{ background: "rgba(42,112,128,0.1)", borderTop: "1px solid rgba(42,112,128,0.15)" }}>
                               <span style={{ fontSize: 14, fontWeight: 700, color: "#1A1612", width: 130 }}>Total</span>
                               <span style={{ flex: 1, fontSize: 14, fontWeight: 700, color: composants.reduce((s, c) => s + c.pct, 0) === 100 ? "#1A7A52" : "#B03A2A" }}>{composants.reduce((s, c) => s + c.pct, 0)}%</span>
-                              <span style={{ fontSize: 14, fontWeight: 700, color: C2, width: 70, textAlign: "right" as const }}>{formatEuro(totalAn)}/an</span>
+                              <span style={{ fontSize: 14, fontWeight: 700, color: C2m, width: 70, textAlign: "right" as const }}>{formatEuro(totalAn)}/an</span>
                             </div>
                           </div>
                         )}
@@ -1786,16 +1787,16 @@ export default function Simulateur({ onShowResults }: { onShowResults?: () => vo
                               { icon: <IconDoc2/>, label: "Frais de notaire", amortAn: amortNotaireDisplay, duree: amortDureeNotaire, bg: "#FDFAF6" },
                             ].map((row, i, arr) => (
                               <div key={row.label} className="flex items-center gap-2 px-3 py-2.5" style={{ borderBottom: i < arr.length - 1 ? "1px solid rgba(42,112,128,0.1)" : "none", background: row.bg }}>
-                                <span style={{ color: C2, flexShrink: 0, display: "flex" }}>{row.icon}</span>
+                                <span style={{ color: C2m, flexShrink: 0, display: "flex" }}>{row.icon}</span>
                                 <span style={{ fontSize: 13, fontWeight: 600, flex: 1, color: "#1A1612" }}>{row.label}</span>
                                 <span style={{ fontSize: 11, color: "rgba(26,22,18,0.45)", marginRight: 8 }}>Amort. {row.duree} ans</span>
-                                <span style={{ fontSize: 13, fontWeight: 700, color: C2 }}>{formatEuro(row.amortAn)}/an</span>
+                                <span style={{ fontSize: 13, fontWeight: 700, color: C2m }}>{formatEuro(row.amortAn)}/an</span>
                               </div>
                             ))}
                           </div>
                         </div>
                         {/* Total band */}
-                        <div className="px-4 py-3 flex items-center justify-between" style={{ background: C2 }}>
+                        <div className="px-4 py-3 flex items-center justify-between" style={{ background: C2m }}>
                           <span style={{ fontSize: 14, fontWeight: 700, color: "#F5F0E8" }}>Total amortissements</span>
                           <span style={{ fontSize: 18, fontWeight: 700, color: "#F5F0E8" }}>{formatEuro(amortTotalDisplay)}</span>
                         </div>
