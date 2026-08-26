@@ -1440,8 +1440,8 @@ export default function Simulateur({ onShowResults }: { onShowResults?: () => vo
                             <div className="flex" style={{ background: "#FDFAF6", borderBottom: "1px solid rgba(42,112,128,0.12)" }}>
                               {[
                                 { label: "Valeur amortissable", val: formatEuro(valAmort2) },
-                                { label: "Amortissement / an", val: formatEuro(totalComposantAn) },
                                 { label: "Sur", val: `${amortDureeEnsemble} ans` },
+                                { label: "Amortissement", val: `${formatEuro(totalComposantAn)} / an` },
                               ].map((kpi, i) => (
                                 <div key={i} className="flex-1 px-3 py-4 text-center" style={{ borderRight: i < 2 ? "1px solid rgba(42,112,128,0.15)" : "none" }}>
                                   <div style={{ fontSize: 10, fontWeight: 600, textTransform: "uppercase" as const, letterSpacing: "0.1em", marginBottom: 6, color: "rgba(42,112,128,0.6)" }}>{kpi.label}</div>
