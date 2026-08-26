@@ -275,6 +275,7 @@ export default function Simulateur({ onShowResults }: { onShowResults?: () => vo
   const [amortPct, setAmortPct] = useState(85);
   const [connectorY, setConnectorY] = useState(63);
   const [rightPanelOffset, setRightPanelOffset] = useState(0);
+  const [rowHeight, setRowHeight] = useState(40);
   const amortRowRef = useRef<HTMLDivElement>(null);
   const connectorAreaRef = useRef<HTMLDivElement>(null);
   const [amortMode, setAmortMode] = useState<"ensemble" | "composant" | null>(null);
@@ -422,10 +423,10 @@ export default function Simulateur({ onShowResults }: { onShowResults?: () => vo
       const rowMidFromTop = rowRect.top + rowRect.height / 2 - areaRect.top;
       const yPct = (rowMidFromTop / areaRect.height) * 100;
       setConnectorY(Math.max(5, Math.min(95, yPct)));
+      setRowHeight(rowRect.height);
       if (window.innerWidth >= 768) {
-        // Décale le panneau droit pour que le milieu de sa bande d'en-tête soit aligné avec la flèche
-        const HEADER_HALF = 24; // moitié approx de la hauteur de la bande (48px)
-        setRightPanelOffset(Math.max(0, rowMidFromTop - HEADER_HALF));
+        // Décale le panneau droit pour que son top soit aligné avec le top de la ligne Amortissements
+        setRightPanelOffset(Math.max(0, rowRect.top - areaRect.top));
       }
     };
     update();
@@ -1447,23 +1448,28 @@ export default function Simulateur({ onShowResults }: { onShowResults?: () => vo
                             </div>
                           )}
 
-                          {/* Autres amortissements : Mobilier / Travaux / Notaire */}
-                          <div className="px-4 pb-3 pt-3" style={{ background: "#FDFAF6" }}>
-                            <div style={{ fontSize: 10, fontWeight: 700, textTransform: "uppercase" as const, letterSpacing: "0.15em", marginBottom: 8, color: "rgba(42,112,128,0.6)" }}>Autres amortissements</div>
-                            <div className="rounded-lg overflow-hidden" style={{ border: "1px solid rgba(42,112,128,0.18)" }}>
-                              {[
-                                { icon: <IconSofa/>, label: "Mobilier", valeur: parseFloat(form.mobilier)||0, amortAn: amortMobilierDisplay, duree: amortDureeMobilier, bg: "#FDFAF6" },
-                                { icon: <IconHammer/>, label: "Travaux", valeur: parseFloat(form.travaux)||0, amortAn: amortTravauxDisplay, duree: amortDureeTravaux, bg: "#F8F4EE" },
-                                { icon: <IconDoc/>, label: "Frais de notaire", valeur: parseFloat(form.notaire)||0, amortAn: amortNotaireDisplay, duree: amortDureeNotaire, bg: "#FDFAF6" },
-                              ].map((row, i, arr) => (
-                                <div key={row.label} className="flex items-center gap-2 px-3 py-2.5" style={{ borderBottom: i < arr.length - 1 ? "1px solid rgba(42,112,128,0.1)" : "none", background: row.bg }}>
-                                  <span style={{ color: C2, flexShrink: 0, display: "flex" }}>{row.icon}</span>
-                                  <span style={{ fontSize: 13, fontWeight: 600, flex: 1, color: "#1A1612" }}>{row.label}</span>
-                                  <span style={{ fontSize: 12, color: C2, fontWeight: 600 }}>{formatEuro(row.valeur)}</span>
-                                  <span style={{ fontSize: 11, color: "rgba(26,22,18,0.45)", width: 72, textAlign: "center" as const, flexShrink: 0 }}>Amort. {row.duree} ans</span>
-                                  <span style={{ fontSize: 13, fontWeight: 700, color: C2, width: 64, textAlign: "right" as const, flexShrink: 0 }}>{formatEuro(row.amortAn)}/an</span>
-                                </div>
-                              ))}
+                          {/* Autres amortissements : Mobilier / Travaux / Notaire — même style que composants */}
+                          <div style={{ background: "#FDFAF6" }}>
+                            <div className="px-4 pt-3 pb-1">
+                              <div style={{ fontSize: 10, fontWeight: 700, textTransform: "uppercase" as const, letterSpacing: "0.15em", color: "rgba(42,112,128,0.6)" }}>Autres amortissements</div>
+                            </div>
+                            {[
+                              { icon: <IconSofa/>, label: "Mobilier", valeur: parseFloat(form.mobilier)||0, amortAn: amortMobilierDisplay, duree: amortDureeMobilier },
+                              { icon: <IconHammer/>, label: "Travaux", valeur: parseFloat(form.travaux)||0, amortAn: amortTravauxDisplay, duree: amortDureeTravaux },
+                              { icon: <IconDoc/>, label: "Frais de notaire", valeur: parseFloat(form.notaire)||0, amortAn: amortNotaireDisplay, duree: amortDureeNotaire },
+                            ].map((row, i) => (
+                              <div key={row.label} className="flex items-center gap-2 px-4 py-2" style={{ borderBottom: "0.5px solid rgba(42,112,128,0.12)", background: i % 2 === 0 ? "#FDFAF6" : "#F8F4EE" }}>
+                                <span style={{ color: C2, display: "flex", flexShrink: 0, transform: "scale(0.75)", transformOrigin: "center" }}>{row.icon}</span>
+                                <span style={{ fontSize: 13, fontWeight: 600, flex: 1, color: "#1A1612" }}>{row.label}</span>
+                                <span style={{ fontSize: 12, color: C2, fontWeight: 600, flexShrink: 0 }}>{formatEuro(row.valeur)}</span>
+                                <span style={{ fontSize: 11, color: "rgba(26,22,18,0.45)", width: 72, textAlign: "center" as const, flexShrink: 0 }}>Amort. {row.duree} ans</span>
+                                <span style={{ fontSize: 13, fontWeight: 700, color: C2, width: 64, textAlign: "right" as const, flexShrink: 0 }}>{formatEuro(row.amortAn)}/an</span>
+                              </div>
+                            ))}
+                            {/* Total autres amortissements */}
+                            <div className="flex items-center gap-2 px-4 py-2.5" style={{ background: "rgba(42,112,128,0.1)", borderTop: "1px solid rgba(42,112,128,0.18)" }}>
+                              <span style={{ fontSize: 13, fontWeight: 700, color: "#1A1612", flex: 1 }}>Total autres amortissements</span>
+                              <span style={{ fontSize: 14, fontWeight: 700, color: C2 }}>{formatEuro(amortMobilierDisplay + amortTravauxDisplay + amortNotaireDisplay)}/an</span>
                             </div>
                           </div>
                         </div>
@@ -1648,15 +1654,9 @@ export default function Simulateur({ onShowResults }: { onShowResults?: () => vo
                               <FRow label="Charges déductibles" val={`−${formatEuro(resultats.chargesDeductibles)}`} color="#B03A2A" />
                               <FRow label="Résultat avant amortissement" val={formatEuro(resultats.resultatAvantAmort)} bold color={resultats.resultatAvantAmort >= 0 ? "#1A7A52" : "#B03A2A"} sep />
                               <div ref={amortRowRef} className="flex justify-between items-center py-2.5"
-                                style={{ background: "rgba(42,112,128,0.09)", borderRadius: 5, marginLeft: -8, marginRight: -8, paddingLeft: 8, paddingRight: 4 }}>
+                                style={{ background: "rgba(42,112,128,0.09)", borderRadius: "5px 0 0 5px", marginLeft: -8, marginRight: -20, paddingLeft: 8, paddingRight: 8 }}>
                                 <span style={{ color: "rgba(26,22,18,0.78)", fontSize: 13, fontWeight: 700 }}>Amortissements</span>
-                                <div className="flex items-center gap-1.5">
-                                  <span className="whitespace-nowrap" style={{ fontSize: 13, fontWeight: 700, color: "#2A7080" }}>{`−${formatEuro(resultats.amortTotal)}`}</span>
-                                  <svg width="22" height="12" viewBox="0 0 22 12" style={{ flexShrink: 0, display: "block" }}>
-                                    <line x1="1" y1="6" x2="17" y2="6" stroke="#2A7080" strokeWidth="1.5" strokeLinecap="round"/>
-                                    <polyline points="12,2 17,6 12,10" fill="none" stroke="#2A7080" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-                                  </svg>
-                                </div>
+                                <span className="whitespace-nowrap" style={{ fontSize: 13, fontWeight: 700, color: "#2A7080" }}>{`−${formatEuro(resultats.amortTotal)}`}</span>
                               </div>
                               <FRow label="Base imposable" val={formatEuro(resultats.baseImposableReel)} bold sep />
                               <FRow label="Impôt estimé" val={formatEuro(resultats.impotReel)} color="#B03A2A" />
@@ -1700,14 +1700,22 @@ export default function Simulateur({ onShowResults }: { onShowResults?: () => vo
                       </div>
                       </div>
 
-                      {/* Flèche horizontale — réel non-saisonnier, cachée sur mobile */}
+                      {/* Extension flèche — réel non-saisonnier, cachée sur mobile */}
                       {selectedRegime === "reel" && (
                         <div ref={connectorAreaRef} className="hidden md:block"
-                          style={{ width: 48, flexShrink: 0, position: "relative", alignSelf: "stretch" }}>
-                          <div style={{ position: "absolute", top: `${connectorY}%`, transform: "translateY(-50%)", left: 6, right: 0, display: "flex", alignItems: "center" }}>
-                            <div style={{ flex: 1, height: 1.5, background: "#2A7080" }} />
-                            <svg width="9" height="14" viewBox="0 0 9 14" style={{ flexShrink: 0 }}>
-                              <polyline points="1,1 8,7 1,13" fill="none" stroke="#2A7080" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                          style={{ width: 52, flexShrink: 0, position: "relative", alignSelf: "stretch", marginLeft: -2 }}>
+                          <div style={{ position: "absolute", top: `${connectorY}%`, transform: "translateY(-50%)", left: 0 }}>
+                            <svg width={52} height={rowHeight} viewBox={`0 0 52 ${rowHeight}`} style={{ display: "block", overflow: "visible" }}>
+                              {/* Fond continu avec la ligne */}
+                              <polygon
+                                points={`0,0 40,0 52,${rowHeight/2} 40,${rowHeight} 0,${rowHeight}`}
+                                fill="rgba(42,112,128,0.09)"
+                              />
+                              {/* Bordure bleu foncé — seulement les 3 côtés hors du tableau (haut, pointe, bas) */}
+                              <polyline
+                                points={`1,0 40,0 52,${rowHeight/2} 40,${rowHeight} 1,${rowHeight}`}
+                                fill="none" stroke="#2A7080" strokeWidth="1.5" strokeLinejoin="round"
+                              />
                             </svg>
                           </div>
                         </div>
