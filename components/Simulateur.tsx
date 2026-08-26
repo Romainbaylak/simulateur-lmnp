@@ -1654,7 +1654,7 @@ export default function Simulateur({ onShowResults }: { onShowResults?: () => vo
                 {/* Amortissements totaux — saisonnier réel uniquement (non-saisonnier : intégré dans AmortBlock) */}
                 {isSaisonnier && selectedRegime === "reel" && amortMode !== null && (
                   <div>
-                    <div className="text-sm font-semibold mb-3" style={{ color: "rgba(26,22,18,0.65)" }}>Amortissements totaux :</div>
+                    <div className="text-base font-semibold mb-3" style={{ color: "#1A1612" }}>Tu peux aussi Amortir : ton Mobilier, tes Travaux et tes Frais de Notaire</div>
                     <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
                       {[
                         { label: "Bien", val: amortBienDisplay, sub: amortMode === "ensemble" ? `${amortPct}% du prix · sur ${amortDureeEnsemble} ans` : `${amortPct}% · composants`, color: "#2A7080" },
@@ -2003,7 +2003,7 @@ export default function Simulateur({ onShowResults }: { onShowResults?: () => vo
                             </p>
                             <p className="text-[15px] leading-relaxed" style={{ color: "#4E1F12", margin: "8px 0 0" }}>
                               Le <strong style={{ color: "#2A6E80" }}>Micro-BIC</strong> applique un abattement forfaitaire de <strong style={{ color: "#2A6E80" }}>30%</strong> sur tes recettes (meublé de tourisme non classé) puis te donne ta base imposable.<br />
-                              Le <strong style={{ color: "#C95B2A" }}>Régime Réel</strong> déduit tes vraies charges et te permet <strong><u>d&apos;amortir une partie de ton bien</u></strong>, réduisant souvent ton impôt.{" "}
+                              Le <strong style={{ color: "#C95B2A" }}>Régime Réel</strong> déduit tes vraies charges et te permet <strong>d&apos;amortir une partie de ton bien</strong>, réduisant souvent ton impôt.{" "}
                               Pour la majorité des investisseurs avec un crédit, le <strong style={{ color: "#C95B2A" }}>Régime Réel</strong> est plus avantageux.
                             </p>
                             <div className="flex justify-end mt-2">
@@ -2234,7 +2234,7 @@ export default function Simulateur({ onShowResults }: { onShowResults?: () => vo
                             </p>
                             <p className="text-[15px] leading-relaxed" style={{ color: "#4E1F12", margin: "8px 0 0" }}>
                               Le <strong style={{ color: "#2A6E80" }}>Micro-BIC</strong> applique un abattement forfaitaire de <strong style={{ color: "#2A6E80" }}>50%</strong> sur tes loyers puis te donne ta base imposable.<br />
-                              Le <strong style={{ color: "#C95B2A" }}>Régime Réel</strong> déduit tes vraies charges et te permet <strong><u>d&apos;amortir une partie de ton bien</u></strong>, réduisant souvent ton impôt.{" "}
+                              Le <strong style={{ color: "#C95B2A" }}>Régime Réel</strong> déduit tes vraies charges et te permet <strong>d&apos;amortir une partie de ton bien</strong>, réduisant souvent ton impôt.{" "}
                               Pour la majorité des investisseurs avec un crédit, le <strong style={{ color: "#C95B2A" }}>Régime Réel</strong> est plus avantageux.
                             </p>
                             <div className="flex justify-end mt-2">
@@ -2754,6 +2754,7 @@ export default function Simulateur({ onShowResults }: { onShowResults?: () => vo
                       })()}
 
                       {/* Récap cards — toujours visibles dans la section amort */}
+                      <div className="text-base font-semibold mb-3 mt-2" style={{ color: "#1A1612" }}>Tu peux aussi Amortir : ton Mobilier, tes Travaux et tes Frais de Notaire</div>
                       <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
                         {/* Bien */}
                         <div className="rounded-lg p-3.5 text-center" style={{ background: "#F5F0E8", border: "0.5px solid rgba(26,22,18,0.1)" }}>
