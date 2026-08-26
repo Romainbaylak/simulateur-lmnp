@@ -274,6 +274,7 @@ export default function Simulateur({ onShowResults }: { onShowResults?: () => vo
   const [showAmort, setShowAmort] = useState(false);
   const [amortPct, setAmortPct] = useState(85);
   const [connectorY, setConnectorY] = useState(63);
+  const [connectorTopPx, setConnectorTopPx] = useState(0);
   const [rightPanelOffset, setRightPanelOffset] = useState(0);
   const [rowHeight, setRowHeight] = useState(40);
   const amortRowRef = useRef<HTMLDivElement>(null);
@@ -423,7 +424,8 @@ export default function Simulateur({ onShowResults }: { onShowResults?: () => vo
       const rowMidFromTop = rowRect.top + rowRect.height / 2 - areaRect.top;
       const yPct = (rowMidFromTop / areaRect.height) * 100;
       setConnectorY(Math.max(5, Math.min(95, yPct)));
-      setRowHeight(rowRect.height);
+      setConnectorTopPx(Math.round(rowRect.top - areaRect.top));
+      setRowHeight(Math.round(rowRect.height));
       if (window.innerWidth >= 768) {
         // Décale le panneau droit pour que son top soit aligné avec le top de la ligne Amortissements
         setRightPanelOffset(Math.max(0, rowRect.top - areaRect.top));
@@ -1706,21 +1708,21 @@ export default function Simulateur({ onShowResults }: { onShowResults?: () => vo
                       {selectedRegime === "reel" && (
                         <div ref={connectorAreaRef} className="hidden md:block"
                           style={{ width: 52, flexShrink: 0, position: "relative", alignSelf: "stretch", marginLeft: -5 }}>
-                          <div style={{ position: "absolute", top: `${connectorY}%`, transform: "translateY(-50%)", left: 0 }}>
+                          <div style={{ position: "absolute", top: connectorTopPx, left: 0 }}>
                             <svg width={52} height={rowHeight} viewBox={`0 0 52 ${rowHeight}`} style={{ display: "block", overflow: "visible" }}>
                               {/* Fond opaque crème — bloque complètement la bordure orange derrière */}
                               <polygon
-                                points={`0,0 42,0 50,${rowHeight/2} 42,${rowHeight} 0,${rowHeight}`}
+                                points={`0,0 40,0 44,${rowHeight/2} 40,${rowHeight} 0,${rowHeight}`}
                                 fill="#FDFAF6"
                               />
                               {/* Fond bleu clair par-dessus */}
                               <polygon
-                                points={`0,0 42,0 50,${rowHeight/2} 42,${rowHeight} 0,${rowHeight}`}
+                                points={`0,0 40,0 44,${rowHeight/2} 40,${rowHeight} 0,${rowHeight}`}
                                 fill="rgba(42,112,128,0.09)"
                               />
-                              {/* Bordure bleu foncé — épaisseur 2 uniforme, pointe à x=50 laisse 2px d'espace avant le tableau */}
+                              {/* Bordure bleu foncé — épaisseur 2 uniforme, pointe à x=44 (8px d'espace avant le tableau) */}
                               <polyline
-                                points={`0,0 42,0 50,${rowHeight/2} 42,${rowHeight} 0,${rowHeight}`}
+                                points={`0,0 40,0 44,${rowHeight/2} 40,${rowHeight} 0,${rowHeight}`}
                                 fill="none" stroke="#2A7080" strokeWidth="2" strokeLinejoin="miter" strokeMiterlimit="10"
                               />
                             </svg>
