@@ -1654,7 +1654,7 @@ export default function Simulateur({ onShowResults }: { onShowResults?: () => vo
                               <FRow label="Charges déductibles" val={`−${formatEuro(resultats.chargesDeductibles)}`} color="#B03A2A" />
                               <FRow label="Résultat avant amortissement" val={formatEuro(resultats.resultatAvantAmort)} bold color={resultats.resultatAvantAmort >= 0 ? "#1A7A52" : "#B03A2A"} sep />
                               <div ref={amortRowRef} className="flex justify-between items-center py-2.5"
-                                style={{ background: "rgba(42,112,128,0.09)", borderRadius: "5px 0 0 5px", marginLeft: -8, marginRight: -20, paddingLeft: 8, paddingRight: 8 }}>
+                                style={{ background: "rgba(42,112,128,0.09)", borderRadius: "3px 0 0 3px", marginLeft: -8, marginRight: -20, paddingLeft: 8, paddingRight: 8, borderTop: "1.5px solid #2A7080", borderBottom: "1.5px solid #2A7080", borderLeft: "1.5px solid #2A7080" }}>
                                 <span style={{ color: "rgba(26,22,18,0.78)", fontSize: 13, fontWeight: 700 }}>Amortissements</span>
                                 <span className="whitespace-nowrap" style={{ fontSize: 13, fontWeight: 700, color: "#2A7080" }}>{`−${formatEuro(resultats.amortTotal)}`}</span>
                               </div>
@@ -1703,17 +1703,17 @@ export default function Simulateur({ onShowResults }: { onShowResults?: () => vo
                       {/* Extension flèche — réel non-saisonnier, cachée sur mobile */}
                       {selectedRegime === "reel" && (
                         <div ref={connectorAreaRef} className="hidden md:block"
-                          style={{ width: 52, flexShrink: 0, position: "relative", alignSelf: "stretch", marginLeft: -2 }}>
+                          style={{ width: 52, flexShrink: 0, position: "relative", alignSelf: "stretch", marginLeft: -5 }}>
                           <div style={{ position: "absolute", top: `${connectorY}%`, transform: "translateY(-50%)", left: 0 }}>
                             <svg width={52} height={rowHeight} viewBox={`0 0 52 ${rowHeight}`} style={{ display: "block", overflow: "visible" }}>
-                              {/* Fond continu avec la ligne */}
+                              {/* Fond — continue visuellement la ligne et recouvre la bordure orange */}
                               <polygon
                                 points={`0,0 40,0 52,${rowHeight/2} 40,${rowHeight} 0,${rowHeight}`}
                                 fill="rgba(42,112,128,0.09)"
                               />
-                              {/* Bordure bleu foncé — seulement les 3 côtés hors du tableau (haut, pointe, bas) */}
+                              {/* Bordure bleu foncé — démarre à x=0 pour "percer" la bordure orange du tableau */}
                               <polyline
-                                points={`1,0 40,0 52,${rowHeight/2} 40,${rowHeight} 1,${rowHeight}`}
+                                points={`0,0 40,0 52,${rowHeight/2} 40,${rowHeight} 0,${rowHeight}`}
                                 fill="none" stroke="#2A7080" strokeWidth="1.5" strokeLinejoin="round"
                               />
                             </svg>
