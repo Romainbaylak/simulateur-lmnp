@@ -1396,7 +1396,6 @@ export default function Simulateur({ onShowResults }: { onShowResults?: () => vo
                     if (!isSaisonnier && !forMobile) {
                       return (
                         <div>
-                        <div className="mb-2.5" style={{ fontSize: 14, fontWeight: 700, color: C2 }}>Détail de l&apos;amortissement</div>
                         <div className="rounded-xl overflow-hidden" style={{ border: `2px solid ${C2}`, boxShadow: "0 0 0 3px rgba(42,112,128,0.1)" }}>
                           {/* Bande d'en-tête — alignée avec la flèche bleue */}
                           <div className="px-4 py-3 flex items-center gap-2" style={{ background: C2 }}>
@@ -1657,7 +1656,7 @@ export default function Simulateur({ onShowResults }: { onShowResults?: () => vo
                               <FRow label="Charges déductibles" val={`−${formatEuro(resultats.chargesDeductibles)}`} color="#B03A2A" />
                               <FRow label="Résultat avant amortissement" val={formatEuro(resultats.resultatAvantAmort)} bold color={resultats.resultatAvantAmort >= 0 ? "#1A7A52" : "#B03A2A"} sep />
                               <div ref={amortRowRef} className="flex justify-between items-center py-2.5"
-                                style={{ background: "rgba(42,112,128,0.09)", borderRadius: "3px 0 0 3px", marginLeft: -8, marginRight: -20, paddingLeft: 8, paddingRight: 8, borderTop: "1.5px solid #2A7080", borderBottom: "1.5px solid #2A7080", borderLeft: "1.5px solid #2A7080" }}>
+                                style={{ background: "rgba(42,112,128,0.09)", borderRadius: "3px 0 0 3px", marginLeft: -8, marginRight: -20, paddingLeft: 8, paddingRight: 8, borderTop: "2px solid #2A7080", borderBottom: "2px solid #2A7080", borderLeft: "2px solid #2A7080" }}>
                                 <span style={{ color: "rgba(26,22,18,0.78)", fontSize: 13, fontWeight: 700 }}>Amortissements</span>
                                 <span className="whitespace-nowrap" style={{ fontSize: 13, fontWeight: 700, color: "#2A7080" }}>{`−${formatEuro(resultats.amortTotal)}`}</span>
                               </div>
@@ -1731,7 +1730,10 @@ export default function Simulateur({ onShowResults }: { onShowResults?: () => vo
 
                       {/* Panneau amortissement — desktop uniquement, décalé pour aligner avec la flèche */}
                       {selectedRegime === "reel" ? (
-                        <div className="hidden md:block md:flex-1" style={{ marginTop: rightPanelOffset }}><AmortBlock /></div>
+                        <div className="hidden md:block md:flex-1" style={{ marginTop: Math.max(0, rightPanelOffset - 30) }}>
+                          {!isSaisonnier && <div className="mb-2.5" style={{ fontSize: 14, fontWeight: 700, color: "#2A7080" }}>Détail de l&apos;amortissement</div>}
+                          <AmortBlock />
+                        </div>
                       ) : null}
                     </div>
                   );
