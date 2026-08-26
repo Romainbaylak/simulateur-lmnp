@@ -1720,9 +1720,9 @@ export default function Simulateur({ onShowResults }: { onShowResults?: () => vo
                                 points={`0,0 40,0 44,${rowHeight/2} 40,${rowHeight} 0,${rowHeight}`}
                                 fill="rgba(42,112,128,0.09)"
                               />
-                              {/* Bordure bleu foncé — épaisseur 2 uniforme, pointe à x=44 (8px d'espace avant le tableau) */}
+                              {/* Bordure bleu foncé — inset 1px pour aligner exactement avec la bordure 2px du amortRow */}
                               <polyline
-                                points={`0,0 40,0 44,${rowHeight/2} 40,${rowHeight} 0,${rowHeight}`}
+                                points={`0,1 40,1 44,${rowHeight/2} 40,${rowHeight-1} 0,${rowHeight-1}`}
                                 fill="none" stroke="#2A7080" strokeWidth="2" strokeLinejoin="miter" strokeMiterlimit="10"
                               />
                             </svg>
@@ -1733,7 +1733,7 @@ export default function Simulateur({ onShowResults }: { onShowResults?: () => vo
                       {/* Panneau amortissement — desktop uniquement, décalé pour aligner avec la flèche */}
                       {selectedRegime === "reel" ? (
                         <div className="hidden md:block md:flex-1" style={{ marginTop: Math.max(0, rightPanelOffset - 30) }}>
-                          {!isSaisonnier && <div className="mb-2.5" style={{ fontSize: 14, fontWeight: 700, color: "#2A7080" }}>Détail de l&apos;amortissement</div>}
+                          {!isSaisonnier && <div className="mb-2.5" style={{ fontSize: 14, fontWeight: 700, color: "#2A7080", textAlign: "center" }}>Détail de l&apos;amortissement</div>}
                           <AmortBlock />
                         </div>
                       ) : null}
