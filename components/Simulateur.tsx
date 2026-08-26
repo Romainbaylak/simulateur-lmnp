@@ -1395,6 +1395,8 @@ export default function Simulateur({ onShowResults }: { onShowResults?: () => vo
                     // ── Rendu RICHE pour simulation non-saisonnière (desktop) ──
                     if (!isSaisonnier && !forMobile) {
                       return (
+                        <div>
+                        <div className="mb-2.5" style={{ fontSize: 14, fontWeight: 700, color: C2 }}>Détail de l&apos;amortissement</div>
                         <div className="rounded-xl overflow-hidden" style={{ border: `2px solid ${C2}`, boxShadow: "0 0 0 3px rgba(42,112,128,0.1)" }}>
                           {/* Bande d'en-tête — alignée avec la flèche bleue */}
                           <div className="px-4 py-3 flex items-center gap-2" style={{ background: C2 }}>
@@ -1472,6 +1474,7 @@ export default function Simulateur({ onShowResults }: { onShowResults?: () => vo
                               <span style={{ fontSize: 14, fontWeight: 700, color: C2 }}>{formatEuro(amortMobilierDisplay + amortTravauxDisplay + amortNotaireDisplay)}/an</span>
                             </div>
                           </div>
+                        </div>
                         </div>
                       );
                     }
@@ -1706,15 +1709,20 @@ export default function Simulateur({ onShowResults }: { onShowResults?: () => vo
                           style={{ width: 52, flexShrink: 0, position: "relative", alignSelf: "stretch", marginLeft: -5 }}>
                           <div style={{ position: "absolute", top: `${connectorY}%`, transform: "translateY(-50%)", left: 0 }}>
                             <svg width={52} height={rowHeight} viewBox={`0 0 52 ${rowHeight}`} style={{ display: "block", overflow: "visible" }}>
-                              {/* Fond — continue visuellement la ligne et recouvre la bordure orange */}
+                              {/* Fond opaque crème — bloque complètement la bordure orange derrière */}
                               <polygon
-                                points={`0,0 40,0 52,${rowHeight/2} 40,${rowHeight} 0,${rowHeight}`}
+                                points={`0,0 42,0 50,${rowHeight/2} 42,${rowHeight} 0,${rowHeight}`}
+                                fill="#FDFAF6"
+                              />
+                              {/* Fond bleu clair par-dessus */}
+                              <polygon
+                                points={`0,0 42,0 50,${rowHeight/2} 42,${rowHeight} 0,${rowHeight}`}
                                 fill="rgba(42,112,128,0.09)"
                               />
-                              {/* Bordure bleu foncé — démarre à x=0 pour "percer" la bordure orange du tableau */}
+                              {/* Bordure bleu foncé — épaisseur 2 uniforme, pointe à x=50 laisse 2px d'espace avant le tableau */}
                               <polyline
-                                points={`0,0 40,0 52,${rowHeight/2} 40,${rowHeight} 0,${rowHeight}`}
-                                fill="none" stroke="#2A7080" strokeWidth="1.5" strokeLinejoin="round"
+                                points={`0,0 42,0 50,${rowHeight/2} 42,${rowHeight} 0,${rowHeight}`}
+                                fill="none" stroke="#2A7080" strokeWidth="2" strokeLinejoin="miter" strokeMiterlimit="10"
                               />
                             </svg>
                           </div>
