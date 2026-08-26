@@ -1485,7 +1485,7 @@ export default function Simulateur({ onShowResults }: { onShowResults?: () => vo
                           </div>
                           {amortMode === "ensemble" ? (
                             <div className="px-5 py-4 flex items-center gap-6" style={{ background: "#FDFAF6" }}>
-                              <div><div className="text-[11px] uppercase tracking-wider font-semibold mb-1" style={{ color: C2 }}>Valeur amortissable</div><div className="text-xl font-bold" style={{ color: C2 }}>{formatEuro(valAmort2)}</div></div>
+                              <div><div className="text-[11px] uppercase tracking-wider font-semibold mb-1" style={{ color: C2 }}>Valeur amortissable</div><div className="text-xl font-bold" style={{ color: C2 }}>{formatEuro(valAmort2mobile)}</div></div>
                               <div className="w-px self-stretch" style={{ background: "rgba(42,112,128,0.2)" }} />
                               <div><div className="text-[11px] uppercase tracking-wider font-semibold mb-1" style={{ color: C2 }}>Amortissement / an</div><div className="text-xl font-bold" style={{ color: C2 }}>{formatEuro(amortDureeEnsemble > 0 ? valAmort2 / amortDureeEnsemble : 0)}</div></div>
                               <div className="w-px self-stretch" style={{ background: "rgba(42,112,128,0.2)" }} />
@@ -1729,9 +1729,10 @@ export default function Simulateur({ onShowResults }: { onShowResults?: () => vo
                     const IconSofa2 = () => <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><path d="M5 8a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v2H5V8z"/><path d="M3 10a2 2 0 0 1 2 2v4h14v-4a2 2 0 0 1 2-2"/><line x1="8" y1="20" x2="8" y2="16"/><line x1="16" y1="20" x2="16" y2="16"/></svg>;
                     const IconHammer2 = () => <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><path d="M15 5l4 4-9 9-4-4 9-9z"/><line x1="3" y1="21" x2="10.5" y2="13.5"/></svg>;
                     const IconDoc2 = () => <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><rect x="4" y="2" width="13" height="20" rx="2"/><line x1="8" y1="7" x2="13" y2="7"/><line x1="8" y1="11" x2="15" y2="11"/><line x1="8" y1="15" x2="13" y2="15"/></svg>;
+                    const valAmort2mobile = (parseFloat(form.prix) || 0) * amortPct / 100;
                     const totalAn = amortMode === "composant"
-                      ? composants.reduce((s, c) => s + (valAmort2 * c.pct / 100) / (c.duree || 1), 0)
-                      : (amortDureeEnsemble > 0 ? valAmort2 / amortDureeEnsemble : 0);
+                      ? composants.reduce((s, c) => s + (valAmort2mobile * c.pct / 100) / (c.duree || 1), 0)
+                      : (amortDureeEnsemble > 0 ? valAmort2mobile / amortDureeEnsemble : 0);
                     return (
                       <div className="rounded-xl overflow-hidden mt-4" style={{ border: `2px solid ${C2}`, boxShadow: "0 0 0 3px rgba(42,112,128,0.1)" }}>
                         <div className="px-5 py-3.5 flex items-center gap-3" style={{ background: C2 }}>
@@ -1745,7 +1746,7 @@ export default function Simulateur({ onShowResults }: { onShowResults?: () => vo
                         </div>
                         {amortMode === "ensemble" ? (
                           <div className="px-5 py-4 flex items-center gap-6" style={{ background: "#FDFAF6" }}>
-                            <div><div className="text-[11px] uppercase tracking-wider font-semibold mb-1" style={{ color: C2 }}>Valeur amortissable</div><div className="text-xl font-bold" style={{ color: C2 }}>{formatEuro(valAmort2)}</div></div>
+                            <div><div className="text-[11px] uppercase tracking-wider font-semibold mb-1" style={{ color: C2 }}>Valeur amortissable</div><div className="text-xl font-bold" style={{ color: C2 }}>{formatEuro(valAmort2mobile)}</div></div>
                             <div className="w-px self-stretch" style={{ background: "rgba(42,112,128,0.2)" }} />
                             <div><div className="text-[11px] uppercase tracking-wider font-semibold mb-1" style={{ color: C2 }}>Amort./an</div><div className="text-xl font-bold" style={{ color: C2 }}>{formatEuro(totalAn)}</div></div>
                             <div className="w-px self-stretch" style={{ background: "rgba(42,112,128,0.2)" }} />
@@ -1759,7 +1760,7 @@ export default function Simulateur({ onShowResults }: { onShowResults?: () => vo
                               <span className="text-[11px] font-semibold uppercase tracking-wider text-right" style={{ color: C2, width: 70 }}>Amort/an</span>
                             </div>
                             {composants.map((c, i) => {
-                              const val = valAmort2 * c.pct / 100;
+                              const val = valAmort2mobile * c.pct / 100;
                               return (
                                 <div key={c.label} className="flex items-center gap-2 px-4 py-2.5" style={{ borderBottom: "0.5px solid rgba(26,22,18,0.06)", background: i % 2 === 0 ? "#FDFAF6" : "#F8F4EE" }}>
                                   <span style={{ color: "#1A1612", fontSize: 13, fontWeight: 600, width: 130 }}>{c.label}</span>
