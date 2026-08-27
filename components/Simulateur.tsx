@@ -1789,71 +1789,95 @@ export default function Simulateur({ onShowResults }: { onShowResults?: () => vo
                     const totalAn = amortMode === "composant"
                       ? composants.reduce((s, c) => s + (valAmort2mobile * c.pct / 100) / (c.duree || 1), 0)
                       : (amortDureeEnsemble > 0 ? valAmort2mobile / amortDureeEnsemble : 0);
+                    const getIconMobile = (label: string) => {
+                      const s = label.toLowerCase();
+                      if (s.includes("bât") || s.includes("gros")) return <IconBuilding2/>;
+                      if (s.includes("toiture") || s.includes("toit")) return <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><path d="M3 12L12 4l9 8"/><rect x="5" y="12" width="14" height="8" rx="1"/></svg>;
+                      if (s.includes("amén") || s.includes("intér")) return <IconSofa2/>;
+                      if (s.includes("élec")) return <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><path d="M13 2L5 13h7l-1 9 9-11h-7l2-9z"/></svg>;
+                      if (s.includes("étan")) return <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2C12 2 5 10 5 15a7 7 0 0 0 14 0c0-5-7-13-7-13z"/></svg>;
+                      return <IconBuilding2/>;
+                    };
                     return (
                       <div className="rounded-xl overflow-hidden mt-4" style={{ border: `2px solid ${C2m}`, boxShadow: "0 0 0 3px rgba(42,112,128,0.1)" }}>
-                        <div className="px-5 py-3.5 flex items-center gap-3" style={{ background: C2m }}>
-                          <div className="w-5 h-5 rounded-full flex-shrink-0 flex items-center justify-center" style={{ border: "2px solid #F5F0E8" }}>
-                            <div className="w-2.5 h-2.5 rounded-full" style={{ background: "#F5F0E8" }} />
+                        {/* En-tête — sans total */}
+                        <div className="px-4 py-3 flex items-center gap-2" style={{ background: C2m }}>
+                          <div className="w-4 h-4 rounded-full flex-shrink-0 flex items-center justify-center" style={{ border: "2px solid rgba(245,240,232,0.7)" }}>
+                            <div className="w-2 h-2 rounded-full" style={{ background: "rgba(245,240,232,0.7)" }}/>
                           </div>
-                          <span className="font-bold text-[14px] flex-1" style={{ color: "#F5F0E8" }}>
+                          <span style={{ fontSize: 14, fontWeight: 700, color: "#F5F0E8", flex: 1, lineHeight: 1.3 }}>
                             {amortMode === "ensemble" ? "Amortissement Global Simplifié" : "Amortissement du Bien par Composant"}
                           </span>
-                          <span className="ml-auto text-[10px] font-bold px-2.5 py-1 rounded" style={{ background: "rgba(245,240,232,0.2)", color: "#F5F0E8" }}>✓ CHOISI</span>
+                          <span style={{ fontSize: 9, fontWeight: 700, padding: "2px 7px", borderRadius: 4, background: "rgba(245,240,232,0.2)", color: "#F5F0E8", flexShrink: 0 }}>✓ CHOISI</span>
                         </div>
-                        {amortMode === "ensemble" ? (
-                          <div className="px-5 py-4 flex items-center gap-6" style={{ background: "#FDFAF6" }}>
-                            <div><div className="text-[11px] uppercase tracking-wider font-semibold mb-1" style={{ color: C2m }}>Valeur amortissable</div><div className="text-xl font-bold" style={{ color: C2m }}>{formatEuro(valAmort2mobile)}</div></div>
-                            <div className="w-px self-stretch" style={{ background: "rgba(42,112,128,0.2)" }} />
-                            <div><div className="text-[11px] uppercase tracking-wider font-semibold mb-1" style={{ color: C2m }}>Amort./an</div><div className="text-xl font-bold" style={{ color: C2m }}>{formatEuro(totalAn)}</div></div>
-                            <div className="w-px self-stretch" style={{ background: "rgba(42,112,128,0.2)" }} />
-                            <div><div className="text-[11px] uppercase tracking-wider font-semibold mb-1" style={{ color: "rgba(42,112,128,0.6)" }}>Sur</div><div className="text-xl font-bold" style={{ color: "#1A1612" }}>{amortDureeEnsemble} ans</div></div>
-                          </div>
-                        ) : (
+
+                        {/* Composants ou KPI ensemble */}
+                        {amortMode === "composant" ? (
                           <div style={{ background: "#FDFAF6" }}>
-                            <div className="px-4 py-2 flex items-center gap-2" style={{ background: "rgba(42,112,128,0.08)", borderBottom: "1px solid rgba(42,112,128,0.12)" }}>
-                              <span className="text-[11px] font-semibold uppercase tracking-wider" style={{ color: "rgba(42,112,128,0.7)", width: 130 }}>Composant</span>
-                              <span className="text-[11px] font-semibold uppercase tracking-wider" style={{ color: "rgba(42,112,128,0.7)", flex: 1 }}>Quote-part</span>
-                              <span className="text-[11px] font-semibold uppercase tracking-wider text-right" style={{ color: C2m, width: 70 }}>Amort/an</span>
+                            <div className="px-4 pt-3 pb-1">
+                              <div style={{ fontSize: 10, fontWeight: 700, textTransform: "uppercase" as const, letterSpacing: "0.15em", color: "rgba(42,112,128,0.6)" }}>Composants du bien</div>
                             </div>
                             {composants.map((c, i) => {
                               const val = valAmort2mobile * c.pct / 100;
+                              const amortAn = c.duree > 0 ? val / c.duree : 0;
                               return (
-                                <div key={c.label} className="flex items-center gap-2 px-4 py-2.5" style={{ borderBottom: "0.5px solid rgba(26,22,18,0.06)", background: i % 2 === 0 ? "#FDFAF6" : "#F8F4EE" }}>
-                                  <span style={{ color: "#1A1612", fontSize: 13, fontWeight: 600, width: 130 }}>{c.label}</span>
-                                  <span style={{ color: C2m, fontSize: 13, fontWeight: 700, flex: 1 }}>{c.pct}%<span style={{ color: "rgba(26,22,18,0.4)", fontWeight: 400, fontSize: 12 }}> soit {formatEuro(val)}</span></span>
-                                  <span style={{ color: C2m, fontSize: 13, fontWeight: 700, width: 70, textAlign: "right" as const }}>{formatEuro(c.duree > 0 ? val / c.duree : 0)}</span>
+                                <div key={c.label} className="flex items-center gap-2 px-4 py-2" style={{ borderBottom: "0.5px solid rgba(42,112,128,0.12)", background: i % 2 === 0 ? "#FDFAF6" : "#F8F4EE" }}>
+                                  <span style={{ color: C2m, display: "flex", flexShrink: 0, transform: "scale(0.75)", transformOrigin: "center" }}>{getIconMobile(c.label)}</span>
+                                  <span style={{ fontSize: 13, fontWeight: 600, flex: 1, color: "#1A1612" }}>{c.label}</span>
+                                  <span style={{ fontSize: 12, color: C2m, fontWeight: 600, flexShrink: 0 }}>{c.pct}% <span style={{ color: "rgba(26,22,18,0.4)", fontWeight: 400, fontSize: 11 }}>soit {formatEuro(val)}</span></span>
+                                  <span style={{ fontSize: 11, color: "rgba(26,22,18,0.45)", width: 68, textAlign: "center" as const, flexShrink: 0 }}>Amort. {c.duree} ans</span>
+                                  <span style={{ fontSize: 13, fontWeight: 700, color: C2m, width: 60, textAlign: "right" as const, flexShrink: 0 }}>{formatEuro(amortAn)}/an</span>
                                 </div>
                               );
                             })}
-                            <div className="flex items-center gap-2 px-4 py-3" style={{ background: "rgba(42,112,128,0.1)", borderTop: "1px solid rgba(42,112,128,0.15)" }}>
-                              <span style={{ fontSize: 14, fontWeight: 700, color: "#1A1612", width: 130 }}>Total</span>
-                              <span style={{ flex: 1, fontSize: 14, fontWeight: 700, color: composants.reduce((s, c) => s + c.pct, 0) === 100 ? "#1A7A52" : "#B03A2A" }}>{composants.reduce((s, c) => s + c.pct, 0)}%</span>
-                              <span style={{ fontSize: 14, fontWeight: 700, color: C2m, width: 70, textAlign: "right" as const }}>{formatEuro(totalAn)}/an</span>
+                            <div className="flex items-center gap-2 px-4 py-2.5" style={{ background: "rgba(42,112,128,0.1)", borderBottom: "1px solid rgba(42,112,128,0.18)" }}>
+                              <span style={{ fontSize: 13, fontWeight: 700, color: "#1A1612", flex: 1 }}>Total composants du bien</span>
+                              <span style={{ fontSize: 14, fontWeight: 700, color: C2m }}>{formatEuro(totalAn)}/an</span>
                             </div>
                           </div>
-                        )}
-                        {/* Autres amortissements */}
-                        <div className="px-4 pb-3 pt-2" style={{ background: "#FDFAF6" }}>
-                          <div style={{ fontSize: 10, fontWeight: 700, textTransform: "uppercase" as const, letterSpacing: "0.15em", marginBottom: 6, color: "rgba(42,112,128,0.6)" }}>Autres amortissements</div>
-                          <div className="rounded-lg overflow-hidden" style={{ border: "1px solid rgba(42,112,128,0.18)" }}>
+                        ) : (
+                          <div className="flex" style={{ background: "#FDFAF6", borderBottom: "1px solid rgba(42,112,128,0.12)" }}>
                             {[
-                              { icon: <IconSofa2/>, label: "Mobilier", amortAn: amortMobilierDisplay, duree: amortDureeMobilier, bg: "#FDFAF6" },
-                              { icon: <IconHammer2/>, label: "Travaux", amortAn: amortTravauxDisplay, duree: amortDureeTravaux, bg: "#F8F4EE" },
-                              { icon: <IconDoc2/>, label: "Frais de notaire", amortAn: amortNotaireDisplay, duree: amortDureeNotaire, bg: "#FDFAF6" },
-                            ].map((row, i, arr) => (
-                              <div key={row.label} className="flex items-center gap-2 px-3 py-2.5" style={{ borderBottom: i < arr.length - 1 ? "1px solid rgba(42,112,128,0.1)" : "none", background: row.bg }}>
-                                <span style={{ color: C2m, flexShrink: 0, display: "flex" }}>{row.icon}</span>
-                                <span style={{ fontSize: 13, fontWeight: 600, flex: 1, color: "#1A1612" }}>{row.label}</span>
-                                <span style={{ fontSize: 11, color: "rgba(26,22,18,0.45)", marginRight: 8 }}>Amort. {row.duree} ans</span>
-                                <span style={{ fontSize: 13, fontWeight: 700, color: C2m }}>{formatEuro(row.amortAn)}/an</span>
+                              { label: "Valeur amortissable", val: formatEuro(valAmort2mobile) },
+                              { label: "Sur", val: `${amortDureeEnsemble} ans` },
+                              { label: "Amortissement", val: `${formatEuro(totalAn)} / an` },
+                            ].map((kpi, i) => (
+                              <div key={i} className="flex-1 px-2 py-4 text-center" style={{ borderRight: i < 2 ? "1px solid rgba(42,112,128,0.15)" : "none" }}>
+                                <div style={{ fontSize: 9, fontWeight: 600, textTransform: "uppercase" as const, letterSpacing: "0.1em", marginBottom: 6, color: "rgba(42,112,128,0.6)" }}>{kpi.label}</div>
+                                <div style={{ fontSize: 14, fontWeight: 700, color: C2m }}>{kpi.val}</div>
                               </div>
                             ))}
                           </div>
+                        )}
+
+                        {/* Autres amortissements */}
+                        <div style={{ background: "#FDFAF6" }}>
+                          <div className="px-4 pt-3 pb-1">
+                            <div style={{ fontSize: 10, fontWeight: 700, textTransform: "uppercase" as const, letterSpacing: "0.15em", color: "rgba(42,112,128,0.6)" }}>Autres amortissements</div>
+                          </div>
+                          {[
+                            { icon: <IconSofa2/>, label: "Mobilier", valeur: parseFloat(form.mobilier)||0, amortAn: amortMobilierDisplay, duree: amortDureeMobilier },
+                            { icon: <IconHammer2/>, label: "Travaux", valeur: parseFloat(form.travaux)||0, amortAn: amortTravauxDisplay, duree: amortDureeTravaux },
+                            { icon: <IconDoc2/>, label: "Frais de notaire", valeur: parseFloat(form.notaire)||0, amortAn: amortNotaireDisplay, duree: amortDureeNotaire },
+                          ].map((row, i) => (
+                            <div key={row.label} className="flex items-center gap-2 px-4 py-2" style={{ borderBottom: "0.5px solid rgba(42,112,128,0.12)", background: i % 2 === 0 ? "#FDFAF6" : "#F8F4EE" }}>
+                              <span style={{ color: C2m, display: "flex", flexShrink: 0, transform: "scale(0.75)", transformOrigin: "center" }}>{row.icon}</span>
+                              <span style={{ fontSize: 13, fontWeight: 600, flex: 1, color: "#1A1612" }}>{row.label}</span>
+                              <span style={{ fontSize: 12, color: C2m, fontWeight: 600, flexShrink: 0 }}>{formatEuro(row.valeur)}</span>
+                              <span style={{ fontSize: 11, color: "rgba(26,22,18,0.45)", width: 68, textAlign: "center" as const, flexShrink: 0 }}>Amort. {row.duree} ans</span>
+                              <span style={{ fontSize: 13, fontWeight: 700, color: C2m, width: 60, textAlign: "right" as const, flexShrink: 0 }}>{formatEuro(row.amortAn)}/an</span>
+                            </div>
+                          ))}
+                          <div className="flex items-center gap-2 px-4 py-2.5" style={{ background: "rgba(42,112,128,0.1)", borderTop: "1px solid rgba(42,112,128,0.18)" }}>
+                            <span style={{ fontSize: 13, fontWeight: 700, color: "#1A1612", flex: 1 }}>Total autres amortissements</span>
+                            <span style={{ fontSize: 14, fontWeight: 700, color: C2m }}>{formatEuro(amortMobilierDisplay + amortTravauxDisplay + amortNotaireDisplay)}/an</span>
+                          </div>
                         </div>
-                        {/* Total band */}
+
+                        {/* Pied : Total de l'amortissement */}
                         <div className="px-4 py-3 flex items-center justify-between" style={{ background: C2m }}>
-                          <span style={{ fontSize: 14, fontWeight: 700, color: "#F5F0E8" }}>Total amortissements</span>
-                          <span style={{ fontSize: 18, fontWeight: 700, color: "#F5F0E8" }}>{formatEuro(amortTotalDisplay)}</span>
+                          <span style={{ fontSize: 14, fontWeight: 700, color: "#F5F0E8" }}>Total de l&apos;amortissement</span>
+                          <span style={{ fontSize: 16, fontWeight: 700, color: "#F5F0E8" }}>{formatEuro(amortTotalDisplay)}/an</span>
                         </div>
                       </div>
                     );
