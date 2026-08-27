@@ -108,9 +108,9 @@ export function computeResultats(
   amortDureeEnsemble: number,
   composants: { label: string; pct: number; duree: number }[],
   isSaisonnier = false,
-  amortDureeMobilier = 7,
-  amortDureeTravaux = 15,
-  amortDureeNotaire = 20,
+  amortDureeMobilier = 10,
+  amortDureeTravaux = 20,
+  amortDureeNotaire = 25,
 ): Resultats | null {
   const prix = parseFloat(form.prix) || 0;
   const travaux = parseFloat(form.travaux) || 0;
@@ -128,13 +128,18 @@ export function computeResultats(
   if (prix <= 0 || loyerMensuel <= 0) return null;
 
   const mobilier = parseFloat(form.mobilier) || 0;
-  const investTotal = prix + travaux + notaire;
+  // mobilier inclus dans l'investissement total (financé au même titre que prix/travaux/notaire)
+  const investTotal = prix + travaux + notaire + mobilier;
   const montantCredit = Math.max(0, investTotal - apport);
   const assuranceEmprunteurAnnuel = montantCredit * (assuranceEmprunteurPct / 100);
   const mensualite = calcMensualite(montantCredit, taux, form.duree);
   const creditAnnuel = mensualite * 12;
   const interetsAnnee1 = calcInteretsAnnee1(montantCredit, taux, form.duree);
   const loyerAnnuel = loyerMensuel * 12;
+
+  // Charges locataires récupérables incluses dans la base fiscale
+  const chargesLocatairesAnnuel = (parseFloat(form.chargesLoyer) || 0) * 12;
+  const recettesAnnuelles = loyerAnnuel + chargesLocatairesAnnuel;
 
   const assurancePNO = loyerAnnuel * (assurancePNOPct / 100);
   const gestionLocative = loyerAnnuel * (gestionLocativePct / 100);
@@ -152,21 +157,20 @@ export function computeResultats(
 
   // Assurance emprunteur = charge financière déductible (comme les intérêts)
   const chargesDeductibles = chargesAnnuelles + interetsAnnee1 + assuranceEmprunteurAnnuel;
-  const resultatAvantAmort = loyerAnnuel - chargesDeductibles;
+  const resultatAvantAmort = recettesAnnuelles - chargesDeductibles;
   const baseImposableReel = Math.max(0, resultatAvantAmort - amortTotal);
   const impotReel = baseImposableReel * (form.tmi / 100 + 0.186);
   const impotReelMensuel = impotReel / 12;
   const amortAReporter = Math.max(0, amortTotal - Math.max(0, resultatAvantAmort));
-  const cashflowReelMensuel = (loyerAnnuel - creditAnnuel - chargesAnnuelles - assuranceEmprunteurAnnuel - impotReel) / 12;
+  const cashflowReelMensuel = (recettesAnnuelles - creditAnnuel - chargesAnnuelles - assuranceEmprunteurAnnuel - impotReel) / 12;
 
   // abattPct = taux d'abattement forfaitaire (30% saisonnier non classé, 50% classique)
-  // Base imposable = loyers × (1 − abattPct)
   const abattPct = isSaisonnier ? 0.30 : 0.50;
-  const baseBIC = loyerAnnuel * (1 - abattPct);
+  const baseBIC = recettesAnnuelles * (1 - abattPct);
   const impotBIC = baseBIC * (form.tmi / 100 + 0.186);
-  const cashflowBICMensuel = (loyerAnnuel - creditAnnuel - chargesAnnuelles - assuranceEmprunteurAnnuel - impotBIC) / 12;
+  const cashflowBICMensuel = (recettesAnnuelles - creditAnnuel - chargesAnnuelles - assuranceEmprunteurAnnuel - impotBIC) / 12;
 
-  // Rendements
+  // Rendements (base loyer HC, investTotal inclut mobilier)
   const rendementBrut = (loyerAnnuel / investTotal) * 100;
   const rendementNet = ((loyerAnnuel - chargesAnnuelles) / investTotal) * 100;                          // avant impôt
   const rendementNetReel = ((loyerAnnuel - chargesAnnuelles - impotReel) / investTotal) * 100;          // après impôt réel
