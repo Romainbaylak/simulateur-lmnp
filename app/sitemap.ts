@@ -1,6 +1,6 @@
 import type { MetadataRoute } from "next";
 
-const BASE = "https://toutlmnp.fr";
+const BASE = "https://www.toutlmnp.fr";
 
 const blogSlugs = [
   "amortissement-lmnp",

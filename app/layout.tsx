@@ -9,7 +9,7 @@ import { frFR } from "@clerk/localizations";
 // Sessions → Session lifetime : 30 jours
 
 export const metadata: Metadata = {
-  metadataBase: new URL("https://toutlmnp.fr"),
+  metadataBase: new URL("https://www.toutlmnp.fr"),
   title: "toutlmnp – Simulateur de rentabilité LMNP",
   description: "Simulez votre investissement LMNP : rendement, cash-flow, amortissement. Comparez régime réel vs micro-BIC.",
   keywords: "LMNP, simulateur, rentabilité, régime réel, micro-BIC, investissement immobilier, amortissement",
