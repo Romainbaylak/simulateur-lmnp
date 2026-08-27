@@ -1,42 +1,95 @@
+import type { CSSProperties, ReactNode } from "react";
 import Logo from "@/components/Logo";
 import Link from "next/link";
 import type { Metadata } from "next";
 import HeaderAuth from "@/components/HeaderAuth";
 import MobileHeader from "@/components/MobileHeader";
+import {
+  Section1Demo,
+  Section2Demo,
+  Section3Demo,
+  Section4Demo,
+  Section5Demo,
+  Section6Demo,
+  Section7Demo,
+  Section8Demo,
+  Section9Demo,
+  FAQ,
+  HeroSteps,
+} from "@/components/GuideSimulateurInteractif";
 
 export const metadata: Metadata = {
-  title: "Tout savoir sur le LMNP – Guide complet 2026",
-  description: "Comprendre le statut LMNP : conditions, amortissement par composants, régime réel vs micro-BIC, calcul fiscal, revente. Guide mis à jour 2026.",
+  title: "Simulateur LMNP : comment calculer rentabilité, cash-flow et fiscalité | ToutLMNP",
+  description:
+    "Découvrez comment utiliser le simulateur ToutLMNP : prix d'achat, crédit, charges, rentabilité, cash-flow, Micro-BIC, régime réel et amortissement expliqués étape par étape.",
   alternates: { canonical: "/comment-ca-marche" },
 };
 
-const SectionTitle = ({ num, children }: { num: number; children: React.ReactNode }) => (
-  <div className="flex items-center gap-4 mb-6">
-    <span className="font-light flex-shrink-0 leading-none" style={{ fontSize: "3rem", color: "#C95B2A", letterSpacing: "-0.04em", lineHeight: 1 }}>{num}</span>
-    <div className="w-0.5 self-stretch rounded-full flex-shrink-0" style={{ background: "rgba(201,91,42,0.3)" }} />
-    <h2 className="font-light" style={{ fontSize: "1.5rem", letterSpacing: "-0.02em", color: "#4E1F12" }}>
-      {children}
-    </h2>
-  </div>
-);
+/* ── JSON-LD HowTo ──────────────────────────────────────────────── */
+const howToJsonLd = {
+  "@context": "https://schema.org",
+  "@type": "HowTo",
+  name: "Comment utiliser le simulateur LMNP ToutLMNP",
+  description:
+    "Guide étape par étape pour simuler la rentabilité, le cash-flow et la fiscalité d'un investissement locatif meublé (LMNP).",
+  step: [
+    { "@type": "HowToStep", name: "Renseignez le bien et son financement", text: "Saisissez le prix d'achat, les frais de notaire, l'apport, la durée, le taux et l'assurance emprunteur." },
+    { "@type": "HowToStep", name: "Indiquez les revenus et les charges", text: "Entrez le loyer mensuel (ou le prix par nuitée pour la location saisonnière) ainsi que les charges annuelles." },
+    { "@type": "HowToStep", name: "Lisez les indicateurs essentiels", text: "Le simulateur calcule instantanément le rendement brut, le cash-flow mensuel et l'impôt estimé." },
+    { "@type": "HowToStep", name: "Testez un autre niveau de loyer", text: "Utilisez le curseur pour voir l'impact d'une variation de loyer sur la rentabilité." },
+    { "@type": "HowToStep", name: "Comparez le Régime Réel et le Micro-BIC", text: "Cliquez sur chaque régime pour voir la base imposable, l'impôt et le cash-flow correspondants." },
+    { "@type": "HowToStep", name: "Définissez la méthode d'amortissement", text: "Choisissez entre l'amortissement par composant ou la méthode globale simplifiée." },
+    { "@type": "HowToStep", name: "Lisez le compte rendu final", text: "Le simulateur affiche un récapitulatif complet : bien, financement, charges et verdict fiscal." },
+    { "@type": "HowToStep", name: "Visualisez l'évolution sur 25 ans", text: "Un graphique montre comment le cash-flow évolue dans le temps à mesure que le crédit se rembourse." },
+    { "@type": "HowToStep", name: "Testez plusieurs scénarios", text: "Revenez en arrière et changez une variable à la fois pour comparer les hypothèses." },
+  ],
+};
 
-export default function GrandesLignesPage() {
+/* ── Petites constantes de style ──────────────────────────────────── */
+const prose: CSSProperties = { color: "rgba(26,22,18,0.72)", lineHeight: 1.8, fontSize: "1rem" };
+const sectionStyle: CSSProperties = { maxWidth: 896, margin: "0 auto", padding: "0 16px" };
+
+function SectionHeading({ num, children }: { num: number; children?: ReactNode }) {
+  return (
+    <div style={{ display: "flex", alignItems: "center", gap: 16, marginBottom: 20 }}>
+      <span style={{ fontSize: "2.5rem", fontWeight: 300, color: "#C95B2A", letterSpacing: "-0.04em", lineHeight: 1, flexShrink: 0 }}>{num}</span>
+      <div style={{ width: 2, alignSelf: "stretch", borderRadius: 2, background: "rgba(201,91,42,0.3)", flexShrink: 0 }} />
+      <h2 style={{ fontSize: "clamp(1.15rem,2.5vw,1.4rem)", fontWeight: 300, color: "#4E1F12", letterSpacing: "-0.02em", margin: 0 }}>
+        {children}
+      </h2>
+    </div>
+  );
+}
+
+export default function CommentCaMarchePage() {
   return (
     <main className="min-h-screen" style={{ backgroundColor: "#F5F0E8" }}>
-      {/* Header */}
-      <header style={{ backgroundColor: "#4E1F12", borderBottom: "2px solid rgba(245,240,232,0.18)" }} className="sticky top-0 z-50">
+      {/* ── JSON-LD ── */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(howToJsonLd) }}
+      />
+
+      {/* ── Header ── */}
+      <header
+        style={{ backgroundColor: "#4E1F12", borderBottom: "2px solid rgba(245,240,232,0.18)" }}
+        className="sticky top-0 z-50"
+      >
         <div className="hidden md:flex max-w-6xl mx-auto px-4 py-3 items-center justify-between">
           <Link href="/"><Logo variant="light" /></Link>
           <nav className="flex items-center gap-6 text-base font-normal" style={{ color: "#F5F0E8" }}>
-            <Link href="/comment-ca-marche" style={{ color: "#C95B2A" }}>LMNP</Link>
+            <Link href="/comment-ca-marche" style={{ color: "#C95B2A" }}>Guide</Link>
             <Link href="/blog" className="hover:text-[#F5F0E8] transition-colors">Articles</Link>
             <Link href="/tarifs" className="hover:text-[#F5F0E8] transition-colors">Abonnements</Link>
             <Link href="/contact" className="hover:text-[#F5F0E8] transition-colors">Contact</Link>
           </nav>
           <div className="flex items-center gap-2">
             <HeaderAuth dark={true} />
-            <a href="/#simulateur" className="text-sm font-medium px-4 py-2 transition-opacity hover:opacity-[0.88]"
-              style={{ backgroundColor: "#C95B2A", color: "#F5F0E8", borderRadius: 6 }}>
+            <a
+              href="/?reset=1#simulateur"
+              className="text-sm font-medium px-4 py-2 transition-opacity hover:opacity-[0.88]"
+              style={{ backgroundColor: "#C95B2A", color: "#F5F0E8", borderRadius: 6 }}
+            >
               Simuler maintenant
             </a>
           </div>
@@ -44,271 +97,268 @@ export default function GrandesLignesPage() {
         <MobileHeader />
       </header>
 
-      {/* Hero */}
-      <div className="py-12 px-4" style={{ borderBottom: "1px solid rgba(26,22,18,0.07)" }}>
-        <div className="max-w-4xl mx-auto">
-          <Link href="/#simulateur"
-            className="inline-flex items-center gap-2 text-sm font-medium px-4 py-2 rounded-md mb-6 transition-opacity hover:opacity-80"
-            style={{ background: "rgba(201,91,42,0.08)", color: "#C95B2A", border: "1px solid rgba(201,91,42,0.2)" }}>
-            ← Retour à la simulation
-          </Link>
-          <h1 className="font-light mb-4"
-            style={{ fontSize: "clamp(1.8rem,4vw,2.5rem)", color: "#4E1F12", letterSpacing: "-0.025em" }}>
-            Tout savoir sur le LMNP
+      {/* ── HERO ── */}
+      <section style={{ backgroundColor: "#4E1F12", padding: "60px 16px 52px" }}>
+        <div style={{ maxWidth: 896, margin: "0 auto" }}>
+          <h1
+            style={{
+              fontSize: "clamp(1.75rem,4vw,2.8rem)",
+              fontWeight: 300,
+              color: "#F5F0E8",
+              letterSpacing: "-0.025em",
+              lineHeight: 1.15,
+              marginBottom: 16,
+            }}
+          >
+            Comment utiliser le simulateur LMNP ?
           </h1>
-          <p style={{ color: "rgba(26,22,18,0.5)", fontSize: "1.05rem", lineHeight: 1.7 }}>
-            Conditions, amortissement, régimes fiscaux, revente — tout ce qu&apos;il faut savoir avant d&apos;investir en meublé.
+          <p style={{ fontSize: "1.05rem", color: "rgba(245,240,232,0.72)", lineHeight: 1.75, maxWidth: 680, marginBottom: 28 }}>
+            Prix d&apos;achat, crédit, charges, rentabilité, cash-flow, fiscalité et amortissement : découvrez comment analyser un investissement locatif avec ToutLMNP, étape par étape.
           </p>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 12 }}>
+            <a
+              href="/?reset=1#simulateur"
+              style={{
+                background: "#C95B2A", color: "#F5F0E8",
+                padding: "12px 22px", borderRadius: 8,
+                fontWeight: 600, fontSize: "0.95rem",
+                textDecoration: "none", transition: "opacity 150ms",
+              }}
+            >
+              Lancer une simulation →
+            </a>
+            <a
+              href="#section-1"
+              style={{
+                background: "rgba(245,240,232,0.1)", color: "#F5F0E8",
+                padding: "12px 22px", borderRadius: 8,
+                fontWeight: 500, fontSize: "0.95rem",
+                textDecoration: "none", border: "1px solid rgba(245,240,232,0.2)",
+                transition: "opacity 150ms",
+              }}
+            >
+              Voir comment ça marche ↓
+            </a>
+          </div>
+          {/* @ts-ignore — Server Component rendering client island */}
+          <HeroSteps />
         </div>
+      </section>
+
+      {/* ── Contenu ── */}
+      <div style={{ paddingBottom: 80 }}>
+
+        {/* ── Section 1 ── */}
+        <section id="section-1" style={{ padding: "64px 0 48px" }}>
+          <div style={sectionStyle}>
+            <SectionHeading num={1}>Renseignez le bien et son financement</SectionHeading>
+            <p style={prose}>
+              La première étape consiste à décrire votre opération immobilière. Le simulateur part du <strong style={{ color: "#1A1612" }}>prix d&apos;achat net vendeur</strong>, auquel s&apos;ajoutent les frais de notaire (environ 7–8 % dans l&apos;ancien). Vous indiquez ensuite votre apport personnel : s&apos;il est nul, la totalité du prix + notaire est financée à crédit. Enfin, vous renseignez la durée du prêt, le taux d&apos;intérêt annuel et le taux d&apos;assurance emprunteur. Le simulateur calcule instantanément la mensualité.
+            </p>
+            <p style={{ ...prose, marginTop: 12, fontSize: "0.9rem", color: "rgba(26,22,18,0.55)" }}>
+              Cliquez sur un champ ci-dessous pour comprendre son rôle dans la simulation.
+            </p>
+            {/* @ts-ignore */}
+            <Section1Demo />
+          </div>
+        </section>
+
+        <hr style={{ border: "none", borderTop: "1px solid rgba(26,22,18,0.07)", margin: "0 16px" }} />
+
+        {/* ── Section 2 ── */}
+        <section style={{ padding: "64px 0 48px" }}>
+          <div style={sectionStyle}>
+            <SectionHeading num={2}>Indiquez les revenus et les charges</SectionHeading>
+            <p style={prose}>
+              En location longue durée, vous saisissez le <strong style={{ color: "#1A1612" }}>loyer hors charges</strong> et les charges récupérables. En location saisonnière, activez le mode correspondant : entrez un prix par nuitée et trois hypothèses de taux d&apos;occupation (bas, moyen, haut). Pour les charges, renseignez la taxe foncière, les charges de copropriété, l&apos;assurance propriétaire non-occupant et les éventuels frais de gestion.
+            </p>
+            {/* @ts-ignore */}
+            <Section2Demo />
+          </div>
+        </section>
+
+        <hr style={{ border: "none", borderTop: "1px solid rgba(26,22,18,0.07)", margin: "0 16px" }} />
+
+        {/* ── Section 3 ── */}
+        <section style={{ padding: "64px 0 48px" }}>
+          <div style={{ maxWidth: 1024, margin: "0 auto", padding: "0 16px" }}>
+            <SectionHeading num={3}>Lancez la simulation et lisez les indicateurs essentiels</SectionHeading>
+            <p style={{ ...prose, maxWidth: 720 }}>
+              Dès que vous avez renseigné les champs, six indicateurs clés apparaissent : le <strong style={{ color: "#1A1612" }}>rendement brut</strong>, les revenus annuels, la charge de crédit annuelle, les autres charges, l&apos;impôt estimé et le <strong style={{ color: "#1A1612" }}>cash-flow mensuel</strong>. Ce dernier est la vraie boussole de l&apos;investisseur : il représente ce que vous déboursez (ou encaissez) chaque mois, après tout.
+            </p>
+            {/* @ts-ignore */}
+            <Section3Demo />
+          </div>
+        </section>
+
+        <hr style={{ border: "none", borderTop: "1px solid rgba(26,22,18,0.07)", margin: "0 16px" }} />
+
+        {/* ── Section 4 ── */}
+        <section style={{ padding: "64px 0 48px" }}>
+          <div style={sectionStyle}>
+            <SectionHeading num={4}>Testez immédiatement un autre niveau de loyer</SectionHeading>
+            <p style={prose}>
+              Le loyer est la variable la plus sensible de votre investissement. Le simulateur vous permet de le faire varier en temps réel : le cash-flow, les revenus annuels et le rendement se mettent à jour instantanément. C&apos;est particulièrement utile pour tester l&apos;écart entre le loyer espéré et un loyer de marché plus conservateur.
+            </p>
+            {/* @ts-ignore */}
+            <Section4Demo />
+          </div>
+        </section>
+
+        <hr style={{ border: "none", borderTop: "1px solid rgba(26,22,18,0.07)", margin: "0 16px" }} />
+
+        {/* ── Section 5 ── */}
+        <section style={{ padding: "64px 0 48px" }}>
+          <div style={sectionStyle}>
+            <SectionHeading num={5}>Comparez le Régime Réel et le Micro-BIC</SectionHeading>
+            <p style={prose}>
+              Le choix du régime fiscal est déterminant. En <strong style={{ color: "#1A1612" }}>Micro-BIC</strong>, l&apos;administration applique un abattement forfaitaire de 30 % sur vos loyers — vous êtes imposé sur 70 % de vos recettes, sans déduire vos vraies charges ni amortir le bien. Au <strong style={{ color: "#1A1612" }}>Régime Réel</strong>, vous déduisez toutes les charges et amortissez le bien : la base imposable est souvent nulle pendant 15–20 ans.
+            </p>
+            {/* @ts-ignore */}
+            <Section5Demo />
+          </div>
+        </section>
+
+        <hr style={{ border: "none", borderTop: "1px solid rgba(26,22,18,0.07)", margin: "0 16px" }} />
+
+        {/* ── Section 6 ── */}
+        <section style={{ padding: "64px 0 48px" }}>
+          <div style={sectionStyle}>
+            <SectionHeading num={6}>Si vous choisissez le Réel : définissez l&apos;amortissement</SectionHeading>
+            <p style={prose}>
+              L&apos;amortissement est le cœur du LMNP au réel. Il représente la dépréciation comptable du bien que vous déduisez chaque année de vos revenus locatifs. Deux méthodes s&apos;offrent à vous : l&apos;<strong style={{ color: "#1A1612" }}>amortissement par composant</strong>, qui ventile le bâti entre ses différents éléments (gros œuvre, toiture, aménagements…), plus précis et souvent plus avantageux ; et l&apos;<strong style={{ color: "#1A1612" }}>amortissement global simplifié</strong>, plus simple comptablement.
+            </p>
+            {/* @ts-ignore */}
+            <Section6Demo />
+          </div>
+        </section>
+
+        <hr style={{ border: "none", borderTop: "1px solid rgba(26,22,18,0.07)", margin: "0 16px" }} />
+
+        {/* ── Section 7 ── */}
+        <section style={{ padding: "64px 0 48px" }}>
+          <div style={{ maxWidth: 1024, margin: "0 auto", padding: "0 16px" }}>
+            <SectionHeading num={7}>Validez puis lisez le compte rendu final</SectionHeading>
+            <p style={{ ...prose, maxWidth: 720 }}>
+              Après avoir configuré tous les paramètres, le simulateur affiche un récapitulatif complet : les trois blocs synthétiques (le bien, le financement, les charges), un verdict fiscal avec le régime choisi, et les six indicateurs de performance. Vous pouvez l&apos;exporter en PDF ou le sauvegarder dans votre espace.
+            </p>
+            {/* @ts-ignore */}
+            <Section7Demo />
+          </div>
+        </section>
+
+        <hr style={{ border: "none", borderTop: "1px solid rgba(26,22,18,0.07)", margin: "0 16px" }} />
+
+        {/* ── Section 8 ── */}
+        <section style={{ padding: "64px 0 48px" }}>
+          <div style={sectionStyle}>
+            <SectionHeading num={8}>Regardez ce qui se passe dans le temps</SectionHeading>
+            <p style={prose}>
+              À mesure que les années passent, la part des intérêts dans vos mensualités diminue. Votre cash-flow s&apos;améliore progressivement. Le graphique ci-dessous illustre cette évolution sur 25 ans : le bien commence avec un cash-flow négatif (effort d&apos;épargne mensuel), puis remonte vers l&apos;équilibre puis vers le positif à mesure que le crédit se rembourse.
+            </p>
+            {/* @ts-ignore */}
+            <Section8Demo />
+          </div>
+        </section>
+
+        <hr style={{ border: "none", borderTop: "1px solid rgba(26,22,18,0.07)", margin: "0 16px" }} />
+
+        {/* ── Section 9 ── */}
+        <section style={{ padding: "64px 0 48px" }}>
+          <div style={sectionStyle}>
+            <SectionHeading num={9}>Revenez en arrière et testez vos hypothèses</SectionHeading>
+            <p style={prose}>
+              Un investissement locatif s&apos;analyse rarement en une seule simulation. Revenez en arrière à tout moment pour tester différentes hypothèses : loyer plus bas, taux plus élevé, apport différent. Le simulateur propose trois scénarios pré-configurés — prudent, central et favorable — pour cadrer votre analyse.
+            </p>
+            {/* @ts-ignore */}
+            <Section9Demo />
+          </div>
+        </section>
+
+        <hr style={{ border: "none", borderTop: "1px solid rgba(26,22,18,0.07)", margin: "0 16px" }} />
+
+        {/* ── PDF & Sauvegarde ── */}
+        <section style={{ padding: "48px 0 40px" }}>
+          <div style={sectionStyle}>
+            <h2 style={{ fontSize: "1.3rem", fontWeight: 300, color: "#4E1F12", letterSpacing: "-0.02em", marginBottom: 12 }}>
+              Exportez et sauvegardez votre simulation
+            </h2>
+            <p style={{ ...prose, marginBottom: 20 }}>
+              Une fois vos résultats obtenus, vous pouvez télécharger un rapport PDF complet ou sauvegarder la simulation dans votre espace pour la retrouver plus tard.
+            </p>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 10, marginBottom: 28 }}>
+              <span style={{ background: "#EDE7DC", border: "1px solid rgba(26,22,18,0.1)", borderRadius: 8, padding: "10px 18px", fontSize: "0.88rem", color: "rgba(26,22,18,0.6)" }}>
+                📄 Télécharger le rapport PDF
+              </span>
+              <span style={{ background: "#EDE7DC", border: "1px solid rgba(26,22,18,0.1)", borderRadius: 8, padding: "10px 18px", fontSize: "0.88rem", color: "rgba(26,22,18,0.6)" }}>
+                💾 Sauvegarder la simulation
+              </span>
+            </div>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 12 }}>
+              <Link href="/blog/amortissement-lmnp" style={{ fontSize: "0.88rem", color: "#C95B2A", textDecoration: "none" }}>
+                → Comprendre l&apos;amortissement LMNP
+              </Link>
+              <Link href="/blog/revente-lmnp-plus-value" style={{ fontSize: "0.88rem", color: "#C95B2A", textDecoration: "none" }}>
+                → Plus-value à la revente LMNP
+              </Link>
+              <Link href="/blog/lmnp-definition-statut-2026" style={{ fontSize: "0.88rem", color: "#C95B2A", textDecoration: "none" }}>
+                → Définition du statut LMNP 2026
+              </Link>
+              <Link href="/blog/actualite-lmnp-2026" style={{ fontSize: "0.88rem", color: "#C95B2A", textDecoration: "none" }}>
+                → Actualité LMNP 2026
+              </Link>
+            </div>
+          </div>
+        </section>
+
+        <hr style={{ border: "none", borderTop: "1px solid rgba(26,22,18,0.07)", margin: "0 16px" }} />
+
+        {/* ── FAQ ── */}
+        <section style={{ padding: "64px 0 48px" }}>
+          <div style={sectionStyle}>
+            <h2 style={{ fontSize: "clamp(1.2rem,2.5vw,1.5rem)", fontWeight: 300, color: "#4E1F12", letterSpacing: "-0.02em", marginBottom: 24 }}>
+              Questions fréquentes
+            </h2>
+            {/* @ts-ignore */}
+            <FAQ />
+          </div>
+        </section>
+
+        {/* ── CTA Final ── */}
+        <section style={{ padding: "0 16px 80px" }}>
+          <div style={{ maxWidth: 896, margin: "0 auto", background: "#4E1F12", borderRadius: 16, padding: "48px 40px", textAlign: "center" }}>
+            <h2 style={{ fontSize: "clamp(1.4rem,3vw,2rem)", fontWeight: 300, color: "#F5F0E8", letterSpacing: "-0.025em", marginBottom: 12 }}>
+              Testez maintenant votre investissement
+            </h2>
+            <p style={{ color: "rgba(245,240,232,0.55)", marginBottom: 28, fontSize: "1rem" }}>
+              Gratuit, sans inscription, résultats instantanés.
+            </p>
+            <a
+              href="/?reset=1#simulateur"
+              style={{
+                display: "inline-block",
+                background: "#C95B2A", color: "#F5F0E8",
+                padding: "14px 32px", borderRadius: 8,
+                fontWeight: 600, fontSize: "1rem",
+                textDecoration: "none",
+              }}
+            >
+              Lancer le simulateur →
+            </a>
+            <p style={{ marginTop: 24, fontSize: "0.75rem", color: "rgba(245,240,232,0.3)", lineHeight: 1.6 }}>
+              Les résultats fournis par ToutLMNP sont indicatifs et ne constituent pas un conseil fiscal ou financier. Consultez un expert-comptable pour votre situation personnelle.
+            </p>
+          </div>
+        </section>
+
       </div>
 
-      <div className="max-w-4xl mx-auto px-4 py-16 space-y-16">
-
-        {/* 1 — Qu'est-ce que le LMNP */}
-        <section>
-          <SectionTitle num={1}>Qu&apos;est-ce que le LMNP ?</SectionTitle>
-          <p style={{ color: "rgba(26,22,18,0.72)", lineHeight: 1.8 }}>
-            Le statut de <strong style={{ color: "#1A1612" }}>Loueur Meublé Non Professionnel</strong> permet à un particulier de louer un logement meublé tout en bénéficiant d&apos;une fiscalité avantageuse. Deux conditions suffisent pour en bénéficier : vos revenus locatifs annuels ne dépassent pas <strong style={{ color: "#1A1612" }}>23 000 €</strong>, ou ils représentent moins de la moitié de vos revenus globaux. Si l&apos;une de ces deux conditions est remplie, vous êtes LMNP.
-          </p>
-        </section>
-
-        {/* 2 — Micro-BIC ou réel */}
-        <section>
-          <SectionTitle num={2}>Micro-BIC ou régime réel : lequel choisir ?</SectionTitle>
-          <p className="mb-6" style={{ color: "rgba(26,22,18,0.72)", lineHeight: 1.8 }}>
-            En LMNP, deux régimes fiscaux coexistent.
-          </p>
-          <div className="grid md:grid-cols-2 gap-5">
-            <div className="rounded-xl p-6" style={{ background: "#EDE7DC", border: "0.5px solid rgba(26,22,18,0.08)" }}>
-              <h3 className="font-semibold text-base mb-3" style={{ color: "#1A1612" }}>Micro-BIC</h3>
-              <p className="text-sm mb-4" style={{ color: "rgba(26,22,18,0.65)", lineHeight: 1.75 }}>
-                Le régime par défaut. Il applique un abattement forfaitaire de <strong style={{ color: "#1A1612" }}>30 %</strong> sur vos loyers — vous êtes imposé sur 70 % de vos revenus locatifs, sans pouvoir déduire vos vraies charges. Simple, mais souvent moins avantageux.
-              </p>
-              <ul className="space-y-1.5 text-sm" style={{ color: "rgba(26,22,18,0.6)" }}>
-                <li>✓ Aucune comptabilité</li>
-                <li>✓ Abattement forfaitaire 30 %</li>
-                <li style={{ color: "#B03A2A" }}>✗ Pas d&apos;amortissement déductible</li>
-                <li style={{ color: "#B03A2A" }}>✗ Plafonné à 77 700 € de recettes</li>
-              </ul>
-            </div>
-            <div className="rounded-xl p-6" style={{ background: "rgba(201,91,42,0.06)", border: "1px solid rgba(201,91,42,0.2)" }}>
-              <div className="flex items-center justify-between mb-3">
-                <h3 className="font-semibold text-base" style={{ color: "#1A1612" }}>Régime réel simplifié</h3>
-                <span className="text-[10px] uppercase tracking-[0.1em] font-medium px-2 py-0.5 rounded"
-                  style={{ background: "#C95B2A", color: "#F5F0E8" }}>Recommandé</span>
-              </div>
-              <p className="text-sm mb-4" style={{ color: "rgba(26,22,18,0.65)", lineHeight: 1.75 }}>
-                Le choix de la quasi-totalité des investisseurs actifs. Il permet de déduire toutes les charges réellement payées et, surtout, d&apos;amortir le bien. C&apos;est ce mécanisme qui fait du LMNP l&apos;un des statuts les plus efficaces fiscalement.
-              </p>
-              <ul className="space-y-1.5 text-sm" style={{ color: "rgba(26,22,18,0.6)" }}>
-                <li>✓ Toutes les charges déductibles</li>
-                <li>✓ <strong style={{ color: "#1A1612" }}>Amortissement du bien et du mobilier</strong></li>
-                <li>✓ Souvent 0 € d&apos;impôt pendant 15–20 ans</li>
-                <li style={{ color: "rgba(26,22,18,0.45)" }}>~ Expert-comptable recommandé (~300–800 €/an)</li>
-              </ul>
-            </div>
-          </div>
-        </section>
-
-        {/* 3 — L'amortissement */}
-        <section>
-          <SectionTitle num={3}>L&apos;amortissement : le cœur du dispositif</SectionTitle>
-          <p className="mb-5" style={{ color: "rgba(26,22,18,0.72)", lineHeight: 1.8 }}>
-            En LMNP au réel, vous pouvez comptabiliser chaque année la perte de valeur de votre bien et la déduire de vos revenus locatifs. C&apos;est ce qu&apos;on appelle l&apos;amortissement — et c&apos;est ce qui permet à la grande majorité des investisseurs de ne payer aucun impôt pendant <strong style={{ color: "#1A1612" }}>15 à 20 ans</strong>.
-          </p>
-          <div className="space-y-3 mb-6">
-            {[
-              {
-                title: "Le bien immobilier",
-                desc: "Hors terrain, qui n'est jamais amortissable. Réparti par composants selon leur durée de vie — gros œuvre sur 75 ans, toiture sur 25 ans, aménagements intérieurs sur 12 ans, électricité sur 30 ans.",
-              },
-              {
-                title: "Le mobilier",
-                desc: "Amorti en moyenne sur 5 ans pour l'électroménager, 6 ans pour la literie, 10 ans pour les meubles.",
-              },
-              {
-                title: "Les travaux",
-                desc: "Selon leur nature, de 12 ans pour la peinture à 30 ans pour les gros travaux structurels.",
-              },
-            ].map(({ title, desc }) => (
-              <div key={title} className="flex gap-4 rounded-xl p-5" style={{ background: "#EDE7DC", border: "0.5px solid rgba(26,22,18,0.08)" }}>
-                <div className="w-1.5 h-1.5 rounded-full mt-2 flex-shrink-0" style={{ background: "#C95B2A" }} />
-                <div>
-                  <div className="font-medium text-sm mb-1" style={{ color: "#1A1612" }}>{title}</div>
-                  <p className="text-sm" style={{ color: "rgba(26,22,18,0.65)", lineHeight: 1.7 }}>{desc}</p>
-                </div>
-              </div>
-            ))}
-          </div>
-          <div className="rounded-xl p-5" style={{ background: "rgba(201,91,42,0.07)", border: "1px solid rgba(201,91,42,0.18)" }}>
-            <div className="font-semibold text-sm mb-2" style={{ color: "#C95B2A" }}>Règle essentielle</div>
-            <p className="text-sm" style={{ color: "rgba(26,22,18,0.7)", lineHeight: 1.75 }}>
-              L&apos;amortissement ne peut pas créer de déficit. Il réduit le résultat imposable jusqu&apos;à zéro, mais jamais en dessous. L&apos;excédent non utilisé est <strong style={{ color: "#1A1612" }}>reporté sans limite de durée</strong> sur les années suivantes.
-            </p>
-          </div>
-        </section>
-
-        {/* 4 — Ce que vous pouvez déduire */}
-        <section>
-          <SectionTitle num={4}>Ce que vous pouvez déduire au réel</SectionTitle>
-          <p className="mb-5" style={{ color: "rgba(26,22,18,0.72)", lineHeight: 1.8 }}>
-            Au régime réel, toutes les charges liées à votre activité viennent réduire votre base imposable :
-          </p>
-          <div className="grid sm:grid-cols-2 gap-3">
-            {[
-              "Intérêts d'emprunt",
-              "Taxe foncière",
-              "Charges de copropriété",
-              "Frais de gestion et d'agence",
-              "Assurance propriétaire non-occupant (PNO)",
-              "Honoraires du comptable",
-              "Travaux d'entretien et de réparation",
-            ].map(item => (
-              <div key={item} className="flex items-center gap-3 rounded-lg px-4 py-3"
-                style={{ background: "#EDE7DC", border: "0.5px solid rgba(26,22,18,0.07)" }}>
-                <div className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ background: "#C95B2A" }} />
-                <span className="text-sm" style={{ color: "rgba(26,22,18,0.72)" }}>{item}</span>
-              </div>
-            ))}
-          </div>
-        </section>
-
-        {/* 5 — Amortissement par composants */}
-        <section>
-          <SectionTitle num={5}>L&apos;amortissement par composants</SectionTitle>
-          <p className="mb-5" style={{ color: "rgba(26,22,18,0.72)", lineHeight: 1.8 }}>
-            Le bien immobilier ne s&apos;amortit pas d&apos;un seul bloc. L&apos;administration fiscale impose de le décomposer en éléments distincts, chacun ayant sa propre durée de vie. On répartit la valeur du bâti (hors terrain, jamais amortissable) entre plusieurs postes, puis on amortit chaque poste de façon linéaire sur sa durée propre. On additionne ensuite les montants pour obtenir la charge annuelle totale déductible.
-          </p>
-
-          {/* Tableau composants */}
-          <div className="rounded-xl overflow-hidden mb-6" style={{ border: "1px solid rgba(78,31,18,0.15)" }}>
-            <div className="px-5 py-3" style={{ background: "#4E1F12" }}>
-              <div className="font-semibold text-sm" style={{ color: "#C95B2A" }}>Durées d&apos;amortissement par composant</div>
-            </div>
-            <div>
-              {[
-                { composant: "Gros œuvre / Bâti", duree: "75 ans", note: "" },
-                { composant: "Toiture", duree: "25 ans", note: "" },
-                { composant: "Aménagements intérieurs", duree: "12 ans", note: "" },
-                { composant: "Installation électrique", duree: "30 ans", note: "" },
-                { composant: "Étanchéité", duree: "25 ans", note: "" },
-                { composant: "Terrain", duree: "Non amortissable", note: "jamais déductible" },
-              ].map(({ composant, duree, note }, i) => (
-                <div key={composant}
-                  className="flex items-center justify-between px-5 py-3.5"
-                  style={{
-                    background: i % 2 === 0 ? "#EDE7DC" : "#F5F0E8",
-                    borderBottom: i < 5 ? "0.5px solid rgba(26,22,18,0.06)" : "none",
-                  }}>
-                  <span className="text-sm font-medium" style={{ color: "#1A1612" }}>{composant}</span>
-                  <div className="text-right">
-                    <span className="text-sm font-semibold"
-                      style={{ color: duree === "Non amortissable" ? "#B03A2A" : "#C95B2A" }}>
-                      {duree}
-                    </span>
-                    {note && <div className="text-[10px] mt-0.5" style={{ color: "rgba(26,22,18,0.4)" }}>{note}</div>}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          <p className="mb-4" style={{ color: "rgba(26,22,18,0.65)", lineHeight: 1.8, fontSize: "0.9rem" }}>
-            La ventilation exacte dépend des caractéristiques de votre bien. Un bien neuf n&apos;a pas le même profil qu&apos;un appartement haussmannien. C&apos;est pourquoi un <strong style={{ color: "#1A1612" }}>comptable spécialisé LMNP</strong> est vivement recommandé — il calibre ces pourcentages selon la réalité du bien et les fourchettes admises par l&apos;administration.
-          </p>
-          <div className="rounded-lg p-4 text-sm" style={{ background: "rgba(201,91,42,0.06)", border: "0.5px solid rgba(201,91,42,0.15)", color: "rgba(26,22,18,0.65)", lineHeight: 1.7 }}>
-            <strong style={{ color: "#1A1612" }}>Peut-on simplifier ?</strong> Oui. Une méthode globale qui amortit l&apos;ensemble du bâti sur 25 ou 30 ans sans découpage est tolérée, notamment pour les petits dossiers. C&apos;est plus simple comptablement, mais parfois moins avantageux.
-          </div>
-        </section>
-
-        {/* 6 — Le résultat fiscal */}
-        <section>
-          <SectionTitle num={6}>Le résultat fiscal : comment il se calcule</SectionTitle>
-          <p className="mb-5" style={{ color: "rgba(26,22,18,0.72)", lineHeight: 1.8 }}>
-            Le calcul suit toujours le même ordre :
-          </p>
-          <div className="rounded-xl overflow-hidden mb-5" style={{ border: "1px solid rgba(78,31,18,0.15)" }}>
-            <div className="px-5 py-2.5" style={{ background: "#4E1F12" }}>
-              <span className="text-xs font-medium uppercase tracking-wider" style={{ color: "rgba(245,240,232,0.5)" }}>Formule de calcul</span>
-            </div>
-            <div className="px-6 py-5 space-y-2" style={{ background: "#EDE7DC", fontFamily: "monospace" }}>
-              {[
-                { label: "Loyers perçus", op: null, color: "#1A1612" },
-                { label: "Charges déductibles (dont intérêts d'emprunt)", op: "−", color: "rgba(26,22,18,0.65)" },
-                { label: "Amortissements (dans la limite du résultat)", op: "−", color: "rgba(26,22,18,0.65)" },
-                { label: "Base imposable", op: "=", color: "#C95B2A", bold: true },
-                { label: "× (TMI + 18,6 % de prélèvements sociaux)", op: null, color: "rgba(26,22,18,0.55)", small: true },
-                { label: "Impôt dû", op: "=", color: "#4E1F12", bold: true },
-              ].map(({ label, op, color, bold, small }) => (
-                <div key={label} className="flex items-baseline gap-3">
-                  <span className="w-4 text-right flex-shrink-0 font-bold" style={{ color: "#C95B2A", fontSize: "1rem" }}>{op ?? ""}</span>
-                  <span style={{ color, fontWeight: bold ? 700 : 400, fontSize: small ? "0.8rem" : "0.9rem" }}>{label}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-          <div className="rounded-xl p-5" style={{ background: "rgba(201,91,42,0.07)", border: "1px solid rgba(201,91,42,0.18)" }}>
-            <p className="text-sm" style={{ color: "rgba(26,22,18,0.7)", lineHeight: 1.75 }}>
-              Grâce à l&apos;amortissement, la base imposable est souvent nulle. <strong style={{ color: "#1A1612" }}>L&apos;impôt également.</strong>
-            </p>
-          </div>
-        </section>
-
-        {/* 7 — À la revente */}
-        <section>
-          <SectionTitle num={7}>À la revente : attention à la réintégration</SectionTitle>
-          <p className="mb-5" style={{ color: "rgba(26,22,18,0.72)", lineHeight: 1.8 }}>
-            Depuis février 2025, les amortissements déduits pendant la détention sont réintégrés dans le calcul de la plus-value à la revente. Concrètement : plus vous avez amorti, plus la base imposable de votre plus-value augmente lors de la vente.
-          </p>
-          <div className="rounded-xl p-5 mb-5" style={{ background: "#EDE7DC", border: "0.5px solid rgba(26,22,18,0.08)" }}>
-            <div className="font-medium text-sm mb-3" style={{ color: "#1A1612" }}>Exemple concret</div>
-            <div className="space-y-2 text-sm" style={{ color: "rgba(26,22,18,0.65)", lineHeight: 1.7 }}>
-              <p>Bien acheté <strong style={{ color: "#1A1612" }}>200 000 €</strong>, revendu <strong style={{ color: "#1A1612" }}>250 000 €</strong> après 20 000 € d&apos;amortissements cumulés.</p>
-              <p>La plus-value imposable n&apos;est pas <strong>50 000 €</strong> mais <strong style={{ color: "#B03A2A" }}>70 000 €</strong>.</p>
-            </div>
-          </div>
-          <p className="mb-5" style={{ color: "rgba(26,22,18,0.65)", lineHeight: 1.8, fontSize: "0.9rem" }}>
-            Les abattements pour durée de détention s&apos;appliquent néanmoins : l&apos;exonération totale d&apos;impôt sur la plus-value intervient après <strong style={{ color: "#1A1612" }}>22 ans</strong> de détention, et après <strong style={{ color: "#1A1612" }}>30 ans</strong> pour les prélèvements sociaux. Conclusion : le LMNP reste très avantageux à long terme, à condition de conserver le bien suffisamment longtemps.
-          </p>
-          <Link href="/blog/revente-lmnp-plus-value"
-            className="inline-flex items-center gap-2 text-sm font-medium transition-opacity hover:opacity-80"
-            style={{ color: "#C95B2A" }}>
-            Lire l&apos;article complet sur la revente LMNP →
-          </Link>
-        </section>
-
-        {/* 8 — LMNP ou LMP */}
-        <section>
-          <SectionTitle num={8}>LMNP ou LMP ?</SectionTitle>
-          <div className="rounded-xl p-6" style={{ background: "#EDE7DC", border: "0.5px solid rgba(26,22,18,0.08)" }}>
-            <p style={{ color: "rgba(26,22,18,0.72)", lineHeight: 1.8 }}>
-              Le basculement vers le statut de <strong style={{ color: "#1A1612" }}>Loueur Meublé Professionnel</strong> intervient lorsque deux conditions sont remplies simultanément : vos recettes locatives dépassent <strong style={{ color: "#1A1612" }}>23 000 € par an</strong> ET représentent plus de 50 % de vos revenus d&apos;activité. Le LMP ouvre des droits sociaux supplémentaires mais soumet à des cotisations plus élevées. Un sujet à part entière, traité dans un article dédié.
-            </p>
-          </div>
-        </section>
-
-        {/* CTA */}
-        <div className="rounded-xl p-8 text-center" style={{ background: "#4E1F12" }}>
-          <h3 className="font-light text-2xl mb-3" style={{ color: "#F5F0E8", letterSpacing: "-0.025em" }}>
-            Prêt à calculer votre rentabilité ?
-          </h3>
-          <p className="mb-6" style={{ color: "rgba(245,240,232,0.5)" }}>
-            Notre simulateur est gratuit et donne des résultats instantanés.
-          </p>
-          <a href="/#simulateur"
-            className="inline-block font-medium px-8 py-3 rounded transition-opacity hover:opacity-[0.88]"
-            style={{ backgroundColor: "#C95B2A", color: "#F5F0E8", borderRadius: 6 }}>
-            Lancer le simulateur →
-          </a>
-        </div>
-      </div>
-
-      {/* Footer */}
+      {/* ── Footer ── */}
       <footer style={{ borderTop: "0.5px solid rgba(26,22,18,0.08)" }} className="py-10 px-4">
         <div className="max-w-6xl mx-auto flex flex-col md:flex-row justify-between items-center gap-4">
           <Link href="/"><Logo /></Link>
           <nav className="flex gap-6 text-sm" style={{ color: "rgba(26,22,18,0.4)" }}>
-            <Link href="/comment-ca-marche" className="hover:text-[#1A1612] transition-colors">LMNP</Link>
+            <Link href="/comment-ca-marche" className="hover:text-[#1A1612] transition-colors">Guide</Link>
             <Link href="/blog" className="hover:text-[#1A1612] transition-colors">Articles</Link>
             <Link href="/tarifs" className="hover:text-[#1A1612] transition-colors">Abonnements</Link>
             <Link href="/contact" className="hover:text-[#1A1612] transition-colors">Contact</Link>
