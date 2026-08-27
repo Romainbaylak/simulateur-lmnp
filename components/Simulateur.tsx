@@ -1747,17 +1747,17 @@ export default function Simulateur({ onShowResults }: { onShowResults?: () => vo
                             <svg width={52} height={rowHeight} viewBox={`0 0 52 ${rowHeight}`} style={{ display: "block", overflow: "visible" }}>
                               {/* Fond opaque crème — bloque complètement la bordure orange derrière */}
                               <polygon
-                                points={`0,0 40,0 44,${rowHeight/2} 40,${rowHeight} 0,${rowHeight}`}
+                                points={`0,0 26,0 44,${rowHeight/2} 26,${rowHeight} 0,${rowHeight}`}
                                 fill="#FDFAF6"
                               />
                               {/* Fond bleu clair par-dessus */}
                               <polygon
-                                points={`0,0 40,0 44,${rowHeight/2} 40,${rowHeight} 0,${rowHeight}`}
+                                points={`0,0 26,0 44,${rowHeight/2} 26,${rowHeight} 0,${rowHeight}`}
                                 fill="rgba(42,112,128,0.09)"
                               />
                               {/* Bordure bleu foncé — inset 1px pour aligner exactement avec la bordure 2px du amortRow */}
                               <polyline
-                                points={`0,1 40,1 44,${rowHeight/2} 40,${rowHeight-1} 0,${rowHeight-1}`}
+                                points={`0,1 26,1 44,${rowHeight/2} 26,${rowHeight-1} 0,${rowHeight-1}`}
                                 fill="none" stroke="#2A7080" strokeWidth="2" strokeLinejoin="miter" strokeMiterlimit="10"
                               />
                             </svg>
