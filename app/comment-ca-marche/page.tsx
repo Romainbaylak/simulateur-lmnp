@@ -45,13 +45,12 @@ const prose: CSSProperties = { color: "rgba(26,22,18,0.72)", lineHeight: 1.85, f
 
 function SectionHeading({ num, title, sub }: { num: number; title: string; sub?: string }) {
   return (
-    <div style={{ display: "flex", alignItems: "flex-start", gap: 16, marginBottom: 24 }}>
-      <span style={{ fontSize: "2.4rem", fontWeight: 300, color: "#C95B2A", letterSpacing: "-0.04em", lineHeight: 1, flexShrink: 0, minWidth: 36 }}>{num}</span>
-      <div style={{ width: 2, alignSelf: "stretch", minHeight: 40, borderRadius: 2, background: "rgba(201,91,42,0.3)", flexShrink: 0 }} />
-      <div>
-        <h2 style={{ fontSize: "clamp(1.1rem,2.5vw,1.35rem)", fontWeight: 600, color: "#4E1F12", letterSpacing: "-0.02em", margin: "0 0 4px" }}>{title}</h2>
-        {sub && <p style={{ margin: 0, fontSize: 14, color: "rgba(26,22,18,0.5)" }}>{sub}</p>}
-      </div>
+    <div style={{ marginBottom: 24 }}>
+      <h2 style={{ display: "flex", alignItems: "baseline", gap: 12, fontSize: "clamp(1.05rem,2.4vw,1.3rem)", fontWeight: 700, color: "#C95B2A", letterSpacing: "-0.01em", margin: "0 0 6px" }}>
+        <span style={{ fontSize: 13, fontWeight: 700, opacity: 0.75, flexShrink: 0 }}>{String(num).padStart(2, "0")}</span>
+        <span>{title}</span>
+      </h2>
+      {sub && <p style={{ margin: 0, paddingLeft: 32, fontSize: 14, color: "rgba(26,22,18,0.5)" }}>{sub}</p>}
     </div>
   );
 }
@@ -102,16 +101,10 @@ export default function GuidePage() {
       <section style={{ backgroundColor: "#4E1F12", color: "#F5F0E8", paddingTop: 40, paddingBottom: 44 }}>
         <div style={{ maxWidth: 720, margin: "0 auto", padding: "0 16px", textAlign: "center" }}>
           <div style={{ fontSize: 11, fontWeight: 600, letterSpacing: "0.18em", textTransform: "uppercase", color: "#C95B2A", marginBottom: 14 }}>Guide complet</div>
-          <h1 style={{ fontSize: "clamp(1.7rem,4.5vw,2.8rem)", fontWeight: 400, letterSpacing: "-0.025em", lineHeight: 1.15, margin: "0 0 16px" }}>
+          <h1 style={{ fontSize: "clamp(1.7rem,4.5vw,2.8rem)", fontWeight: 400, letterSpacing: "-0.025em", lineHeight: 1.15, margin: 0 }}>
             Maîtrisez le simulateur<br />
-            <span style={{ color: "#C95B2A" }}>LMNP ToutLMNP</span>
+            <span style={{ color: "#C95B2A" }}>ToutLMNP</span>
           </h1>
-          <p style={{ fontSize: 16, color: "rgba(245,240,232,0.75)", margin: "0 0 8px", lineHeight: 1.6 }}>
-            Chaque champ expliqué, chaque indicateur décrypté — pour prendre les bonnes décisions sur votre investissement.
-          </p>
-          <p style={{ fontSize: 13, color: "rgba(245,240,232,0.5)", margin: 0 }}>
-            Fil conducteur : appartement 250 000 €, loyer 1 600 €/mois, apport 40 000 €
-          </p>
         </div>
       </section>
 
@@ -120,7 +113,6 @@ export default function GuidePage() {
         <Link href="/#simulateur" style={{ display: "inline-block", backgroundColor: "#C95B2A", color: "#F5F0E8", fontWeight: 700, fontSize: 17, padding: "14px 40px", borderRadius: 8, textDecoration: "none", transition: "opacity 150ms" }}>
           Aller à la simulation →
         </Link>
-        <p style={{ marginTop: 10, fontSize: 12, color: "rgba(26,22,18,0.4)" }}>Gratuit · Sans inscription · Résultats instantanés</p>
       </div>
 
       {/* ═══════════════════════════════════════════════════════════
