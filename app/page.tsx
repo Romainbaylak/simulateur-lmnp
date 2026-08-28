@@ -17,7 +17,7 @@ export default function Home() {
         <div className="hidden md:flex max-w-6xl mx-auto px-4 py-3 items-center justify-between">
           <Link href="/?reset=1"><Logo variant="light" /></Link>
           <nav className="flex items-center gap-6 text-base font-normal" style={{ color: "#F5F0E8" }}>
-            <Link href="/comment-ca-marche" className="hover:text-[#F5F0E8] transition-colors">LMNP</Link>
+            <Link href="/comment-ca-marche" className="hover:text-[#F5F0E8] transition-colors">Guide</Link>
             <Link href="/blog" className="hover:text-[#F5F0E8] transition-colors">Articles</Link>
             <Link href="/tarifs" className="hover:text-[#F5F0E8] transition-colors">Abonnements</Link>
             <Link href="/contact" className="hover:text-[#F5F0E8] transition-colors">Contact</Link>
@@ -60,7 +60,7 @@ export default function Home() {
           <Logo />
           <nav className="flex flex-col items-center gap-2 text-sm" style={{ color: "rgba(26,22,18,0.4)" }}>
             <div className="flex flex-wrap justify-center gap-6">
-              <Link href="/comment-ca-marche" className="hover:text-[#1A1612] transition-colors">LMNP</Link>
+              <Link href="/comment-ca-marche" className="hover:text-[#1A1612] transition-colors">Guide</Link>
               <Link href="/blog" className="hover:text-[#1A1612] transition-colors">Articles</Link>
               <Link href="/tarifs" className="hover:text-[#1A1612] transition-colors">Abonnements</Link>
               <Link href="/contact" className="hover:text-[#1A1612] transition-colors">Contact</Link>

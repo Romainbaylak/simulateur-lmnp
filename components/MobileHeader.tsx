@@ -6,7 +6,7 @@ import Logo from "@/components/Logo";
 import HeaderAuth from "@/components/HeaderAuth";
 
 const NAV_LINKS = [
-  { href: "/comment-ca-marche", label: "LMNP" },
+  { href: "/comment-ca-marche", label: "Guide" },
   { href: "/blog", label: "Articles" },
   { href: "/tarifs", label: "Abonnements" },
   { href: "/contact", label: "Contact" },
