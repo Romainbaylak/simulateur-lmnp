@@ -15,7 +15,7 @@ export default function AccountPage() {
         <div className="hidden md:flex max-w-6xl mx-auto px-4 py-3 items-center justify-between">
           <Link href="/"><Logo variant="light" /></Link>
           <nav className="flex items-center gap-6 text-base font-normal" style={{ color: "#F5F0E8" }}>
-            <Link href="/comment-ca-marche" className="hover:opacity-80 transition-opacity">LMNP</Link>
+            <Link href="/comment-ca-marche" className="hover:opacity-80 transition-opacity">Guide</Link>
             <Link href="/blog" className="hover:opacity-80 transition-opacity">Articles</Link>
             <Link href="/tarifs" className="hover:opacity-80 transition-opacity">Abonnements</Link>
             <Link href="/contact" className="hover:opacity-80 transition-opacity">Contact</Link>

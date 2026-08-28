@@ -17,7 +17,7 @@ export default function ContactPage() {
         <div className="hidden md:flex max-w-6xl mx-auto px-4 py-3 items-center justify-between">
           <Link href="/"><Logo variant="light" /></Link>
           <nav className="flex items-center gap-6 text-base font-normal" style={{ color: "#F5F0E8" }}>
-            <Link href="/comment-ca-marche" className="hover:opacity-80 transition-opacity">LMNP</Link>
+            <Link href="/comment-ca-marche" className="hover:opacity-80 transition-opacity">Guide</Link>
             <Link href="/blog" className="hover:opacity-80 transition-opacity">Articles</Link>
             <Link href="/tarifs" className="hover:opacity-80 transition-opacity">Abonnements</Link>
             <Link href="/contact" style={{ color: "#C95B2A" }}>Contact</Link>
@@ -52,7 +52,7 @@ export default function ContactPage() {
         <div className="max-w-6xl mx-auto flex justify-between items-center">
           <Link href="/"><Logo /></Link>
           <nav className="hidden md:flex items-center gap-6 text-xs" style={{ color: "rgba(26,22,18,0.4)" }}>
-            <Link href="/comment-ca-marche" className="hover:opacity-80">LMNP</Link>
+            <Link href="/comment-ca-marche" className="hover:opacity-80 transition-opacity">Guide</Link>
             <Link href="/blog" className="hover:opacity-80">Articles</Link>
             <Link href="/tarifs" className="hover:opacity-80">Abonnements</Link>
             <Link href="/contact" className="hover:opacity-80">Contact</Link>

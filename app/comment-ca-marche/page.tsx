@@ -83,7 +83,7 @@ export default function GuidePage() {
         <div className="hidden md:flex max-w-6xl mx-auto px-4 py-3 items-center justify-between">
           <Link href="/"><Logo variant="light" /></Link>
           <nav className="flex items-center gap-6 text-base font-normal" style={{ color: "#F5F0E8" }}>
-            <Link href="/comment-ca-marche" style={{ color: "#C95B2A", fontWeight: 600 }}>Guide</Link>
+            <Link href="/comment-ca-marche" style={{ color: "#C95B2A" }}>Guide</Link>
             <Link href="/blog" className="hover:text-[#F5F0E8] transition-colors">Articles</Link>
             <Link href="/tarifs" className="hover:text-[#F5F0E8] transition-colors">Abonnements</Link>
             <Link href="/contact" className="hover:text-[#F5F0E8] transition-colors">Contact</Link>

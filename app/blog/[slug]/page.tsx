@@ -1768,7 +1768,7 @@ export default async function ArticlePage({ params }: { params: Promise<{ slug: 
           <Link href="/"><Logo /></Link>
           <nav className="hidden md:flex flex-col items-center gap-2 text-xs" style={{ color: "rgba(26,22,18,0.4)" }}>
             <div className="flex flex-wrap justify-center gap-6">
-              <Link href="/comment-ca-marche" className="hover:opacity-80">LMNP</Link>
+              <Link href="/comment-ca-marche" className="hover:opacity-80 transition-opacity">Guide</Link>
               <Link href="/blog" className="hover:opacity-80">Articles</Link>
               <Link href="/tarifs" className="hover:opacity-80">Abonnements</Link>
               <Link href="/contact" className="hover:opacity-80">Contact</Link>
