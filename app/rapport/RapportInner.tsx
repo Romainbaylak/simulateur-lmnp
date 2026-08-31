@@ -1329,6 +1329,9 @@ ${!isMicro && annexeCols.length > 0 ? `<div class="page landscape">
     const amortMobilierAn = amortDureeMobilier > 0 && mobilier > 0 ? mobilier / amortDureeMobilier : 0;
     const amortTravauxAn = amortDureeTravaux > 0 && travaux > 0 ? travaux / amortDureeTravaux : 0;
     const amortNotaireAn = amortDureeNotaire > 0 && notaire > 0 ? notaire / amortDureeNotaire : 0;
+    const amortLabel = amortMode === "ensemble"
+      ? `amortissement global simplifié (${amortPct} % du prix sur ${amortDureeEnsemble} ans)`
+      : `amortissement par composants (${amortPct} % du prix ventilés par élément)`;
 
     // Charges détail
     const taxeFonciere = parseFloat(f.taxeFonciere) || 0;
@@ -1392,9 +1395,12 @@ ${!isMicro && annexeCols.length > 0 ? `<div class="page landscape">
 
     // ── Stacked bar pair (FIXED: right col uses full creditTotalAnnuel so both cols balance) ──
     const makeStackedBarPair = (): string => {
-      const W = 280; const H = 220;
-      const colW = 110;
-      const gap = W - colW * 2; // space between left and right col within one SVG
+      const H = 190;
+      const colW = 92;
+      const gap = 5;                    // colonnes quasi collées
+      const barsW = colW * 2 + gap;
+      const annotW = 104;               // zone des flèches d'annotation
+      const W = barsW + annotW;
 
       const buildColData = (yr: number) => {
         const row = getYear(yr);
@@ -1407,14 +1413,11 @@ ${!isMicro && annexeCols.length > 0 ? `<div class="page landscape">
         return { chargesVal, creditAn, impotVal, revenuVal, cfCash };
       };
 
+      const anneeApres = duree + 1;     // fin d'emprunt + 1 : plus aucune mensualité
       const c1 = buildColData(1);
-      const c2 = buildColData(duree);
+      const c2 = buildColData(anneeApres);
 
       // Scale: both columns reach exactly H
-      // Total for each col = revenuVal + max(0, -cfCash)
-      // Since cf = rev - charges - credit - impot, rev = charges+credit+impot+cf
-      // If cf>0: right needs cf block at top → total right = charges+credit+impot+cf = rev ✓
-      // If cf<0: left needs |cf| block at top → total left = rev+|cf| = charges+credit+impot ✓
       const maxRef = Math.max(
         c1.revenuVal + Math.max(0, -c1.cfCash),
         c2.revenuVal + Math.max(0, -c2.cfCash),
@@ -1422,7 +1425,7 @@ ${!isMicro && annexeCols.length > 0 ? `<div class="page landscape">
       );
       const scale = H / maxRef;
 
-      const renderSvg = (c: typeof c1, yearLabel: string) => {
+      const renderSvg = (c: typeof c1, uid: string) => {
         const revH = c.revenuVal * scale;
         const chH = c.chargesVal * scale;
         const crH = c.creditAn * scale;
@@ -1430,53 +1433,114 @@ ${!isMicro && annexeCols.length > 0 ? `<div class="page landscape">
         const cfH = Math.abs(c.cfCash) * scale;
         const cfPos = c.cfCash >= 0;
 
-        // Left col (Revenus): bottom-anchored at H
         const leftTop = H - revH;
-        // Right col stacked bottom to top: charges, credit, impôt
         const imY = H - imH;
         const crY = imY - crH;
         const chY = crY - chH;
         const rightH = chH + crH + imH;
         const rightTop = H - rightH;
 
-        const fs = 10; // font size for values
+        const fs = 10;
         const fsLbl = 8;
+        const xR = colW + gap;          // x de la colonne de droite
+        const cxL = colW / 2;
+        const cxR = xR + colW / 2;
+
+        // Segments trop petits pour porter un texte → annotés par une flèche
+        const annots: { y: number; ty: number; side: "L" | "R"; label: string; val: string; color: string }[] = [];
+        const MIN_H = 16;               // en dessous, on annote à l'extérieur
+
+        const pushAnnot = (y: number, side: "L" | "R", label: string, val: string, color: string) => {
+          annots.push({ y, ty: y, side, label, val, color });
+        };
 
         const leftCol = `<rect x="0" y="${leftTop}" width="${colW}" height="${Math.max(revH, 2)}" fill="#1A6644" rx="3"/>
-${revH > 35 ? `<text x="${colW/2}" y="${leftTop + revH/2 - 7}" text-anchor="middle" font-size="${fsLbl}" fill="rgba(255,255,255,0.7)" font-weight="600">Loyers</text><text x="${colW/2}" y="${leftTop + revH/2 + 9}" text-anchor="middle" font-size="${fs + 1}" fill="#fff" font-weight="700">${fE(c.revenuVal)}</text>` : revH > 18 ? `<text x="${colW/2}" y="${leftTop + revH/2 + 4}" text-anchor="middle" font-size="${fs}" fill="#fff" font-weight="700">${fE(c.revenuVal)}</text>` : ""}`;
+${revH > 35 ? `<text x="${cxL}" y="${leftTop + revH/2 - 7}" text-anchor="middle" font-size="${fsLbl}" fill="rgba(255,255,255,0.7)" font-weight="600">Loyers</text><text x="${cxL}" y="${leftTop + revH/2 + 9}" text-anchor="middle" font-size="${fs + 1}" fill="#fff" font-weight="700">${fE(c.revenuVal)}</text>` : revH > MIN_H ? `<text x="${cxL}" y="${leftTop + revH/2 + 4}" text-anchor="middle" font-size="${fs}" fill="#fff" font-weight="700">${fE(c.revenuVal)}</text>` : ""}`;
+        if (revH <= MIN_H && c.revenuVal > 0) pushAnnot(leftTop + revH / 2, "L", "Loyers", fE(c.revenuVal), "#1A6644");
 
-        const rightCol = `
-<rect x="${colW + gap}" y="${chY}" width="${colW}" height="${Math.max(chH, 2)}" fill="#8B5A3A" rx="1"/>
-${chH > 30 ? `<text x="${colW+gap+colW/2}" y="${chY+chH/2-6}" text-anchor="middle" font-size="${fsLbl}" fill="rgba(255,255,255,0.75)">Charges</text><text x="${colW+gap+colW/2}" y="${chY+chH/2+8}" text-anchor="middle" font-size="${fs}" fill="#fff" font-weight="700">${fE(c.chargesVal)}</text>` : chH > 15 ? `<text x="${colW+gap+colW/2}" y="${chY+chH/2+4}" text-anchor="middle" font-size="${fs-1}" fill="#fff" font-weight="700">${fE(c.chargesVal)}</text>` : ""}
-<rect x="${colW + gap}" y="${crY}" width="${colW}" height="${Math.max(crH, 2)}" fill="#4E1F12" rx="1"/>
-${crH > 30 ? `<text x="${colW+gap+colW/2}" y="${crY+crH/2-6}" text-anchor="middle" font-size="${fsLbl}" fill="rgba(245,240,232,0.75)">Crédit</text><text x="${colW+gap+colW/2}" y="${crY+crH/2+8}" text-anchor="middle" font-size="${fs}" fill="#F5F0E8" font-weight="700">${fE(c.creditAn)}</text>` : crH > 15 ? `<text x="${colW+gap+colW/2}" y="${crY+crH/2+4}" text-anchor="middle" font-size="${fs-1}" fill="#F5F0E8" font-weight="700">${fE(c.creditAn)}</text>` : ""}
-<rect x="${colW + gap}" y="${imY}" width="${colW}" height="${Math.max(imH, 2)}" fill="#2C0F08" rx="1"/>
-${imH > 30 ? `<text x="${colW+gap+colW/2}" y="${imY+imH/2-6}" text-anchor="middle" font-size="${fsLbl}" fill="rgba(245,166,35,0.85)">Impôt</text><text x="${colW+gap+colW/2}" y="${imY+imH/2+8}" text-anchor="middle" font-size="${fs}" fill="#F5A623" font-weight="700">${fE(c.impotVal)}</text>` : imH > 15 ? `<text x="${colW+gap+colW/2}" y="${imY+imH/2+4}" text-anchor="middle" font-size="${fs-1}" fill="#F5A623" font-weight="700">${fE(c.impotVal)}</text>` : ""}`;
+        const seg = (y: number, h: number, fill: string, rx: number, label: string, val: string, txtCol: string, lblCol: string, annotCol: string) => {
+          const rect = `<rect x="${xR}" y="${y}" width="${colW}" height="${Math.max(h, 2)}" fill="${fill}" rx="${rx}"/>`;
+          if (h > 30) return rect + `<text x="${cxR}" y="${y+h/2-6}" text-anchor="middle" font-size="${fsLbl}" fill="${lblCol}">${label}</text><text x="${cxR}" y="${y+h/2+8}" text-anchor="middle" font-size="${fs}" fill="${txtCol}" font-weight="700">${val}</text>`;
+          if (h > MIN_H) return rect + `<text x="${cxR}" y="${y+h/2+4}" text-anchor="middle" font-size="${fs-1}" fill="${txtCol}" font-weight="700">${val}</text>`;
+          pushAnnot(y + h / 2, "R", label, val, annotCol);
+          return rect;
+        };
+
+        const rightCol = [
+          c.chargesVal > 0 ? seg(chY, chH, "#8B5A3A", 1, "Charges", fE(c.chargesVal), "#fff", "rgba(255,255,255,0.75)", "#8B5A3A") : "",
+          c.creditAn > 0 ? seg(crY, crH, "#4E1F12", 1, "Crédit", fE(c.creditAn), "#F5F0E8", "rgba(245,240,232,0.75)", "#4E1F12") : "",
+          c.impotVal > 0 ? seg(imY, imH, "#2C0F08", 1, "Impôt", fE(c.impotVal), "#F5A623", "rgba(245,166,35,0.85)", "#8A5A12") : "",
+        ].join("");
 
         let cfBlock = "";
         if (cfPos && cfH > 1) {
           const cfY = rightTop - cfH;
-          cfBlock = `<rect x="${colW+gap}" y="${cfY}" width="${colW}" height="${Math.max(cfH,2)}" fill="#1A7A52" rx="3"/>
-${cfH > 30 ? `<text x="${colW+gap+colW/2}" y="${cfY+cfH/2-6}" text-anchor="middle" font-size="${fsLbl}" fill="rgba(255,255,255,0.75)">Cash-flow</text><text x="${colW+gap+colW/2}" y="${cfY+cfH/2+8}" text-anchor="middle" font-size="${fs}" fill="#fff" font-weight="700">+${fE(c.cfCash)}</text>` : cfH > 15 ? `<text x="${colW+gap+colW/2}" y="${cfY+cfH/2+4}" text-anchor="middle" font-size="${fs-1}" fill="#fff" font-weight="700">+${fE(c.cfCash)}</text>` : ""}`;
+          cfBlock = `<rect x="${xR}" y="${cfY}" width="${colW}" height="${Math.max(cfH,2)}" fill="#1A7A52" rx="3"/>`;
+          if (cfH > 30) cfBlock += `<text x="${cxR}" y="${cfY+cfH/2-6}" text-anchor="middle" font-size="${fsLbl}" fill="rgba(255,255,255,0.75)">Cash-flow</text><text x="${cxR}" y="${cfY+cfH/2+8}" text-anchor="middle" font-size="${fs}" fill="#fff" font-weight="700">+${fE(c.cfCash)}</text>`;
+          else if (cfH > MIN_H) cfBlock += `<text x="${cxR}" y="${cfY+cfH/2+4}" text-anchor="middle" font-size="${fs-1}" fill="#fff" font-weight="700">+${fE(c.cfCash)}</text>`;
+          else pushAnnot(cfY + cfH / 2, "R", "Cash-flow", `+${fE(c.cfCash)}`, "#1A7A52");
         } else if (!cfPos && cfH > 1) {
-          cfBlock = `<rect x="0" y="${leftTop - cfH}" width="${colW}" height="${Math.max(cfH,2)}" fill="#B03A2A" rx="3"/>
-${cfH > 30 ? `<text x="${colW/2}" y="${leftTop-cfH/2-6}" text-anchor="middle" font-size="${fsLbl}" fill="rgba(255,255,255,0.75)">Effort</text><text x="${colW/2}" y="${leftTop-cfH/2+8}" text-anchor="middle" font-size="${fs}" fill="#fff" font-weight="700">${fE(c.cfCash)}</text>` : cfH > 15 ? `<text x="${colW/2}" y="${leftTop-cfH/2+4}" text-anchor="middle" font-size="${fs-1}" fill="#fff" font-weight="700">${fE(c.cfCash)}</text>` : ""}`;
+          const cfY = leftTop - cfH;
+          cfBlock = `<rect x="0" y="${cfY}" width="${colW}" height="${Math.max(cfH,2)}" fill="#B03A2A" rx="3"/>`;
+          if (cfH > 30) cfBlock += `<text x="${cxL}" y="${cfY+cfH/2-6}" text-anchor="middle" font-size="${fsLbl}" fill="rgba(255,255,255,0.75)">Effort</text><text x="${cxL}" y="${cfY+cfH/2+8}" text-anchor="middle" font-size="${fs}" fill="#fff" font-weight="700">${fE(c.cfCash)}</text>`;
+          else if (cfH > MIN_H) cfBlock += `<text x="${cxL}" y="${cfY+cfH/2+4}" text-anchor="middle" font-size="${fs-1}" fill="#fff" font-weight="700">${fE(c.cfCash)}</text>`;
+          else pushAnnot(cfY + cfH / 2, "L", "Effort", fE(c.cfCash), "#B03A2A");
         }
 
-        // Col labels below
-        const lblLeft = `<text x="${colW/2}" y="${H + 13}" text-anchor="middle" font-size="7.5" fill="rgba(26,22,18,0.5)">Loyers</text>`;
-        const lblRight = `<text x="${colW+gap+colW/2}" y="${H + 13}" text-anchor="middle" font-size="7.5" fill="rgba(26,22,18,0.5)">Sorties</text>`;
+        // Répartition verticale des annotations pour qu'elles ne se chevauchent pas
+        annots.sort((a, b) => a.y - b.y);
+        let lastY = -5;  // → la 1re annotation ne peut pas remonter au-dessus de y=7 (texte tronqué)
+        annots.forEach(a => { a.ty = Math.max(a.y, lastY + 12); lastY = a.ty; });
+        const overflow = annots.length ? Math.max(0, annots[annots.length - 1].ty - H) : 0;
 
-        return `<svg width="${W}" height="${H + 18}" xmlns="http://www.w3.org/2000/svg" style="max-width:100%">${leftCol}${rightCol}${cfBlock}${lblLeft}${lblRight}</svg>
-<div style="font-size:7.5px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:rgba(26,22,18,0.4);margin-top:4px;text-align:center">${yearLabel}</div>`;
+        const annotHtml = annots.map(a => {
+          const fromX = a.side === "L" ? colW : xR + colW;
+          return `<polyline points="${fromX},${a.y} ${barsW + 10},${a.ty} ${barsW + 14},${a.ty}" fill="none" stroke="${a.color}" stroke-width="0.9" marker-start="url(#ah-${uid})"/>
+<text x="${barsW + 18}" y="${a.ty + 2.6}" font-size="7.5" fill="rgba(26,22,18,0.6)">${a.label} <tspan font-weight="700" fill="${a.color}">${a.val}</tspan></text>`;
+        }).join("");
+
+        const defs = annots.length
+          ? `<defs><marker id="ah-${uid}" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto"><polygon points="6,0 0,3 6,6" fill="rgba(26,22,18,0.55)"/></marker></defs>`
+          : "";
+
+        const lblLeft = `<text x="${cxL}" y="${H + 13}" text-anchor="middle" font-size="7.5" fill="rgba(26,22,18,0.5)">Loyers</text>`;
+        const lblRight = `<text x="${cxR}" y="${H + 13}" text-anchor="middle" font-size="7.5" fill="rgba(26,22,18,0.5)">Sorties</text>`;
+
+        return `<svg width="${W}" height="${H + 18 + overflow}" viewBox="0 0 ${W} ${H + 18 + overflow}" xmlns="http://www.w3.org/2000/svg" style="max-width:100%">${defs}${leftCol}${rightCol}${cfBlock}${annotHtml}${lblLeft}${lblRight}</svg>`;
       };
 
-      return `<div style="display:flex;gap:16px;align-items:flex-start">
-  <div style="flex:1">${renderSvg(c1, "Année 1")}</div>
-  <div style="width:1px;background:rgba(26,22,18,0.12);align-self:stretch;margin-top:4px"></div>
-  <div style="flex:1">${renderSvg(c2, `Année ${duree} · fin emprunt`)}</div>
-</div>
-${!isMicro ? `<div style="margin-top:7px;font-size:7.5px;color:rgba(26,22,18,0.5);text-align:center">Note : l'amortissement (${fE(amortTotalAn1)}/an an.1 · non-cash) réduit l'impôt sans sortie de trésorerie — non représenté dans les barres.</div>` : ""}`;
+      // Titre d'année : au-dessus du graphe, en gros et en orange
+      const yearTitle = (txt: string, sub: string) => `<div style="margin-bottom:5px">
+  <div style="font-size:17px;font-weight:700;color:#C95B2A;letter-spacing:-.01em;line-height:1.1">${txt}</div>
+  <div style="font-size:7.5px;text-transform:uppercase;letter-spacing:.1em;color:rgba(26,22,18,0.42);margin-top:1px">${sub}</div>
+</div>`;
+
+      // Commentaires à droite de chaque graphe
+      const deltaCf = c2.cfCash - c1.cfCash;
+      const deltaImpot = c2.impotVal - c1.impotVal;
+      const note = (txt: string) => `<div style="font-size:8px;line-height:1.6;color:rgba(26,22,18,0.62);margin-bottom:5px">${txt}</div>`;
+
+      const comm1 = `${note(`Sur l'année 1, la <strong>mensualité de crédit</strong> (${fE(c1.creditAn)}/an, assurance comprise) absorbe l'essentiel de vos loyers. C'est le poste qui pèse le plus lourd dans votre trésorerie.`)}
+${note(c1.cfCash >= 0
+  ? `Votre cash-flow est déjà positif à <strong style="color:#1A7A52">+${fE(c1.cfCash)}/an</strong>, soit ${fE(c1.cfCash / 12)}/mois : le bien s'autofinance dès la première année.`
+  : `Il vous reste un effort d'épargne de <strong style="color:#B03A2A">${fE(Math.abs(c1.cfCash))}/an</strong>, soit ${fE(Math.abs(c1.cfCash) / 12)}/mois. En contrepartie, vous remboursez du capital chaque mois : cet effort se transforme en patrimoine.`)}
+${!isMicro ? note(`L'<strong>amortissement</strong> (${fE(amortTotalAn1)}/an) n'apparaît pas dans ce graphique : ce n'est pas une sortie d'argent. Il réduit l'impôt sans toucher à votre trésorerie.`) : note(`Au Micro-BIC, aucun amortissement ne vient réduire l'impôt : seul l'abattement de ${isSaisonnier ? "30" : "50"} % s'applique.`)}`;
+
+      const comm2 = `${note(`À partir de l'année ${anneeApres}, <strong>le crédit est intégralement remboursé</strong>. Les ${fE(c1.creditAn)}/an de mensualités disparaissent du graphique : c'est le basculement de tout le projet.`)}
+${note(`Votre cash-flow passe de ${c1.cfCash >= 0 ? "+" : ""}${fE(c1.cfCash)} à <strong style="color:#1A7A52">+${fE(c2.cfCash)}/an</strong>, soit <strong>${fE(c2.cfCash / 12)}/mois</strong>${deltaCf > 0 ? ` — un gain de ${fE(deltaCf)}/an` : ""}.`)}
+${note(deltaImpot > 0
+  ? `En contrepartie, l'impôt augmente (${fE(c1.impotVal)} → <strong style="color:#C95B2A">${fE(c2.impotVal)}/an</strong>) : les intérêts d'emprunt ne sont plus déductibles${!isMicro ? ` et les amortissements s'épuisent progressivement` : ""}. La hausse reste sans commune mesure avec la mensualité économisée.`
+  : `L'impôt reste stable à ${fE(c2.impotVal)}/an${!isMicro ? `, les amortissements continuant de couvrir la base imposable` : ""}.`)}
+${note(`Hypothèse prudente : loyers et charges constants, sans revalorisation. Toute hausse de loyer améliorerait encore ce résultat.`)}`;
+
+      const bloc = (title: string, sub: string, svg: string, comm: string) => `<div style="display:flex;gap:14px;align-items:flex-start;margin-bottom:12px">
+  <div style="flex:0 0 auto">${yearTitle(title, sub)}${svg}</div>
+  <div style="flex:1;min-width:0;padding-top:24px">${comm}</div>
+</div>`;
+
+      return `${bloc("Année 1", "Démarrage · crédit en cours", renderSvg(c1, "y1"), comm1)}
+<div style="height:1px;background:rgba(26,22,18,0.12);margin:0 0 12px"></div>
+${bloc(`Année ${anneeApres}`, "Fin d'emprunt + 1 · sans mensualité", renderSvg(c2, "y2"), comm2)}`;
     };
 
     // ── Impôt line graph ──────────────────────────────────────────────────────
@@ -1555,7 +1619,7 @@ html,body{background:#D0C9BC;margin:0;padding:0;font-family:'Helvetica Neue',Ari
 .page:last-child{page-break-after:avoid}
 .no-print{position:sticky;top:0;z-index:100;background:#1A4A35;padding:10px 20px;display:flex;align-items:center;justify-content:space-between}
 .hdr{background:#4E1F12;border-radius:10px;padding:12px 16px;margin-bottom:10px;display:flex;align-items:flex-start;justify-content:space-between}
-.sec{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.12em;color:#C95B2A;text-align:center;margin-top:14px;margin-bottom:8px}
+.sec{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.12em;color:#C95B2A;text-align:center;margin-top:26px;margin-bottom:10px;padding-bottom:5px;border-bottom:1px solid rgba(201,91,42,0.35)}
 .sec.first{margin-top:2px}
 .cards{display:flex;gap:5px;flex-wrap:wrap;margin-bottom:5px}
 .card{flex:1;min-width:0;background:#EDE7DC;border-radius:7px;padding:7px 9px}
@@ -1657,6 +1721,15 @@ table.tbl .grp{border-left:1.5px solid rgba(201,91,42,0.5);border-right:1.5px so
       <div style="text-align:center;padding:4px 0;font-size:8.5px;color:#2A5C8A;font-weight:700;border-top:1.5px solid rgba(42,92,138,0.25);margin-top:2px">Total amort. = ${fE(amortTotalAn1)}/an</div>
     </div>
   </div>
+  <!-- Lecture du tableau -->
+  <div style="background:rgba(26,102,68,0.06);border-left:2.5px solid #1A6644;border-radius:0 6px 6px 0;padding:7px 10px;margin-bottom:6px">
+    <div style="font-size:8.5px;line-height:1.65;color:rgba(26,22,18,0.75)">
+      Au régime réel, l'ensemble de vos charges — charges d'exploitation, intérêts d'emprunt et assurance emprunteur — vient en déduction de vos recettes, soit <strong style="color:#8B1A1A">${fE(chargesAnnuelles + interetsAnnee1 + assuranceEmprunteurAnnuel)}</strong> déduits la première année. Votre base imposable descend d'autant.
+    </div>
+    <div style="font-size:8.5px;line-height:1.65;color:rgba(26,22,18,0.75);margin-top:5px">
+      S'y ajoute l'<strong style="color:#2A5C8A">${amortLabel}</strong> : <strong style="color:#2A5C8A">${fE(amortTotalAn1)}</strong> supplémentaires viennent réduire l'assiette de l'impôt, sans aucune sortie de trésorerie. Votre base imposable tombe ainsi à <strong>${fE(baseImposableReel)}</strong>, ce qui porte votre impôt et prélèvements sociaux à <strong style="color:#C95B2A">${fE(impotReel)}</strong> pour l'année 1${impotReel > 0 ? `, soit ${fE(impotReel / 12)}/mois` : ""}.
+    </div>
+  </div>
   <!-- Graphe évolution impôt -->
   <div style="background:#EDE7DC;border-radius:7px;padding:8px 10px;margin-bottom:6px">
     <div style="font-size:7.5px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:rgba(26,22,18,0.4);margin-bottom:5px">Évolution de l'impôt sur la durée du prêt</div>
@@ -1683,6 +1756,15 @@ table.tbl .grp{border-left:1.5px solid rgba(201,91,42,0.5);border-right:1.5px so
         <td style="padding:6px 8px;text-align:right;font-weight:700;color:#F5A623">${fE(impotBIC)}</td>
       </tr>
     </table>
+  </div>
+  <!-- Lecture du tableau -->
+  <div style="background:rgba(42,92,138,0.06);border-left:2.5px solid #2A5C8A;border-radius:0 6px 6px 0;padding:7px 10px;margin-bottom:6px">
+    <div style="font-size:8.5px;line-height:1.65;color:rgba(26,22,18,0.75)">
+      Au Micro-BIC, vos charges réelles ne viennent pas en déduction de votre base imposable : ni vos charges d'exploitation, ni vos intérêts d'emprunt, ni aucun amortissement. Elles sont remplacées par un <strong>abattement forfaitaire de ${isSaisonnier ? "30" : "50"} %</strong> appliqué sur vos recettes, soit <strong style="color:#8B1A1A">${fE(recettesAnnuelles * abattPct)}</strong>, quel que soit le montant réellement dépensé (${fE(chargesAnnuelles + interetsAnnee1 + assuranceEmprunteurAnnuel)} dans votre cas).
+    </div>
+    <div style="font-size:8.5px;line-height:1.65;color:rgba(26,22,18,0.75);margin-top:5px">
+      Votre base imposable s'établit donc à <strong>${fE(baseBIC)}</strong>, ce qui porte votre impôt et prélèvements sociaux à <strong style="color:#C95B2A">${fE(impotBIC)}</strong> pour l'année 1, soit <strong style="color:#C95B2A">${fE(impotBIC / 12)}/mois</strong>.
+    </div>
   </div>`;
 
     return `<!DOCTYPE html><html lang="fr"><head><meta charset="UTF-8">
@@ -1883,7 +1965,7 @@ table.tbl .grp{border-left:1.5px solid rgba(201,91,42,0.5);border-right:1.5px so
   </div>
 
   <!-- Vision d'ensemble -->
-  <div class="sec">Vision d'ensemble · Année 1 vs Fin d'emprunt</div>
+  <div class="sec">Vision d'ensemble · Année 1 vs Fin d'emprunt + 1 an</div>
   <div style="background:#EDE7DC;border-radius:8px;padding:10px 14px;margin-bottom:4px">
     ${stackedBarPairHtml}
   </div>
