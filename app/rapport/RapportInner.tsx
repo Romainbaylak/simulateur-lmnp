@@ -3391,8 +3391,8 @@ ${!isMicro && annexeCols.length > 0 ? `
             </h1>
           </div>
 
-          {/* 3 boutons séparés en colonnes égales */}
-          <div className="grid grid-cols-3 gap-3">
+          {/* 3 boutons : empilés sur mobile, en colonnes égales dès md */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
 
             {/* Rapport Invest */}
             <button onClick={() => generatePdf("resume-pdf")}
