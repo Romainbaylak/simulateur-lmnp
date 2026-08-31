@@ -323,9 +323,9 @@ export function SectionAutresCharges() {
    SECTION 2 — Option Saisonnière (réplique exacte du toggle)
 ══════════════════════════════════════════════════════════════════ */
 export function SectionSaisonnier() {
-  const [on, setOn] = useState(false);
+  const [on, setOn] = useState(true);
   return (
-    <DemoWrapper title="Option Location Saisonnière — coche la case pour voir le changement">
+    <DemoWrapper title="Option Location Saisonnière — décoche la case pour revoir la location classique">
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", minHeight: 38, marginBottom: 16, gap: 12, flexWrap: "wrap" }}>
         <span style={LABEL_STYLE}>Loyer</span>
         <button
