@@ -194,3 +194,185 @@ export function fEur(n: number): string {
 }
 
 export function fPct(n: number): string { return n.toFixed(2) + " %"; }
+
+/* ════════════════════════════════════════════════════════════════════════════
+   MOTEUR DE PROJECTION UNIQUE
+   Utilisé par les trois rapports PDF (Invest / Synthèse / Banque) afin qu'ils
+   soient trois vues d'un même calcul, et jamais trois formules différentes.
+
+   Règles :
+   - chaque composant s'amortit sur SA propre durée puis s'éteint ;
+   - l'amortissement non consommé est reporté sans limitation de durée ;
+   - l'assurance emprunteur ne court que pendant le crédit ;
+   - l'année 1 de la projection reproduit exactement computeResultats().
+════════════════════════════════════════════════════════════════════════════ */
+
+export interface ProjectionParams {
+  prix: number;
+  travaux: number;
+  mobilier: number;
+  notaire: number;
+  montantCredit: number;
+  duree: number;
+  taux: number;                    // taux annuel en décimal (0.035)
+  loyerAnnuel: number;             // loyer HC annuel
+  chargesLocatairesAnnuel: number; // charges récupérables sur le locataire
+  chargesAnnuelles: number;        // charges d'exploitation (TF, copro, PNO, gestion…)
+  assuranceEmprunteurAnnuel: number;
+  tmi: number;                     // en %
+  amortPct: number;                // % du prix amortissable
+  amortMode: "ensemble" | "composant";
+  amortDureeEnsemble: number;
+  composants: { label: string; pct: number; duree: number }[];
+  amortDureeMobilier: number;
+  amortDureeTravaux: number;
+  amortDureeNotaire: number;
+  isMicro: boolean;
+  isSaisonnier: boolean;
+  horizon?: number;                // nb d'années à projeter
+}
+
+export interface ProjectionYear {
+  year: number;
+  /** capital restant dû au 1er jour de l'année */
+  capitalDebut: number;
+  /** capital restant dû au dernier jour de l'année */
+  capitalFin: number;
+  capitalRembourse: number;
+  capitalRembourseCumul: number;
+  interets: number;
+  creditAnnuel: number;
+  assuranceEmprunteur: number;
+  /** dotation aux amortissements de l'année (composants encore actifs) */
+  amortDotation: number;
+  amortBien: number;
+  amortMobilier: number;
+  amortTravaux: number;
+  amortNotaire: number;
+  /** amortissement reporté des exercices antérieurs */
+  reportEntrant: number;
+  amortDisponible: number;
+  /** amortissement réellement imputé cette année */
+  amortImpute: number;
+  /** amortissement reporté sur N+1 */
+  reportSortant: number;
+  /** cumul des amortissements effectivement déduits (assiette de plus-value) */
+  amortImputeCumul: number;
+  recettes: number;
+  chargesDeductibles: number;
+  resultatAvantAmort: number;
+  baseImposable: number;
+  impot: number;
+  cashflowAnnuel: number;
+  cashflowMensuel: number;
+}
+
+export const TAUX_PS_LOCATIF = 0.186; // prélèvements sociaux sur revenus locatifs meublés (2026)
+export const TAUX_PS_PLUSVALUE = 0.172; // prélèvements sociaux sur plus-values immobilières
+export const TAUX_IR_PLUSVALUE = 0.19;
+
+export function computeProjection(p: ProjectionParams): ProjectionYear[] {
+  const recettes = p.loyerAnnuel + p.chargesLocatairesAnnuel;
+  const abattPct = p.isSaisonnier ? 0.30 : 0.50;
+  const baseMicro = recettes * (1 - abattPct);
+  const tauxImpot = p.tmi / 100 + TAUX_PS_LOCATIF;
+
+  const valeurAmortissable = p.prix * (p.amortPct / 100);
+  const r = p.taux / 12;
+  const nMois = p.duree * 12;
+  const M = p.montantCredit > 0 && p.taux > 0
+    ? p.montantCredit * r * Math.pow(1 + r, nMois) / (Math.pow(1 + r, nMois) - 1)
+    : (nMois > 0 ? p.montantCredit / nMois : 0);
+
+  // horizon : au moins la durée du crédit et celle du plus long amortissement, + 5 ans
+  const amortMaxDuree = p.amortMode === "ensemble"
+    ? p.amortDureeEnsemble
+    : Math.max(0, ...p.composants.map(c => c.duree));
+  const horizon = p.horizon ?? Math.max(
+    p.duree,
+    amortMaxDuree,
+    p.amortDureeMobilier,
+    p.amortDureeTravaux,
+    p.amortDureeNotaire,
+    20,
+  ) + 5;
+
+  const out: ProjectionYear[] = [];
+  let capital = p.montantCredit;
+  let capitalCumul = 0;
+  let report = 0;
+  let amortCumul = 0;
+
+  for (let year = 1; year <= horizon; year++) {
+    const capitalDebut = Math.max(0, capital);
+    let interets = 0;
+    let capitalRembourse = 0;
+    let creditAnnuel = 0;
+
+    if (year <= p.duree && p.montantCredit > 0) {
+      if (p.taux > 0) {
+        for (let m = 0; m < 12; m++) {
+          const im = capital * r;
+          interets += im;
+          capital -= (M - im);
+        }
+        capital = Math.max(0, capital);
+        creditAnnuel = M * 12;
+        capitalRembourse = creditAnnuel - interets;
+      } else {
+        creditAnnuel = M * 12;
+        capitalRembourse = creditAnnuel;
+        capital = Math.max(0, capital - capitalRembourse);
+      }
+    }
+    capitalCumul += capitalRembourse;
+
+    // L'assurance emprunteur ne court que pendant le crédit
+    const assuranceEmprunteur = year <= p.duree ? p.assuranceEmprunteurAnnuel : 0;
+
+    // Dotations : chaque élément s'éteint à sa propre durée
+    let amortBien = 0;
+    if (p.amortMode === "ensemble") {
+      amortBien = year <= p.amortDureeEnsemble && p.amortDureeEnsemble > 0
+        ? valeurAmortissable / p.amortDureeEnsemble : 0;
+    } else {
+      for (const c of p.composants) {
+        if (c.duree > 0 && year <= c.duree) amortBien += (valeurAmortissable * c.pct / 100) / c.duree;
+      }
+    }
+    const amortMobilier = p.amortDureeMobilier > 0 && year <= p.amortDureeMobilier ? p.mobilier / p.amortDureeMobilier : 0;
+    const amortTravaux = p.amortDureeTravaux > 0 && year <= p.amortDureeTravaux ? p.travaux / p.amortDureeTravaux : 0;
+    const amortNotaire = p.amortDureeNotaire > 0 && year <= p.amortDureeNotaire ? p.notaire / p.amortDureeNotaire : 0;
+    const amortDotation = amortBien + amortMobilier + amortTravaux + amortNotaire;
+
+    const chargesDeductibles = p.chargesAnnuelles + interets + assuranceEmprunteur;
+    const resultatAvantAmort = recettes - chargesDeductibles;
+
+    const reportEntrant = report;
+    const amortDisponible = amortDotation + reportEntrant;
+    // On n'impute que dans la limite du résultat : le LMNP ne peut pas créer
+    // de déficit par les amortissements (art. 39 C II 2° CGI).
+    const amortImpute = Math.max(0, Math.min(amortDisponible, Math.max(0, resultatAvantAmort)));
+    const reportSortant = Math.max(0, amortDisponible - amortImpute);
+    report = reportSortant;
+    amortCumul += amortImpute;
+
+    const baseReel = Math.max(0, resultatAvantAmort - amortImpute);
+    const baseImposable = p.isMicro ? baseMicro : baseReel;
+    const impot = baseImposable * tauxImpot;
+    const cashflowAnnuel = recettes - creditAnnuel - p.chargesAnnuelles - assuranceEmprunteur - impot;
+
+    out.push({
+      year,
+      capitalDebut, capitalFin: Math.max(0, capital),
+      capitalRembourse, capitalRembourseCumul: capitalCumul,
+      interets, creditAnnuel, assuranceEmprunteur,
+      amortDotation, amortBien, amortMobilier, amortTravaux, amortNotaire,
+      reportEntrant, amortDisponible, amortImpute, reportSortant, amortImputeCumul: amortCumul,
+      recettes, chargesDeductibles, resultatAvantAmort,
+      baseImposable, impot,
+      cashflowAnnuel, cashflowMensuel: cashflowAnnuel / 12,
+    });
+  }
+  return out;
+}

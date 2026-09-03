@@ -8,6 +8,9 @@ import MobileHeader from "@/components/MobileHeader";
 import HeaderAuth from "@/components/HeaderAuth";
 import {
   computeResultats,
+  computeProjection,
+  TAUX_PS_PLUSVALUE,
+  TAUX_IR_PLUSVALUE,
   type SimulationData,
   type SimulationForm,
   type Resultats,
@@ -152,6 +155,8 @@ export default function RapportInner() {
     const chargesAnnuelles = res.chargesAnnuelles;
     const assuranceEmprunteurAnnuel = res.assuranceEmprunteurAnnuel ?? 0;
     const loyerAnnuel = res.loyerAnnuel;
+    const chargesLocatairesAnnuel = (parseFloat(f.chargesLoyer) || 0) * 12;
+    const recettesAnnuelles = loyerAnnuel + chargesLocatairesAnnuel;
     const amortTotalAn1 = res.amortTotal;
     const chargesDeductibles = res.chargesDeductibles;
     const resultatAvantAmort = res.resultatAvantAmort;
@@ -190,60 +195,33 @@ export default function RapportInner() {
       resultatAvantAmort: number; chargesDeductibles: number;
       baseImposable: number; impot: number; cashflow: number;
     }
-    const rows: PdfRow[] = [];
-    let capitalRestant = montantCredit;
-    let reportN = 0;
-
-    for (let year = 1; year <= totalYears; year++) {
-      const capitalDebut = Math.max(0, capitalRestant);
-      let interetsAnnee = 0;
-      let creditAnnuelR = 0;
-      let capitalRembAn = 0;
-
-      if (year <= duree && montantCredit > 0 && taux > 0) {
-        for (let m = 0; m < 12; m++) {
-          const im = capitalRestant * r;
-          interetsAnnee += im;
-          capitalRestant -= (M - im);
-        }
-        capitalRestant = Math.max(0, capitalRestant);
-        creditAnnuelR = M * 12;
-        capitalRembAn = creditAnnuelR - interetsAnnee;
-      } else if (year <= duree && montantCredit > 0) {
-        creditAnnuelR = montantCredit / n * 12;
-        capitalRembAn = creditAnnuelR;
-      }
-
-      let amortBienA = 0;
-      if (amortMode === "ensemble") {
-        amortBienA = year <= amortDureeEnsemble ? valeurAmortissable / amortDureeEnsemble : 0;
-      } else {
-        for (const c of composants) {
-          amortBienA += year <= c.duree ? (valeurAmortissable * c.pct / 100) / c.duree : 0;
-        }
-      }
-      const amortMobilierA = amortDureeMobilier > 0 && year <= amortDureeMobilier ? mobilier / amortDureeMobilier : 0;
-      const amortTravauxA = amortDureeTravaux > 0 && year <= amortDureeTravaux ? travaux / amortDureeTravaux : 0;
-      const amortNotaireA = amortDureeNotaire > 0 && year <= amortDureeNotaire ? notaire / amortDureeNotaire : 0;
-      const amortTotalA = amortBienA + amortMobilierA + amortTravauxA + amortNotaireA;
-      const chargesDed = chargesAnnuelles + interetsAnnee + assuranceEmprunteurAnnuel;
-      const resAvAmort = loyerAnnuel - chargesDed;
-      const reportEntrant = reportN;
-      const amortDisponible = amortTotalA + reportEntrant;
-      const baseImposable = Math.max(0, resAvAmort - amortDisponible);
-      const newReport = Math.max(0, amortDisponible - Math.max(0, resAvAmort));
-      const impot = baseImposable * (tmi / 100 + 0.186);
-      const cashflow = (loyerAnnuel - creditAnnuelR - chargesAnnuelles - assuranceEmprunteurAnnuel - impot) / 12;
-
-      rows.push({
-        year, capitalDebut, capitalFin: Math.max(0, capitalRestant),
-        creditAnnuelR, interetsAnnee, capitalRembourse: capitalRembAn,
-        amortTotalA, amortDisponible, reportEntrant, reportNplus1: newReport,
-        resultatAvantAmort: resAvAmort, chargesDeductibles: chargesDed,
-        baseImposable, impot, cashflow,
-      });
-      reportN = newReport;
-    }
+    // Projection issue du moteur unique (lib/computeResultats)
+    const projection = computeProjection({
+      prix, travaux, mobilier, notaire,
+      montantCredit, duree, taux,
+      loyerAnnuel, chargesLocatairesAnnuel,
+      chargesAnnuelles, assuranceEmprunteurAnnuel,
+      tmi, amortPct, amortMode, amortDureeEnsemble, composants,
+      amortDureeMobilier, amortDureeTravaux, amortDureeNotaire,
+      isMicro, isSaisonnier, horizon: totalYears,
+    });
+    const rows: PdfRow[] = projection.map(y => ({
+      year: y.year,
+      capitalDebut: y.capitalDebut,
+      capitalFin: y.capitalFin,
+      creditAnnuelR: y.creditAnnuel,
+      interetsAnnee: y.interets,
+      capitalRembourse: y.capitalRembourse,
+      amortTotalA: y.amortDotation,
+      amortDisponible: y.amortDisponible,
+      reportEntrant: y.reportEntrant,
+      reportNplus1: y.reportSortant,
+      resultatAvantAmort: y.resultatAvantAmort,
+      chargesDeductibles: y.chargesDeductibles,
+      baseImposable: y.baseImposable,
+      impot: y.impot,
+      cashflow: y.cashflowMensuel,
+    }));
 
     const zerosYears = rows.filter(ro => ro.baseImposable === 0).length;
     const firstTaxRow = rows.find(ro => ro.baseImposable > 0);
@@ -264,6 +242,8 @@ export default function RapportInner() {
 
     // Terrain (non amortissable)
     const terrainVal = prix * (1 - amortPct / 100);
+    // Somme réelle des bases amortissables listées (bien hors terrain + mobilier + travaux + notaire)
+    const baseAmortissableTotale = annexeCols.reduce((sum, c) => sum + c.initial, 0);
 
     // ── SVG Charts ──────────────────────────────────────────────────────────
 
@@ -306,12 +286,14 @@ ${yr % 5 === 0 || yr === 1 ? `<text x="${(bx + bW / 2).toFixed(1)}" y="${(H - 6)
 
     // Line chart: capital restant dû
     const makeCapitalChart = () => {
-      const pts = rows.filter(ro => ro.year <= duree + 1).map(ro => ({ yr: ro.year, v: ro.capitalDebut }));
+      // Année 0 = capital emprunté ; ensuite capital restant dû EN FIN d'année
+      const pts = [{ yr: 0, v: montantCredit }]
+        .concat(rows.filter(ro => ro.year <= duree).map(ro => ({ yr: ro.year, v: ro.capitalFin })));
       if (pts.length === 0) return "";
       const maxV = Math.max(...pts.map(p => p.v), 1);
       const W = 680, H = 130, PL = 65, PR = 10, PT = 10, PB = 22;
       const cW = W - PL - PR, cH = H - PT - PB;
-      const toX = (yr: number) => PL + ((yr - 1) / Math.max(duree, 1)) * cW;
+      const toX = (yr: number) => PL + (yr / Math.max(duree, 1)) * cW;
       const toY = (v: number) => PT + cH - (v / maxV) * cH;
       const pathD = pts.map((p, i) => `${i === 0 ? "M" : "L"}${toX(p.yr).toFixed(1)},${toY(p.v).toFixed(1)}`).join(" ");
       const areaD = `${pathD} L${toX(pts[pts.length - 1].yr).toFixed(1)},${(PT + cH).toFixed(1)} L${toX(pts[0].yr).toFixed(1)},${(PT + cH).toFixed(1)} Z`;
@@ -320,8 +302,8 @@ ${yr % 5 === 0 || yr === 1 ? `<text x="${(bx + bW / 2).toFixed(1)}" y="${(H - 6)
         return `<line x1="${PL}" y1="${y.toFixed(1)}" x2="${W - PR}" y2="${y.toFixed(1)}" stroke="rgba(26,22,18,0.06)" stroke-width="0.5"/>
 <text x="${(PL - 4).toFixed(1)}" y="${(y + 3).toFixed(1)}" text-anchor="end" font-size="7" fill="rgba(26,22,18,0.35)">${fE(maxV * t)}</text>`;
       }).join("");
-      const xLabels = [1, Math.round(duree / 3), Math.round(2 * duree / 3), duree].map(yr => {
-        return `<text x="${toX(yr).toFixed(1)}" y="${(H - 5).toFixed(1)}" text-anchor="middle" font-size="7" fill="rgba(26,22,18,0.4)">An ${yr}</text>`;
+      const xLabels = [0, Math.round(duree / 3), Math.round(2 * duree / 3), duree].map(yr => {
+        return `<text x="${toX(yr).toFixed(1)}" y="${(H - 5).toFixed(1)}" text-anchor="middle" font-size="7" fill="rgba(26,22,18,0.4)">${yr === 0 ? "Départ" : `Fin an ${yr}`}</text>`;
       }).join("");
       return `<svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg" style="width:100%;display:block;margin-top:8px">${ticks}<path d="${areaD}" fill="#2A7080" opacity="0.08"/><path d="${pathD}" fill="none" stroke="#2A7080" stroke-width="2"/>${xLabels}</svg>`;
     };
@@ -742,7 +724,7 @@ ${!isSaisonnier ? `<!-- ══════════════════�
 </table>
 
 <div class="beige-note">
-  <strong>Hypothèse :</strong> Simulation sur ${totalYears} ans en ${isMicro ? "Micro-BIC" : "régime réel simplifié"}. Loyers, charges et valeur du bien supposés constants.${isMicro ? ` Abattement forfaitaire ${isSaisonnier ? "30" : "50"} % appliqué sur les loyers.` : " L'amortissement est calculé selon les durées fiscalement reconnues."} TMI appliquée : <strong>${tmi} %</strong> + prélèvements sociaux <strong>18,6 %</strong>. Cette simulation est indicative et ne constitue pas un conseil fiscal.
+  <strong>Hypothèse :</strong> Simulation sur ${totalYears} ans en ${isMicro ? "Micro-BIC" : "régime réel simplifié"}. Loyers, charges et valeur du bien supposés constants.${isMicro ? ` Abattement forfaitaire ${isSaisonnier ? "30" : "50"} % appliqué sur les loyers.` : " L'amortissement est calculé selon les durées fiscalement reconnues."} TMI appliquée : <strong>${tmi} %</strong> + prélèvements sociaux <strong>18,6 %</strong> sur les revenus locatifs ; les plus-values immobilières relèvent quant à elles de <strong>17,2 %</strong> — ce sont deux prélèvements distincts. Cette simulation est indicative et ne constitue pas un conseil fiscal.
 </div>
 
 <!-- Recap fiscal + barre régime choisi -->
@@ -946,7 +928,7 @@ ${isMicro ? `
 </table>
 
 <div class="note" style="margin-top:14px">
-  <strong>Comment est calculé l'impôt ?</strong> TMI (Tranche Marginale d'Imposition) : taux appliqué à votre dernière tranche de revenus — ici <strong>${tmi} %</strong>. Prélèvements Sociaux : <strong>18,6 %</strong> prélevés sur les revenus du patrimoine. Impôt total = base imposable × (TMI + PS) = base × <strong>${(tmi + 18.6).toFixed(1)} %</strong>.
+  <strong>Comment est calculé l'impôt ?</strong> TMI (Tranche Marginale d'Imposition) : taux appliqué à votre dernière tranche de revenus — ici <strong>${tmi} %</strong>. Prélèvements Sociaux : <strong>18,6 %</strong> prélevés sur les revenus du patrimoine. Impôt total = base imposable × (TMI + PS) = base × <strong>${(tmi + 18.6).toFixed(1)} %</strong>. <span style="display:inline-block;background:rgba(42,112,128,0.10);border-left:2px solid #2A7080;border-radius:0 4px 4px 0;padding:2px 7px;margin-top:4px"><strong>Pourquoi 18,6 % ici et 17,2 % à la revente ?</strong> Les prélèvements sociaux applicables aux <strong>revenus locatifs meublés</strong> (18,6 %) et ceux applicables aux <strong>plus-values immobilières</strong> (17,2 %) ne sont pas identiques. Ce ne sont pas les mêmes prélèvements.</span>
   ${firstTaxRow ? ` En régime réel, vous commencez à payer de l'impôt à partir de l'année <strong>${firstTaxRow.year}</strong> avec une base imposable de ${fE(firstTaxRow.baseImposable)}.` : zerosYears >= totalYears ? " Sur toute la période analysée, la base imposable reste à 0 € grâce aux amortissements reportables." : ""}
 </div>
 `}
@@ -969,12 +951,12 @@ ${!isMicro ? `</div><div class="page">
   <tbody>
     ${annexeCols.map(c => `<tr><td class="lbl">${c.label}</td><td class="r">${fE(c.initial)}</td><td class="r">${c.duree} ans</td><td class="r"><strong>${fE(c.annuel)}/an</strong></td></tr>`).join("")}
     <tr><td class="lbl" style="color:#1A1612">Terrain (non amortissable)</td><td class="r" style="color:#1A1612">${fE(terrainVal)}</td><td class="r" style="color:#1A1612">—</td><td class="r" style="color:#1A1612">0 €</td></tr>
-    <tr class="total" style="background:rgba(139,26,26,0.06)"><td style="color:#8B1A1A;font-weight:700">Total amortissement annuel (an. 1)</td><td class="r">${fE(prix)}</td><td></td><td class="r" style="color:#8B1A1A;font-weight:700;font-size:12px">${fE(amortTotalAn1)}/an</td></tr>
+    <tr class="total" style="background:rgba(139,26,26,0.06)"><td style="color:#8B1A1A;font-weight:700">Total base amortissable · dotation an. 1</td><td class="r" style="font-weight:700">${fE(baseAmortissableTotale)}</td><td></td><td class="r" style="color:#8B1A1A;font-weight:700;font-size:12px">${fE(amortTotalAn1)}/an</td></tr>
   </tbody>
 </table>
 
 <div class="beige-note" style="margin-bottom:12px">
-  <strong>Part amortissable :</strong> ${amortPct} % du prix d'achat (${fE(valeurAmortissable)}) est amortissable. Les ${100 - amortPct} % restants (${fE(terrainVal)}) représentent le terrain. En cas d'excédent d'amortissement (amortissement &gt; résultat), le surplus est <strong>reporté sans limitation de durée</strong> sur les exercices suivants.
+  <strong>Part amortissable :</strong> ${amortPct} % du prix d'achat (${fE(valeurAmortissable)}) est amortissable. Les ${100 - amortPct} % restants (${fE(terrainVal)}) représentent le terrain. En cas d'excédent d'amortissement (amortissement &gt; résultat), le surplus est <strong>reporté sans limitation de durée</strong> sur les exercices suivants — à ne pas confondre avec un <strong>déficit LMNP</strong>, imputable quant à lui sur les bénéfices de même nature des <strong>10 années suivantes</strong> seulement.
 </div>
 
 <div class="chart-title">Amortissement théorique annuel (€/an)</div>
@@ -995,12 +977,12 @@ ${makeAmortBarChart()}
 
 ${(() => {
   if (isMicro) {
-    const bicBase = loyerAnnuel * (1 - abattPct);
+    const bicBase = recettesAnnuelles * (1 - abattPct);
     const bicImpot = bicBase * (tmi / 100 + 0.186);
     return `<table class="tbl" style="margin-bottom:14px">
   <thead><tr>
     <th>Année</th>
-    <th class="r">Capital restant dû</th>
+    <th class="r">Capital restant dû<br><span style="font-weight:400;opacity:.7">fin d'année</span></th>
     <th class="r">Intérêts</th>
     <th class="r">Base imposable BIC</th>
     <th class="r">Impôt</th>
@@ -1010,10 +992,10 @@ ${(() => {
     ${keyYears.map(yr => {
       const ro = rows.find(r => r.year === yr);
       if (!ro) return "";
-      const cfBic = (loyerAnnuel - ro.creditAnnuelR - chargesAnnuelles - assuranceEmprunteurAnnuel - bicImpot) / 12;
+      const cfBic = ro.cashflow; // issu du moteur (projection déjà calculée en Micro-BIC)
       return `<tr>
         <td class="can">An ${yr}</td>
-        <td class="r">${yr <= duree ? fE(ro.capitalDebut) : "—"}</td>
+        <td class="r">${yr <= duree ? fE(ro.capitalFin) : "—"}</td>
         <td class="r">${yr <= duree ? fE(ro.interetsAnnee) : "—"}</td>
         <td class="r" style="color:#B03A2A">${fE(bicBase)}</td>
         <td class="r" style="color:${bicImpot === 0 ? "#1A7A52" : "#B03A2A"}">${fE(bicImpot)}</td>
@@ -1026,7 +1008,7 @@ ${(() => {
   return `<table class="tbl" style="margin-bottom:14px">
   <thead><tr>
     <th>Année</th>
-    <th class="r">Capital restant dû</th>
+    <th class="r">Capital restant dû<br><span style="font-weight:400;opacity:.7">fin d'année</span></th>
     <th class="r">Intérêts</th>
     <th class="r">Amortissement</th>
     <th class="r">Base imposable</th>
@@ -1039,7 +1021,7 @@ ${(() => {
       if (!ro) return "";
       return `<tr>
         <td class="can">An ${yr}</td>
-        <td class="r">${yr <= duree ? fE(ro.capitalDebut) : "—"}</td>
+        <td class="r">${yr <= duree ? fE(ro.capitalFin) : "—"}</td>
         <td class="r">${yr <= duree ? fE(ro.interetsAnnee) : "—"}</td>
         <td class="r">${fE(ro.amortTotalA)}</td>
         <td class="r" style="color:${ro.baseImposable === 0 ? "#1A7A52" : "#B03A2A"}">${fE(ro.baseImposable)}</td>
@@ -1075,7 +1057,8 @@ ${(() => {
   // Amortissements cumulés au fil des ans (réintégration Loi de finances 2025 pour LMNP réel)
   const amortCumulByYear: Record<number, number> = {};
   let cumul = 0;
-  for (const ro of rows) { cumul += ro.amortTotalA; amortCumulByYear[ro.year] = cumul; }
+  // Seuls les amortissements effectivement déduits sont réintégrés (LF 2025)
+  for (const ro of rows) { cumul += Math.max(0, ro.amortDisponible - ro.reportNplus1); amortCumulByYear[ro.year] = cumul; }
 
   const reventeYears = [10, 20, 35];
   const growthScenarios = [
@@ -1095,8 +1078,9 @@ ${(() => {
     // Réintégration des amortissements dans l'assiette de plus-value (Loi de finances 2025 — LMNP réel)
     const amortCumul = isMicro ? 0 : (amortCumulByYear[yr] ?? amortCumulByYear[Math.max(...Object.keys(amortCumulByYear).map(Number).filter(k => k <= yr))] ?? 0);
     const scenRows = growthScenarios.map((sc, si) => {
-      const prixVente = investTotal * Math.pow(1 + sc.pct, yr);
-      // Plus-value brute = prix de vente − (investTotal − amortissements réintégrés)
+      // Valeur du BIEN (les frais d'acquisition ne sont pas de la valeur immobilière)
+      const prixVente = prix * Math.pow(1 + sc.pct, yr);
+      // Plus-value brute = prix de vente − (prix d'acquisition fiscal − amortissements réintégrés)
       const pvBrute = Math.max(0, prixVente - investTotal + amortCumul);
       const taxIR = pvBrute * (1 - abattIR(yr)) * 0.19;
       const taxPS = pvBrute * (1 - abattPS(yr)) * 0.172;
@@ -1160,7 +1144,7 @@ ${yearCards}
 </div>
 
 <div class="beige-note">
-  <strong>Hypothèses.</strong> Base d'acquisition : ${fE(investTotal)} (bien + travaux + notaire).${!isMicro ? ` Amortissements cumulés réintégrés (Loi de finances 2025).` : ""} La revalorisation s'applique uniformément. Le crédit restant dû est déduit si la revente intervient avant la fin du crédit (${duree} ans). Simulation indicative — consulter un expert-comptable LMNP.
+  <strong>Hypothèses.</strong> Deux notions distinctes : la <strong>valeur du bien</strong> au départ (${fE(prix)}), à laquelle s'applique la revalorisation, et le <strong>prix d'acquisition fiscal</strong> (${fE(investTotal)} — bien, frais de notaire, travaux et mobilier), qui sert de base au calcul de la plus-value. Les frais d'acquisition entrent dans le calcul fiscal mais ne constituent pas de la valeur immobilière : à 0 %/an, le bien vaut donc toujours ${fE(prix)}.${!isMicro ? ` Amortissements cumulés réintégrés (Loi de finances 2025).` : ""} Le crédit restant dû est déduit si la revente intervient avant la fin du crédit (${duree} ans). Simulation indicative — consulter un expert-comptable LMNP.
 </div>
 </div>`;
 })()}
@@ -1175,7 +1159,7 @@ ${yearCards}
 <p style="font-size:9px;color:#1A1612;margin-bottom:8px">${isMicro ? `Micro-BIC · Abattement ${isSaisonnier ? "30" : "50"} % constant · Loyers et charges supposés constants` : "Régime réel simplifié · Loyers et charges constants · Amortissement variable selon les durées"}</p>
 
 ${isMicro ? (() => {
-  const bicBase = loyerAnnuel * (1 - abattPct);
+  const bicBase = recettesAnnuelles * (1 - abattPct);
   const bicImpot = bicBase * (tmi / 100 + 0.186);
   return `<table class="tbl">
   <thead><tr>
@@ -1191,7 +1175,7 @@ ${isMicro ? (() => {
   </tr></thead>
   <tbody>
     ${rows.map(ro => {
-      const cfBic = (loyerAnnuel - ro.creditAnnuelR - chargesAnnuelles - assuranceEmprunteurAnnuel - bicImpot) / 12;
+      const cfBic = ro.cashflow; // issu du moteur (projection déjà calculée en Micro-BIC)
       return `<tr>
         <td class="can" style="font-size:9px">${ro.year}</td>
         <td class="r" style="font-size:9px">${ro.year <= duree ? fE(ro.capitalFin) : "—"}</td>
@@ -1356,36 +1340,31 @@ ${!isMicro && annexeCols.length > 0 ? `<div class="page landscape">
       : (nMois > 0 ? montantCredit / nMois : 0);
 
     // Year-by-year projection
-    type Proj = { year: number; interets: number; capital: number; capCumul: number; amort: number; impot: number; cfAnnuel: number; capRestant: number };
-    const allYears: Proj[] = [];
-    let cap = montantCredit;
-    let capCumul = 0;
-    for (let yr = 1; yr <= Math.max(duree + 5, 35); yr++) {
-      let intY = 0; let capY = 0;
-      for (let m = 1; m <= 12; m++) {
-        if (yr > duree) break;
-        const intM = cap * r;
-        const capM = Math.max(0, M - intM);
-        intY += intM; capY += capM;
-        cap = Math.max(0, cap - capM);
-      }
-      capCumul += capY;
-      const amortBY = yr <= amortDureeEnsemble ? amortBienAn : 0;
-      const amortMY = amortDureeMobilier > 0 && yr <= amortDureeMobilier ? amortMobilierAn : 0;
-      const amortTY = amortDureeTravaux > 0 && yr <= amortDureeTravaux ? amortTravauxAn : 0;
-      const amortNY = amortDureeNotaire > 0 && yr <= amortDureeNotaire ? amortNotaireAn : 0;
-      const amortY = amortBY + amortMY + amortTY + amortNY;
-
-      const creditAn = yr <= duree ? creditTotalAnnuel : 0;
-      const chargesD = chargesAnnuelles + intY + assuranceEmprunteurAnnuel;
-      const baseR = Math.max(0, recettesAnnuelles - chargesD - amortY);
-      const impR = baseR * (tmi / 100 + 0.186);
-      const impB = baseBIC * (tmi / 100 + 0.186);
-      const imp = isMicro ? impB : impR;
-      const cf = recettesAnnuelles - creditAn - chargesAnnuelles - imp;
-
-      allYears.push({ year: yr, interets: intY, capital: capY, capCumul, amort: amortY, impot: imp, cfAnnuel: cf, capRestant: cap });
-    }
+    type Proj = { year: number; interets: number; capital: number; capCumul: number; amort: number; amortImpute: number; reportSortant: number; amortImputeCumul: number; impot: number; cfAnnuel: number; capRestant: number; capDebut: number };
+    // Projection issue du moteur unique (lib/computeResultats) — identique aux autres rapports
+    const projection = computeProjection({
+      prix, travaux, mobilier, notaire,
+      montantCredit, duree, taux,
+      loyerAnnuel, chargesLocatairesAnnuel,
+      chargesAnnuelles, assuranceEmprunteurAnnuel,
+      tmi, amortPct, amortMode, amortDureeEnsemble, composants,
+      amortDureeMobilier, amortDureeTravaux, amortDureeNotaire,
+      isMicro, isSaisonnier,
+    });
+    const allYears: Proj[] = projection.map(y => ({
+      year: y.year,
+      interets: y.interets,
+      capital: y.capitalRembourse,
+      capCumul: y.capitalRembourseCumul,
+      amort: y.amortDotation,
+      amortImpute: y.amortImpute,
+      reportSortant: y.reportSortant,
+      amortImputeCumul: y.amortImputeCumul,
+      impot: y.impot,
+      cfAnnuel: y.cashflowAnnuel,
+      capRestant: y.capitalFin,
+      capDebut: y.capitalDebut,
+    }));
 
     const getYear = (y: number) => allYears.find(rr => rr.year === y) || allYears[allYears.length - 1];
 
@@ -1404,12 +1383,13 @@ ${!isMicro && annexeCols.length > 0 ? `<div class="page landscape">
 
       const buildColData = (yr: number) => {
         const row = getYear(yr);
-        const creditAn = yr <= duree ? creditTotalAnnuel : 0; // capital + intérêts + assu
+        // mensualités + assurance emprunteur : uniquement pendant le crédit
+        const creditAn = yr <= duree ? creditTotalAnnuel : 0;
         const chargesVal = chargesAnnuelles;
         const impotVal = row.impot;
         const revenuVal = recettesAnnuelles;
-        // CF = revenus - charges - creditAn - impôt  (now balances perfectly)
-        const cfCash = revenuVal - chargesVal - creditAn - impotVal;
+        // Valeur issue du moteur : aucune formule recalculée ici
+        const cfCash = row.cfAnnuel;
         return { chargesVal, creditAn, impotVal, revenuVal, cfCash };
       };
 
@@ -1706,17 +1686,19 @@ ${bloc(`Fin d'emprunt N+${anneeApres}`, `Année ${anneeApres} · sans mensualit�
     const sumLoyers = allYears.filter(rr => rr.year <= dureeY).length * loyerAnnuel;
     const sumImpot = allYears.filter(rr => rr.year <= dureeY).reduce((s, rr) => s + rr.impot, 0);
     const sumCF = allYears.filter(rr => rr.year <= dureeY).reduce((s, rr) => s + rr.cfAnnuel, 0);
-    const amortCumulFinal = Math.min(dureeY, amortDureeEnsemble) * amortBienAn
-      + Math.min(dureeY, amortDureeMobilier) * amortMobilierAn
-      + Math.min(dureeY, amortDureeTravaux) * amortTravauxAn
-      + Math.min(dureeY, amortDureeNotaire) * amortNotaireAn;
-    const amortImmoFinal = Math.min(dureeY, amortDureeEnsemble) * amortBienAn;
+    // Cumuls issus du moteur : amortissements réellement imputés (pas une dotation figée)
+    const rowFin = getYear(dureeY);
+    const amortCumulFinal = rowFin.amortImputeCumul;
+    const amortImmoFinal = amortCumulFinal;
 
-    const pvBrute = isMicro ? 0 : amortImmoFinal;
+    // Plus-value : valeur du bien (hors frais d'acquisition) vs prix d'acquisition fiscal
+    const prixVenteFinal = prix;
+    const pvBrute = isMicro ? 0 : Math.max(0, prixVenteFinal - investTotal + amortCumulFinal);
     const abIR = abattIR(dureeY);
     const abPS = abattPS(dureeY);
-    const impotPV = pvBrute * (1 - abIR) * 0.19 + pvBrute * (1 - abPS) * 0.186;
-    const netRevente = prix - impotPV;
+    // Prélèvements sociaux sur plus-value immobilière : 17,2 % (et non 18,6 % comme sur les loyers)
+    const impotPV = pvBrute * (1 - abIR) * TAUX_IR_PLUSVALUE + pvBrute * (1 - abPS) * TAUX_PS_PLUSVALUE;
+    const netRevente = prixVenteFinal - impotPV;
 
     const today = new Date().toLocaleDateString("fr-FR", { day: "2-digit", month: "long", year: "numeric" });
     const bienTitle = [
@@ -1730,7 +1712,7 @@ ${bloc(`Fin d'emprunt N+${anneeApres}`, `Année ${anneeApres} · sans mensualit�
     const regimeColor = isMicro ? "#2A5C8A" : "#1A6644";
     const regimeAvantage = isMicro
       ? `Simplicité administrative · abattement forfaitaire ${isSaisonnier ? "30" : "50"}% · aucune comptabilité obligatoire`
-      : `Déduction de toutes les charges réelles · amortissement du bien sur ${amortDureeEnsemble} ans · déficit reportable sans limite`;
+      : `Déduction de toutes les charges réelles · ${amortMode === "ensemble" ? `amortissement du bien sur ${amortDureeEnsemble} ans` : `amortissement par composants (${Array.from(new Set(composants.map(c => c.duree))).sort((a, b) => a - b).join(" / ")} ans)`} · amortissements non déduits reportables sans limitation de durée`;
 
     const stackedBarPairHtml = makeStackedBarPair();
     const cashImpotGraphHtml = makeCashImpotGraph();
@@ -1866,6 +1848,9 @@ table.tbl .grp{border-left:1.5px solid rgba(201,91,42,0.5);border-right:1.5px so
       S'y ajoute l'<strong style="color:#2A5C8A">${amortLabel}</strong> : <strong style="color:#2A5C8A">${fE(amortTotalAn1)}</strong> supplémentaires viennent réduire l'assiette de l'impôt, sans aucune sortie de trésorerie. Votre base imposable tombe ainsi à <strong>${fE(baseImposableReel)}</strong>, ce qui porte votre impôt et prélèvements sociaux à <strong style="color:#C95B2A">${fE(impotReel)}</strong> pour l'année 1${impotReel > 0 ? `, soit ${fE(impotReel / 12)}/mois` : ""}.
     </div>
   </div>
+  <div style="background:rgba(42,112,128,0.10);border-left:2.5px solid #2A7080;border-radius:0 6px 6px 0;padding:7px 10px;margin-bottom:6px;font-size:12px;line-height:1.6;color:rgba(26,22,18,0.75)">
+    <strong>Pourquoi 18,6 % ici et 17,2 % à la revente ?</strong> Les prélèvements sociaux applicables aux <strong>revenus locatifs meublés</strong> (18,6 %) et ceux applicables aux <strong>plus-values immobilières</strong> (17,2 %) sont deux prélèvements distincts, à des taux différents.
+  </div>
 ` : `
   <div class="sec">Fiscalité · Détail année 1</div>
   <div style="background:#EDE7DC;border-radius:8px;padding:8px 10px;margin-bottom:6px">
@@ -1896,6 +1881,9 @@ table.tbl .grp{border-left:1.5px solid rgba(201,91,42,0.5);border-right:1.5px so
     <div style="font-size:12px;line-height:1.65;color:rgba(26,22,18,0.75);margin-top:5px">
       Votre base imposable s'établit donc à <strong>${fE(baseBIC)}</strong>, ce qui porte votre impôt et prélèvements sociaux à <strong style="color:#C95B2A">${fE(impotBIC)}</strong> pour l'année 1, soit <strong style="color:#C95B2A">${fE(impotBIC / 12)}/mois</strong>.
     </div>
+  </div>
+  <div style="background:rgba(42,112,128,0.10);border-left:2.5px solid #2A7080;border-radius:0 6px 6px 0;padding:7px 10px;margin-bottom:6px;font-size:12px;line-height:1.6;color:rgba(26,22,18,0.75)">
+    <strong>Pourquoi 18,6 % ici et 17,2 % à la revente ?</strong> Les prélèvements sociaux applicables aux <strong>revenus locatifs meublés</strong> (18,6 %) et ceux applicables aux <strong>plus-values immobilières</strong> (17,2 %) sont deux prélèvements distincts, à des taux différents.
   </div>`;
 
     return `<!DOCTYPE html><html lang="fr"><head><meta charset="UTF-8">
@@ -2297,60 +2285,34 @@ table.tbl .grp{border-left:1.5px solid rgba(201,91,42,0.5);border-right:1.5px so
       resultatAvantAmort: number; chargesDeductibles: number;
       baseImposable: number; impot: number; cashflow: number;
     }
-    const rows: PdfRow[] = [];
-    let capitalRestant = montantCredit;
-    let reportN = 0;
-
-    for (let year = 1; year <= totalYears; year++) {
-      const capitalDebut = Math.max(0, capitalRestant);
-      let interetsAnnee = 0;
-      let creditAnnuelR = 0;
-      let capitalRembAn = 0;
-
-      if (year <= duree && montantCredit > 0 && taux > 0) {
-        for (let m = 0; m < 12; m++) {
-          const im = capitalRestant * r;
-          interetsAnnee += im;
-          capitalRestant -= (M - im);
-        }
-        capitalRestant = Math.max(0, capitalRestant);
-        creditAnnuelR = M * 12;
-        capitalRembAn = creditAnnuelR - interetsAnnee;
-      } else if (year <= duree && montantCredit > 0) {
-        creditAnnuelR = montantCredit / n * 12;
-        capitalRembAn = creditAnnuelR;
-      }
-
-      let amortBienA = 0;
-      if (amortMode === "ensemble") {
-        amortBienA = year <= amortDureeEnsemble ? valeurAmortissable / amortDureeEnsemble : 0;
-      } else {
-        for (const c of composants) {
-          amortBienA += year <= c.duree ? (valeurAmortissable * c.pct / 100) / c.duree : 0;
-        }
-      }
-      const amortMobilierA = amortDureeMobilier > 0 && year <= amortDureeMobilier ? mobilier / amortDureeMobilier : 0;
-      const amortTravauxA = amortDureeTravaux > 0 && year <= amortDureeTravaux ? travaux / amortDureeTravaux : 0;
-      const amortNotaireA = amortDureeNotaire > 0 && year <= amortDureeNotaire ? notaire / amortDureeNotaire : 0;
-      const amortTotalA = amortBienA + amortMobilierA + amortTravauxA + amortNotaireA;
-      const chargesDed = chargesAnnuelles + interetsAnnee + assuranceEmprunteurAnnuel;
-      const resAvAmort = loyerAnnuel - chargesDed;
-      const reportEntrant = reportN;
-      const amortDisponible = amortTotalA + reportEntrant;
-      const baseImposable = Math.max(0, resAvAmort - amortDisponible);
-      const newReport = Math.max(0, amortDisponible - Math.max(0, resAvAmort));
-      const impot = baseImposable * (tmi / 100 + 0.186);
-      const cfAnnee = loyerAnnuel - (year <= duree ? creditAnnuelR + assuranceEmprunteurAnnuel : 0) - chargesAnnuelles - impot;
-
-      rows.push({
-        year, capitalDebut, capitalFin: Math.max(0, capitalRestant),
-        creditAnnuelR, interetsAnnee, capitalRembourse: capitalRembAn,
-        amortTotalA, amortDisponible, reportEntrant, reportNplus1: newReport,
-        resultatAvantAmort: resAvAmort, chargesDeductibles: chargesDed,
-        baseImposable, impot, cashflow: cfAnnee / 12,
-      });
-      reportN = newReport;
-    }
+    // Projection issue du moteur unique (lib/computeResultats)
+    const chargesLocatairesAnnuel = (parseFloat(f.chargesLoyer) || 0) * 12;
+    const projection = computeProjection({
+      prix, travaux, mobilier, notaire,
+      montantCredit, duree, taux,
+      loyerAnnuel, chargesLocatairesAnnuel,
+      chargesAnnuelles, assuranceEmprunteurAnnuel,
+      tmi, amortPct, amortMode, amortDureeEnsemble, composants,
+      amortDureeMobilier, amortDureeTravaux, amortDureeNotaire,
+      isMicro, isSaisonnier, horizon: totalYears,
+    });
+    const rows: PdfRow[] = projection.map(y => ({
+      year: y.year,
+      capitalDebut: y.capitalDebut,
+      capitalFin: y.capitalFin,
+      creditAnnuelR: y.creditAnnuel,
+      interetsAnnee: y.interets,
+      capitalRembourse: y.capitalRembourse,
+      amortTotalA: y.amortDotation,
+      amortDisponible: y.amortDisponible,
+      reportEntrant: y.reportEntrant,
+      reportNplus1: y.reportSortant,
+      resultatAvantAmort: y.resultatAvantAmort,
+      chargesDeductibles: y.chargesDeductibles,
+      baseImposable: y.baseImposable,
+      impot: y.impot,
+      cashflow: y.cashflowMensuel,
+    }));
 
     const annexeCols: { label: string; annuel: number; duree: number; initial: number }[] = [];
     if (amortMode === "ensemble") {
@@ -3022,7 +2984,7 @@ ${!isSaisonnier ? `<!-- PAGE 1 — COUVERTURE -->
 <table class="tbl">
   <thead><tr>
     <th>Année</th>
-    <th class="r">Capital restant dû</th>
+    <th class="r">Capital restant dû<br><span style="font-weight:400;opacity:.7">fin d'année</span></th>
     <th class="r">Intérêts cumulés</th>
     <th class="r">Capital remboursé</th>
     <th class="r">Annuité</th>
@@ -3149,7 +3111,7 @@ ${isMicro ? `
 ` : `
 <div style="background:#EDE7DC;border-radius:8px;padding:14px;margin-bottom:14px">
   <div style="font-size:10px;font-weight:700;color:#1A2D45;margin-bottom:6px">Principe du régime réel simplifié</div>
-  <div style="font-size:9.5px;line-height:1.7;color:#1A1612">Au régime réel, les <strong>charges réelles</strong> (intérêts, assurance, charges locatives) sont déductibles, ainsi que les <strong>amortissements</strong> par composants. Le résultat net peut être <strong>reporté sans limitation</strong> en cas de déficit imputable sur les loyers. L'avantage fiscal majeur : les amortissements réduisent la base imposable pendant de nombreuses années sans sortie de trésorerie.</div>
+  <div style="font-size:9.5px;line-height:1.7;color:#1A1612">Au régime réel, les <strong>charges réelles</strong> (intérêts, assurance, charges locatives) sont déductibles, ainsi que les <strong>amortissements</strong> par composants. Il faut distinguer deux reports : les <strong>déficits LMNP</strong> sont imputables sur les bénéfices de même nature des <strong>10 années suivantes</strong>, tandis que les <strong>amortissements non déduits</strong> sont reportables <strong>sans limitation de durée</strong>, sous réserve de la poursuite de l'activité. L'avantage fiscal majeur : les amortissements réduisent la base imposable pendant de nombreuses années sans sortie de trésorerie.</div>
 </div>
 
 <div class="two-col">
@@ -3197,7 +3159,7 @@ ${isMicro ? `
 <table class="tbl" style="margin-bottom:14px">
   <thead><tr>
     <th>Année</th>
-    <th class="r">Capital restant dû</th>
+    <th class="r">Capital restant dû<br><span style="font-weight:400;opacity:.7">fin d'année</span></th>
     <th class="r">Capital remb. cumulé</th>
     ${!isMicro ? `<th class="r">Amortissement</th>` : ""}
     <th class="r">Base imposable</th>
@@ -3302,7 +3264,8 @@ ${(() => {
   // Amortissements cumulés (réintégration Loi de finances 2025)
   const amortCumulByYear2: Record<number, number> = {};
   let cumul2 = 0;
-  for (const ro of rows) { cumul2 += ro.amortTotalA; amortCumulByYear2[ro.year] = cumul2; }
+  // Seuls les amortissements effectivement déduits sont réintégrés (LF 2025)
+  for (const ro of rows) { cumul2 += Math.max(0, ro.amortDisponible - ro.reportNplus1); amortCumulByYear2[ro.year] = cumul2; }
   const reventeYears = [10, 20, 30];
   return `<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:14px">
     ${reventeYears.map(yr => {
@@ -3311,7 +3274,7 @@ ${(() => {
       const ro = rows.find(r => r.year === yr) ?? rows[rows.length - 1];
       const crd = yr <= duree ? (ro?.capitalFin ?? 0) : 0;
       const amortCumul2 = isMicro ? 0 : (amortCumulByYear2[yr] ?? amortCumulByYear2[Math.max(...Object.keys(amortCumulByYear2).map(Number).filter(k => k <= yr))] ?? 0);
-      const prixVentePlus = investTotal * 1.01 ** yr;
+      const prixVentePlus = prix * 1.01 ** yr;
       const pvBrutePlus = Math.max(0, prixVentePlus - investTotal + amortCumul2);
       const taxIR = pvBrutePlus * (1 - abIR) * 0.19;
       const taxPS = pvBrutePlus * (1 - abPS) * 0.172;
