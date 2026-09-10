@@ -1342,15 +1342,19 @@ ${!isMicro && annexeCols.length > 0 ? `<div class="page landscape">
     // Year-by-year projection
     type Proj = { year: number; interets: number; capital: number; capCumul: number; amort: number; amortImpute: number; reportSortant: number; amortImputeCumul: number; impot: number; cfAnnuel: number; capRestant: number; capDebut: number };
     // Projection issue du moteur unique (lib/computeResultats) — identique aux autres rapports
-    const projection = computeProjection({
+    const projParams = {
       prix, travaux, mobilier, notaire,
       montantCredit, duree, taux,
       loyerAnnuel, chargesLocatairesAnnuel,
       chargesAnnuelles, assuranceEmprunteurAnnuel,
       tmi, amortPct, amortMode, amortDureeEnsemble, composants,
       amortDureeMobilier, amortDureeTravaux, amortDureeNotaire,
-      isMicro, isSaisonnier,
-    });
+      isSaisonnier,
+    };
+    // Les deux régimes, pour pouvoir les comparer dans le temps
+    const projReel = computeProjection({ ...projParams, isMicro: false });
+    const projMicro = computeProjection({ ...projParams, isMicro: true });
+    const projection = isMicro ? projMicro : projReel;
     const allYears: Proj[] = projection.map(y => ({
       year: y.year,
       interets: y.interets,
@@ -1374,8 +1378,8 @@ ${!isMicro && annexeCols.length > 0 ? `<div class="page landscape">
 
     // ── Stacked bar pair (FIXED: right col uses full creditTotalAnnuel so both cols balance) ──
     const makeStackedBarPair = (): string => {
-      const H = 205;
-      const colW = 112;
+      const H = 212;
+      const colW = 120;
       const gap = 5;                    // colonnes quasi collées
       const barsW = colW * 2 + gap;
       const annotW = 158;               // zone des flèches d'annotation
@@ -1526,8 +1530,8 @@ ${bloc(`Fin d'emprunt N+${anneeApres}`, `Année ${anneeApres} · sans mensualit�
     // ── Impôt line graph ──────────────────────────────────────────────────────
     // ── Graphe combiné : cash-flow, impôt et amortissement ────────────────────
     const makeCashImpotGraph = (): string => {
-      const gW = 690, gH = 250;
-      const PADL = 78, PADR = 78, PADT = 26, PADB = 40;
+      const gW = 690, gH = 222;
+      const PADL = 78, PADR = 78, PADT = 26, PADB = 38;
       const innerW = gW - PADL - PADR;
       const innerH = gH - PADT - PADB;
 
@@ -1632,6 +1636,97 @@ ${bloc(`Fin d'emprunt N+${anneeApres}`, `Année ${anneeApres} · sans mensualit�
 </svg>${legend}`;
     };
 
+    // ── Comparatif des trésoreries Réel vs Micro-BIC sur la durée ─────────────
+    const makeCfCompareGraph = (): string => {
+      const gW = 690, gH = 250;
+      const PADL = 84, PADR = 28, PADT = 34, PADB = 44;
+      const innerW = gW - PADL - PADR;
+      const innerH = gH - PADT - PADB;
+      const lastYear = duree + 5;
+
+      const sReel = projReel.filter(y => y.year <= lastYear).map(y => ({ x: y.year, v: y.cashflowMensuel }));
+      const sMicro = projMicro.filter(y => y.year <= lastYear).map(y => ({ x: y.year, v: y.cashflowMensuel }));
+      const allV = [...sReel, ...sMicro].map(p => p.v);
+
+      const niceScale = (lo: number, hi: number, wanted: number) => {
+        if (hi - lo < 1) hi = lo + 1;
+        const rawStep = (hi - lo) / wanted;
+        const mag = Math.pow(10, Math.floor(Math.log10(rawStep)));
+        const mult = [1, 2, 2.5, 5, 10].find(m => m * mag >= rawStep) ?? 10;
+        const step = mult * mag;
+        return { min: Math.floor(lo / step) * step, max: Math.ceil(hi / step) * step, step };
+      };
+      const nTicks = 4;
+      const sc = niceScale(Math.min(0, ...allV), Math.max(...allV, 1), nTicks);
+      const yMin = sc.min, yMax = sc.max, yRange = (yMax - yMin) || 1;
+
+      const toX = (yr: number) => PADL + ((yr - 1) / Math.max(lastYear - 1, 1)) * innerW;
+      const toY = (v: number) => PADT + (1 - (v - yMin) / yRange) * innerH;
+
+      const grid = Array.from({ length: nTicks + 1 }, (_, i) => {
+        const t = i / nTicks;
+        const v = yMin + t * yRange;
+        const y = PADT + (1 - t) * innerH;
+        return `<line x1="${PADL}" y1="${y.toFixed(1)}" x2="${PADL + innerW}" y2="${y.toFixed(1)}" stroke="rgba(26,22,18,0.10)" stroke-width="1"/>
+<text x="${PADL - 9}" y="${(y + 4).toFixed(1)}" text-anchor="end" font-size="12" font-weight="700" fill="rgba(26,22,18,0.5)">${fE(v)}</text>`;
+      }).join("");
+
+      const zeroLine = yMin < 0
+        ? `<line x1="${PADL}" y1="${toY(0).toFixed(1)}" x2="${PADL + innerW}" y2="${toY(0).toFixed(1)}" stroke="rgba(26,22,18,0.35)" stroke-width="1.2" stroke-dasharray="4 3"/>`
+        : "";
+
+      const xFin = toX(duree);
+      const finLine = `<line x1="${xFin.toFixed(1)}" y1="${PADT - 8}" x2="${xFin.toFixed(1)}" y2="${PADT + innerH}" stroke="#B03A2A" stroke-width="1.4" stroke-dasharray="5 3"/>
+<text x="${(xFin - 6).toFixed(1)}" y="${PADT - 13}" text-anchor="end" font-size="12" font-weight="700" fill="#B03A2A">Crédit soldé fin d'année ${duree}</text>`;
+
+      const stepX = lastYear > 22 ? 5 : lastYear > 12 ? 2 : 1;
+      const pinned = [1, duree, lastYear];
+      const yearsShown = new Set<number>(pinned);
+      for (let y = 1; y <= lastYear; y += stepX) if (!pinned.some(pz => Math.abs(pz - y) < 2)) yearsShown.add(y);
+      const xLabels = Array.from(yearsShown).sort((a, b) => a - b).map(y =>
+        `<text x="${toX(y).toFixed(1)}" y="${PADT + innerH + 19}" text-anchor="middle" font-size="12" font-weight="700" fill="rgba(26,22,18,0.55)">${y}</text>`
+      ).join("");
+
+      const serie = (pts: { x: number; v: number }[], color: string) => {
+        const d = pts.map((p, i) => `${i === 0 ? "M" : "L"}${toX(p.x).toFixed(1)},${toY(p.v).toFixed(1)}`).join(" ");
+        const dots = pts.map(p => `<circle cx="${toX(p.x).toFixed(1)}" cy="${toY(p.v).toFixed(1)}" r="3" fill="${color}" stroke="#F5F0E8" stroke-width="1.2"/>`).join("");
+        return `<path d="${d}" fill="none" stroke="${color}" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"/>${dots}`;
+      };
+
+      const COL_REEL = "#1A6644", COL_MICRO = "#2A5C8A";
+
+      // Étiquettes chiffrées en gros : celle du dessus va au-dessus, celle du
+      // dessous en dessous, pour qu'elles ne se chevauchent jamais.
+      const labelYears = [1, duree, lastYear];
+      const tags = labelYears.map(yr => {
+        const pr = sReel.find(p => p.x === yr);
+        const pm = sMicro.find(p => p.x === yr);
+        if (!pr || !pm) return "";
+        const anchor = yr === 1 ? "start" : yr === lastYear ? "end" : "middle";
+        const xOff = yr === 1 ? 9 : yr === lastYear ? -9 : 0;
+        const x = (toX(yr) + xOff).toFixed(1);
+        const reelHaut = pr.v >= pm.v;
+        const draw = (v: number, color: string, haut: boolean) =>
+          `<text x="${x}" y="${(toY(v) + (haut ? -13 : 23)).toFixed(1)}" text-anchor="${anchor}" font-size="15" font-weight="800" fill="${color}">${v >= 0 ? "+" : ""}${fE(v)}</text>`;
+        return draw(pr.v, COL_REEL, reelHaut) + draw(pm.v, COL_MICRO, !reelHaut);
+      }).join("");
+
+      const legend = `<div style="display:flex;gap:22px;flex-wrap:wrap;justify-content:center;margin-top:8px;font-size:13px;font-weight:600;color:rgba(26,22,18,0.7)">
+  <span><span style="display:inline-block;width:20px;height:4px;background:${COL_REEL};vertical-align:middle;margin-right:7px;border-radius:2px"></span>Régime Réel Simplifié${!isMicro ? " · retenu" : ""}</span>
+  <span><span style="display:inline-block;width:20px;height:4px;background:${COL_MICRO};vertical-align:middle;margin-right:7px;border-radius:2px"></span>Micro-BIC ${isSaisonnier ? "30" : "50"} %${isMicro ? " · retenu" : ""}</span>
+</div>`;
+
+      return `<div style="font-size:13px;font-weight:600;color:rgba(26,22,18,0.55);margin-bottom:2px">Trésorerie après fiscalité · €/mois</div>
+<svg width="${gW}" height="${gH}" viewBox="0 0 ${gW} ${gH}" xmlns="http://www.w3.org/2000/svg" style="width:100%;max-width:${gW}px">
+  ${grid}${zeroLine}${finLine}
+  ${serie(sMicro, COL_MICRO)}
+  ${serie(sReel, COL_REEL)}
+  ${tags}
+  <line x1="${PADL}" y1="${PADT + innerH}" x2="${PADL + innerW}" y2="${PADT + innerH}" stroke="rgba(26,22,18,0.28)" stroke-width="1.2"/>
+  ${xLabels}
+  <text x="${PADL + innerW / 2}" y="${gH - 6}" text-anchor="middle" font-size="12" font-weight="600" fill="rgba(26,22,18,0.45)">Année</text>
+</svg>${legend}`;
+    };
     // ── Détail de l'amortissement retenu (rien en Micro-BIC) ───────────────────
     const makeAmortDetail = (): string => {
       if (isMicro) return "";
@@ -1651,19 +1746,19 @@ ${bloc(`Fin d'emprunt N+${anneeApres}`, `Année ${anneeApres} · sans mensualit�
       if (amortNotaireAn > 0) lignes.push({ label: "Frais de notaire", base: fE(notaire), duree: `${amortDureeNotaire} ans`, montant: amortNotaireAn });
 
       const rows = lignes.map(l => `<tr>
-  <td style="padding:5px 8px;color:rgba(26,22,18,0.75)">${l.label}</td>
-  <td style="padding:5px 8px;color:rgba(26,22,18,0.5)">${l.base}</td>
-  <td style="padding:5px 8px;text-align:center;color:rgba(26,22,18,0.5)">${l.duree}</td>
-  <td style="padding:5px 8px;text-align:right;font-weight:700;color:#2A5C8A">${fE(l.montant)}/an</td>
+  <td style="padding:3px 8px;color:rgba(26,22,18,0.75)">${l.label}</td>
+  <td style="padding:3px 8px;color:rgba(26,22,18,0.5)">${l.base}</td>
+  <td style="padding:3px 8px;text-align:center;color:rgba(26,22,18,0.5)">${l.duree}</td>
+  <td style="padding:3px 8px;text-align:right;font-weight:700;color:#2A5C8A">${fE(l.montant)}/an</td>
 </tr>`).join("");
 
       return `<div style="background:#EDE7DC;border-radius:8px;overflow:hidden;margin-top:10px">
   <div style="background:rgba(42,92,138,0.12);padding:6px 10px;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:#2A5C8A">
     Détail de votre amortissement · ${amortMode === "ensemble" ? "méthode globale simplifiée" : "méthode par composants"}
   </div>
-  <table style="width:100%;border-collapse:collapse;font-size:12px">
+  <table style="width:100%;border-collapse:collapse;font-size:12px;table-layout:fixed">
     <tr style="background:rgba(26,22,18,0.04)">
-      <td style="padding:4px 8px;font-size:12px;font-weight:700;color:rgba(26,22,18,0.5)">Élément</td>
+      <td style="padding:3px 8px;font-size:12px;font-weight:700;color:rgba(26,22,18,0.5)">Élément</td>
       <td style="padding:4px 8px;font-size:12px;font-weight:700;color:rgba(26,22,18,0.5)">Base amortissable</td>
       <td style="padding:4px 8px;font-size:12px;font-weight:700;text-align:center;color:rgba(26,22,18,0.5)">Durée</td>
       <td style="padding:4px 8px;font-size:12px;font-weight:700;text-align:right;color:rgba(26,22,18,0.5)">Dotation</td>
@@ -1717,6 +1812,8 @@ ${bloc(`Fin d'emprunt N+${anneeApres}`, `Année ${anneeApres} · sans mensualit�
     const stackedBarPairHtml = makeStackedBarPair();
     const cashImpotGraphHtml = makeCashImpotGraph();
     const amortDetailHtml = makeAmortDetail();
+    const cfCompareHtml = makeCfCompareGraph();
+    const nbPages = isMicro ? 5 : 6;   // la page amortissement n'existe qu'au réel
 
     // ── CSS ───────────────────────────────────────────────────────────────────
     const css = `
@@ -1729,6 +1826,21 @@ html,body{background:#D0C9BC;margin:0;padding:0;font-family:'Helvetica Neue',Ari
 .hdr{background:#4E1F12;border-radius:10px;padding:12px 16px;margin-bottom:10px;display:flex;align-items:flex-start;justify-content:space-between}
 .sec{font-size:13px;font-weight:800;text-transform:uppercase;letter-spacing:.12em;color:#C95B2A;text-align:center;margin:38px auto 12px;padding-bottom:5px;border-bottom:1.5px solid rgba(201,91,42,0.4);width:fit-content;max-width:100%}
 .sec.first{margin-top:22px}
+/* Grand titre de page */
+.ptitle{font-size:31px;font-weight:800;color:#C95B2A;letter-spacing:-.025em;line-height:1.12;margin:4px 0 6px}
+.ptitle-sub{font-size:13px;color:rgba(26,22,18,0.45);margin-bottom:12px;letter-spacing:.02em}
+.ptitle + .sec.first, .ptitle-sub + .sec.first{margin-top:14px}
+/* Bandeau trésorerie pleine largeur */
+.cfband{background:#4E1F12;border-radius:8px;padding:14px 18px;display:flex;align-items:stretch;gap:18px;margin-bottom:6px}
+.cfband-l{flex:0 0 auto;min-width:210px;display:flex;flex-direction:column;justify-content:center}
+.cfband-lbl{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.12em;color:rgba(245,240,232,0.55);margin-bottom:6px}
+.cfband-val{font-size:38px;font-weight:800;letter-spacing:-.03em;line-height:1}
+.cfband-unit{font-size:16px;font-weight:500;color:rgba(245,240,232,0.6);margin-left:6px}
+.cfband-sub{font-size:12px;color:rgba(245,240,232,0.5);margin-top:7px}
+.cfband-sep{width:1.5px;background:rgba(201,91,42,0.55);flex-shrink:0}
+.cfband-r{flex:1;display:flex;flex-direction:column;justify-content:center}
+.cfband-head{font-size:14px;font-weight:700;color:#F5F0E8;line-height:1.45;margin-bottom:7px}
+.cfband-note{font-size:12px;color:rgba(245,240,232,0.55);line-height:1.55}
 .cards{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:6px}
 .frow{display:flex;align-items:stretch;padding:2px 10px 10px}
 .fcell{flex:0 1 132px;width:132px;min-width:0;padding:0 11px;border-left:1px solid rgba(26,22,18,0.14)}
@@ -1895,7 +2007,7 @@ table.tbl .grp{border-left:1.5px solid rgba(201,91,42,0.5);border-right:1.5px so
   <button onclick="window.print()" style="background:#C95B2A;color:#F5F0E8;border:none;border-radius:6px;padding:8px 20px;font-size:12px;font-weight:600;cursor:pointer">⬇ Enregistrer en PDF</button>
 </div>
 
-<!-- ═══════════════════ PAGE 1 ═══════════════════ -->
+<!-- ═══════════════════ PAGE 1 · L'ESSENTIEL ═══════════════════ -->
 <div class="page">
 
   <div class="hdr">
@@ -1910,6 +2022,7 @@ table.tbl .grp{border-left:1.5px solid rgba(201,91,42,0.5);border-right:1.5px so
     </div>
   </div>
 
+  <div class="ptitle">L'essentiel du projet</div>
   <div class="sec first">Récapitulatif du bien</div>
   <div style="background:#EDE7DC;border-radius:8px;overflow:hidden;margin-bottom:6px">
     <div class="sub-hdr">Acquisition</div>
@@ -1932,6 +2045,26 @@ table.tbl .grp{border-left:1.5px solid rgba(201,91,42,0.5);border-right:1.5px so
     </div>
   </div>
 
+  <div class="sec">Charges d'exploitation · année 1</div>
+  <div style="display:flex;background:#EDE7DC;border-radius:8px;overflow:hidden;margin-bottom:6px">
+    <div style="flex:1;padding:10px 14px">
+      <div style="display:grid;grid-template-columns:1fr 1fr;column-gap:22px">
+      ${[
+        taxeFonciere > 0 ? `<div style="display:flex;justify-content:space-between;align-items:baseline;padding:3px 0;border-bottom:.5px solid rgba(26,22,18,0.08)"><span style="font-size:12px;color:rgba(26,22,18,0.55)">Taxe foncière</span><span style="font-size:13px;font-weight:600">${fE(taxeFonciere)}/an</span></div>` : "",
+        chargesCopro > 0 ? `<div style="display:flex;justify-content:space-between;align-items:baseline;padding:3px 0;border-bottom:.5px solid rgba(26,22,18,0.08)"><span style="font-size:12px;color:rgba(26,22,18,0.55)">Charges copropriété</span><span style="font-size:13px;font-weight:600">${fE(chargesCopro)}/an</span></div>` : "",
+        pnoEur > 0 ? `<div style="display:flex;justify-content:space-between;align-items:baseline;padding:3px 0;border-bottom:.5px solid rgba(26,22,18,0.08)"><span style="font-size:12px;color:rgba(26,22,18,0.55)">Assu. Loyer (${fP(pnoPct, 1)})</span><span style="font-size:13px;font-weight:600">${fE(pnoEur)}/an</span></div>` : "",
+        gestionEur > 0 ? `<div style="display:flex;justify-content:space-between;align-items:baseline;padding:3px 0;border-bottom:.5px solid rgba(26,22,18,0.08)"><span style="font-size:12px;color:rgba(26,22,18,0.55)">Gestion locative (${fP(gestionPct, 1)})</span><span style="font-size:13px;font-weight:600">${fE(gestionEur)}/an</span></div>` : "",
+        entretien > 0 ? `<div style="display:flex;justify-content:space-between;align-items:baseline;padding:3px 0;border-bottom:.5px solid rgba(26,22,18,0.08)"><span style="font-size:12px;color:rgba(26,22,18,0.55)">Entretien courant</span><span style="font-size:13px;font-weight:600">${fE(entretien)}/an</span></div>` : "",
+        compta > 0 ? `<div style="display:flex;justify-content:space-between;align-items:baseline;padding:3px 0;border-bottom:.5px solid rgba(26,22,18,0.08)"><span style="font-size:12px;color:rgba(26,22,18,0.55)">Comptabilité</span><span style="font-size:13px;font-weight:600">${fE(compta)}/an</span></div>` : "",
+      ].filter(Boolean).join("") || `<div style="font-size:12px;color:rgba(26,22,18,0.35);padding:4px 0">Aucune charge renseignée</div>`}
+      </div>
+      <div style="margin-top:7px;padding-top:5px;border-top:2px solid rgba(26,22,18,0.15);display:flex;justify-content:space-between;align-items:baseline">
+        <span style="font-size:12px;text-transform:uppercase;letter-spacing:.1em;color:rgba(26,22,18,0.45)">TOTAL charges</span>
+        <span style="font-size:17px;font-weight:700;color:#C95B2A;letter-spacing:-.01em">${fE(totalChargesHorsCredit)}/an</span>
+      </div>
+    </div>
+  </div>
+
   <div class="sec">Indicateurs clés</div>
   <div class="cards">
     <div class="card hl">
@@ -1949,12 +2082,38 @@ table.tbl .grp{border-left:1.5px solid rgba(201,91,42,0.5);border-right:1.5px so
       <div class="card-val lg" style="color:#fff;font-weight:400">${fP(rendChosen)}</div>
       <div class="card-sub" style="color:rgba(255,255,255,0.5)">${regimeLabel}</div>
     </div>
-    <div class="card ${cfMensuel >= 0 ? "green" : "red"}">
-      <div class="card-lbl">Cash-flow mensuel</div>
-      <div class="card-val lg ${cfMensuel >= 0 ? "green" : "red"}">${cfMensuel >= 0 ? "+" : ""}${fE(cfMensuel)}/mois</div>
-      <div class="card-sub">après impôt · ${regimeLabel}</div>
+  </div>
+
+  <div class="cfband">
+    <div class="cfband-l">
+      <div class="cfband-lbl">Trésorerie après fiscalité</div>
+      <div><span class="cfband-val" style="color:${cfMensuel >= 0 ? "#4ADE80" : "#F87171"}">${cfMensuel >= 0 ? "+" : ""}${fE(cfMensuel)}</span><span class="cfband-unit">/ mois</span></div>
+      <div class="cfband-sub">Année 1 · ${regimeLabel}</div>
+    </div>
+    <div class="cfband-sep"></div>
+    <div class="cfband-r">
+      <div class="cfband-head">${cfMensuel >= 0
+        ? "Les loyers couvrent les sorties renseignées et laissent un excédent."
+        : `Les loyers ne couvrent pas encore toutes les sorties : il reste ${fE(Math.abs(cfMensuel))} par mois à financer sur votre épargne.`}</div>
+      <div class="cfband-note">${cfMensuel >= 0
+        ? `Moyenne mensuelle : ce montant varie selon les dépenses effectives. En parallèle, vous remboursez ${fE(getYear(1).capital / 12)} de capital chaque mois — un enrichissement qui n'apparaît pas dans cette ligne.`
+        : `Cet effort n'est pas une perte : vous remboursez ${fE(getYear(1).capital / 12)} de capital chaque mois. Le crédit soldé, la mensualité disparaît et la trésorerie bascule à la hausse.`}</div>
     </div>
   </div>
+
+  <div class="ftr"><span>toutlmnp.fr · Rapport indicatif</span><span>Page 1 / ${nbPages}</span><span>${today}</span></div>
+</div>
+
+
+<!-- ═══════════ PAGE 2 · RÉEL OU MICRO-BIC ═══════════ -->
+<div class="page">
+
+  <div style="background:#4E1F12;border-radius:7px;padding:7px 12px;margin-bottom:6px;display:flex;align-items:center;justify-content:space-between">
+    <div style="font-size:13px;font-weight:300;color:#F5F0E8">tout<span style="color:#C95B2A">lmnp</span> · <strong>${bienTitle}</strong></div>
+    <div style="background:${regimeColor};border-radius:12px;padding:2px 9px;font-size:12px;font-weight:700;color:#fff">${regimeLabel}</div>
+  </div>
+  <div class="ptitle">Réel ou Micro-BIC&nbsp;?</div>
+  <div class="ptitle-sub">Les deux régimes comparés, aujourd'hui et sur toute la durée.</div>
 
   <div class="sec">Comparaison Régime Réel vs Micro-BIC</div>
   <div class="compare-wrap">
@@ -1979,6 +2138,10 @@ table.tbl .grp{border-left:1.5px solid rgba(201,91,42,0.5);border-right:1.5px so
     </div>
   </div>
 
+  <div style="background:#EDE7DC;border-radius:8px;padding:10px 14px 8px;margin-bottom:6px">
+    ${cfCompareHtml}
+  </div>
+
   <div class="regime-band">
     <div style="display:flex;align-items:center;gap:8px">
       <div style="background:rgba(255,255,255,0.15);border-radius:20px;padding:3px 10px;font-size:12px;font-weight:700;color:#fff;letter-spacing:.05em;flex-shrink:0">RÉGIME CHOISI</div>
@@ -1989,6 +2152,32 @@ table.tbl .grp{border-left:1.5px solid rgba(201,91,42,0.5);border-right:1.5px so
     </div>
   </div>
 
+  <div style="background:rgba(26,22,18,0.04);border-radius:7px;padding:8px 11px;margin-top:6px;font-size:12px;line-height:1.65;color:rgba(26,22,18,0.72)">
+    <strong>Pourquoi ce régime ?</strong> ${(() => {
+      const ecartAn = Math.abs(impotBIC - impotReel);
+      const ecartMois = Math.abs(res.cashflowReelMensuel - res.cashflowBICMensuel);
+      if (isMicro) {
+        return impotBIC <= impotReel
+          ? `Vos charges réelles et vos amortissements restent inférieurs à l'abattement forfaitaire de ${isSaisonnier ? "30" : "50"} %. Le Micro-BIC vous impose donc moins (${fE(ecartAn)} d'écart annuel) tout en vous dispensant de comptabilité. Il reste avantageux tant que vos charges ne progressent pas.`
+          : `Le Micro-BIC est retenu ici pour sa simplicité : aucune comptabilité, aucune liasse fiscale. Il vous coûte cependant ${fE(ecartAn)} d'impôt de plus par an que le régime réel, soit ${fE(ecartMois)} de trésorerie mensuelle. Dès lors que vous acceptez la contrainte comptable, le réel redevient plus favorable.`;
+      }
+      return impotReel <= impotBIC
+        ? `Vos charges déductibles et vos amortissements dépassent l'abattement forfaitaire de ${isSaisonnier ? "30" : "50"} %. Le régime réel vous fait économiser ${fE(ecartAn)} d'impôt par an, soit ${fE(ecartMois)} de trésorerie chaque mois. La contrepartie est une comptabilité à tenir — c'est le poste « comptabilité » de vos charges.`
+        : `Le régime réel est retenu, mais il ne vous avantage pas cette année : l'abattement forfaitaire du Micro-BIC serait plus favorable de ${fE(ecartAn)}. Cela arrive quand les charges et amortissements sont faibles. L'écart peut s'inverser avec des travaux, du mobilier ou un crédit plus chargé en intérêts.`;
+    })()}
+  </div>
+
+  <div class="ftr"><span>toutlmnp.fr · Rapport indicatif</span><span>Page 2 / ${nbPages}</span><span>${today}</span></div>
+</div>
+
+<!-- ═══════════ PAGE 3 · QUE DIT L'IMPÔT ═══════════════════ -->
+<div class="page">
+
+  <div style="background:#4E1F12;border-radius:7px;padding:7px 12px;margin-bottom:6px;display:flex;align-items:center;justify-content:space-between">
+    <div style="font-size:13px;font-weight:300;color:#F5F0E8">tout<span style="color:#C95B2A">lmnp</span> · <strong>${bienTitle}</strong></div>
+    <div style="background:${regimeColor};border-radius:12px;padding:2px 9px;font-size:12px;font-weight:700;color:#fff">${regimeLabel}</div>
+  </div>
+  <div class="ptitle">Que dit l'impôt&nbsp;?</div>
   <div class="sec">Évolution dans le temps · ${regimeLabel}</div>
   <table class="tbl">
     <thead>
@@ -2028,87 +2217,71 @@ table.tbl .grp{border-left:1.5px solid rgba(201,91,42,0.5);border-right:1.5px so
     </tbody>
   </table>
 
-  <div class="ftr"><span>toutlmnp.fr · Rapport indicatif</span><span>Page 1 / 4</span><span>${today}</span></div>
-</div>
-
-<!-- ═══════════════════ PAGE 2 ═══════════════════ -->
-<div class="page">
-
-  <div style="background:#4E1F12;border-radius:7px;padding:7px 12px;margin-bottom:10px;display:flex;align-items:center;justify-content:space-between">
-    <div style="font-size:13px;font-weight:300;color:#F5F0E8">tout<span style="color:#C95B2A">lmnp</span> · <strong>${bienTitle}</strong></div>
-    <div style="background:${regimeColor};border-radius:12px;padding:2px 9px;font-size:12px;font-weight:700;color:#fff">${regimeLabel}</div>
-  </div>
-
-  <!-- Charges + Fiscalité -->
-  <div class="sec first">Détail des Charges et de l'impôt</div>
-  <div style="display:flex;gap:0;background:#EDE7DC;border-radius:8px;overflow:hidden;margin-bottom:6px">
-    <!-- Gauche : charges -->
-    <div style="flex:1.6;padding:10px 12px">
-      ${[
-        taxeFonciere > 0 ? `<div style="display:flex;justify-content:space-between;align-items:baseline;padding:3px 0;border-bottom:.5px solid rgba(26,22,18,0.08)"><span style="font-size:12px;color:rgba(26,22,18,0.55)">Taxe foncière</span><span style="font-size:13px;font-weight:600">${fE(taxeFonciere)}/an</span></div>` : "",
-        chargesCopro > 0 ? `<div style="display:flex;justify-content:space-between;align-items:baseline;padding:3px 0;border-bottom:.5px solid rgba(26,22,18,0.08)"><span style="font-size:12px;color:rgba(26,22,18,0.55)">Charges copropriété</span><span style="font-size:13px;font-weight:600">${fE(chargesCopro)}/an</span></div>` : "",
-        pnoEur > 0 ? `<div style="display:flex;justify-content:space-between;align-items:baseline;padding:3px 0;border-bottom:.5px solid rgba(26,22,18,0.08)"><span style="font-size:12px;color:rgba(26,22,18,0.55)">Assu. Loyer (${fP(pnoPct, 1)})</span><span style="font-size:13px;font-weight:600">${fE(pnoEur)}/an</span></div>` : "",
-        gestionEur > 0 ? `<div style="display:flex;justify-content:space-between;align-items:baseline;padding:3px 0;border-bottom:.5px solid rgba(26,22,18,0.08)"><span style="font-size:12px;color:rgba(26,22,18,0.55)">Gestion locative (${fP(gestionPct, 1)})</span><span style="font-size:13px;font-weight:600">${fE(gestionEur)}/an</span></div>` : "",
-        entretien > 0 ? `<div style="display:flex;justify-content:space-between;align-items:baseline;padding:3px 0;border-bottom:.5px solid rgba(26,22,18,0.08)"><span style="font-size:12px;color:rgba(26,22,18,0.55)">Entretien courant</span><span style="font-size:13px;font-weight:600">${fE(entretien)}/an</span></div>` : "",
-        compta > 0 ? `<div style="display:flex;justify-content:space-between;align-items:baseline;padding:3px 0;border-bottom:.5px solid rgba(26,22,18,0.08)"><span style="font-size:12px;color:rgba(26,22,18,0.55)">Comptabilité</span><span style="font-size:13px;font-weight:600">${fE(compta)}/an</span></div>` : "",
-      ].filter(Boolean).join("") || `<div style="font-size:12px;color:rgba(26,22,18,0.35);padding:4px 0">Aucune charge renseignée</div>`}
-      <div style="margin-top:8px;padding-top:5px;border-top:2px solid rgba(26,22,18,0.15)">
-        <span style="font-size:12px;text-transform:uppercase;letter-spacing:.1em;color:rgba(26,22,18,0.45)">TOTAL charges</span>
-        <div style="font-size:16px;font-weight:700;color:#C95B2A;letter-spacing:-.01em;margin-top:1px">${fE(totalChargesHorsCredit)}/an</div>
-      </div>
-    </div>
-    <!-- Séparateur vertical -->
-    <div style="width:1px;background:rgba(26,22,18,0.12);margin:10px 0"></div>
-    <!-- Droite : calcul de l'impôt -->
-    <div style="flex:1.1;padding:10px 12px">
-      <div style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:rgba(26,22,18,0.4);margin-bottom:6px">Calcul de l'impôt · Année 1</div>
-      <div style="display:flex;justify-content:space-between;align-items:baseline;padding:3px 0;border-bottom:.5px solid rgba(26,22,18,0.08)"><span style="font-size:12px;color:rgba(26,22,18,0.55)">Recettes fiscales</span><span style="font-size:13px;font-weight:600;color:#1A7A52">${fE(recettesAnnuelles)}</span></div>
-      <div style="display:flex;justify-content:space-between;align-items:baseline;padding:3px 0;border-bottom:.5px solid rgba(26,22,18,0.08)"><span style="font-size:12px;color:rgba(26,22,18,0.55)">− Charges déductibles</span><span style="font-size:13px;font-weight:600;color:#8B1A1A">−${fE(totalChargesHorsCredit)}</span></div>
-      <div style="display:flex;justify-content:space-between;align-items:baseline;padding:3px 0;border-bottom:.5px solid rgba(26,22,18,0.08)"><span style="font-size:12px;color:rgba(26,22,18,0.55)">− Intérêts emprunt + Assu.</span><span style="font-size:13px;font-weight:600;color:#8B1A1A">−${fE(totalIntAssu)}</span></div>
-      ${!isMicro ? `
-      <div style="display:flex;justify-content:space-between;align-items:baseline;padding:3px 0;border-bottom:.5px solid rgba(42,92,138,0.25);background:rgba(42,92,138,0.05);margin:0 -2px;padding-left:2px;padding-right:2px">
-        <span style="font-size:12px;color:#2A5C8A;font-weight:700">− Amortissements</span>
-        <span style="font-size:13px;font-weight:700;color:#2A5C8A">−${fE(amortTotalAn1)}</span>
-      </div>
-      ${amortBienAn > 0 ? `<div style="display:flex;justify-content:space-between;align-items:baseline;padding:2px 0 2px 10px;border-bottom:.5px solid rgba(42,92,138,0.1)"><span style="font-size:12px;color:rgba(42,92,138,0.75)">↳ Bien (${amortPct}% · ${amortDureeEnsemble} ans)</span><span style="font-size:12px;font-weight:600;color:rgba(42,92,138,0.85)">−${fE(amortBienAn)}</span></div>` : ""}
-      ${amortMobilierAn > 0 ? `<div style="display:flex;justify-content:space-between;align-items:baseline;padding:2px 0 2px 10px;border-bottom:.5px solid rgba(42,92,138,0.1)"><span style="font-size:12px;color:rgba(42,92,138,0.75)">↳ Mobilier (${amortDureeMobilier} ans)</span><span style="font-size:12px;font-weight:600;color:rgba(42,92,138,0.85)">−${fE(amortMobilierAn)}</span></div>` : ""}
-      ${amortTravauxAn > 0 ? `<div style="display:flex;justify-content:space-between;align-items:baseline;padding:2px 0 2px 10px;border-bottom:.5px solid rgba(42,92,138,0.1)"><span style="font-size:12px;color:rgba(42,92,138,0.75)">↳ Travaux (${amortDureeTravaux} ans)</span><span style="font-size:12px;font-weight:600;color:rgba(42,92,138,0.85)">−${fE(amortTravauxAn)}</span></div>` : ""}
-      ${amortNotaireAn > 0 ? `<div style="display:flex;justify-content:space-between;align-items:baseline;padding:2px 0 2px 10px;border-bottom:.5px solid rgba(42,92,138,0.1)"><span style="font-size:12px;color:rgba(42,92,138,0.75)">↳ Notaire (${amortDureeNotaire} ans)</span><span style="font-size:12px;font-weight:600;color:rgba(42,92,138,0.85)">−${fE(amortNotaireAn)}</span></div>` : ""}
-      ` : `<div style="display:flex;justify-content:space-between;align-items:baseline;padding:3px 0;border-bottom:.5px solid rgba(26,22,18,0.08)"><span style="font-size:12px;color:rgba(26,22,18,0.55)">Abattement forfaitaire (${isSaisonnier ? "30" : "50"}%)</span><span style="font-size:13px;font-weight:600;color:#8B1A1A">−${fE(recettesAnnuelles * abattPct)}</span></div>`}
-      <div style="display:flex;justify-content:space-between;align-items:baseline;padding:4px 0;border-top:1.5px solid rgba(26,22,18,0.15);margin-top:3px"><span style="font-size:12px;color:rgba(26,22,18,0.6);font-weight:700">= Base imposable</span><span style="font-size:13px;font-weight:700">${fE(isMicro ? baseBIC : baseImposableReel)}</span></div>
-      <div style="margin-top:5px;padding:5px 8px;background:#4E1F12;border-radius:6px;display:flex;justify-content:space-between;align-items:center">
-        <span style="font-size:12px;color:#F5F0E8;font-weight:700">Impôt + prél. soc.</span>
-        <span style="font-size:13px;font-weight:700;color:#F5A623">${fE(isMicro ? impotBIC : impotReel)}</span>
-      </div>
-    </div>
-  </div>
-
-  <!-- Vision d'ensemble -->
-  <div class="sec">Vision d'ensemble · Année 1 vs Fin d'emprunt + 1 an</div>
-  <div style="background:#EDE7DC;border-radius:8px;padding:10px 14px;margin-bottom:4px">
-    ${stackedBarPairHtml}
-  </div>
-
-  <div class="ftr"><span>toutlmnp.fr · Rapport indicatif</span><span>Page 2 / 4</span><span>${today}</span></div>
-</div>
-
-<!-- ═══════════════════ PAGE 2 BIS — ÉVOLUTION ═══════════════════ -->
-<div class="page">
-
-  <div class="sec first">Évolution impôt et cash-flow dans le temps</div>
+  <div class="sec">Évolution de l'impôt et de la trésorerie</div>
   <div style="background:#EDE7DC;border-radius:8px;padding:12px 14px 10px">
     ${cashImpotGraphHtml}
   </div>
-  <div style="font-size:12px;color:rgba(26,22,18,0.55);line-height:1.6;margin-top:8px">
-    Projection sur ${duree + 5} ans, à loyers et charges constants. Tant que le crédit court, le cash-flow reste contenu par la mensualité${!isMicro ? " et l'impôt est amorti par les dotations" : ""}. Au-delà de l'année ${duree}, la mensualité disparaît : le cash-flow bascule nettement à la hausse${!isMicro ? ", tandis que l'impôt progresse à mesure que les intérêts déductibles puis les amortissements s'épuisent" : ""}.
+  <div style="background:${isMicro ? "rgba(42,92,138,0.07)" : "rgba(26,102,68,0.07)"};border-left:2.5px solid ${isMicro ? "#2A5C8A" : "#1A6644"};border-radius:0 6px 6px 0;padding:8px 11px;margin-top:8px;font-size:12px;line-height:1.65;color:rgba(26,22,18,0.75)">
+    ${isMicro
+      ? `<strong>Au Micro-BIC, votre impôt est stable dans le temps.</strong> Il n'y a aucun amortissement : votre base imposable reste égale à ${isSaisonnier ? "70" : "50"} % de vos recettes, année après année, quelles que soient vos charges réelles et l'avancement de votre crédit. C'est prévisible, mais vous ne bénéficiez d'aucune déduction supplémentaire — d'où une imposition qui démarre plus haut que le régime réel.`
+      : `<strong>Au régime réel, plus l'amortissement baisse, plus l'impôt augmente.</strong> Chaque composant s'amortit sur sa propre durée puis s'éteint : les barres bleues du graphique diminuent par paliers. À chaque palier, la déduction disparue n'allège plus votre base imposable, qui remonte d'autant — et l'impôt avec elle. Le même effet joue sur les intérêts d'emprunt, déductibles eux aussi et décroissants à mesure que vous remboursez. C'est la contrepartie normale d'un projet qui s'assainit : votre trésorerie s'améliore pendant que votre base imposable se reconstitue.`}
+  </div>
+
+  <div class="ftr"><span>toutlmnp.fr · Rapport indicatif</span><span>Page 3 / ${nbPages}</span><span>${today}</span></div>
+</div>
+
+${!isMicro ? `
+<!-- ═══════════ PAGE 3 · AMORTISSEMENT ═══════════ -->
+<div class="page">
+
+  <div style="background:#4E1F12;border-radius:7px;padding:7px 12px;margin-bottom:6px;display:flex;align-items:center;justify-content:space-between">
+    <div style="font-size:13px;font-weight:300;color:#F5F0E8">tout<span style="color:#C95B2A">lmnp</span> · <strong>${bienTitle}</strong></div>
+    <div style="background:${regimeColor};border-radius:12px;padding:2px 9px;font-size:12px;font-weight:700;color:#fff">${regimeLabel}</div>
+  </div>
+  <div class="ptitle">Votre amortissement en détail</div>
+  <div class="ptitle-sub">La déduction qui ne vous coûte rien, élément par élément.</div>
+
+  <div style="background:rgba(42,92,138,0.07);border-left:2.5px solid #2A5C8A;border-radius:0 6px 6px 0;padding:9px 12px;margin-bottom:10px;font-size:12px;line-height:1.7;color:rgba(26,22,18,0.75)">
+    L'amortissement est une <strong>charge comptable sans sortie d'argent</strong> : vous déduisez chaque année une fraction de la valeur de votre bien, ce qui réduit votre base imposable sans que rien ne quitte votre compte. Le terrain, lui, ne se déprécie pas et n'est jamais amortissable — d'où la part de ${amortPct} % retenue sur le prix d'achat.
   </div>
   ${amortDetailHtml}
 
-  <div class="ftr"><span>toutlmnp.fr · Rapport indicatif</span><span>Page 3 / 4</span><span>${today}</span></div>
+  <div style="background:rgba(26,22,18,0.04);border-radius:7px;padding:9px 12px;margin-top:10px;font-size:12px;line-height:1.7;color:rgba(26,22,18,0.7)">
+    <strong>Chaque élément s'éteint à sa propre durée.</strong> ${amortMode === "ensemble"
+      ? `Vous avez retenu la méthode globale simplifiée : le bien s'amortit d'un bloc sur ${amortDureeEnsemble} ans. Au terme, la déduction disparaît d'un coup et votre base imposable remonte d'autant.`
+      : `Vous avez retenu la méthode par composants. Les durées vont de ${Math.min(...composants.map(c => c.duree))} à ${Math.max(...composants.map(c => c.duree))} ans : votre dotation ne s'arrête pas d'un coup, elle décroît par paliers à mesure que chaque composant arrive à son terme. C'est ce que montrent les barres bleues du graphique précédent.`}
+    Tant que votre résultat ne suffit pas à absorber la dotation, l'excédent est reporté sans limitation de durée — il n'est jamais perdu.
+  </div>
+  <div class="ftr"><span>toutlmnp.fr · Rapport indicatif</span><span>Page 3 / ${nbPages}</span><span>${today}</span></div>
+</div>
+` : ""}
+
+<!-- ═══════════════════ PAGE 3 · VISION D'ENSEMBLE ═══════════════════ -->
+<div class="page">
+
+  <div style="background:#4E1F12;border-radius:7px;padding:7px 12px;margin-bottom:6px;display:flex;align-items:center;justify-content:space-between">
+    <div style="font-size:13px;font-weight:300;color:#F5F0E8">tout<span style="color:#C95B2A">lmnp</span> · <strong>${bienTitle}</strong></div>
+    <div style="background:${regimeColor};border-radius:12px;padding:2px 9px;font-size:12px;font-weight:700;color:#fff">${regimeLabel}</div>
+  </div>
+  <div class="ptitle">Vision d'ensemble</div>
+  <div class="ptitle-sub">Où part chaque euro de loyer, au départ puis une fois le crédit soldé.</div>
+
+  <div style="background:#EDE7DC;border-radius:8px;padding:12px 16px;margin-bottom:8px">
+    ${stackedBarPairHtml}
+  </div>
+
+  <div class="ftr"><span>toutlmnp.fr · Rapport indicatif</span><span>Page ${isMicro ? 4 : 5} / ${nbPages}</span><span>${today}</span></div>
 </div>
 
-<!-- ═══════════════════ PAGE 3 ═══════════════════ -->
+<!-- ═══════════════════ PAGE 4 · CE QU'IL RESTE À LA FIN ═══════════════════ -->
 <div class="page">
+
+  <div style="background:#4E1F12;border-radius:7px;padding:7px 12px;margin-bottom:6px;display:flex;align-items:center;justify-content:space-between">
+    <div style="font-size:13px;font-weight:300;color:#F5F0E8">tout<span style="color:#C95B2A">lmnp</span> · <strong>${bienTitle}</strong></div>
+    <div style="background:${regimeColor};border-radius:12px;padding:2px 9px;font-size:12px;font-weight:700;color:#fff">${regimeLabel}</div>
+  </div>
+  <div class="ptitle">Ce qu'il reste à la fin</div>
+  <div class="ptitle-sub">Situation à ${dureeY} ans, crédit soldé, sans revalorisation du bien.</div>
 
   <div style="background:#4E1F12;border-radius:7px;padding:7px 12px;margin-bottom:12px;display:flex;align-items:center;justify-content:space-between">
     <div style="font-size:13px;font-weight:300;color:#F5F0E8">tout<span style="color:#C95B2A">lmnp</span> · <strong>Situation hypothétique à ${dureeY} ans</strong></div>
@@ -2196,7 +2369,7 @@ table.tbl .grp{border-left:1.5px solid rgba(201,91,42,0.5);border-right:1.5px so
     Calcul indicatif basé sur la législation 2026. La réintégration des amortissements (Loi de finances 2025) s'applique au régime réel. Les abattements pour durée de détention s'appliquent à partir de 6 ans. Consulter un notaire ou expert-comptable avant toute décision.
   </div>
 
-  <div class="ftr"><span>toutlmnp.fr · Simulation indicative — ne constitue pas un conseil fiscal ou financier</span><span>Page 4 / 4</span><span>${today}</span></div>
+  <div class="ftr"><span>toutlmnp.fr · Simulation indicative — ne constitue pas un conseil fiscal ou financier</span><span>Page ${nbPages} / ${nbPages}</span><span>${today}</span></div>
 </div>
 
 </body></html>`;
