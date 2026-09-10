@@ -1795,6 +1795,24 @@ ${bloc(`Fin d'emprunt N+${anneeApres}`, `Année ${anneeApres} · sans mensualit�
     const impotPV = pvBrute * (1 - abIR) * TAUX_IR_PLUSVALUE + pvBrute * (1 - abPS) * TAUX_PS_PLUSVALUE;
     const netRevente = prixVenteFinal - impotPV;
 
+    // Scénarios de prix de vente à l'horizon (baisse 10 %, stable, +1 %/an)
+    // résidu de calcul possible : en dessous de 1 €, le crédit est considéré soldé
+    const crdFinBrut = dureeY <= duree ? (getYear(dureeY).capRestant ?? 0) : 0;
+    const crdFin = crdFinBrut < 1 ? 0 : crdFinBrut;
+    const netApres = (prixVente: number) => {
+      const pv = isMicro ? Math.max(0, prixVente - investTotal)
+                         : Math.max(0, prixVente - investTotal + amortCumulFinal);
+      const tax = pv * (1 - abIR) * TAUX_IR_PLUSVALUE + pv * (1 - abPS) * TAUX_PS_PLUSVALUE;
+      return { prixVente, pv, tax, net: prixVente - crdFin - tax };
+    };
+    const scenariosVente: { label: string; central: boolean; prixVente: number; pv: number; tax: number; net: number }[] = [
+      { label: `Baisse de 10 % à l'horizon`, central: false, ...netApres(prix * 0.9) },
+      { label: `Valeur stable`, central: true, ...netApres(prix) },
+      { label: `Hausse de 1 % par an`, central: false, ...netApres(prix * Math.pow(1.01, dureeY)) },
+    ];
+    const scenarioCentral = scenariosVente[1];
+    const totalCumule = sumCF + scenarioCentral.net;
+
     const today = new Date().toLocaleDateString("fr-FR", { day: "2-digit", month: "long", year: "numeric" });
     const bienTitle = [
       bienInfo.type === "ap" ? "Appartement" : bienInfo.type === "ma" ? "Maison" : bienInfo.type === "im" ? "Immeuble" : "",
@@ -2273,100 +2291,88 @@ ${!isMicro ? `
   <div class="ftr"><span>toutlmnp.fr · Rapport indicatif</span><span>Page ${isMicro ? 4 : 5} / ${nbPages}</span><span>${today}</span></div>
 </div>
 
-<!-- ═══════════════════ PAGE 4 · CE QU'IL RESTE À LA FIN ═══════════════════ -->
+<!-- ═══════════ DERNIÈRE PAGE · CE QU'IL RESTE À LA FIN ═══════════ -->
 <div class="page">
 
   <div style="background:#4E1F12;border-radius:7px;padding:7px 12px;margin-bottom:6px;display:flex;align-items:center;justify-content:space-between">
     <div style="font-size:13px;font-weight:300;color:#F5F0E8">tout<span style="color:#C95B2A">lmnp</span> · <strong>${bienTitle}</strong></div>
     <div style="background:${regimeColor};border-radius:12px;padding:2px 9px;font-size:12px;font-weight:700;color:#fff">${regimeLabel}</div>
   </div>
+
   <div class="ptitle">Ce qu'il reste à la fin</div>
-  <div class="ptitle-sub">Situation à ${dureeY} ans, crédit soldé, sans revalorisation du bien.</div>
+  <div class="ptitle-sub">Scénario de revente après ${dureeY} années pleines · valeur du bien maintenue à ${fE(prix)}.</div>
 
-  <div style="background:#4E1F12;border-radius:7px;padding:7px 12px;margin-bottom:12px;display:flex;align-items:center;justify-content:space-between">
-    <div style="font-size:13px;font-weight:300;color:#F5F0E8">tout<span style="color:#C95B2A">lmnp</span> · <strong>Situation hypothétique à ${dureeY} ans</strong></div>
-    <div style="font-size:12px;color:rgba(245,240,232,0.45)">fin de l'emprunt · 0 % de revalorisation</div>
-  </div>
-
-  <div style="background:rgba(201,91,42,0.07);border:1px solid rgba(201,91,42,0.18);border-radius:7px;padding:7px 11px;font-size:12px;color:rgba(26,22,18,0.6);line-height:1.55;margin-bottom:10px">
-    <strong>Hypothèse :</strong> Le bien conserve la même valeur qu'à l'achat (${fE(prix)}) sans revalorisation. Les loyers ne sont pas revalorisés. Simulation indicative, non constitutive d'un conseil financier.
-  </div>
-
-  <div class="sec first">Bilan d'exploitation sur ${dureeY} ans</div>
-  <div class="concl-grid">
-    <div class="concl-card">
-      <div class="concl-lbl">Capital remboursé</div>
-      <div class="concl-val" style="color:#1A6644">${fE(montantCredit)}</div>
-      <div class="concl-sub">dette entièrement soldée</div>
+  <!-- Deux repères : ce que vous possédez / ce que vous devez -->
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:10px 0 2px">
+    <div style="background:#EDE7DC;border-radius:9px;padding:11px 18px">
+      <div style="font-size:12px;text-transform:uppercase;letter-spacing:.12em;color:rgba(26,22,18,0.45);margin-bottom:8px">Valeur immobilière</div>
+      <div style="font-size:29px;font-weight:800;letter-spacing:-.03em;color:#4E1F12;line-height:1">${fE(prix)}</div>
+      <div style="font-size:12px;color:rgba(26,22,18,0.45);margin-top:6px">Hypothèse de prix, sans revalorisation</div>
     </div>
-    <div class="concl-card">
-      <div class="concl-lbl">Loyers encaissés</div>
-      <div class="concl-val">${fE(sumLoyers)}</div>
-      <div class="concl-sub">${fE(loyerAnnuel)}/an × ${dureeY} ans</div>
-    </div>
-    <div class="concl-card">
-      <div class="concl-lbl">Impôts payés (total)</div>
-      <div class="concl-val">${fE(sumImpot)}</div>
-      <div class="concl-sub">cumulé sur ${dureeY} ans</div>
-    </div>
-    <div class="concl-card ${sumCF >= 0 ? "" : "red"}">
-      <div class="concl-lbl">Cash-flow cumulé</div>
-      <div class="concl-val" style="color:${sumCF >= 0 ? "#1A7A52" : "#B03A2A"}">${sumCF >= 0 ? "+" : ""}${fE(sumCF)}</div>
-      <div class="concl-sub">${fE(sumCF / dureeY / 12)}/mois en moyenne</div>
-    </div>
-    ${!isMicro ? `<div class="concl-card">
-      <div class="concl-lbl">Amortissements cumulés</div>
-      <div class="concl-val" style="color:#C95B2A">${fE(amortCumulFinal)}</div>
-      <div class="concl-sub">déductions fiscales accumulées</div>
-    </div>` : ""}
-    <div class="concl-card" style="border:1.5px solid rgba(26,22,18,0.15)">
-      <div class="concl-lbl">Valeur du bien</div>
-      <div class="concl-val">${fE(prix)}</div>
-      <div class="concl-sub">supposée identique à l'achat</div>
+    <div style="background:#EDE7DC;border-radius:9px;padding:11px 18px">
+      <div style="font-size:12px;text-transform:uppercase;letter-spacing:.12em;color:rgba(26,22,18,0.45);margin-bottom:8px">Dette à rembourser</div>
+      <div style="font-size:29px;font-weight:800;letter-spacing:-.03em;color:${crdFin > 0 ? "#B03A2A" : "#1A6644"};line-height:1">${fE(crdFin)}</div>
+      <div style="font-size:12px;color:rgba(26,22,18,0.45);margin-top:6px">${crdFin > 0 ? `Capital restant dû à ${dureeY} ans` : "Crédit intégralement soldé"}</div>
     </div>
   </div>
 
-  <div class="sec">Revente hypothétique à ${dureeY} ans · imposition de la plus-value</div>
-  <div class="revente-box">
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
-      <div>
-        <div style="font-size:12px;text-transform:uppercase;letter-spacing:.1em;color:rgba(245,240,232,0.45);margin-bottom:7px">Calcul de la plus-value</div>
-        ${isMicro ? `
-        <div style="font-size:13px;color:rgba(245,240,232,0.7);line-height:1.6;margin-bottom:6px">En Micro-BIC, aucun amortissement n'a été déduit. La plus-value est calculée sur le prix d'acquisition initial sans réintégration.</div>
-        <div style="font-size:13px;color:rgba(245,240,232,0.9)">Prix cession : <strong>${fE(prix)}</strong></div>
-        <div style="font-size:13px;color:rgba(245,240,232,0.9)">Prix acquisition retenu : <strong>${fE(prix)}</strong></div>
-        <div style="font-size:13px;color:rgba(245,240,232,0.9)">Plus-value brute : <strong style="color:#F5A623">0 €</strong> (0% revalo)</div>
-        <div style="font-size:13px;color:rgba(245,240,232,0.9)">Impôt plus-value : <strong style="color:#F5A623">0 €</strong></div>
-        ` : `
-        <div style="font-size:13px;color:rgba(245,240,232,0.75);line-height:1.9">
-          Prix de cession : <span style="color:#F5F0E8;font-weight:600">${fE(prix)}</span><br/>
-          − Amorts. réintégrés (Loi 2025) : <span style="color:#F5A623;font-weight:600">−${fE(amortImmoFinal)}</span><br/>
-          = Prix acq. retenu : <span style="color:#F5F0E8;font-weight:600">${fE(prix - amortImmoFinal)}</span><br/>
-          Plus-value brute : <span style="color:#F5A623;font-weight:600">${fE(pvBrute)}</span><br/>
-          Abatt. IR (${dureeY} ans) : <span style="color:#F5F0E8">${fP(abIR * 100, 0)}</span><br/>
-          Abatt. PS (${dureeY} ans) : <span style="color:#F5F0E8">${fP(abPS * 100, 0)}</span>
-        </div>`}
-      </div>
-      <div>
-        <div style="font-size:12px;text-transform:uppercase;letter-spacing:.1em;color:rgba(245,240,232,0.45);margin-bottom:7px">Résultat net de revente</div>
-        <div style="font-size:13px;color:rgba(245,240,232,0.75);line-height:1.9">
-          Prix de vente : <span style="color:#F5F0E8;font-weight:600">${fE(prix)}</span><br/>
-          Impôt plus-value : <span style="color:#F5A623;font-weight:600">−${fE(impotPV)}</span>
-        </div>
-        <div style="margin-top:9px;background:rgba(245,240,232,0.08);border-radius:6px;padding:10px">
-          <div style="font-size:12px;text-transform:uppercase;letter-spacing:.1em;color:rgba(245,240,232,0.45);margin-bottom:4px">Net en poche après revente</div>
-          <div style="font-size:28px;font-weight:400;color:#C95B2A;letter-spacing:-.02em">${fE(netRevente)}</div>
-        </div>
-        <div style="margin-top:7px;background:rgba(26,122,82,0.15);border-radius:6px;padding:9px;font-size:13px;color:rgba(245,240,232,0.7);line-height:1.6">
-          + Cash-flow cumulé : <strong style="color:${sumCF >= 0 ? "#4ADE80" : "#F87171"}">${sumCF >= 0 ? "+" : ""}${fE(sumCF)}</strong><br/>
-          = <strong style="color:#F5F0E8;font-size:14px">Enrichissement total estimé : ${fE(netRevente + sumCF)}</strong>
-        </div>
-      </div>
+  <div class="sec" style="margin-top:24px">Deux sources d'encaissements, une seule addition</div>
+  <div style="background:#4E1F12;border-radius:9px;padding:13px 20px">
+    <div style="display:flex;justify-content:space-between;align-items:baseline;padding:3px 0">
+      <span style="font-size:14px;color:rgba(245,240,232,0.82)">Trésorerie cumulée pendant ${dureeY} ans</span>
+      <span style="font-size:23px;font-weight:800;letter-spacing:-.02em;color:${sumCF >= 0 ? "#4ADE80" : "#F87171"}">${sumCF >= 0 ? "+" : ""}${fE(sumCF)}</span>
+    </div>
+    <div style="display:flex;justify-content:space-between;align-items:baseline;padding:3px 0">
+      <span style="font-size:14px;color:rgba(245,240,232,0.82)">Produit de vente après impôt${crdFin > 0 ? " et crédit" : ""}</span>
+      <span style="font-size:23px;font-weight:800;letter-spacing:-.02em;color:#F5F0E8">+${fE(scenarioCentral.net)}</span>
+    </div>
+    <div style="border-top:1.5px solid rgba(201,91,42,0.7);margin:8px 0 0;padding-top:9px;display:flex;justify-content:space-between;align-items:baseline">
+      <span style="font-size:14px;font-weight:700;color:#F5F0E8">Total cumulé · avant frais de vente</span>
+      <span style="font-size:31px;font-weight:800;letter-spacing:-.03em;color:#F5F0E8">${fE(totalCumule)}</span>
+    </div>
+  </div>
+  <div style="font-size:12px;line-height:1.7;color:rgba(26,22,18,0.68);margin-top:9px">
+    ${sumCF >= 0
+      ? `Les <strong>${fE(sumCF)}</strong> de trésorerie sont générés au fil des années : ils ne constituent une épargne à la sortie que s'ils ont été conservés.`
+      : `L'effort d'épargne de <strong>${fE(Math.abs(sumCF))}</strong> a été consenti au fil des années ; il vient en déduction du produit de la vente.`}
+    Le capital remboursé est déjà pris en compte dans le produit de vente : il ne s'ajoute pas une seconde fois. Sur la période, vous aurez encaissé <strong>${fE(sumLoyers)}</strong> de loyers et acquitté <strong>${fE(sumImpot)}</strong> d'impôt.
+  </div>
+
+  <div class="sec" style="margin-top:24px">Si le prix de vente change</div>
+  <table class="tbl">
+    <thead><tr>
+      <th>Prix à ${dureeY} ans</th>
+      <th class="r">Prix de vente</th>
+      <th class="r">Après impôt${crdFin > 0 ? " et crédit" : ""}<sup>1</sup></th>
+    </tr></thead>
+    <tbody>
+      ${scenariosVente.map(sc => `<tr${sc.central ? ` style="background:rgba(201,91,42,0.07)"` : ""}>
+        <td${sc.central ? ` style="font-weight:700"` : ""}>${sc.label}${sc.central ? ` <span style="font-size:12px;color:#C95B2A;font-weight:700">· scénario retenu</span>` : ""}</td>
+        <td class="r">${fE(sc.prixVente)}</td>
+        <td class="r" style="font-weight:700;color:${sc.net >= investTotal ? "#1A6644" : "#1A1612"}">${fE(sc.net)}</td>
+      </tr>`).join("")}
+    </tbody>
+  </table>
+  <div style="font-size:12px;line-height:1.65;color:rgba(26,22,18,0.5);margin-top:7px">
+    <sup>1</sup> Avant frais de vente, non renseignés à ce stade.${!isMicro
+      ? ` Amortissements déduits réintégrés dans l'assiette (Loi de finances 2025) : <strong>${fE(amortCumulFinal)}</strong>.`
+      : ` Aucun amortissement à réintégrer en Micro-BIC.`}
+    Abattements pour durée de détention appliqués : ${fP(abIR * 100, 0)} sur l'impôt sur le revenu, ${fP(abPS * 100, 0)} sur les prélèvements sociaux.
+    À prix stable, la fiscalité de revente est estimée à <strong>${fE(scenarioCentral.tax)}</strong>.
+  </div>
+
+  <div style="background:rgba(26,102,68,0.08);border-left:3px solid #1A6644;border-radius:0 8px 8px 0;padding:11px 16px;margin-top:12px">
+    <div style="font-size:14px;font-weight:700;color:#1A6644;margin-bottom:6px">La lecture globale du projet</div>
+    <div style="font-size:12px;line-height:1.7;color:rgba(26,22,18,0.72)">
+      ${sumCF >= 0
+        ? `Le scénario central dégage une trésorerie positive pendant le crédit, puis un revenu disponible nettement plus élevé une fois la mensualité éteinte.`
+        : `Le scénario central demande un effort d'épargne pendant le crédit, compensé par la constitution du patrimoine, puis par un revenu disponible nettement plus élevé une fois la mensualité éteinte.`}
+      Cette lecture reste conditionnée aux charges saisies, au loyer retenu et à la confirmation de votre éligibilité au statut LMNP.
     </div>
   </div>
 
-  <div style="margin-top:8px;background:rgba(26,22,18,0.05);border-radius:6px;padding:7px 10px;font-size:12px;color:rgba(26,22,18,0.45);line-height:1.55">
-    Calcul indicatif basé sur la législation 2026. La réintégration des amortissements (Loi de finances 2025) s'applique au régime réel. Les abattements pour durée de détention s'appliquent à partir de 6 ans. Consulter un notaire ou expert-comptable avant toute décision.
+  <div style="font-size:12px;line-height:1.6;color:rgba(26,22,18,0.42);margin-top:10px;padding-top:8px;border-top:.5px solid rgba(26,22,18,0.12)">
+    Hypothèses : détention directe en location meublée non professionnelle, ${regimeLabel} ; TMI ${tmi} % + prélèvements sociaux 18,6 % sur les revenus locatifs, 17,2 % sur la plus-value. Montants nominaux, non actualisés. Loyers, charges et valeur du bien supposés constants sur toute la période. Simulation indicative — ne constitue pas un conseil fiscal ou financier.
   </div>
 
   <div class="ftr"><span>toutlmnp.fr · Simulation indicative — ne constitue pas un conseil fiscal ou financier</span><span>Page ${nbPages} / ${nbPages}</span><span>${today}</span></div>
