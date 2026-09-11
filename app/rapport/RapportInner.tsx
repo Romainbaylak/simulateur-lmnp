@@ -1372,361 +1372,212 @@ ${!isMicro && annexeCols.length > 0 ? `<div class="page landscape">
 
     const getYear = (y: number) => allYears.find(rr => rr.year === y) || allYears[allYears.length - 1];
 
+    /* ── Agrégats des deux régimes (page 1 et commentaires) ──────────────── */
+    const cumulCfReel = projReel.slice(0, duree).reduce((sum, y) => sum + y.cashflowAnnuel, 0);
+    const cumulCfMicro = projMicro.slice(0, duree).reduce((sum, y) => sum + y.cashflowAnnuel, 0);
+    const apresReelAn = projReel[duree]?.cashflowAnnuel ?? 0;
+    const apresMicroAn = projMicro[duree]?.cashflowAnnuel ?? 0;
+    const cumulCfChoisi = isMicro ? cumulCfMicro : cumulCfReel;
+    const apresChoisiAn = isMicro ? apresMicroAn : apresReelAn;
+    const cumulImpotCredit = projection.slice(0, duree).reduce((sum, y) => sum + y.impot, 0);
+    const ecartImpotAn1 = impotBIC - impotReel;          // > 0 : le réel coûte moins cher
+    const ecartCumulCf = cumulCfMicro - cumulCfReel;     // > 0 : le micro laisse plus de trésorerie
+    // Année où les deux régimes se rejoignent (croisement des cash-flow annuels)
+    const anneeEgalite = (() => {
+      const n = Math.min(projReel.length, projMicro.length, duree);
+      for (let i = 1; i < n; i++) {
+        const d0 = projReel[i].cashflowAnnuel - projMicro[i].cashflowAnnuel;
+        const dPrev = projReel[i - 1].cashflowAnnuel - projMicro[i - 1].cashflowAnnuel;
+        if ((dPrev > 0 && d0 <= 0) || (dPrev < 0 && d0 >= 0)) return projReel[i].year;
+      }
+      return null;
+    })();
+
+    /* ── Saisonnier : les trois scénarios d'occupation ───────────────────── */
+    const prixNuitee = parseFloat(prixNuiteeRef.current) || 0;
+    const tauxOcc = {
+      bas: parseFloat(tauxOccBasRef.current) || 0,
+      moyen: parseFloat(tauxOccMoyenRef.current) || 0,
+      haut: parseFloat(tauxOccHautRef.current) || 0,
+    };
+    const triple = resultatsTripleRef.current;
+    const scenariosSaison = (["bas", "moyen", "haut"] as const).map(k => {
+      const rr = triple?.[k] ?? null;
+      const occ = tauxOcc[k];
+      return {
+        cle: k,
+        label: k === "bas" ? "Scénario bas" : k === "moyen" ? "Scénario médian" : "Scénario haut",
+        occ,
+        nuits: Math.round(365 * occ / 100),
+        loyerAnnuel: rr?.loyerAnnuel ?? 0,
+        impot: rr ? (isMicro ? rr.impotBIC : rr.impotReel) : 0,
+        base: rr ? (isMicro ? rr.baseBIC : rr.baseImposableReel) : 0,
+        cfMensuel: rr ? (isMicro ? rr.cashflowBICMensuel : rr.cashflowReelMensuel) : 0,
+        rendBrut: rr?.rendementBrut ?? 0,
+        median: k === "moyen",
+      };
+    });
+
+
     // Table years
     const tableYearsSet = new Set([1, 3, 5, 10, 15, 20, duree, duree + 5].filter(y => y >= 1));
     const TABLE_YEARS = Array.from(tableYearsSet).sort((a, b) => a - b);
 
-    // ── Stacked bar pair (FIXED: right col uses full creditTotalAnnuel so both cols balance) ──
-    const makeStackedBarPair = (): string => {
-      const H = 212;
-      const colW = 120;
-      const gap = 5;                    // colonnes quasi collées
-      const barsW = colW * 2 + gap;
-      const annotW = 158;               // zone des flèches d'annotation
-      const W = barsW + annotW;
 
-      const buildColData = (yr: number) => {
-        const row = getYear(yr);
-        // mensualités + assurance emprunteur : uniquement pendant le crédit
-        const creditAn = yr <= duree ? creditTotalAnnuel : 0;
-        const chargesVal = chargesAnnuelles;
-        const impotVal = row.impot;
-        const revenuVal = recettesAnnuelles;
-        // Valeur issue du moteur : aucune formule recalculée ici
-        const cfCash = row.cfAnnuel;
-        return { chargesVal, creditAn, impotVal, revenuVal, cfCash };
-      };
-
-      const anneeApres = duree + 1;     // fin d'emprunt + 1 : plus aucune mensualité
-      const c1 = buildColData(1);
-      const c2 = buildColData(anneeApres);
-
-      // Scale: both columns reach exactly H
-      const maxRef = Math.max(
-        c1.revenuVal + Math.max(0, -c1.cfCash),
-        c2.revenuVal + Math.max(0, -c2.cfCash),
-        1
-      );
-      const scale = H / maxRef;
-
-      const renderSvg = (c: typeof c1, uid: string) => {
-        const revH = c.revenuVal * scale;
-        const chH = c.chargesVal * scale;
-        const crH = c.creditAn * scale;
-        const imH = c.impotVal * scale;
-        const cfH = Math.abs(c.cfCash) * scale;
-        const cfPos = c.cfCash >= 0;
-
-        const leftTop = H - revH;
-        const imY = H - imH;
-        const crY = imY - crH;
-        const chY = crY - chH;
-        const rightH = chH + crH + imH;
-        const rightTop = H - rightH;
-
-        const fs = 13;
-        const fsLbl = 12;
-        const xR = colW + gap;          // x de la colonne de droite
-        const cxL = colW / 2;
-        const cxR = xR + colW / 2;
-
-        // Segments trop petits pour porter un texte → annotés par une flèche
-        const annots: { y: number; ty: number; side: "L" | "R"; label: string; val: string; color: string }[] = [];
-        const MIN_H = 21;               // en dessous, on annote à l'extérieur
-
-        const pushAnnot = (y: number, side: "L" | "R", label: string, val: string, color: string) => {
-          annots.push({ y, ty: y, side, label, val, color });
-        };
-
-        const leftCol = `<rect x="0" y="${leftTop}" width="${colW}" height="${Math.max(revH, 2)}" fill="#1A6644" rx="3"/>
-${revH > 44 ? `<text x="${cxL}" y="${leftTop + revH/2 - 8}" text-anchor="middle" font-size="${fsLbl}" fill="rgba(255,255,255,0.7)" font-weight="600">Loyers</text><text x="${cxL}" y="${leftTop + revH/2 + 11}" text-anchor="middle" font-size="${fs + 1}" fill="#fff" font-weight="700">${fE(c.revenuVal)}</text>` : revH > MIN_H ? `<text x="${cxL}" y="${leftTop + revH/2 + 4}" text-anchor="middle" font-size="${fs}" fill="#fff" font-weight="700">${fE(c.revenuVal)}</text>` : ""}`;
-        if (revH <= MIN_H && c.revenuVal > 0) pushAnnot(leftTop + revH / 2, "L", "Loyers", fE(c.revenuVal), "#1A6644");
-
-        const seg = (y: number, h: number, fill: string, rx: number, label: string, val: string, txtCol: string, lblCol: string, annotCol: string) => {
-          const rect = `<rect x="${xR}" y="${y}" width="${colW}" height="${Math.max(h, 2)}" fill="${fill}" rx="${rx}"/>`;
-          if (h > 44) return rect + `<text x="${cxR}" y="${y+h/2-8}" text-anchor="middle" font-size="${fsLbl}" fill="${lblCol}">${label}</text><text x="${cxR}" y="${y+h/2+11}" text-anchor="middle" font-size="${fs}" fill="${txtCol}" font-weight="700">${val}</text>`;
-          if (h > MIN_H) return rect + `<text x="${cxR}" y="${y+h/2+4}" text-anchor="middle" font-size="${fs-1}" fill="${txtCol}" font-weight="700">${val}</text>`;
-          pushAnnot(y + h / 2, "R", label, val, annotCol);
-          return rect;
-        };
-
-        const rightCol = [
-          c.chargesVal > 0 ? seg(chY, chH, "#8B5A3A", 1, "Charges", fE(c.chargesVal), "#fff", "rgba(255,255,255,0.75)", "#8B5A3A") : "",
-          c.creditAn > 0 ? seg(crY, crH, "#4E1F12", 1, "Crédit", fE(c.creditAn), "#F5F0E8", "rgba(245,240,232,0.75)", "#4E1F12") : "",
-          c.impotVal > 0 ? seg(imY, imH, "#2C0F08", 1, "Impôt", fE(c.impotVal), "#F5A623", "rgba(245,166,35,0.85)", "#8A5A12") : "",
-        ].join("");
-
-        let cfBlock = "";
-        if (cfPos && cfH > 1) {
-          const cfY = rightTop - cfH;
-          cfBlock = `<rect x="${xR}" y="${cfY}" width="${colW}" height="${Math.max(cfH,2)}" fill="#1A7A52" rx="3"/>`;
-          if (cfH > 44) cfBlock += `<text x="${cxR}" y="${cfY+cfH/2-8}" text-anchor="middle" font-size="${fsLbl}" fill="rgba(255,255,255,0.75)">Cash-flow</text><text x="${cxR}" y="${cfY+cfH/2+11}" text-anchor="middle" font-size="${fs}" fill="#fff" font-weight="700">+${fE(c.cfCash)}</text>`;
-          else if (cfH > MIN_H) cfBlock += `<text x="${cxR}" y="${cfY+cfH/2+4}" text-anchor="middle" font-size="${fs-1}" fill="#fff" font-weight="700">+${fE(c.cfCash)}</text>`;
-          else pushAnnot(cfY + cfH / 2, "R", "Cash-flow", `+${fE(c.cfCash)}`, "#1A7A52");
-        } else if (!cfPos && cfH > 1) {
-          const cfY = leftTop - cfH;
-          cfBlock = `<rect x="0" y="${cfY}" width="${colW}" height="${Math.max(cfH,2)}" fill="#B03A2A" rx="3"/>`;
-          if (cfH > 44) cfBlock += `<text x="${cxL}" y="${cfY+cfH/2-8}" text-anchor="middle" font-size="${fsLbl}" fill="rgba(255,255,255,0.75)">Effort</text><text x="${cxL}" y="${cfY+cfH/2+11}" text-anchor="middle" font-size="${fs}" fill="#fff" font-weight="700">${fE(c.cfCash)}</text>`;
-          else if (cfH > MIN_H) cfBlock += `<text x="${cxL}" y="${cfY+cfH/2+4}" text-anchor="middle" font-size="${fs-1}" fill="#fff" font-weight="700">${fE(c.cfCash)}</text>`;
-          else pushAnnot(cfY + cfH / 2, "L", "Effort", fE(c.cfCash), "#B03A2A");
-        }
-
-        // Répartition verticale des annotations pour qu'elles ne se chevauchent pas
-        annots.sort((a, b) => a.y - b.y);
-        let lastY = -2;  // → la 1re annotation ne peut pas remonter au-dessus de y=13 (texte tronqué)
-        annots.forEach(a => { a.ty = Math.max(a.y, lastY + 15); lastY = a.ty; });
-        const overflow = annots.length ? Math.max(0, annots[annots.length - 1].ty - H) : 0;
-
-        const annotHtml = annots.map(a => {
-          const fromX = a.side === "L" ? colW : xR + colW;
-          return `<polyline points="${fromX},${a.y} ${barsW + 10},${a.ty} ${barsW + 14},${a.ty}" fill="none" stroke="${a.color}" stroke-width="0.9" marker-start="url(#ah-${uid})"/>
-<text x="${barsW + 18}" y="${a.ty + 2.6}" font-size="12" fill="rgba(26,22,18,0.6)">${a.label} <tspan font-weight="700" fill="${a.color}">${a.val}</tspan></text>`;
-        }).join("");
-
-        const defs = annots.length
-          ? `<defs><marker id="ah-${uid}" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto"><polygon points="6,0 0,3 6,6" fill="rgba(26,22,18,0.55)"/></marker></defs>`
-          : "";
-
-        const lblLeft = `<text x="${cxL}" y="${H + 15}" text-anchor="middle" font-size="12" font-weight="600" fill="rgba(26,22,18,0.55)">Loyers</text>`;
-        const lblRight = `<text x="${cxR}" y="${H + 15}" text-anchor="middle" font-size="12" font-weight="600" fill="rgba(26,22,18,0.55)">Sorties</text>`;
-
-        return `<svg width="${W}" height="${H + 21 + overflow}" viewBox="0 0 ${W} ${H + 21 + overflow}" xmlns="http://www.w3.org/2000/svg" style="max-width:100%">${defs}${leftCol}${rightCol}${cfBlock}${annotHtml}${lblLeft}${lblRight}</svg>`;
-      };
-
-      // Titre d'année : centré au-dessus du graphe, en gros et en orange
-      const yearTitle = (txt: string, sub: string) => `<div style="width:${W}px;max-width:100%;text-align:center;margin-bottom:6px">
-  <div style="font-size:19px;font-weight:800;color:#C95B2A;letter-spacing:-.01em;line-height:1.15">${txt}</div>
-  <div style="font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.1em;color:rgba(26,22,18,0.45);margin-top:2px">${sub}</div>
-</div>`;
-
-      // Commentaires à droite de chaque graphe
-      const deltaCf = c2.cfCash - c1.cfCash;
-      const deltaImpot = c2.impotVal - c1.impotVal;
-      const note = (txt: string) => `<div style="font-size:12px;line-height:1.6;color:rgba(26,22,18,0.62);margin-bottom:5px">${txt}</div>`;
-
-      const comm1 = `${note(`Sur l'année 1, la <strong>mensualité de crédit</strong> (${fE(c1.creditAn)}/an, assurance comprise) absorbe l'essentiel de vos loyers. C'est le poste qui pèse le plus lourd dans votre trésorerie.`)}
-${note(c1.cfCash >= 0
-  ? `Votre cash-flow est déjà positif à <strong style="color:#1A7A52">+${fE(c1.cfCash)}/an</strong>, soit ${fE(c1.cfCash / 12)}/mois : le bien s'autofinance dès la première année.`
-  : `Il vous reste un effort d'épargne de <strong style="color:#B03A2A">${fE(Math.abs(c1.cfCash))}/an</strong>, soit ${fE(Math.abs(c1.cfCash) / 12)}/mois. En contrepartie, vous remboursez du capital chaque mois : cet effort se transforme en patrimoine.`)}
-${!isMicro ? note(`L'<strong>amortissement</strong> (${fE(amortTotalAn1)}/an) n'apparaît pas dans ce graphique : ce n'est pas une sortie d'argent. Il réduit l'impôt sans toucher à votre trésorerie.`) : note(`Au Micro-BIC, aucun amortissement ne vient réduire l'impôt : seul l'abattement de ${isSaisonnier ? "30" : "50"} % s'applique.`)}`;
-
-      const comm2 = `${note(`À partir de l'année ${anneeApres}, <strong>le crédit est intégralement remboursé</strong>. Les ${fE(c1.creditAn)}/an de mensualités disparaissent du graphique : c'est le basculement de tout le projet.`)}
-${note(`Votre cash-flow passe de ${c1.cfCash >= 0 ? "+" : ""}${fE(c1.cfCash)} à <strong style="color:#1A7A52">+${fE(c2.cfCash)}/an</strong>, soit <strong>${fE(c2.cfCash / 12)}/mois</strong>${deltaCf > 0 ? ` — un gain de ${fE(deltaCf)}/an` : ""}.`)}
-${note(deltaImpot > 0
-  ? `En contrepartie, l'impôt augmente (${fE(c1.impotVal)} → <strong style="color:#C95B2A">${fE(c2.impotVal)}/an</strong>) : les intérêts d'emprunt ne sont plus déductibles${!isMicro ? ` et les amortissements s'épuisent progressivement` : ""}. La hausse reste sans commune mesure avec la mensualité économisée.`
-  : `L'impôt reste stable à ${fE(c2.impotVal)}/an${!isMicro ? `, les amortissements continuant de couvrir la base imposable` : ""}.`)}
-${note(`Hypothèse prudente : loyers et charges constants, sans revalorisation. Toute hausse de loyer améliorerait encore ce résultat.`)}`;
-
-      const bloc = (title: string, sub: string, svg: string, comm: string) => `<div style="display:flex;gap:14px;align-items:flex-start;margin-bottom:12px">
-  <div style="flex:0 0 auto">${yearTitle(title, sub)}${svg}</div>
-  <div style="flex:1;min-width:0;padding-top:24px">${comm}</div>
-</div>`;
-
-      return `${bloc("Première année N", `Année 1 · crédit en cours`, renderSvg(c1, "y1"), comm1)}
-<div style="height:1px;background:rgba(26,22,18,0.12);margin:0 0 14px"></div>
-${bloc(`Fin d'emprunt N+${anneeApres}`, `Année ${anneeApres} · sans mensualité`, renderSvg(c2, "y2"), comm2)}`;
-    };
 
     // ── Impôt line graph ──────────────────────────────────────────────────────
-    // ── Graphe combiné : cash-flow, impôt et amortissement ────────────────────
-    const makeCashImpotGraph = (): string => {
-      const gW = 690, gH = 222;
-      const PADL = 78, PADR = 78, PADT = 26, PADB = 38;
-      const innerW = gW - PADL - PADR;
-      const innerH = gH - PADT - PADB;
 
+
+
+    /* ── Graphe page 2 : cash-flow, impôt et amortissement, une seule échelle ── */
+    const makeImpotAmortGraph = (): string => {
+      const gW = 690, gH = 152;
+      const PADL = 70, PADR = 78, PADT = 22, PADB = 34;
+      const iW = gW - PADL - PADR, iH = gH - PADT - PADB;
       const lastYear = duree + 5;
-      const pts = allYears.filter(rr => rr.year <= lastYear);
+      const pts = projection.filter(y => y.year <= lastYear);
 
-      // Domaines « zoomés » : on ne montre que la plage utile
-      const cfVals = pts.map(p => p.cfAnnuel);
-      const amoVals = isMicro ? [0] : pts.map(p => p.amort);
-      const impVals = pts.map(p => p.impot);
-
-      // Échelle « ronde » : bornes et pas alignés sur 1/2/2,5/5 × 10^k
-      const niceScale = (lo: number, hi: number, wanted: number) => {
+      const niceScale = (lo: number, hi: number, n: number) => {
         if (hi - lo < 1) hi = lo + 1;
-        const rawStep = (hi - lo) / wanted;
-        const mag = Math.pow(10, Math.floor(Math.log10(rawStep)));
-        const mult = [1, 2, 2.5, 5, 10].find(m => m * mag >= rawStep) ?? 10;
-        const step = mult * mag;
-        return { min: Math.floor(lo / step) * step, max: Math.ceil(hi / step) * step, step };
+        const raw = (hi - lo) / n;
+        const mag = Math.pow(10, Math.floor(Math.log10(raw)));
+        const mult = [1, 2, 2.5, 5, 10].find(m => m * mag >= raw) ?? 10;
+        const st = mult * mag;
+        return { min: Math.floor(lo / st) * st, max: Math.ceil(hi / st) * st };
       };
+      const nT = 4;
+      const allV = [...pts.map(p => p.cashflowAnnuel), ...pts.map(p => p.impot), ...(isMicro ? [] : pts.map(p => p.amortDotation))];
+      const sc = niceScale(Math.min(0, ...allV), Math.max(...allV, 1), nT);
+      const yMin = sc.min, yMax = sc.max, yR = (yMax - yMin) || 1;
 
-      const nTicks = 4;
+      const toX = (yr: number) => PADL + ((yr - 1) / Math.max(lastYear - 1, 1)) * iW;
+      const toY = (v: number) => PADT + (1 - (v - yMin) / yR) * iH;
 
-      // Axe gauche : cash-flow + barres d'amortissement (mêmes unités, €/an)
-      const lSc = niceScale(Math.min(0, ...cfVals), Math.max(...cfVals, ...amoVals, 1), nTicks);
-      const lMin = lSc.min, lMax = lSc.max;
-      const lRange = (lMax - lMin) || 1;
-
-      // Axe droit : impôt
-      const rSc = niceScale(0, Math.max(...impVals, 1), nTicks);
-      const rMin = 0, rMax = rSc.max;
-      const rRange = (rMax - rMin) || 1;
-
-      const toX = (yr: number) => PADL + ((yr - 1) / Math.max(lastYear - 1, 1)) * innerW;
-      const toYL = (v: number) => PADT + (1 - (v - lMin) / lRange) * innerH;
-      const toYR = (v: number) => PADT + (1 - (v - rMin) / rRange) * innerH;
-
-      // Graduations
-      const grid = Array.from({ length: nTicks + 1 }, (_, i) => {
-        const t = i / nTicks;
-        const vL = lMin + t * lRange;
-        const vR = rMin + t * rRange;
-        const y = PADT + (1 - t) * innerH;
-        return `<line x1="${PADL}" y1="${y.toFixed(1)}" x2="${PADL + innerW}" y2="${y.toFixed(1)}" stroke="rgba(26,22,18,0.10)" stroke-width="1"/>
-<text x="${PADL - 8}" y="${(y + 4).toFixed(1)}" text-anchor="end" font-size="12" font-weight="600" fill="#1A6644">${fE(vL)}</text>
-<text x="${PADL + innerW + 8}" y="${(y + 4).toFixed(1)}" text-anchor="start" font-size="12" font-weight="600" fill="#8A5A12">${fE(vR)}</text>`;
+      const grid = Array.from({ length: nT + 1 }, (_, i) => {
+        const t = i / nT, v = yMin + t * yR, y = PADT + (1 - t) * iH;
+        return `<line x1="${PADL}" y1="${y.toFixed(1)}" x2="${PADL + iW}" y2="${y.toFixed(1)}" stroke="rgba(26,22,18,0.10)" stroke-width="1"/>
+<text x="${PADL - 9}" y="${(y + 4).toFixed(1)}" text-anchor="end" font-size="12" font-weight="700" fill="rgba(26,22,18,0.5)">${Math.round(v).toLocaleString("fr-FR")}</text>`;
       }).join("");
 
-      // Ligne du zéro (axe gauche) si le cash-flow passe en négatif
-      const zeroLine = lMin < 0
-        ? `<line x1="${PADL}" y1="${toYL(0).toFixed(1)}" x2="${PADL + innerW}" y2="${toYL(0).toFixed(1)}" stroke="rgba(26,22,18,0.35)" stroke-width="1.2" stroke-dasharray="4 3"/>`
-        : "";
+      const zero = yMin < 0 ? `<line x1="${PADL}" y1="${toY(0).toFixed(1)}" x2="${PADL + iW}" y2="${toY(0).toFixed(1)}" stroke="rgba(26,22,18,0.32)" stroke-width="1.1" stroke-dasharray="4 3"/>` : "";
 
-      // Barres d'amortissement (bleu) — masquées en Micro-BIC
-      const barW = Math.max(3, Math.min(16, (innerW / pts.length) * 0.5));
-      const bars = isMicro ? "" : pts.filter(p => p.amort > 0).map(p => {
-        const y = toYL(p.amort);
-        const y0 = toYL(Math.max(lMin, 0));
+      const barW = Math.max(3, Math.min(15, (iW / pts.length) * 0.52));
+      const bars = isMicro ? "" : pts.filter(p => p.amortDotation > 0).map(p => {
+        const y = toY(p.amortDotation), y0 = toY(Math.max(yMin, 0));
         return `<rect x="${(toX(p.year) - barW / 2).toFixed(1)}" y="${y.toFixed(1)}" width="${barW.toFixed(1)}" height="${Math.max(1, y0 - y).toFixed(1)}" fill="rgba(42,92,138,0.30)" rx="1.5"/>`;
       }).join("");
 
-      // Courbes + points
-      const cfPath = pts.map((p, i) => `${i === 0 ? "M" : "L"}${toX(p.year).toFixed(1)},${toYL(p.cfAnnuel).toFixed(1)}`).join(" ");
-      const imPath = pts.map((p, i) => `${i === 0 ? "M" : "L"}${toX(p.year).toFixed(1)},${toYR(p.impot).toFixed(1)}`).join(" ");
-      const cfDots = pts.map(p => `<circle cx="${toX(p.year).toFixed(1)}" cy="${toYL(p.cfAnnuel).toFixed(1)}" r="2.8" fill="#1A6644" stroke="#F5F0E8" stroke-width="1"/>`).join("");
-      const imDots = pts.map(p => `<circle cx="${toX(p.year).toFixed(1)}" cy="${toYR(p.impot).toFixed(1)}" r="2.8" fill="#C95B2A" stroke="#F5F0E8" stroke-width="1"/>`).join("");
-
-      // Repère fin d'emprunt
-      const xFin = toX(duree);
-      const finLine = `<line x1="${xFin.toFixed(1)}" y1="${PADT - 6}" x2="${xFin.toFixed(1)}" y2="${PADT + innerH}" stroke="#B03A2A" stroke-width="1.4" stroke-dasharray="5 3"/>
-<text x="${xFin.toFixed(1)}" y="${PADT - 11}" text-anchor="middle" font-size="12" font-weight="700" fill="#B03A2A">Fin d'emprunt · an ${duree}</text>`;
-
-      // Années en abscisse : 1, puis tous les 2 ou 5 ans selon la durée, + fin + dernière
-      const stepX = lastYear > 22 ? 5 : lastYear > 12 ? 2 : 1;
-      const pinned = [1, duree, lastYear];
-      const yearsShown = new Set<number>(pinned);
-      for (let y = 1; y <= lastYear; y += stepX) {
-        // on n'ajoute pas de repère trop proche d'une année épinglée (chevauchement)
-        if (!pinned.some(pz => Math.abs(pz - y) < 2)) yearsShown.add(y);
-      }
-      const xLabels = Array.from(yearsShown).sort((a, b) => a - b).map(y =>
-        `<text x="${toX(y).toFixed(1)}" y="${PADT + innerH + 18}" text-anchor="middle" font-size="12" font-weight="600" fill="rgba(26,22,18,0.6)">${y}</text>`
-      ).join("");
-
-      const legend = `<div style="display:flex;gap:16px;flex-wrap:wrap;justify-content:center;margin-top:6px;font-size:12px;color:rgba(26,22,18,0.65)">
-  <span><span style="display:inline-block;width:14px;height:3px;background:#1A6644;vertical-align:middle;margin-right:5px;border-radius:2px"></span>Cash-flow /an <span style="color:rgba(26,22,18,0.4)">(axe gauche)</span></span>
-  <span><span style="display:inline-block;width:14px;height:3px;background:#C95B2A;vertical-align:middle;margin-right:5px;border-radius:2px"></span>Impôt /an <span style="color:rgba(26,22,18,0.4)">(axe droit)</span></span>
-  ${!isMicro ? `<span><span style="display:inline-block;width:11px;height:11px;background:rgba(42,92,138,0.45);vertical-align:middle;margin-right:5px;border-radius:2px"></span>Amortissement /an <span style="color:rgba(26,22,18,0.4)">(axe gauche)</span></span>` : ""}
-</div>`;
-
-      return `<svg width="${gW}" height="${gH}" viewBox="0 0 ${gW} ${gH}" xmlns="http://www.w3.org/2000/svg" style="width:100%;max-width:${gW}px">
-  ${grid}
-  ${bars}
-  ${zeroLine}
-  ${finLine}
-  <path d="${cfPath}" fill="none" stroke="#1A6644" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
-  <path d="${imPath}" fill="none" stroke="#C95B2A" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
-  ${cfDots}${imDots}
-  <line x1="${PADL}" y1="${PADT + innerH}" x2="${PADL + innerW}" y2="${PADT + innerH}" stroke="rgba(26,22,18,0.28)" stroke-width="1.2"/>
-  ${xLabels}
-  <text x="${PADL + innerW / 2}" y="${gH - 6}" text-anchor="middle" font-size="12" font-weight="600" fill="rgba(26,22,18,0.45)">Année</text>
-</svg>${legend}`;
-    };
-
-    // ── Comparatif des trésoreries Réel vs Micro-BIC sur la durée ─────────────
-    const makeCfCompareGraph = (): string => {
-      const gW = 690, gH = 250;
-      const PADL = 84, PADR = 28, PADT = 34, PADB = 44;
-      const innerW = gW - PADL - PADR;
-      const innerH = gH - PADT - PADB;
-      const lastYear = duree + 5;
-
-      const sReel = projReel.filter(y => y.year <= lastYear).map(y => ({ x: y.year, v: y.cashflowMensuel }));
-      const sMicro = projMicro.filter(y => y.year <= lastYear).map(y => ({ x: y.year, v: y.cashflowMensuel }));
-      const allV = [...sReel, ...sMicro].map(p => p.v);
-
-      const niceScale = (lo: number, hi: number, wanted: number) => {
-        if (hi - lo < 1) hi = lo + 1;
-        const rawStep = (hi - lo) / wanted;
-        const mag = Math.pow(10, Math.floor(Math.log10(rawStep)));
-        const mult = [1, 2, 2.5, 5, 10].find(m => m * mag >= rawStep) ?? 10;
-        const step = mult * mag;
-        return { min: Math.floor(lo / step) * step, max: Math.ceil(hi / step) * step, step };
+      const serie = (get: (p: typeof pts[0]) => number, color: string) => {
+        const d = pts.map((p, i) => `${i === 0 ? "M" : "L"}${toX(p.year).toFixed(1)},${toY(get(p)).toFixed(1)}`).join(" ");
+        const dots = pts.map(p => `<circle cx="${toX(p.year).toFixed(1)}" cy="${toY(get(p)).toFixed(1)}" r="2.6" fill="${color}" stroke="#F5F0E8" stroke-width="1"/>`).join("");
+        return `<path d="${d}" fill="none" stroke="${color}" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>${dots}`;
       };
-      const nTicks = 4;
-      const sc = niceScale(Math.min(0, ...allV), Math.max(...allV, 1), nTicks);
-      const yMin = sc.min, yMax = sc.max, yRange = (yMax - yMin) || 1;
 
-      const toX = (yr: number) => PADL + ((yr - 1) / Math.max(lastYear - 1, 1)) * innerW;
-      const toY = (v: number) => PADT + (1 - (v - yMin) / yRange) * innerH;
-
-      const grid = Array.from({ length: nTicks + 1 }, (_, i) => {
-        const t = i / nTicks;
-        const v = yMin + t * yRange;
-        const y = PADT + (1 - t) * innerH;
-        return `<line x1="${PADL}" y1="${y.toFixed(1)}" x2="${PADL + innerW}" y2="${y.toFixed(1)}" stroke="rgba(26,22,18,0.10)" stroke-width="1"/>
-<text x="${PADL - 9}" y="${(y + 4).toFixed(1)}" text-anchor="end" font-size="12" font-weight="700" fill="rgba(26,22,18,0.5)">${fE(v)}</text>`;
-      }).join("");
-
-      const zeroLine = yMin < 0
-        ? `<line x1="${PADL}" y1="${toY(0).toFixed(1)}" x2="${PADL + innerW}" y2="${toY(0).toFixed(1)}" stroke="rgba(26,22,18,0.35)" stroke-width="1.2" stroke-dasharray="4 3"/>`
+      const xFin = toX(duree);
+      const finLine = montantCredit > 0
+        ? `<line x1="${xFin.toFixed(1)}" y1="${PADT - 8}" x2="${xFin.toFixed(1)}" y2="${PADT + iH}" stroke="#C95B2A" stroke-width="1.3" stroke-dasharray="5 3"/>`
         : "";
 
-      const xFin = toX(duree);
-      const finLine = `<line x1="${xFin.toFixed(1)}" y1="${PADT - 8}" x2="${xFin.toFixed(1)}" y2="${PADT + innerH}" stroke="#B03A2A" stroke-width="1.4" stroke-dasharray="5 3"/>
-<text x="${(xFin - 6).toFixed(1)}" y="${PADT - 13}" text-anchor="end" font-size="12" font-weight="700" fill="#B03A2A">Crédit soldé fin d'année ${duree}</text>`;
+      const stepX = lastYear > 22 ? 5 : lastYear > 12 ? 5 : 2;
+      const pinned = [1, lastYear];
+      const yrs = new Set<number>(pinned);
+      if (montantCredit > 0) yrs.add(duree);
+      for (let y = 1; y <= lastYear; y += stepX) if (!Array.from(yrs).some(p => Math.abs(p - y) < 2)) yrs.add(y);
+      const xLabels = Array.from(yrs).sort((a, b) => a - b).map(y =>
+        `<text x="${toX(y).toFixed(1)}" y="${PADT + iH + 18}" text-anchor="middle" font-size="12" font-weight="700" fill="rgba(26,22,18,0.55)">${y}</text>`).join("");
 
-      const stepX = lastYear > 22 ? 5 : lastYear > 12 ? 2 : 1;
-      const pinned = [1, duree, lastYear];
-      const yearsShown = new Set<number>(pinned);
-      for (let y = 1; y <= lastYear; y += stepX) if (!pinned.some(pz => Math.abs(pz - y) < 2)) yearsShown.add(y);
-      const xLabels = Array.from(yearsShown).sort((a, b) => a - b).map(y =>
-        `<text x="${toX(y).toFixed(1)}" y="${PADT + innerH + 19}" text-anchor="middle" font-size="12" font-weight="700" fill="rgba(26,22,18,0.55)">${y}</text>`
-      ).join("");
+      // Valeurs de fin de projection, à droite des courbes
+      const last = pts[pts.length - 1];
+      const endLbl = `<text x="${(PADL + iW + 8).toFixed(1)}" y="${(toY(last.cashflowAnnuel) + 4).toFixed(1)}" font-size="13" font-weight="800" fill="#1A6644">${fE(last.cashflowAnnuel)}</text>
+<text x="${(PADL + iW + 8).toFixed(1)}" y="${(toY(last.impot) + 4).toFixed(1)}" font-size="13" font-weight="800" fill="#C95B2A">${fE(last.impot)}</text>`;
 
-      const serie = (pts: { x: number; v: number }[], color: string) => {
-        const d = pts.map((p, i) => `${i === 0 ? "M" : "L"}${toX(p.x).toFixed(1)},${toY(p.v).toFixed(1)}`).join(" ");
-        const dots = pts.map(p => `<circle cx="${toX(p.x).toFixed(1)}" cy="${toY(p.v).toFixed(1)}" r="3" fill="${color}" stroke="#F5F0E8" stroke-width="1.2"/>`).join("");
-        return `<path d="${d}" fill="none" stroke="${color}" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"/>${dots}`;
-      };
-
-      const COL_REEL = "#1A6644", COL_MICRO = "#2A5C8A";
-
-      // Étiquettes chiffrées en gros : celle du dessus va au-dessus, celle du
-      // dessous en dessous, pour qu'elles ne se chevauchent jamais.
-      const labelYears = [1, duree, lastYear];
-      const tags = labelYears.map(yr => {
-        const pr = sReel.find(p => p.x === yr);
-        const pm = sMicro.find(p => p.x === yr);
-        if (!pr || !pm) return "";
-        const anchor = yr === 1 ? "start" : yr === lastYear ? "end" : "middle";
-        const xOff = yr === 1 ? 9 : yr === lastYear ? -9 : 0;
-        const x = (toX(yr) + xOff).toFixed(1);
-        const reelHaut = pr.v >= pm.v;
-        const draw = (v: number, color: string, haut: boolean) =>
-          `<text x="${x}" y="${(toY(v) + (haut ? -13 : 23)).toFixed(1)}" text-anchor="${anchor}" font-size="15" font-weight="800" fill="${color}">${v >= 0 ? "+" : ""}${fE(v)}</text>`;
-        return draw(pr.v, COL_REEL, reelHaut) + draw(pm.v, COL_MICRO, !reelHaut);
-      }).join("");
-
-      const legend = `<div style="display:flex;gap:22px;flex-wrap:wrap;justify-content:center;margin-top:8px;font-size:13px;font-weight:600;color:rgba(26,22,18,0.7)">
-  <span><span style="display:inline-block;width:20px;height:4px;background:${COL_REEL};vertical-align:middle;margin-right:7px;border-radius:2px"></span>Régime Réel Simplifié${!isMicro ? " · retenu" : ""}</span>
-  <span><span style="display:inline-block;width:20px;height:4px;background:${COL_MICRO};vertical-align:middle;margin-right:7px;border-radius:2px"></span>Micro-BIC ${isSaisonnier ? "30" : "50"} %${isMicro ? " · retenu" : ""}</span>
+      const legende = `<div style="display:flex;gap:26px;flex-wrap:wrap;justify-content:center;margin-top:4px;font-size:12px;font-weight:600;color:rgba(26,22,18,0.7)">
+  <span><span style="display:inline-block;width:18px;height:3.5px;background:#1A6644;vertical-align:middle;margin-right:7px;border-radius:2px"></span>Cash-flow / an</span>
+  <span><span style="display:inline-block;width:18px;height:3.5px;background:#C95B2A;vertical-align:middle;margin-right:7px;border-radius:2px"></span>Impôt / an</span>
+  ${!isMicro ? `<span><span style="display:inline-block;width:12px;height:12px;background:rgba(42,92,138,0.42);vertical-align:middle;margin-right:7px;border-radius:2px"></span>Amortissement / an</span>` : ""}
 </div>`;
 
-      return `<div style="font-size:13px;font-weight:600;color:rgba(26,22,18,0.55);margin-bottom:2px">Trésorerie après fiscalité · €/mois</div>
+      return `<div style="background:#EDE7DC;border-radius:9px;padding:11px 13px 9px">
 <svg width="${gW}" height="${gH}" viewBox="0 0 ${gW} ${gH}" xmlns="http://www.w3.org/2000/svg" style="width:100%;max-width:${gW}px">
-  ${grid}${zeroLine}${finLine}
-  ${serie(sMicro, COL_MICRO)}
-  ${serie(sReel, COL_REEL)}
-  ${tags}
-  <line x1="${PADL}" y1="${PADT + innerH}" x2="${PADL + innerW}" y2="${PADT + innerH}" stroke="rgba(26,22,18,0.28)" stroke-width="1.2"/>
+  <text x="${PADL - 9}" y="16" font-size="12" fill="rgba(26,22,18,0.5)">Une seule échelle · €/an</text>
+  ${montantCredit > 0 ? `<text x="${PADL + iW}" y="16" text-anchor="end" font-size="12" font-weight="700" fill="#C95B2A">Fin du crédit · année ${duree}</text>` : ""}
+  ${grid}${bars}${zero}${finLine}
+  ${serie(p => p.impot, "#C95B2A")}
+  ${serie(p => p.cashflowAnnuel, "#1A6644")}
+  ${endLbl}
+  <line x1="${PADL}" y1="${PADT + iH}" x2="${PADL + iW}" y2="${PADT + iH}" stroke="rgba(26,22,18,0.28)" stroke-width="1.1"/>
   ${xLabels}
-  <text x="${PADL + innerW / 2}" y="${gH - 6}" text-anchor="middle" font-size="12" font-weight="600" fill="rgba(26,22,18,0.45)">Année</text>
-</svg>${legend}`;
+  <text x="${PADL + iW / 2}" y="${gH - 6}" text-anchor="middle" font-size="12" fill="rgba(26,22,18,0.45)">Année</text>
+</svg>${legende}</div>`;
     };
+
+    /* ── Page 3 : barres Loyers / Sorties d'une année donnée ─────────────── */
+    const makeBarresAnnee = (yr: number): string => {
+      const row = getYear(yr);
+      const creditAn = yr <= duree ? creditTotalAnnuel : 0;
+      const cf = row.cfAnnuel;
+      const impotAn = row.impot;
+      const chargesAn = chargesAnnuelles;
+      const H2 = 232, colW2 = 84, gap2 = 26;
+      const total = Math.max(recettesAnnuelles, chargesAn + creditAn + impotAn + Math.max(0, cf), 1);
+      const h = (v: number) => Math.max(0, (v / total) * H2);
+
+      const hLoyer = h(recettesAnnuelles);
+      const hCf = h(Math.max(0, cf));
+      const hCh = h(chargesAn);
+      const hCr = h(creditAn);
+      const hIm = h(impotAn);
+
+      // Colonne « sorties » empilée de haut en bas : cash-flow, charges, crédit, impôt
+      let yCur = H2 - (hCf + hCh + hCr + hIm);
+      const segs: string[] = [];
+      const push = (hh: number, fill: string, label: string, val: string, txtCol: string) => {
+        if (hh <= 0.5) return;
+        const y0 = yCur; yCur += hh;
+        segs.push(`<rect x="${colW2 + gap2}" y="${y0.toFixed(1)}" width="${colW2}" height="${hh.toFixed(1)}" fill="${fill}"/>`);
+        if (hh > 34) segs.push(`<text x="${colW2 + gap2 + colW2 / 2}" y="${(y0 + hh / 2 - 6).toFixed(1)}" text-anchor="middle" font-size="12" fill="${txtCol}" opacity="0.85">${label}</text><text x="${colW2 + gap2 + colW2 / 2}" y="${(y0 + hh / 2 + 10).toFixed(1)}" text-anchor="middle" font-size="13" font-weight="800" fill="${txtCol}">${val}</text>`);
+        else if (hh > 15) segs.push(`<text x="${colW2 + gap2 + colW2 / 2}" y="${(y0 + hh / 2 + 4).toFixed(1)}" text-anchor="middle" font-size="12" font-weight="800" fill="${txtCol}">${val}</text>`);
+      };
+      if (cf >= 0) push(hCf, "#1A6644", "Cash-flow", `+${fE(cf)}`, "#FFFFFF");
+      push(hCh, "#8B5A3A", "Charges", fE(chargesAn), "#FFFFFF");
+      push(hCr, "#4E1F12", "Crédit", fE(creditAn), "#F5F0E8");
+      push(hIm, "#2C0F08", "Impôt", fE(impotAn), "#F5A623");
+
+      const W2 = colW2 * 2 + gap2;
+      return `<svg width="${W2}" height="${H2 + 20}" viewBox="0 0 ${W2} ${H2 + 20}" xmlns="http://www.w3.org/2000/svg" style="flex:0 0 auto">
+  <rect x="0" y="${(H2 - hLoyer).toFixed(1)}" width="${colW2}" height="${hLoyer.toFixed(1)}" fill="#1A6644" rx="3"/>
+  <text x="${colW2 / 2}" y="${(H2 - hLoyer / 2 - 6).toFixed(1)}" text-anchor="middle" font-size="12" fill="rgba(255,255,255,0.8)">Loyers</text>
+  <text x="${colW2 / 2}" y="${(H2 - hLoyer / 2 + 10).toFixed(1)}" text-anchor="middle" font-size="13" font-weight="800" fill="#FFFFFF">${fE(recettesAnnuelles)}</text>
+  ${segs.join("")}
+  <text x="${colW2 / 2}" y="${H2 + 14}" text-anchor="middle" font-size="12" fill="rgba(26,22,18,0.5)">Loyers</text>
+  <text x="${colW2 + gap2 + colW2 / 2}" y="${H2 + 14}" text-anchor="middle" font-size="12" fill="rgba(26,22,18,0.5)">Sorties</text>
+</svg>`;
+    };
+
+    /* ── Page 3 : frise verticale des années ─────────────────────────────── */
+    const makeFrise = (): string => {
+      const hauteur = 760;
+      const dernier = duree + 5;
+      const reperes = [1, duree + 1];
+      // jalons réguliers, en écartant ceux qui tomberaient sur un repère
+      const jalons = [5, 10, 15, 20, 25, 30, 35]
+        .filter(v => v <= dernier && reperes.every(rp => Math.abs(rp - v) >= 3));
+      const yOf = (an: number) => 16 + (an / dernier) * (hauteur - 40);
+      const marques = jalons.map(an =>
+        `<line x1="14" y1="${yOf(an).toFixed(1)}" x2="22" y2="${yOf(an).toFixed(1)}" stroke="rgba(201,91,42,0.5)" stroke-width="1.3"/>
+<text x="27" y="${(yOf(an) + 4).toFixed(1)}" font-size="12" fill="rgba(26,22,18,0.45)">${an}</text>`).join("");
+      const repere = (an: number, txt: string) =>
+        `<circle cx="18" cy="${yOf(an).toFixed(1)}" r="4.5" fill="#C95B2A"/>
+<text x="27" y="${(yOf(an) + 4).toFixed(1)}" font-size="12" font-weight="800" fill="#C95B2A">${txt}</text>`;
+      return `<svg width="76" height="${hauteur}" viewBox="0 0 76 ${hauteur}" xmlns="http://www.w3.org/2000/svg">
+  <line x1="18" y1="10" x2="18" y2="${hauteur - 14}" stroke="#C95B2A" stroke-width="1.6"/>
+  <polygon points="18,${hauteur - 4} 14,${hauteur - 14} 22,${hauteur - 14}" fill="#C95B2A"/>
+  ${marques}
+  ${repere(1, "An 1")}
+  ${repere(duree + 1, `An ${duree + 1}`)}
+</svg>`;
+    };
+
     // ── Détail de l'amortissement retenu (rien en Micro-BIC) ───────────────────
     const makeAmortDetail = (): string => {
       if (isMicro) return "";
@@ -1788,20 +1639,22 @@ ${bloc(`Fin d'emprunt N+${anneeApres}`, `Année ${anneeApres} · sans mensualit�
 
     // Plus-value : valeur du bien (hors frais d'acquisition) vs prix d'acquisition fiscal
     const prixVenteFinal = prix;
-    const pvBrute = isMicro ? 0 : Math.max(0, prixVenteFinal - investTotal + amortCumulFinal);
     const abIR = abattIR(dureeY);
     const abPS = abattPS(dureeY);
-    // Prélèvements sociaux sur plus-value immobilière : 17,2 % (et non 18,6 % comme sur les loyers)
-    const impotPV = pvBrute * (1 - abIR) * TAUX_IR_PLUSVALUE + pvBrute * (1 - abPS) * TAUX_PS_PLUSVALUE;
-    const netRevente = prixVenteFinal - impotPV;
 
     // Scénarios de prix de vente à l'horizon (baisse 10 %, stable, +1 %/an)
     // résidu de calcul possible : en dessous de 1 €, le crédit est considéré soldé
     const crdFinBrut = dureeY <= duree ? (getYear(dureeY).capRestant ?? 0) : 0;
     const crdFin = crdFinBrut < 1 ? 0 : crdFinBrut;
+    // Prix d'acquisition retenu pour la plus-value immobilière des particuliers :
+    // prix + frais d'acquisition réels + travaux (réels ou forfait 15 % au-delà de
+    // 5 ans de détention, art. 150 VB II CGI). Le mobilier en est exclu.
+    const forfaitTravaux = dureeY > 5 ? Math.max(travaux, prix * 0.15) : travaux;
+    const baseAcquisitionPV = prix + notaire + forfaitTravaux;
     const netApres = (prixVente: number) => {
-      const pv = isMicro ? Math.max(0, prixVente - investTotal)
-                         : Math.max(0, prixVente - investTotal + amortCumulFinal);
+      // Amortissements déduits réintégrés au régime réel (Loi de finances 2025)
+      const acq = baseAcquisitionPV - (isMicro ? 0 : amortCumulFinal);
+      const pv = Math.max(0, prixVente - acq);
       const tax = pv * (1 - abIR) * TAUX_IR_PLUSVALUE + pv * (1 - abPS) * TAUX_PS_PLUSVALUE;
       return { prixVente, pv, tax, net: prixVente - crdFin - tax };
     };
@@ -1811,7 +1664,10 @@ ${bloc(`Fin d'emprunt N+${anneeApres}`, `Année ${anneeApres} · sans mensualit�
       { label: `Hausse de 1 % par an`, central: false, ...netApres(prix * Math.pow(1.01, dureeY)) },
     ];
     const scenarioCentral = scenariosVente[1];
-    const totalCumule = sumCF + scenarioCentral.net;
+    const pvBrute = scenarioCentral.pv;
+    const impotPV = scenarioCentral.tax;
+    const netRevente = scenarioCentral.net;
+    const totalCumule = cumulCfChoisi + netRevente;
 
     const today = new Date().toLocaleDateString("fr-FR", { day: "2-digit", month: "long", year: "numeric" });
     const bienTitle = [
@@ -1827,11 +1683,10 @@ ${bloc(`Fin d'emprunt N+${anneeApres}`, `Année ${anneeApres} · sans mensualit�
       ? `Simplicité administrative · abattement forfaitaire ${isSaisonnier ? "30" : "50"}% · aucune comptabilité obligatoire`
       : `Déduction de toutes les charges réelles · ${amortMode === "ensemble" ? `amortissement du bien sur ${amortDureeEnsemble} ans` : `amortissement par composants (${Array.from(new Set(composants.map(c => c.duree))).sort((a, b) => a - b).join(" / ")} ans)`} · amortissements non déduits reportables sans limitation de durée`;
 
-    const stackedBarPairHtml = makeStackedBarPair();
-    const cashImpotGraphHtml = makeCashImpotGraph();
-    const amortDetailHtml = makeAmortDetail();
-    const cfCompareHtml = makeCfCompareGraph();
-    const nbPages = isMicro ? 5 : 6;   // la page amortissement n'existe qu'au réel
+    const impotAmortGraphHtml = makeImpotAmortGraph();
+    const friseHtml = makeFrise();
+    const nbPages = isSaisonnier ? 5 : 4;   // une page de plus en location saisonnière
+    const nSaison = 2, nImpot = isSaisonnier ? 3 : 2, nVision = isSaisonnier ? 4 : 3, nFin = isSaisonnier ? 5 : 4;
 
     // ── CSS ───────────────────────────────────────────────────────────────────
     const css = `
@@ -1841,80 +1696,137 @@ html,body{background:#D0C9BC;margin:0;padding:0;font-family:'Helvetica Neue',Ari
 .page{width:210mm;min-height:297mm;background:#F5F0E8;margin:14px auto;padding:11mm 13mm 16mm;position:relative;page-break-after:always;box-shadow:0 3px 24px rgba(0,0,0,0.22)}
 .page:last-child{page-break-after:avoid}
 .no-print{position:sticky;top:0;z-index:100;background:#1A4A35;padding:10px 20px;display:flex;align-items:center;justify-content:space-between}
-.hdr{background:#4E1F12;border-radius:10px;padding:12px 16px;margin-bottom:10px;display:flex;align-items:flex-start;justify-content:space-between}
-.sec{font-size:13px;font-weight:800;text-transform:uppercase;letter-spacing:.12em;color:#C95B2A;text-align:center;margin:38px auto 12px;padding-bottom:5px;border-bottom:1.5px solid rgba(201,91,42,0.4);width:fit-content;max-width:100%}
-.sec.first{margin-top:22px}
-/* Grand titre de page */
-.ptitle{font-size:31px;font-weight:800;color:#C95B2A;letter-spacing:-.025em;line-height:1.12;margin:4px 0 6px}
-.ptitle-sub{font-size:13px;color:rgba(26,22,18,0.45);margin-bottom:12px;letter-spacing:.02em}
-.ptitle + .sec.first, .ptitle-sub + .sec.first{margin-top:14px}
-/* Bandeau trésorerie pleine largeur */
-.cfband{background:#4E1F12;border-radius:8px;padding:14px 18px;display:flex;align-items:stretch;gap:18px;margin-bottom:6px}
-.cfband-l{flex:0 0 auto;min-width:210px;display:flex;flex-direction:column;justify-content:center}
-.cfband-lbl{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.12em;color:rgba(245,240,232,0.55);margin-bottom:6px}
-.cfband-val{font-size:38px;font-weight:800;letter-spacing:-.03em;line-height:1}
-.cfband-unit{font-size:16px;font-weight:500;color:rgba(245,240,232,0.6);margin-left:6px}
-.cfband-sub{font-size:12px;color:rgba(245,240,232,0.5);margin-top:7px}
-.cfband-sep{width:1.5px;background:rgba(201,91,42,0.55);flex-shrink:0}
-.cfband-r{flex:1;display:flex;flex-direction:column;justify-content:center}
-.cfband-head{font-size:14px;font-weight:700;color:#F5F0E8;line-height:1.45;margin-bottom:7px}
-.cfband-note{font-size:12px;color:rgba(245,240,232,0.55);line-height:1.55}
-.cards{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:6px}
-.frow{display:flex;align-items:stretch;padding:2px 10px 10px}
-.fcell{flex:0 1 132px;width:132px;min-width:0;padding:0 11px;border-left:1px solid rgba(26,22,18,0.14)}
-.fcell:first-child{border-left:none;padding-left:2px}
-.fcell.tail{flex:0 0 auto;width:auto;min-width:118px;margin-left:auto;border-left:none;padding:7px 12px;border-radius:7px}
-.fcell.tail.hl{background:rgba(201,91,42,0.10);border:1px solid rgba(201,91,42,0.28)}
-.fcell.tail.grn{background:rgba(26,102,68,0.09);border:1px solid rgba(26,102,68,0.26)}
-.fcell-lbl{font-size:12px;text-transform:uppercase;letter-spacing:.09em;color:rgba(26,22,18,0.45);margin-bottom:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.fcell-val{font-size:17px;font-weight:600;letter-spacing:-.02em;color:#1A1612;white-space:nowrap}
-.fcell-val.orange{color:#C95B2A}
-.fcell-val.green{color:#1A6644}
-.card{flex:1;min-width:0;background:#EDE7DC;border-radius:7px;padding:7px 9px}
-.card.hl{background:rgba(201,91,42,0.10);border:1px solid rgba(201,91,42,0.22)}
-.card.green{background:rgba(26,102,68,0.08);border:1px solid rgba(26,102,68,0.2)}
-.card.red{background:rgba(176,58,42,0.08);border:1px solid rgba(176,58,42,0.22)}
-.card-lbl{font-size:12px;text-transform:uppercase;letter-spacing:.09em;color:rgba(26,22,18,0.42);margin-bottom:2px}
-.card-val{font-size:17px;font-weight:600;letter-spacing:-.02em;color:#1A1612}
-.card-val.lg{font-size:21px;font-weight:700}
-.card-val.orange{color:#C95B2A}
-.card-val.green{color:#1A6644}
-.card-val.red{color:#B03A2A}
-.card-sub{font-size:12px;color:rgba(26,22,18,0.4);margin-top:1px}
-.sub-hdr{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:rgba(26,22,18,0.5);padding:4px 8px;background:rgba(26,22,18,0.05);border-radius:4px 4px 0 0;margin-bottom:4px}
-.compare-wrap{display:grid;grid-template-columns:1fr 20px 1fr;gap:0;margin-bottom:6px}
-.compare-col{background:#EDE7DC;border-radius:7px;padding:8px 10px}
-.compare-col.chosen{border:2px solid ${regimeColor};background:${isMicro ? "rgba(42,92,138,0.06)" : "rgba(26,102,68,0.06)"}}
-.vs-sep{display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:900;color:#C95B2A}
-.cmp-hdr{font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:${regimeColor};margin-bottom:5px;text-align:center}
-.cmp-hdr.inactive{color:rgba(26,22,18,0.35)}
-.cmp-row{display:flex;justify-content:space-between;font-size:12px;padding:2px 0;border-bottom:.5px solid rgba(26,22,18,0.07)}
-.cmp-row:last-child{border-bottom:none;padding-top:4px}
-.cmp-lbl{color:rgba(26,22,18,0.5)}
-.cmp-val{font-weight:600;color:#1A1612}
-.cmp-amort{font-weight:700;color:#C95B2A}
-.regime-band{background:${regimeColor};border-radius:8px;padding:8px 12px;margin-top:6px}
-.ftr{position:absolute;bottom:11mm;left:13mm;right:13mm;display:flex;justify-content:space-between;align-items:center;font-size:12px;color:rgba(26,22,18,0.32);border-top:.5px solid rgba(26,22,18,0.1);padding-top:5px}
+
+/* En-tête de page */
+.hdr{background:#4E1F12;border-radius:9px;padding:9px 16px;display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:9px}
+.hdr-t{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.13em;color:#F5F0E8}
+.hdr-s{font-size:12px;color:rgba(245,240,232,0.6);margin-top:2px}
+.hdr-p{font-size:19px;font-weight:400;color:#C95B2A;letter-spacing:-.02em;text-align:right}
+.hdr-d{font-size:12px;color:rgba(245,240,232,0.55);text-align:right;margin-top:2px}
+
+/* Titre de page : pastille + libellé */
+.ptitle{display:flex;align-items:center;gap:13px;margin-bottom:10px}
+.ptitle-n{width:34px;height:34px;border-radius:8px;background:#C95B2A;color:#F5F0E8;font-size:17px;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.ptitle-l{font-size:25px;font-weight:800;color:#C95B2A;letter-spacing:-.02em;line-height:1.1}
+
+/* Titre de section centré */
+.sec{font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.09em;color:#C95B2A;text-align:center;margin:8px 0 5px}
+.sec.tight{margin-top:14px}
+
+/* Bandes Acquisition / Financement */
+.band{background:#EDE7DC;border-radius:8px;overflow:hidden;margin-bottom:6px}
+.band-h{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:rgba(26,22,18,0.55);padding:5px 12px;background:rgba(26,22,18,0.06)}
+.band-r{display:flex;align-items:stretch;padding:6px 12px;gap:0}
+.cell{flex:1 1 0;min-width:0;padding:0 12px;border-left:1px solid rgba(26,22,18,0.13)}
+.cell:first-child{border-left:none;padding-left:0}
+.cell-l{font-size:12px;text-transform:uppercase;letter-spacing:.07em;color:rgba(26,22,18,0.5);margin-bottom:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cell-v{font-size:14px;font-weight:700;color:#1A1612;white-space:nowrap}
+.cell.tag{flex:0 0 auto;border-left:none;border-radius:7px;padding:7px 13px;margin-left:10px}
+.cell.tag.or{background:rgba(201,91,42,0.10);border:1px solid rgba(201,91,42,0.30)}
+.cell.tag.gr{background:rgba(26,102,68,0.09);border:1px solid rgba(26,102,68,0.28)}
+.cell.tag.or .cell-v{color:#C95B2A}
+.cell.tag.gr .cell-v{color:#1A6644}
+
+/* Cartes indicateurs */
+.kpis{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
+.kpi{border-radius:8px;padding:8px 14px;background:#EDE7DC}
+.kpi.or{background:rgba(201,91,42,0.10)}
+.kpi.dk{background:#1A6644}
+.kpi-l{font-size:12px;text-transform:uppercase;letter-spacing:.08em;color:rgba(26,22,18,0.5);margin-bottom:6px}
+.kpi-v{font-size:22px;font-weight:800;letter-spacing:-.025em;color:#1A1612;line-height:1}
+.kpi.or .kpi-v{color:#C95B2A}
+.kpi-s{font-size:12px;color:rgba(26,22,18,0.45);margin-top:6px}
+.kpi.dk .kpi-l{color:rgba(245,240,232,0.6)}
+.kpi.dk .kpi-v{color:#F5F0E8}
+.kpi.dk .kpi-s{color:rgba(245,240,232,0.6)}
+
+/* Comparaison des régimes */
+.cmp{display:grid;grid-template-columns:1fr 34px 1fr;align-items:stretch}
+.cmp-c{border-radius:8px;padding:8px 12px;background:#EDE7DC}
+.cmp-c.on{background:rgba(26,102,68,0.06);border:1.5px solid #1A6644}
+.cmp-c.off{background:rgba(26,22,18,0.045)}
+.cmp-h{font-size:13px;font-weight:800;text-transform:uppercase;letter-spacing:.05em;text-align:center;margin-bottom:8px}
+.cmp-c.on .cmp-h{color:#1A6644}
+.cmp-c.off .cmp-h{color:rgba(26,22,18,0.42)}
+.cmp-r{display:flex;justify-content:space-between;align-items:baseline;padding:1px 0;font-size:12px}
+.cmp-k{color:rgba(26,22,18,0.6)}
+.cmp-v{font-weight:700;color:#1A1612;white-space:nowrap}
+.cmp-r.am .cmp-k{color:#C95B2A;font-weight:700}
+.cmp-r.am .cmp-v{color:#C95B2A}
+.cmp-r.cf{border-top:1px solid rgba(26,22,18,0.12);margin-top:4px;padding-top:6px}
+.cmp-r.cf .cmp-v{color:#1A6644;font-size:13px}
+.cmp-c.off .cmp-r.cf .cmp-v{color:rgba(26,22,18,0.6)}
+.vs{display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:800;color:rgba(26,22,18,0.35)}
+
+/* Bandeaux INFO CLEF */
+.info{border-radius:9px;padding:9px 14px;display:flex;align-items:flex-start;gap:14px;margin-top:8px}
+.info.gr{background:#1A6644}
+.info.br{background:#4E1F12}
+.info-b{flex:0 0 auto;border-radius:20px;padding:6px 16px;font-size:12px;font-weight:800;letter-spacing:.09em;color:#F5F0E8;align-self:center;white-space:nowrap}
+.info.gr .info-b{background:rgba(245,240,232,0.16)}
+.info.br .info-b{background:rgba(201,91,42,0.55)}
+.info-c{flex:1;min-width:0}
+.info-t{font-size:13px;font-weight:700;color:#F5F0E8;margin-bottom:4px}
+.info-x{font-size:12px;color:rgba(245,240,232,0.82);line-height:1.5}
+.info-x strong{color:#F5F0E8}
+.info-big{background:#F5F0E8;border-radius:7px;padding:6px 14px;font-size:19px;font-weight:800;color:#1A1612;letter-spacing:-.02em;white-space:nowrap;flex:0 0 auto;align-self:center}
+
+/* Tableaux */
 table.tbl{width:100%;border-collapse:collapse;font-size:12px}
-table.tbl th{background:#4E1F12;color:#F5F0E8;padding:6px 6px;text-align:left;font-weight:700;font-size:12px}
-table.tbl td{padding:5px 6px;border-bottom:.5px solid rgba(26,22,18,0.07);font-size:12px}
-table.tbl tr:nth-child(even) td{background:rgba(26,22,18,0.025)}
+table.tbl th{background:#4E1F12;color:#F5F0E8;padding:4px 7px;text-align:left;font-weight:700;font-size:12px}
+table.tbl td{padding:3px 7px;border-bottom:.5px solid rgba(26,22,18,0.08);font-size:12px}
+table.tbl tr:nth-child(even) td{background:rgba(26,22,18,0.03)}
 table.tbl .r{text-align:right}
-table.tbl .pos{color:#1A7A52;font-weight:600}
-table.tbl .neg{color:#8B1A1A;font-weight:600}
-table.tbl .grp{border-left:1.5px solid rgba(201,91,42,0.5);border-right:1.5px solid rgba(201,91,42,0.5)}
-.concl-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:7px;margin-bottom:9px}
-.concl-card{background:#EDE7DC;border-radius:8px;padding:10px 12px}
-.concl-lbl{font-size:12px;text-transform:uppercase;letter-spacing:.09em;color:rgba(26,22,18,0.4);margin-bottom:3px}
-.concl-val{font-size:21px;font-weight:700;letter-spacing:-.02em;color:#1A1612}
-.concl-sub{font-size:12px;color:rgba(26,22,18,0.42);margin-top:1px}
-.revente-box{background:#4E1F12;border-radius:9px;padding:11px 14px;color:#F5F0E8}
+table.tbl .c{text-align:center}
+.note{font-size:12px;color:rgba(26,22,18,0.48);line-height:1.5;margin-top:5px}
+
+/* Bloc amortissement */
+.amo{background:rgba(42,92,138,0.07);border-radius:8px;overflow:hidden;margin-top:10px}
+.amo-h{font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.08em;color:#2A5C8A;padding:5px 13px;background:rgba(42,92,138,0.12)}
+.amo table{width:100%;border-collapse:collapse;font-size:12px}
+.amo td{padding:1px 13px;color:rgba(26,22,18,0.72)}
+.amo .r{text-align:right;font-weight:700;color:#2A5C8A}
+.amo .hd td{font-size:12px;color:rgba(26,22,18,0.5);font-weight:700;padding-top:5px}
+.amo .tot td{border-top:1.5px solid rgba(42,92,138,0.3);font-weight:800;color:#2A5C8A;padding-top:5px;padding-bottom:6px}
+
+/* Pied de page */
+.ftr{position:absolute;bottom:11mm;left:13mm;right:13mm;display:flex;justify-content:space-between;align-items:center;font-size:12px;color:rgba(26,22,18,0.4);border-top:.5px solid rgba(26,22,18,0.12);padding-top:6px}
+
+/* Vision d'ensemble : frise + cartes */
+.tl{display:flex;gap:14px;align-items:stretch}
+.tl-axis{flex:0 0 76px;position:relative}
+.tl-card{flex:1;min-width:0;background:#EDE7DC;border-radius:9px;padding:13px 16px}
+.tl-h{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:10px}
+.tl-t{font-size:19px;font-weight:800;color:#4E1F12;letter-spacing:-.02em}
+.tl-s{font-size:12px;font-weight:700;color:rgba(26,22,18,0.5)}
+.tl-b{display:flex;gap:16px;align-items:flex-start}
+.tl-txt{flex:1;min-width:0;font-size:12px;line-height:1.65;color:rgba(26,22,18,0.72)}
+.tl-txt p{margin-bottom:7px}
+.tl-txt p:last-child{margin-bottom:0}
+
+/* Synthèse finale */
+.fin{border:1.5px solid rgba(201,91,42,0.4);border-radius:10px;padding:10px 14px;margin-top:9px}
+.fin-h{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:8px}
+.fin-t{font-size:17px;font-weight:800;color:#4E1F12;letter-spacing:-.02em}
+.fin-r{font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.07em;color:#C95B2A}
+.fin-g{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:9px}
+.fin-c{background:rgba(26,102,68,0.07);border-radius:7px;padding:6px 12px}
+.fin-v{font-size:17px;font-weight:800;color:#1A6644;letter-spacing:-.02em}
+.fin-l{font-size:12px;color:rgba(26,22,18,0.5);margin-top:2px}
+.fin-2{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:8px}
+.fin-st{font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.07em;color:#C95B2A;margin-bottom:4px}
+.fin-sx{font-size:12px;line-height:1.5;color:rgba(26,22,18,0.72)}
+.fin-tot{border-top:1.5px solid rgba(201,91,42,0.3);padding-top:7px;display:flex;justify-content:space-between;align-items:baseline}
+.fin-tl{font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.07em;color:#C95B2A}
+.fin-tv{font-size:21px;font-weight:800;color:#4E1F12;letter-spacing:-.02em}
+
 @media print{
   html,body{background:#F5F0E8;padding:0;margin:0}
   .no-print{display:none}
   .page{margin:0;box-shadow:none;min-height:297mm;background:#F5F0E8}
   .page:last-child{page-break-after:avoid}
-}`;
+}
+`;
 
     // Fiscal section (replaces amort)
     const fiscalSection = !isMicro ? `
@@ -2016,6 +1928,13 @@ table.tbl .grp{border-left:1.5px solid rgba(201,91,42,0.5);border-right:1.5px so
     <strong>Pourquoi 18,6 % ici et 17,2 % à la revente ?</strong> Les prélèvements sociaux applicables aux <strong>revenus locatifs meublés</strong> (18,6 %) et ceux applicables aux <strong>plus-values immobilières</strong> (17,2 %) sont deux prélèvements distincts, à des taux différents.
   </div>`;
 
+    const HDR = `<div class="hdr">
+    <div><div class="hdr-t">toutlmnp · Rapport Invest</div><div class="hdr-s">${bienTitle}${bienInfo.description ? ` · ${bienInfo.description}` : ""}</div></div>
+    <div><div class="hdr-p">${fE(prix)}</div><div class="hdr-d">${today}</div></div>
+  </div>`;
+    const FTR = (n: number) => `<div class="ftr"><span>toutlmnp.fr · Rapport indicatif</span><span>Page ${n} / ${nbPages}</span><span>${today}</span></div>`;
+    const TITRE = (n: number, l: string) => `<div class="ptitle"><div class="ptitle-n">${n}</div><div class="ptitle-l">${l}</div></div>`;
+
     return `<!DOCTYPE html><html lang="fr"><head><meta charset="UTF-8">
 <title>Rapport Invest – toutlmnp</title>
 <style>${css}</style></head><body>
@@ -2025,357 +1944,375 @@ table.tbl .grp{border-left:1.5px solid rgba(201,91,42,0.5);border-right:1.5px so
   <button onclick="window.print()" style="background:#C95B2A;color:#F5F0E8;border:none;border-radius:6px;padding:8px 20px;font-size:12px;font-weight:600;cursor:pointer">⬇ Enregistrer en PDF</button>
 </div>
 
-<!-- ═══════════════════ PAGE 1 · L'ESSENTIEL ═══════════════════ -->
+<!-- ═══════════ PAGE 1 · L'ESSENTIEL DU PROJET ═══════════ -->
 <div class="page">
+  ${HDR}
+  ${TITRE(1, "L'essentiel du projet")}
 
-  <div class="hdr">
-    <div>
-      <div style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.15em;color:rgba(245,240,232,0.5);margin-bottom:3px">tout<span style="color:#C95B2A">lmnp</span> · Rapport Invest</div>
-      <div style="font-size:20px;font-weight:200;color:#F5F0E8;letter-spacing:-.03em;line-height:1.1">${bienTitle}</div>
-      ${bienInfo.description ? `<div style="font-size:12px;color:rgba(245,240,232,0.5);margin-top:3px">${bienInfo.description}</div>` : ""}
-    </div>
-    <div style="text-align:right;flex-shrink:0;margin-left:14px">
-      ${prix > 0 ? `<div style="font-size:17px;font-weight:300;color:#C95B2A;letter-spacing:-.02em">${fE(prix)}</div><div style="font-size:12px;color:rgba(245,240,232,0.45);margin-top:1px">prix d'achat</div>` : ""}
-      <div style="margin-top:5px;font-size:12px;color:rgba(245,240,232,0.35)">${today}</div>
+  <div class="band">
+    <div class="band-h">Acquisition</div>
+    <div class="band-r">
+      <div class="cell"><div class="cell-l">Prix d'achat</div><div class="cell-v">${fE(prix)}</div></div>
+      ${travaux > 0 ? `<div class="cell"><div class="cell-l">Travaux</div><div class="cell-v">${fE(travaux)}</div></div>` : ""}
+      ${mobilier > 0 ? `<div class="cell"><div class="cell-l">Mobilier</div><div class="cell-v">${fE(mobilier)}</div></div>` : ""}
+      <div class="cell"><div class="cell-l">Frais notaire</div><div class="cell-v">${fE(notaire)}</div></div>
+      <div class="cell tag or"><div class="cell-l">Coût total</div><div class="cell-v">${fE(investTotal)}</div></div>
     </div>
   </div>
 
-  <div class="ptitle">L'essentiel du projet</div>
-  <div class="sec first">Récapitulatif du bien</div>
-  <div style="background:#EDE7DC;border-radius:8px;overflow:hidden;margin-bottom:6px">
-    <div class="sub-hdr">Acquisition</div>
-    <div class="frow">
-      <div class="fcell"><div class="fcell-lbl">Prix d'achat</div><div class="fcell-val">${fE(prix)}</div></div>
-      ${travaux > 0 ? `<div class="fcell"><div class="fcell-lbl">Travaux</div><div class="fcell-val">${fE(travaux)}</div></div>` : ""}
-      ${mobilier > 0 ? `<div class="fcell"><div class="fcell-lbl">Mobilier</div><div class="fcell-val">${fE(mobilier)}</div></div>` : ""}
-      <div class="fcell"><div class="fcell-lbl">Frais notaire</div><div class="fcell-val">${fE(notaire)}</div></div>
-      <div class="fcell tail hl"><div class="fcell-lbl">Coût total</div><div class="fcell-val orange">${fE(investTotal)}</div></div>
-    </div>
-  </div>
-  <div style="background:#EDE7DC;border-radius:8px;overflow:hidden;margin-bottom:6px">
-    <div class="sub-hdr">Financement</div>
-    <div class="frow">
-      <div class="fcell"><div class="fcell-lbl">Apport</div><div class="fcell-val">${fE(apport)}</div></div>
-      <div class="fcell"><div class="fcell-lbl">Crédit</div><div class="fcell-val">${fE(montantCredit)}</div></div>
-      <div class="fcell"><div class="fcell-lbl">Taux · Durée</div><div class="fcell-val">${fP(parseFloat(f.taux) || 0, 2)} · ${duree} ans</div></div>
-      <div class="fcell"><div class="fcell-lbl">Mensualité</div><div class="fcell-val">${fE(mensualite)}/mois</div></div>
-      <div class="fcell tail grn"><div class="fcell-lbl">Loyer HC</div><div class="fcell-val green">${fE(loyerAnnuel / 12)}/mois</div></div>
-    </div>
-  </div>
-
-  <div class="sec">Charges d'exploitation · année 1</div>
-  <div style="display:flex;background:#EDE7DC;border-radius:8px;overflow:hidden;margin-bottom:6px">
-    <div style="flex:1;padding:10px 14px">
-      <div style="display:grid;grid-template-columns:1fr 1fr;column-gap:22px">
-      ${[
-        taxeFonciere > 0 ? `<div style="display:flex;justify-content:space-between;align-items:baseline;padding:3px 0;border-bottom:.5px solid rgba(26,22,18,0.08)"><span style="font-size:12px;color:rgba(26,22,18,0.55)">Taxe foncière</span><span style="font-size:13px;font-weight:600">${fE(taxeFonciere)}/an</span></div>` : "",
-        chargesCopro > 0 ? `<div style="display:flex;justify-content:space-between;align-items:baseline;padding:3px 0;border-bottom:.5px solid rgba(26,22,18,0.08)"><span style="font-size:12px;color:rgba(26,22,18,0.55)">Charges copropriété</span><span style="font-size:13px;font-weight:600">${fE(chargesCopro)}/an</span></div>` : "",
-        pnoEur > 0 ? `<div style="display:flex;justify-content:space-between;align-items:baseline;padding:3px 0;border-bottom:.5px solid rgba(26,22,18,0.08)"><span style="font-size:12px;color:rgba(26,22,18,0.55)">Assu. Loyer (${fP(pnoPct, 1)})</span><span style="font-size:13px;font-weight:600">${fE(pnoEur)}/an</span></div>` : "",
-        gestionEur > 0 ? `<div style="display:flex;justify-content:space-between;align-items:baseline;padding:3px 0;border-bottom:.5px solid rgba(26,22,18,0.08)"><span style="font-size:12px;color:rgba(26,22,18,0.55)">Gestion locative (${fP(gestionPct, 1)})</span><span style="font-size:13px;font-weight:600">${fE(gestionEur)}/an</span></div>` : "",
-        entretien > 0 ? `<div style="display:flex;justify-content:space-between;align-items:baseline;padding:3px 0;border-bottom:.5px solid rgba(26,22,18,0.08)"><span style="font-size:12px;color:rgba(26,22,18,0.55)">Entretien courant</span><span style="font-size:13px;font-weight:600">${fE(entretien)}/an</span></div>` : "",
-        compta > 0 ? `<div style="display:flex;justify-content:space-between;align-items:baseline;padding:3px 0;border-bottom:.5px solid rgba(26,22,18,0.08)"><span style="font-size:12px;color:rgba(26,22,18,0.55)">Comptabilité</span><span style="font-size:13px;font-weight:600">${fE(compta)}/an</span></div>` : "",
-      ].filter(Boolean).join("") || `<div style="font-size:12px;color:rgba(26,22,18,0.35);padding:4px 0">Aucune charge renseignée</div>`}
-      </div>
-      <div style="margin-top:7px;padding-top:5px;border-top:2px solid rgba(26,22,18,0.15);display:flex;justify-content:space-between;align-items:baseline">
-        <span style="font-size:12px;text-transform:uppercase;letter-spacing:.1em;color:rgba(26,22,18,0.45)">TOTAL charges</span>
-        <span style="font-size:17px;font-weight:700;color:#C95B2A;letter-spacing:-.01em">${fE(totalChargesHorsCredit)}/an</span>
-      </div>
+  <div class="band">
+    <div class="band-h">Financement</div>
+    <div class="band-r">
+      <div class="cell"><div class="cell-l">Apport</div><div class="cell-v">${fE(apport)}</div></div>
+      <div class="cell"><div class="cell-l">Crédit</div><div class="cell-v">${fE(montantCredit)}</div></div>
+      <div class="cell"><div class="cell-l">Taux · Durée</div><div class="cell-v">${fP(parseFloat(f.taux) || 0, 2)} · ${duree} ans</div></div>
+      <div class="cell"><div class="cell-l">Mensualité<sup>1</sup></div><div class="cell-v">${fE(mensualite)}/mois</div></div>
+      <div class="cell tag gr"><div class="cell-l">${isSaisonnier ? "Recettes méd." : "Loyer HC"}</div><div class="cell-v">${fE(loyerAnnuel / 12)}/mois</div></div>
     </div>
   </div>
 
   <div class="sec">Indicateurs clés</div>
-  <div class="cards">
-    <div class="card hl">
-      <div class="card-lbl">Coût total projet</div>
-      <div class="card-val lg orange">${fE(investTotal)}</div>
-      <div class="card-sub">dont ${fE(montantCredit)} financés</div>
-    </div>
-    <div class="card">
-      <div class="card-lbl">Rendement brut</div>
-      <div class="card-val lg">${fP(rendBrut)}</div>
-      <div class="card-sub">loyers / investissement</div>
-    </div>
-    <div class="card" style="background:${regimeColor}">
-      <div class="card-lbl" style="color:rgba(255,255,255,0.6)">Net après impôt</div>
-      <div class="card-val lg" style="color:#fff;font-weight:400">${fP(rendChosen)}</div>
-      <div class="card-sub" style="color:rgba(255,255,255,0.5)">${regimeLabel}</div>
-    </div>
+  <div class="kpis">
+    <div class="kpi or"><div class="kpi-l">Coût total projet</div><div class="kpi-v">${fE(investTotal)}</div><div class="kpi-s">dont ${fE(montantCredit)} financés</div></div>
+    <div class="kpi"><div class="kpi-l">Rendement brut</div><div class="kpi-v">${fP(rendBrut)}</div><div class="kpi-s">loyers / investissement</div></div>
+    <div class="kpi dk"><div class="kpi-l">Net après impôt<sup>2</sup></div><div class="kpi-v">${fP(rendChosen)}</div><div class="kpi-s">${regimeLabel}</div></div>
   </div>
-
-  <div class="cfband">
-    <div class="cfband-l">
-      <div class="cfband-lbl">Trésorerie après fiscalité</div>
-      <div><span class="cfband-val" style="color:${cfMensuel >= 0 ? "#4ADE80" : "#F87171"}">${cfMensuel >= 0 ? "+" : ""}${fE(cfMensuel)}</span><span class="cfband-unit">/ mois</span></div>
-      <div class="cfband-sub">Année 1 · ${regimeLabel}</div>
-    </div>
-    <div class="cfband-sep"></div>
-    <div class="cfband-r">
-      <div class="cfband-head">${cfMensuel >= 0
-        ? "Les loyers couvrent les sorties renseignées et laissent un excédent."
-        : `Les loyers ne couvrent pas encore toutes les sorties : il reste ${fE(Math.abs(cfMensuel))} par mois à financer sur votre épargne.`}</div>
-      <div class="cfband-note">${cfMensuel >= 0
-        ? `Moyenne mensuelle : ce montant varie selon les dépenses effectives. En parallèle, vous remboursez ${fE(getYear(1).capital / 12)} de capital chaque mois — un enrichissement qui n'apparaît pas dans cette ligne.`
-        : `Cet effort n'est pas une perte : vous remboursez ${fE(getYear(1).capital / 12)} de capital chaque mois. Le crédit soldé, la mensualité disparaît et la trésorerie bascule à la hausse.`}</div>
-    </div>
-  </div>
-
-  <div class="ftr"><span>toutlmnp.fr · Rapport indicatif</span><span>Page 1 / ${nbPages}</span><span>${today}</span></div>
-</div>
-
-
-<!-- ═══════════ PAGE 2 · RÉEL OU MICRO-BIC ═══════════ -->
-<div class="page">
-
-  <div style="background:#4E1F12;border-radius:7px;padding:7px 12px;margin-bottom:6px;display:flex;align-items:center;justify-content:space-between">
-    <div style="font-size:13px;font-weight:300;color:#F5F0E8">tout<span style="color:#C95B2A">lmnp</span> · <strong>${bienTitle}</strong></div>
-    <div style="background:${regimeColor};border-radius:12px;padding:2px 9px;font-size:12px;font-weight:700;color:#fff">${regimeLabel}</div>
-  </div>
-  <div class="ptitle">Réel ou Micro-BIC&nbsp;?</div>
-  <div class="ptitle-sub">Les deux régimes comparés, aujourd'hui et sur toute la durée.</div>
 
   <div class="sec">Comparaison Régime Réel vs Micro-BIC</div>
-  <div class="compare-wrap">
-    <div class="compare-col ${!isMicro ? "chosen" : ""}">
-      <div class="cmp-hdr ${isMicro ? "inactive" : ""}">Régime Réel Simplifié ${!isMicro ? "✓" : ""}</div>
-      <div class="cmp-row"><span class="cmp-lbl">Recettes fiscales</span><span class="cmp-val">${fE(recettesAnnuelles)}/an</span></div>
-      <div class="cmp-row"><span class="cmp-lbl">Charges déductibles</span><span class="cmp-val">${fE(chargesAnnuelles + interetsAnnee1 + assuranceEmprunteurAnnuel)}/an</span></div>
-      <div class="cmp-row"><span class="cmp-lbl" style="font-weight:700;color:#C95B2A">Amortissements (an. 1)</span><span class="cmp-amort">${fE(amortTotalAn1)}/an</span></div>
-      <div class="cmp-row"><span class="cmp-lbl">Base imposable</span><span class="cmp-val">${fE(baseImposableReel)}</span></div>
-      <div class="cmp-row"><span class="cmp-lbl">Impôt + prél. soc.</span><span class="cmp-val">${fE(impotReel)}/an</span></div>
-      <div class="cmp-row"><span class="cmp-lbl">Cash-flow mensuel</span><span class="cmp-val" style="color:${res.cashflowReelMensuel >= 0 ? "#1A7A52" : "#B03A2A"}">${res.cashflowReelMensuel >= 0 ? "+" : ""}${fE(res.cashflowReelMensuel)}/mois</span></div>
+  <div class="cmp">
+    <div class="cmp-c ${!isMicro ? "on" : "off"}">
+      <div class="cmp-h">Régime réel simplifié</div>
+      <div class="cmp-r"><span class="cmp-k">Recettes fiscales</span><span class="cmp-v">${fE(recettesAnnuelles)}/an</span></div>
+      <div class="cmp-r"><span class="cmp-k">Charges déductibles</span><span class="cmp-v">${fE(chargesAnnuelles + interetsAnnee1 + assuranceEmprunteurAnnuel)}/an</span></div>
+      <div class="cmp-r am"><span class="cmp-k">Amortissements (an. 1)</span><span class="cmp-v">${fE(amortTotalAn1)}/an</span></div>
+      <div class="cmp-r"><span class="cmp-k">Base imposable</span><span class="cmp-v">${fE(baseImposableReel)}</span></div>
+      <div class="cmp-r"><span class="cmp-k">Impôt + prél. soc.</span><span class="cmp-v">${fE(impotReel)}/an</span></div>
+      <div class="cmp-r cf"><span class="cmp-k">Cash-flow mensuel</span><span class="cmp-v">${res.cashflowReelMensuel >= 0 ? "+" : ""}${fE(res.cashflowReelMensuel)}/mois</span></div>
+      <div class="cmp-r" style="display:block;border-top:1px solid rgba(26,22,18,0.14);margin-top:6px;padding-top:6px"><div class="cmp-k" style="margin-bottom:1px">Cash-flow cumulé pendant le crédit</div><div class="cmp-v" style="font-size:13px;color:${cumulCfReel >= 0 ? "#1A6644" : "#B03A2A"}">${cumulCfReel >= 0 ? "+" : ""}${fE(cumulCfReel)} sur ${duree} ans</div></div>
+      <div class="cmp-r" style="display:block;padding-top:5px"><div class="cmp-k" style="margin-bottom:1px">Cash-flow après emprunt · dès l'année ${duree + 1}</div><div class="cmp-v" style="font-size:13px;color:${apresReelAn >= 0 ? "#1A6644" : "#B03A2A"}">${apresReelAn >= 0 ? "+" : ""}${fE(apresReelAn / 12)} / mois</div></div>
     </div>
-    <div class="vs-sep">vs</div>
-    <div class="compare-col ${isMicro ? "chosen" : ""}">
-      <div class="cmp-hdr ${!isMicro ? "inactive" : ""}">Micro-BIC ${isSaisonnier ? "30" : "50"}% ${isMicro ? "✓" : ""}</div>
-      <div class="cmp-row"><span class="cmp-lbl">Recettes fiscales</span><span class="cmp-val">${fE(recettesAnnuelles)}/an</span></div>
-      <div class="cmp-row"><span class="cmp-lbl">Abattement forfaitaire</span><span class="cmp-val">${fE(recettesAnnuelles * abattPct)}/an</span></div>
-      <div class="cmp-row"><span class="cmp-lbl" style="color:rgba(26,22,18,0.3)">Pas d'amortissement</span><span class="cmp-val" style="color:rgba(26,22,18,0.25)">—</span></div>
-      <div class="cmp-row"><span class="cmp-lbl">Base imposable</span><span class="cmp-val">${fE(baseBIC)}</span></div>
-      <div class="cmp-row"><span class="cmp-lbl">Impôt + prél. soc.</span><span class="cmp-val">${fE(impotBIC)}/an</span></div>
-      <div class="cmp-row"><span class="cmp-lbl">Cash-flow mensuel</span><span class="cmp-val" style="color:${res.cashflowBICMensuel >= 0 ? "#1A7A52" : "#B03A2A"}">${res.cashflowBICMensuel >= 0 ? "+" : ""}${fE(res.cashflowBICMensuel)}/mois</span></div>
+    <div class="vs">vs</div>
+    <div class="cmp-c ${isMicro ? "on" : "off"}">
+      <div class="cmp-h">Micro-BIC ${isSaisonnier ? "30" : "50"} %</div>
+      <div class="cmp-r"><span class="cmp-k">Recettes fiscales</span><span class="cmp-v">${fE(recettesAnnuelles)}/an</span></div>
+      <div class="cmp-r"><span class="cmp-k">Abattement forfaitaire</span><span class="cmp-v">${fE(recettesAnnuelles * abattPct)}/an</span></div>
+      <div class="cmp-r"><span class="cmp-k" style="color:rgba(26,22,18,0.35)">Pas d'amortissement</span><span class="cmp-v" style="color:rgba(26,22,18,0.3)">—</span></div>
+      <div class="cmp-r"><span class="cmp-k">Base imposable</span><span class="cmp-v">${fE(baseBIC)}</span></div>
+      <div class="cmp-r"><span class="cmp-k">Impôt + prél. soc.</span><span class="cmp-v">${fE(impotBIC)}/an</span></div>
+      <div class="cmp-r cf"><span class="cmp-k">Cash-flow mensuel</span><span class="cmp-v">${res.cashflowBICMensuel >= 0 ? "+" : ""}${fE(res.cashflowBICMensuel)}/mois</span></div>
+      <div class="cmp-r" style="display:block;border-top:1px solid rgba(26,22,18,0.14);margin-top:6px;padding-top:6px"><div class="cmp-k" style="margin-bottom:1px">Cash-flow cumulé pendant le crédit</div><div class="cmp-v" style="font-size:13px;color:${cumulCfMicro >= 0 ? "#1A6644" : "#B03A2A"}">${cumulCfMicro >= 0 ? "+" : ""}${fE(cumulCfMicro)} sur ${duree} ans</div></div>
+      <div class="cmp-r" style="display:block;padding-top:5px"><div class="cmp-k" style="margin-bottom:1px">Cash-flow après emprunt · dès l'année ${duree + 1}</div><div class="cmp-v" style="font-size:13px;color:${apresMicroAn >= 0 ? "#1A6644" : "#B03A2A"}">${apresMicroAn >= 0 ? "+" : ""}${fE(apresMicroAn / 12)} / mois</div></div>
     </div>
   </div>
 
-  <div style="background:#EDE7DC;border-radius:8px;padding:10px 14px 8px;margin-bottom:6px">
-    ${cfCompareHtml}
-  </div>
-
-  <div class="regime-band">
-    <div style="display:flex;align-items:center;gap:8px">
-      <div style="background:rgba(255,255,255,0.15);border-radius:20px;padding:3px 10px;font-size:12px;font-weight:700;color:#fff;letter-spacing:.05em;flex-shrink:0">RÉGIME CHOISI</div>
-      <div>
-        <div style="font-size:12px;font-weight:600;color:#fff">${regimeLabel}</div>
-        <div style="font-size:12px;color:rgba(255,255,255,0.6);margin-top:1px">${regimeAvantage}</div>
+  <div class="info gr">
+    <div class="info-b">Info clef</div>
+    <div class="info-c">
+      <div class="info-t">Régime choisi · ${isMicro ? "Micro-BIC" : "Réel simplifié"}</div>
+      <div class="info-x">
+        <strong>${fE(Math.abs(ecartImpotAn1))} d'impôt en ${ecartImpotAn1 >= 0 ? "moins" : "plus"} en année 1</strong>${!isMicro ? `, grâce aux charges et à l'amortissement` : ` au Micro-BIC`}.
+        ${anneeEgalite ? `L'avantage du réel diminue ensuite : les régimes sont presque à égalité en année ${anneeEgalite}. ` : ""}
+        Sur ${duree} ans, ${Math.abs(ecartCumulCf) < 1
+          ? `les deux régimes laissent une trésorerie équivalente`
+          : `le ${ecartCumulCf > 0 ? "micro-BIC" : "régime réel"} laisse ici <strong>${fE(Math.abs(ecartCumulCf))} de trésorerie en plus</strong>`}, hors frais spécifiques et revente.
       </div>
     </div>
   </div>
 
-  <div style="background:rgba(26,22,18,0.04);border-radius:7px;padding:8px 11px;margin-top:6px;font-size:12px;line-height:1.65;color:rgba(26,22,18,0.72)">
-    <strong>Pourquoi ce régime ?</strong> ${(() => {
-      const ecartAn = Math.abs(impotBIC - impotReel);
-      const ecartMois = Math.abs(res.cashflowReelMensuel - res.cashflowBICMensuel);
-      if (isMicro) {
-        return impotBIC <= impotReel
-          ? `Vos charges réelles et vos amortissements restent inférieurs à l'abattement forfaitaire de ${isSaisonnier ? "30" : "50"} %. Le Micro-BIC vous impose donc moins (${fE(ecartAn)} d'écart annuel) tout en vous dispensant de comptabilité. Il reste avantageux tant que vos charges ne progressent pas.`
-          : `Le Micro-BIC est retenu ici pour sa simplicité : aucune comptabilité, aucune liasse fiscale. Il vous coûte cependant ${fE(ecartAn)} d'impôt de plus par an que le régime réel, soit ${fE(ecartMois)} de trésorerie mensuelle. Dès lors que vous acceptez la contrainte comptable, le réel redevient plus favorable.`;
-      }
-      return impotReel <= impotBIC
-        ? `Vos charges déductibles et vos amortissements dépassent l'abattement forfaitaire de ${isSaisonnier ? "30" : "50"} %. Le régime réel vous fait économiser ${fE(ecartAn)} d'impôt par an, soit ${fE(ecartMois)} de trésorerie chaque mois. La contrepartie est une comptabilité à tenir — c'est le poste « comptabilité » de vos charges.`
-        : `Le régime réel est retenu, mais il ne vous avantage pas cette année : l'abattement forfaitaire du Micro-BIC serait plus favorable de ${fE(ecartAn)}. Cela arrive quand les charges et amortissements sont faibles. L'écart peut s'inverser avec des travaux, du mobilier ou un crédit plus chargé en intérêts.`;
-    })()}
+  <div class="info br">
+    <div class="info-b">Info clef</div>
+    <div class="info-c">
+      <div class="info-t">Cash-flow mensuel après impôt · année 1</div>
+      <div style="display:flex;align-items:center;gap:16px">
+        <div class="info-big" style="color:${cfMensuel >= 0 ? "#1A6644" : "#B03A2A"}">${cfMensuel >= 0 ? "+" : ""}${fE(cfMensuel)} / mois</div>
+        <div class="info-x" style="flex:1">${cfMensuel >= 0
+          ? `Les loyers couvrent les sorties renseignées et laissent un excédent. Moyenne mensuelle variable selon les dépenses effectives.`
+          : `Les loyers ne couvrent pas encore toutes les sorties : ${fE(Math.abs(cfMensuel))} restent à financer chaque mois. En contrepartie, vous remboursez ${fE(getYear(1).capital / 12)} de capital par mois.`}</div>
+      </div>
+    </div>
   </div>
 
-  <div class="ftr"><span>toutlmnp.fr · Rapport indicatif</span><span>Page 2 / ${nbPages}</span><span>${today}</span></div>
+  <div class="note" style="margin-top:10px"><sup>1</sup> Mensualité hors assurance. <sup>2</sup> (Loyers − charges − impôt) / coût total, avant crédit et assurance.</div>
+  ${FTR(1)}
 </div>
-
-<!-- ═══════════ PAGE 3 · QUE DIT L'IMPÔT ═══════════════════ -->
+${isSaisonnier ? `
+<!-- ═══════════ PAGE SAISONNIÈRE ═══════════ -->
 <div class="page">
+  ${HDR}
+  ${TITRE(nSaison, "La location saisonnière")}
 
-  <div style="background:#4E1F12;border-radius:7px;padding:7px 12px;margin-bottom:6px;display:flex;align-items:center;justify-content:space-between">
-    <div style="font-size:13px;font-weight:300;color:#F5F0E8">tout<span style="color:#C95B2A">lmnp</span> · <strong>${bienTitle}</strong></div>
-    <div style="background:${regimeColor};border-radius:12px;padding:2px 9px;font-size:12px;font-weight:700;color:#fff">${regimeLabel}</div>
+  <div class="band">
+    <div class="band-h">Vos hypothèses d'exploitation</div>
+    <div class="band-r">
+      <div class="cell"><div class="cell-l">Prix moyen / nuitée</div><div class="cell-v">${fE(prixNuitee)}</div></div>
+      <div class="cell"><div class="cell-l">Occ. basse</div><div class="cell-v">${fP(tauxOcc.bas, 0)}</div></div>
+      <div class="cell"><div class="cell-l">Occ. médiane</div><div class="cell-v">${fP(tauxOcc.moyen, 0)}</div></div>
+      <div class="cell"><div class="cell-l">Occ. haute</div><div class="cell-v">${fP(tauxOcc.haut, 0)}</div></div>
+    </div>
   </div>
-  <div class="ptitle">Que dit l'impôt&nbsp;?</div>
-  <div class="sec">Évolution dans le temps · ${regimeLabel}</div>
+
+  <div class="sec">Les trois scénarios d'occupation</div>
+  <table class="tbl">
+    <thead><tr>
+      <th>Scénario</th>
+      <th class="c">Occupation</th>
+      <th class="c">Nuits / an</th>
+      <th class="r">Recettes / an</th>
+      <th class="r">Base imposable</th>
+      <th class="r">Impôt / an</th>
+      <th class="r">Cash-flow / mois</th>
+    </tr></thead>
+    <tbody>
+      ${scenariosSaison.map(sc => `<tr${sc.median ? ` style="background:rgba(201,91,42,0.09)"` : ""}>
+        <td${sc.median ? ` style="font-weight:800"` : ""}>${sc.label}${sc.median ? ` <span style="color:#C95B2A;font-weight:800">· retenu</span>` : ""}</td>
+        <td class="c">${fP(sc.occ, 0)}</td>
+        <td class="c">${sc.nuits}</td>
+        <td class="r" style="color:#1A6644;font-weight:700">${fE(sc.loyerAnnuel)}</td>
+        <td class="r">${fE(sc.base)}</td>
+        <td class="r" style="color:#B03A2A;font-weight:700">${fE(sc.impot)}</td>
+        <td class="r" style="font-weight:800;color:${sc.cfMensuel >= 0 ? "#1A6644" : "#B03A2A"}">${sc.cfMensuel >= 0 ? "+" : ""}${fE(sc.cfMensuel)}</td>
+      </tr>`).join("")}
+    </tbody>
+  </table>
+  <div class="note">Recettes calculées sur ${fE(prixNuitee)} la nuitée × 365 nuits × taux d'occupation. Charges, crédit et fiscalité identiques dans les trois scénarios : seul le niveau de recettes change.</div>
+
+  <div class="info gr">
+    <div class="info-b">Info clef</div>
+    <div class="info-c">
+      <div class="info-t">Le scénario médian sert de base à tout le rapport</div>
+      <div class="info-x">
+        Les pages suivantes — impôt, vision d'ensemble, revente — reposent sur l'hypothèse <strong>${fP(tauxOcc.moyen, 0)} d'occupation</strong>, soit <strong>${fE(scenariosSaison[1].loyerAnnuel)}</strong> de recettes annuelles.
+        L'écart entre le scénario bas et le scénario haut représente <strong>${fE(Math.abs(scenariosSaison[2].cfMensuel - scenariosSaison[0].cfMensuel))} de trésorerie mensuelle</strong> : c'est la marge d'incertitude de votre projet.
+      </div>
+    </div>
+  </div>
+
+  <div class="info br">
+    <div class="info-b">Info clef</div>
+    <div class="info-c">
+      <div class="info-t">Fiscalité propre au meublé de tourisme</div>
+      <div class="info-x">
+        En Micro-BIC, l'abattement forfaitaire d'un meublé de tourisme <strong>non classé est de 30 %</strong>, contre 50 % pour une location meublée classique (Loi de finances 2024). Le régime réel, lui, se calcule de façon identique : charges réelles et amortissements restent déductibles.
+        ${isMicro ? ` Votre simulation retient le Micro-BIC : l'abattement de 30 % s'applique.` : ` Votre simulation retient le régime réel : cet abattement ne s'applique donc pas.`}
+      </div>
+    </div>
+  </div>
+
+  <div class="note" style="margin-top:14px">Un meublé de tourisme classé bénéficie d'un abattement plus favorable. Le classement est une démarche volontaire auprès d'un organisme accrédité — à vérifier avant de retenir ce régime.</div>
+  ${FTR(nSaison)}
+</div>` : ""}
+
+<!-- ═══════════ PAGE · QUE DIT L'IMPÔT ═══════════ -->
+<div class="page">
+  ${HDR}
+  ${TITRE(nImpot, "Que dit l'impôt")}
+
+  <div class="sec tight">Évolution dans le temps · ${regimeLabel}</div>
   <table class="tbl">
     <thead>
       <tr>
         <th rowspan="2">Année</th>
-        <th rowspan="2" class="r">Loyer CC</th>
-        <th colspan="2" style="background:rgba(201,91,42,0.25);color:#C95B2A;text-align:center;border:1.5px solid rgba(201,91,42,0.5);border-bottom:none;font-size:12px">Charges &amp; Crédit</th>
-        <th rowspan="2" class="r">Cap. Remb.</th>
-        <th rowspan="2" class="r">% Remb.</th>
-        <th rowspan="2" class="r">Impôt</th>
-        <th rowspan="2" class="r">Cash-flow/an</th>
+        <th rowspan="2" class="r">Loyers</th>
+        <th colspan="2" class="c" style="background:rgba(201,91,42,0.9);color:#F5F0E8">Charges &amp; Crédit</th>
+        <th rowspan="2" class="r">Capital<br/>remboursé</th>
+        <th rowspan="2" class="c">%<br/>remb.</th>
+        <th rowspan="2" class="r" style="border-left:2px solid #B03A2A;border-right:2px solid #B03A2A">Impôt</th>
+        <th rowspan="2" class="r">Cash-flow / an</th>
       </tr>
       <tr>
-        <th class="r" style="background:rgba(201,91,42,0.15);color:#C95B2A;border-left:1.5px solid rgba(201,91,42,0.5)">Charges</th>
-        <th class="r" style="background:rgba(201,91,42,0.15);color:#C95B2A;border-right:1.5px solid rgba(201,91,42,0.5)">Intérêts emprunt + Assu.</th>
+        <th class="r" style="background:rgba(201,91,42,0.75);color:#F5F0E8;font-size:12px">Charges</th>
+        <th class="r" style="background:rgba(201,91,42,0.75);color:#F5F0E8;font-size:12px">Intérêts emprunt<br/>+ assurance</th>
       </tr>
     </thead>
     <tbody>
     ${TABLE_YEARS.map(yr => {
       const row = getYear(yr);
       const cf = row.cfAnnuel;
-      const cfCls = cf >= 0 ? "pos" : "neg";
-      const intAssu = row.interets + assuranceEmprunteurAnnuel;
-      const pctRemb = montantCredit > 0 ? (row.capCumul / montantCredit) * 100 : 0;
-      const isBeyond = yr > duree;
+      const intAssu = row.interets + (yr <= duree ? assuranceEmprunteurAnnuel : 0);
+      const pctRemb = montantCredit > 0 ? Math.min(100, (row.capCumul / montantCredit) * 100) : 0;
+      const beyond = yr > duree;
       return `<tr>
-        <td style="font-weight:700">An ${yr}${isBeyond ? `<br/><span style="font-size:12px;color:rgba(26,22,18,0.4)">post-emprunt</span>` : ""}</td>
-        <td class="r" style="color:#1A7A52;font-weight:600">${fE(recettesAnnuelles)}</td>
-        <td class="r neg" style="border-left:1.5px solid rgba(201,91,42,0.3)">−${fE(chargesAnnuelles)}</td>
-        <td class="r neg" style="border-right:1.5px solid rgba(201,91,42,0.3)">${isBeyond ? "—" : `−${fE(intAssu)}`}</td>
-        <td class="r" style="color:#2A5C8A;font-weight:600">${fE(row.capital)}</td>
-        <td class="r" style="color:rgba(26,22,18,0.55)">${pctRemb > 0 ? fP(pctRemb, 0) : "—"}</td>
-        <td class="r neg">${row.impot > 0 ? `−${fE(row.impot)}` : "0 €"}</td>
-        <td class="r ${cfCls}" style="white-space:nowrap">${cf >= 0 ? "+" : ""}${fE(cf)} <span style="display:inline-block;margin-left:3px;padding:1px 5px;border-radius:4px;font-size:12px;font-weight:700;background:${cf >= 0 ? "rgba(26,122,82,0.12)" : "rgba(176,58,42,0.12)"};color:${cf >= 0 ? "#1A7A52" : "#B03A2A"}">${cf >= 0 ? "+" : ""}${fE(cf / 12)}/m</span></td>
+        <td style="font-weight:800">An ${yr}</td>
+        <td class="r">${fE(recettesAnnuelles)}</td>
+        <td class="r" style="color:#B03A2A">−${fE(chargesAnnuelles)}</td>
+        <td class="r" style="color:#B03A2A">${beyond ? "—" : `−${fE(intAssu)}`}</td>
+        <td class="r" style="color:#2A5C8A;font-weight:700">${beyond ? fE(0) : fE(row.capital)}</td>
+        <td class="c" style="color:rgba(26,22,18,0.55)">${fP(pctRemb, 0)}</td>
+        <td class="r" style="color:#B03A2A;font-weight:700;border-left:2px solid rgba(176,58,42,0.5);border-right:2px solid rgba(176,58,42,0.5)">${row.impot > 0 ? `−${fE(row.impot)}` : fE(0)}</td>
+        <td class="r" style="font-weight:800;color:${cf >= 0 ? "#1A6644" : "#B03A2A"}">${cf >= 0 ? "+" : ""}${fE(cf)}</td>
       </tr>`;
     }).join("")}
     </tbody>
   </table>
+  <div class="note">Montants annuels en euros. % remboursé cumulé. Année ${duree + 5} : après la fin du crédit.</div>
 
-  <div class="sec">Évolution de l'impôt et de la trésorerie</div>
-  <div style="background:#EDE7DC;border-radius:8px;padding:12px 14px 10px">
-    ${cashImpotGraphHtml}
-  </div>
-  <div style="background:${isMicro ? "rgba(42,92,138,0.07)" : "rgba(26,102,68,0.07)"};border-left:2.5px solid ${isMicro ? "#2A5C8A" : "#1A6644"};border-radius:0 6px 6px 0;padding:8px 11px;margin-top:8px;font-size:12px;line-height:1.65;color:rgba(26,22,18,0.75)">
-    ${isMicro
-      ? `<strong>Au Micro-BIC, votre impôt est stable dans le temps.</strong> Il n'y a aucun amortissement : votre base imposable reste égale à ${isSaisonnier ? "70" : "50"} % de vos recettes, année après année, quelles que soient vos charges réelles et l'avancement de votre crédit. C'est prévisible, mais vous ne bénéficiez d'aucune déduction supplémentaire — d'où une imposition qui démarre plus haut que le régime réel.`
-      : `<strong>Au régime réel, plus l'amortissement baisse, plus l'impôt augmente.</strong> Chaque composant s'amortit sur sa propre durée puis s'éteint : les barres bleues du graphique diminuent par paliers. À chaque palier, la déduction disparue n'allège plus votre base imposable, qui remonte d'autant — et l'impôt avec elle. Le même effet joue sur les intérêts d'emprunt, déductibles eux aussi et décroissants à mesure que vous remboursez. C'est la contrepartie normale d'un projet qui s'assainit : votre trésorerie s'améliore pendant que votre base imposable se reconstitue.`}
+  <div class="info gr">
+    <div class="info-b">Info clef</div>
+    <div class="info-c">
+      <div class="info-t">Impôt et prélèvements sociaux cumulés pendant les ${duree} ans de crédit</div>
+      <div style="display:flex;align-items:center;gap:16px">
+        <div class="info-big">${fE(cumulImpotCredit)}</div>
+        <div class="info-x" style="flex:1">Total ${isMicro ? "au Micro-BIC" : "au régime réel"}, hors fiscalité de revente. ${isMicro
+          ? `La base imposable étant forfaitaire, l'impôt reste stable d'une année sur l'autre.`
+          : `Moins d'intérêts et d'amortissement à déduire signifie ici plus d'impôt au fil du temps.`}</div>
+      </div>
+    </div>
   </div>
 
-  <div class="ftr"><span>toutlmnp.fr · Rapport indicatif</span><span>Page 3 / ${nbPages}</span><span>${today}</span></div>
+  <div class="sec">Évolution de l'impôt${!isMicro ? " et de l'amortissement" : ""}</div>
+  ${impotAmortGraphHtml}
+
+  ${!isMicro ? `<div class="amo">
+    <div class="amo-h">Détail de votre amortissement · ${amortMode === "ensemble" ? "méthode globale simplifiée" : "méthode par composants"}</div>
+    <table>
+      <tr class="hd"><td>Élément</td><td>Base amortissable</td><td>Durée</td><td class="r">Dotation</td></tr>
+      ${(amortMode === "ensemble"
+        ? [{ l: "Bien immobilier (hors terrain)", b: `${amortPct} % de ${fE(prix)}`, d: `${amortDureeEnsemble} ans`, m: amortBienAn }]
+        : composants.map(c => ({ l: c.label, b: `${c.pct} % de ${fE(valeurAmortissable)}`, d: `${c.duree} ans`, m: (valeurAmortissable * c.pct / 100) / c.duree }))
+      ).concat(
+        amortMobilierAn > 0 ? [{ l: "Mobilier", b: fE(mobilier), d: `${amortDureeMobilier} ans`, m: amortMobilierAn }] : [],
+        amortTravauxAn > 0 ? [{ l: "Travaux", b: fE(travaux), d: `${amortDureeTravaux} ans`, m: amortTravauxAn }] : [],
+        amortNotaireAn > 0 ? [{ l: "Frais de notaire", b: fE(notaire), d: `${amortDureeNotaire} ans`, m: amortNotaireAn }] : [],
+      ).map(x => `<tr><td>${x.l}</td><td style="color:rgba(26,22,18,0.55)">${x.b}</td><td style="color:rgba(26,22,18,0.55)">${x.d}</td><td class="r">${fE(x.m)}/an</td></tr>`).join("")}
+      <tr class="tot"><td colspan="3">Total amortissement année 1</td><td class="r">${fE(amortTotalAn1)}/an</td></tr>
+    </table>
+  </div>` : `<div class="note" style="margin-top:12px">Au Micro-BIC, aucun amortissement n'est déduit : l'abattement forfaitaire de ${isSaisonnier ? "30" : "50"} % remplace toute déduction de charges réelles.</div>`}
+
+  ${FTR(nImpot)}
+</div>
+<!-- ═══════════ PAGE · VISION D'ENSEMBLE ═══════════ -->
+<div class="page">
+  ${HDR}
+  ${TITRE(nVision, "Vision d'ensemble")}
+
+  <div class="sec tight">Vision d'ensemble · année 1 vs fin d'emprunt + 1 an</div>
+
+  <div class="tl">
+    <div class="tl-axis">${friseHtml}</div>
+    <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:14px">
+
+      <div class="tl-card">
+        <div class="tl-h"><div class="tl-t">Année 1</div><div class="tl-s">${montantCredit > 0 ? "Crédit en cours" : "Sans crédit"}</div></div>
+        <div class="tl-b">
+          ${makeBarresAnnee(1)}
+          <div class="tl-txt">
+            ${montantCredit > 0 ? `<p>Les échéances de crédit représentent <strong>${fE(creditTotalAnnuel)}/an</strong>, assurance comprise, soit ${creditTotalAnnuel / Math.max(recettesAnnuelles, 1) >= 0.45 ? "près de la moitié" : `environ ${fP(creditTotalAnnuel / Math.max(recettesAnnuelles, 1) * 100, 0)}`} des loyers.</p>` : ""}
+            <p>Après les charges et l'impôt, le cash-flow est de <strong style="color:${getYear(1).cfAnnuel >= 0 ? "#1A6644" : "#B03A2A"}">${getYear(1).cfAnnuel >= 0 ? "+" : ""}${fE(getYear(1).cfAnnuel)}/an, soit ${getYear(1).cfAnnuel >= 0 ? "+" : ""}${fE(getYear(1).cfAnnuel / 12)}/mois</strong>.
+            ${getYear(1).cfAnnuel >= 0 ? "Les loyers couvrent les sorties renseignées." : "Cet écart reste à financer sur votre épargne."}</p>
+            <p><strong>Charges : ${fE(chargesAnnuelles)}/an.</strong> ${!isMicro
+              ? `L'amortissement de ${fE(amortTotalAn1)}/an réduit l'impôt sans être une sortie d'argent ; il n'est donc pas représenté ici.`
+              : `Au Micro-BIC, l'abattement de ${isSaisonnier ? "30" : "50"} % remplace la déduction des charges réelles.`}</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="tl-card">
+        <div class="tl-h"><div class="tl-t">Année ${duree + 1}</div><div class="tl-s">Premier exercice sans crédit</div></div>
+        <div class="tl-b">
+          ${makeBarresAnnee(duree + 1)}
+          <div class="tl-txt">
+            ${montantCredit > 0 ? `<p>Le crédit est soldé : les <strong>${fE(creditTotalAnnuel)}/an d'échéances</strong> disparaissent.</p>` : ""}
+            <p>Le cash-flow atteint <strong style="color:#1A6644">${getYear(duree + 1).cfAnnuel >= 0 ? "+" : ""}${fE(getYear(duree + 1).cfAnnuel)}/an, soit ${fE(getYear(duree + 1).cfAnnuel / 12)}/mois</strong>. Cela représente <strong>${getYear(duree + 1).cfAnnuel - getYear(1).cfAnnuel >= 0 ? "+" : ""}${fE(getYear(duree + 1).cfAnnuel - getYear(1).cfAnnuel)}/an</strong> par rapport à l'année 1.</p>
+            <p><strong>Charges : ${fE(chargesAnnuelles)}/an.</strong> L'impôt atteint ${fE(getYear(duree + 1).impot)}/an : ${montantCredit > 0 ? "les intérêts ne sont plus déductibles" : "la base imposable est pleine"}${!isMicro ? " et l'amortissement a diminué" : ""}. ${getYear(duree + 1).impot - getYear(1).impot < creditTotalAnnuel ? "Cette hausse reste inférieure aux échéances supprimées." : ""}</p>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <div class="note" style="margin-top:12px">Même échelle pour les deux graphiques : ${fE(recettesAnnuelles)} de recettes annuelles. Représentation schématique. Loyers et charges supposés constants.</div>
+  ${FTR(nVision)}
 </div>
 
-${!isMicro ? `
-<!-- ═══════════ PAGE 3 · AMORTISSEMENT ═══════════ -->
+<!-- ═══════════ PAGE · CE QU'IL RESTE À LA FIN ═══════════ -->
 <div class="page">
+  ${HDR}
+  ${TITRE(nFin, "Ce qu'il reste à la fin")}
 
-  <div style="background:#4E1F12;border-radius:7px;padding:7px 12px;margin-bottom:6px;display:flex;align-items:center;justify-content:space-between">
-    <div style="font-size:13px;font-weight:300;color:#F5F0E8">tout<span style="color:#C95B2A">lmnp</span> · <strong>${bienTitle}</strong></div>
-    <div style="background:${regimeColor};border-radius:12px;padding:2px 9px;font-size:12px;font-weight:700;color:#fff">${regimeLabel}</div>
-  </div>
-  <div class="ptitle">Votre amortissement en détail</div>
-  <div class="ptitle-sub">La déduction qui ne vous coûte rien, élément par élément.</div>
-
-  <div style="background:rgba(42,92,138,0.07);border-left:2.5px solid #2A5C8A;border-radius:0 6px 6px 0;padding:9px 12px;margin-bottom:10px;font-size:12px;line-height:1.7;color:rgba(26,22,18,0.75)">
-    L'amortissement est une <strong>charge comptable sans sortie d'argent</strong> : vous déduisez chaque année une fraction de la valeur de votre bien, ce qui réduit votre base imposable sans que rien ne quitte votre compte. Le terrain, lui, ne se déprécie pas et n'est jamais amortissable — d'où la part de ${amortPct} % retenue sur le prix d'achat.
-  </div>
-  ${amortDetailHtml}
-
-  <div style="background:rgba(26,22,18,0.04);border-radius:7px;padding:9px 12px;margin-top:10px;font-size:12px;line-height:1.7;color:rgba(26,22,18,0.7)">
-    <strong>Chaque élément s'éteint à sa propre durée.</strong> ${amortMode === "ensemble"
-      ? `Vous avez retenu la méthode globale simplifiée : le bien s'amortit d'un bloc sur ${amortDureeEnsemble} ans. Au terme, la déduction disparaît d'un coup et votre base imposable remonte d'autant.`
-      : `Vous avez retenu la méthode par composants. Les durées vont de ${Math.min(...composants.map(c => c.duree))} à ${Math.max(...composants.map(c => c.duree))} ans : votre dotation ne s'arrête pas d'un coup, elle décroît par paliers à mesure que chaque composant arrive à son terme. C'est ce que montrent les barres bleues du graphique précédent.`}
-    Tant que votre résultat ne suffit pas à absorber la dotation, l'excédent est reporté sans limitation de durée — il n'est jamais perdu.
-  </div>
-  <div class="ftr"><span>toutlmnp.fr · Rapport indicatif</span><span>Page 3 / ${nbPages}</span><span>${today}</span></div>
-</div>
-` : ""}
-
-<!-- ═══════════════════ PAGE 3 · VISION D'ENSEMBLE ═══════════════════ -->
-<div class="page">
-
-  <div style="background:#4E1F12;border-radius:7px;padding:7px 12px;margin-bottom:6px;display:flex;align-items:center;justify-content:space-between">
-    <div style="font-size:13px;font-weight:300;color:#F5F0E8">tout<span style="color:#C95B2A">lmnp</span> · <strong>${bienTitle}</strong></div>
-    <div style="background:${regimeColor};border-radius:12px;padding:2px 9px;font-size:12px;font-weight:700;color:#fff">${regimeLabel}</div>
-  </div>
-  <div class="ptitle">Vision d'ensemble</div>
-  <div class="ptitle-sub">Où part chaque euro de loyer, au départ puis une fois le crédit soldé.</div>
-
-  <div style="background:#EDE7DC;border-radius:8px;padding:12px 16px;margin-bottom:8px">
-    ${stackedBarPairHtml}
-  </div>
-
-  <div class="ftr"><span>toutlmnp.fr · Rapport indicatif</span><span>Page ${isMicro ? 4 : 5} / ${nbPages}</span><span>${today}</span></div>
-</div>
-
-<!-- ═══════════ DERNIÈRE PAGE · CE QU'IL RESTE À LA FIN ═══════════ -->
-<div class="page">
-
-  <div style="background:#4E1F12;border-radius:7px;padding:7px 12px;margin-bottom:6px;display:flex;align-items:center;justify-content:space-between">
-    <div style="font-size:13px;font-weight:300;color:#F5F0E8">tout<span style="color:#C95B2A">lmnp</span> · <strong>${bienTitle}</strong></div>
-    <div style="background:${regimeColor};border-radius:12px;padding:2px 9px;font-size:12px;font-weight:700;color:#fff">${regimeLabel}</div>
-  </div>
-
-  <div class="ptitle">Ce qu'il reste à la fin</div>
-  <div class="ptitle-sub">Scénario de revente après ${dureeY} années pleines · valeur du bien maintenue à ${fE(prix)}.</div>
-
-  <!-- Deux repères : ce que vous possédez / ce que vous devez -->
-  <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:10px 0 2px">
-    <div style="background:#EDE7DC;border-radius:9px;padding:11px 18px">
-      <div style="font-size:12px;text-transform:uppercase;letter-spacing:.12em;color:rgba(26,22,18,0.45);margin-bottom:8px">Valeur immobilière</div>
-      <div style="font-size:29px;font-weight:800;letter-spacing:-.03em;color:#4E1F12;line-height:1">${fE(prix)}</div>
-      <div style="font-size:12px;color:rgba(26,22,18,0.45);margin-top:6px">Hypothèse de prix, sans revalorisation</div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:4px">
+    <div style="background:#EDE7DC;border-radius:9px;padding:13px 17px">
+      <div class="kpi-l">Valeur du bien en fin de crédit</div>
+      <div style="font-size:26px;font-weight:800;letter-spacing:-.03em;color:#4E1F12;line-height:1">${fE(prix)}</div>
+      <div class="kpi-s">À ${dureeY} ans · hypothèse : prix d'achat maintenu</div>
     </div>
-    <div style="background:#EDE7DC;border-radius:9px;padding:11px 18px">
-      <div style="font-size:12px;text-transform:uppercase;letter-spacing:.12em;color:rgba(26,22,18,0.45);margin-bottom:8px">Dette à rembourser</div>
-      <div style="font-size:29px;font-weight:800;letter-spacing:-.03em;color:${crdFin > 0 ? "#B03A2A" : "#1A6644"};line-height:1">${fE(crdFin)}</div>
-      <div style="font-size:12px;color:rgba(26,22,18,0.45);margin-top:6px">${crdFin > 0 ? `Capital restant dû à ${dureeY} ans` : "Crédit intégralement soldé"}</div>
+    <div style="background:#EDE7DC;border-radius:9px;padding:13px 17px">
+      <div class="kpi-l">Dette restante en fin de crédit</div>
+      <div style="font-size:26px;font-weight:800;letter-spacing:-.03em;color:${crdFin > 0 ? "#B03A2A" : "#1A6644"};line-height:1">${fE(crdFin)}</div>
+      <div class="kpi-s">${crdFin > 0 ? `Capital restant dû à ${dureeY} ans` : `Après ${dureeY} années pleines · crédit soldé`}</div>
     </div>
   </div>
 
-  <div class="sec" style="margin-top:24px">Deux sources d'encaissements, une seule addition</div>
-  <div style="background:#4E1F12;border-radius:9px;padding:13px 20px">
-    <div style="display:flex;justify-content:space-between;align-items:baseline;padding:3px 0">
-      <span style="font-size:14px;color:rgba(245,240,232,0.82)">Trésorerie cumulée pendant ${dureeY} ans</span>
-      <span style="font-size:23px;font-weight:800;letter-spacing:-.02em;color:${sumCF >= 0 ? "#4ADE80" : "#F87171"}">${sumCF >= 0 ? "+" : ""}${fE(sumCF)}</span>
+  <div class="sec">Deux sources d'encaissements, une seule addition</div>
+  <div class="info br" style="margin-top:0">
+    <div class="info-b">Info clef</div>
+    <div class="info-c">
+      <div style="display:flex;justify-content:space-between;align-items:baseline;padding:3px 0">
+        <span class="info-x">Cash-flow cumulé sur ${dureeY} ans</span>
+        <span style="font-size:19px;font-weight:800;letter-spacing:-.02em;color:${cumulCfChoisi >= 0 ? "#4ADE80" : "#F87171"}">${cumulCfChoisi >= 0 ? "+" : ""}${fE(cumulCfChoisi)}</span>
+      </div>
+      <div style="display:flex;justify-content:space-between;align-items:baseline;padding:3px 0">
+        <span class="info-x">Vente nette après impôt${crdFin > 0 ? " et crédit" : ""}</span>
+        <span style="font-size:19px;font-weight:800;letter-spacing:-.02em;color:#F5F0E8">+${fE(netRevente)}</span>
+      </div>
+      <div style="display:flex;justify-content:space-between;align-items:baseline;border-top:1.5px solid rgba(201,91,42,0.75);margin-top:7px;padding-top:8px">
+        <span style="font-size:13px;font-weight:700;color:#F5F0E8">Total cumulé · avant frais de vente</span>
+        <span style="font-size:25px;font-weight:800;letter-spacing:-.03em;color:#F5F0E8">${fE(totalCumule)}</span>
+      </div>
     </div>
-    <div style="display:flex;justify-content:space-between;align-items:baseline;padding:3px 0">
-      <span style="font-size:14px;color:rgba(245,240,232,0.82)">Produit de vente après impôt${crdFin > 0 ? " et crédit" : ""}</span>
-      <span style="font-size:23px;font-weight:800;letter-spacing:-.02em;color:#F5F0E8">+${fE(scenarioCentral.net)}</span>
-    </div>
-    <div style="border-top:1.5px solid rgba(201,91,42,0.7);margin:8px 0 0;padding-top:9px;display:flex;justify-content:space-between;align-items:baseline">
-      <span style="font-size:14px;font-weight:700;color:#F5F0E8">Total cumulé · avant frais de vente</span>
-      <span style="font-size:31px;font-weight:800;letter-spacing:-.03em;color:#F5F0E8">${fE(totalCumule)}</span>
-    </div>
-  </div>
-  <div style="font-size:12px;line-height:1.7;color:rgba(26,22,18,0.68);margin-top:9px">
-    ${sumCF >= 0
-      ? `Les <strong>${fE(sumCF)}</strong> de trésorerie sont générés au fil des années : ils ne constituent une épargne à la sortie que s'ils ont été conservés.`
-      : `L'effort d'épargne de <strong>${fE(Math.abs(sumCF))}</strong> a été consenti au fil des années ; il vient en déduction du produit de la vente.`}
-    Le capital remboursé est déjà pris en compte dans le produit de vente : il ne s'ajoute pas une seconde fois. Sur la période, vous aurez encaissé <strong>${fE(sumLoyers)}</strong> de loyers et acquitté <strong>${fE(sumImpot)}</strong> d'impôt.
   </div>
 
-  <div class="sec" style="margin-top:24px">Si le prix de vente change</div>
+  <div class="note" style="margin-top:10px">
+    ${cumulCfChoisi >= 0
+      ? `Les <strong>${fE(cumulCfChoisi)}</strong> de trésorerie sont générés au fil des années ; ils ne constituent une épargne à la sortie que s'ils ont été conservés.`
+      : `L'effort d'épargne de <strong>${fE(Math.abs(cumulCfChoisi))}</strong> a été consenti au fil des années ; il vient en déduction du produit de la vente.`}
+    Le capital remboursé est déjà pris en compte : il ne s'ajoute pas une seconde fois.
+  </div>
+
+  <div class="sec">Si le prix de vente change</div>
   <table class="tbl">
-    <thead><tr>
-      <th>Prix à ${dureeY} ans</th>
-      <th class="r">Prix de vente</th>
-      <th class="r">Après impôt${crdFin > 0 ? " et crédit" : ""}<sup>1</sup></th>
-    </tr></thead>
+    <thead><tr><th>Prix à ${dureeY} ans</th><th class="r">Prix de vente</th><th class="r">Après impôt${crdFin > 0 ? " et crédit" : ""}<sup>1</sup></th></tr></thead>
     <tbody>
-      ${scenariosVente.map(sc => `<tr${sc.central ? ` style="background:rgba(201,91,42,0.07)"` : ""}>
-        <td${sc.central ? ` style="font-weight:700"` : ""}>${sc.label}${sc.central ? ` <span style="font-size:12px;color:#C95B2A;font-weight:700">· scénario retenu</span>` : ""}</td>
+      ${scenariosVente.map(sc => `<tr${sc.central ? ` style="background:rgba(201,91,42,0.08)"` : ""}>
+        <td${sc.central ? ` style="font-weight:800"` : ""}>${sc.label}</td>
         <td class="r">${fE(sc.prixVente)}</td>
-        <td class="r" style="font-weight:700;color:${sc.net >= investTotal ? "#1A6644" : "#1A1612"}">${fE(sc.net)}</td>
+        <td class="r" style="font-weight:800">${fE(sc.net)}</td>
       </tr>`).join("")}
     </tbody>
   </table>
-  <div style="font-size:12px;line-height:1.65;color:rgba(26,22,18,0.5);margin-top:7px">
-    <sup>1</sup> Avant frais de vente, non renseignés à ce stade.${!isMicro
-      ? ` Amortissements déduits réintégrés dans l'assiette (Loi de finances 2025) : <strong>${fE(amortCumulFinal)}</strong>.`
-      : ` Aucun amortissement à réintégrer en Micro-BIC.`}
-    Abattements pour durée de détention appliqués : ${fP(abIR * 100, 0)} sur l'impôt sur le revenu, ${fP(abPS * 100, 0)} sur les prélèvements sociaux.
-    À prix stable, la fiscalité de revente est estimée à <strong>${fE(scenarioCentral.tax)}</strong>.
+  <div class="note">
+    <sup>1</sup> Avant frais de vente non renseignés.${dureeY > 5 && forfaitTravaux > travaux ? ` Forfait fiscal travaux de 15 % appliqué après plus de 5 ans` : ""}${!isMicro ? `${dureeY > 5 && forfaitTravaux > travaux ? " ; a" : " A"}mortissements déduits réintégrés (${fE(amortCumulFinal)})` : ""}.
+    Abattements pour durée de détention : ${fP(abIR * 100, 0)} sur l'impôt sur le revenu, ${fP(abPS * 100, 0)} sur les prélèvements sociaux.
+    Même à prix stable, la fiscalité de revente est estimée à <strong>${fE(impotPV)}</strong>.
   </div>
 
-  <div style="background:rgba(26,102,68,0.08);border-left:3px solid #1A6644;border-radius:0 8px 8px 0;padding:11px 16px;margin-top:12px">
-    <div style="font-size:14px;font-weight:700;color:#1A6644;margin-bottom:6px">La lecture globale du projet</div>
-    <div style="font-size:12px;line-height:1.7;color:rgba(26,22,18,0.72)">
-      ${sumCF >= 0
-        ? `Le scénario central dégage une trésorerie positive pendant le crédit, puis un revenu disponible nettement plus élevé une fois la mensualité éteinte.`
-        : `Le scénario central demande un effort d'épargne pendant le crédit, compensé par la constitution du patrimoine, puis par un revenu disponible nettement plus élevé une fois la mensualité éteinte.`}
-      Cette lecture reste conditionnée aux charges saisies, au loyer retenu et à la confirmation de votre éligibilité au statut LMNP.
+  <div class="fin">
+    <div class="fin-h"><div class="fin-t">Votre projet en un regard</div><div class="fin-r">${regimeLabel}</div></div>
+    <div class="fin-g">
+      <div class="fin-c"><div class="fin-v" style="color:${cfMensuel >= 0 ? "#1A6644" : "#B03A2A"}">${cfMensuel >= 0 ? "+" : ""}${fE(cfMensuel)} / mois</div><div class="fin-l">Cash-flow en année 1</div></div>
+      <div class="fin-c"><div class="fin-v">${apresChoisiAn >= 0 ? "+" : ""}${fE(apresChoisiAn / 12)} / mois</div><div class="fin-l">Après le crédit · année ${duree + 1}</div></div>
+      <div class="fin-c"><div class="fin-v" style="color:${crdFin > 0 ? "#B03A2A" : "#1A6644"}">${fE(crdFin)} de dette</div><div class="fin-l">À la fin des ${dureeY} ans</div></div>
+    </div>
+    <div class="fin-2">
+      <div>
+        <div class="fin-st">Points forts</div>
+        <div class="fin-sx">${cumulCfChoisi >= 0
+          ? `Trésorerie positive sur les ${dureeY} ans de crédit : <strong>${fE(cumulCfChoisi)} cumulés.</strong> Les loyers couvrent les sorties renseignées.`
+          : `Le capital remboursé (<strong>${fE(montantCredit)}</strong>) constitue un patrimoine net de dette à ${dureeY} ans, malgré un effort d'épargne pendant le crédit.`}</div>
+      </div>
+      <div>
+        <div class="fin-st">Points à vérifier</div>
+        <div class="fin-sx">Marge ${getYear(duree).cfAnnuel >= 0 ? "réduite" : "négative"} à <strong>${fE(getYear(duree).cfAnnuel / 12)}/mois en année ${duree}</strong>. Compléter les charges, tester la vacance et comparer la fiscalité sur la durée.</div>
+      </div>
+    </div>
+    <div class="fin-tot">
+      <div><div class="fin-tl">Total estimé après revente à ${dureeY} ans</div><div class="fin-l" style="margin-top:3px">${fE(netRevente)} de vente nette + ${fE(cumulCfChoisi)} de cash-flow cumulé · avant frais de vente</div></div>
+      <div class="fin-tv">${fE(totalCumule)}</div>
     </div>
   </div>
 
-  <div style="font-size:12px;line-height:1.6;color:rgba(26,22,18,0.42);margin-top:10px;padding-top:8px;border-top:.5px solid rgba(26,22,18,0.12)">
-    Hypothèses : détention directe en location meublée non professionnelle, ${regimeLabel} ; TMI ${tmi} % + prélèvements sociaux 18,6 % sur les revenus locatifs, 17,2 % sur la plus-value. Montants nominaux, non actualisés. Loyers, charges et valeur du bien supposés constants sur toute la période. Simulation indicative — ne constitue pas un conseil fiscal ou financier.
-  </div>
-
-  <div class="ftr"><span>toutlmnp.fr · Simulation indicative — ne constitue pas un conseil fiscal ou financier</span><span>Page ${nbPages} / ${nbPages}</span><span>${today}</span></div>
+  <div class="note" style="margin-top:12px">Hypothèses : détention directe en location meublée non professionnelle, ${regimeLabel} ; TMI ${tmi} % + prélèvements sociaux 18,6 % sur les revenus locatifs, 17,2 % sur la plus-value. Montants nominaux non actualisés. Loyers et charges supposés constants. Simulation indicative — ne constitue pas un conseil fiscal ou financier.</div>
+  ${FTR(nFin)}
 </div>
 
 </body></html>`;
