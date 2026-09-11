@@ -9,6 +9,7 @@ import PopupPDFStarter from "./PopupPDFStarter";
 import PopupSauvegarder, { type Plan } from "./PopupSauvegarder";
 import { usePlan } from "./PlanBadge";
 import PopupSimLimite from "./PopupSimLimite";
+import { computeProjection } from "@/lib/computeResultats";
 
 type TypeBien = "ap" | "ma";
 type TMI = 0 | 11 | 30 | 41 | 45;
@@ -1886,142 +1887,251 @@ export default function Simulateur({ onShowResults }: { onShowResults?: () => vo
                 })()}
 
 
-                {/* Graphe Evolution des Cash-flow */}
-                {resultats && (() => {
-                  const CF_COLOR = "#2A7080";
-                  const CF_NEG = "#B03A2A";
+                {/* Graphe Evolution des Cash-flow dans le temps */}
+                {resultats && (form.duree || 0) >= 2 && (() => {
+                  const C_REEL = "#1A6644";
+                  const C_BIC = "#C95B2A";
                   const dureeAns = form.duree || 20;
-                  const totalYears = dureeAns + 5;
                   const taux = parseFloat(form.taux) / 100 || 0;
-                  const prix = parseFloat(form.prix) || 0;
-                  const travaux = parseFloat(form.travaux) || 0;
-                  const notaire = parseFloat(form.notaire) || 0;
-                  const mobilier = parseFloat(form.mobilier) || 0;
-                  const apport = parseFloat(form.apport) || 0;
-                  const investTot = prix + travaux + notaire + mobilier;
-                  const montantCreditCF = Math.max(0, investTot - apport);
-                  const mensualiteCF = resultats.mensualite;
+                  const prixG = parseFloat(form.prix) || 0;
+                  const travauxG = parseFloat(form.travaux) || 0;
+                  const notaireG = parseFloat(form.notaire) || 0;
+                  const mobilierG = parseFloat(form.mobilier) || 0;
+                  const aCredit = resultats.montantCredit > 0;
 
-                  // Calcul année par année
-                  const data: { yr: number; cf: number }[] = [];
-                  for (let yr = 1; yr <= totalYears; yr++) {
-                    const inLoan = yr <= dureeAns;
-                    const interetsAn = inLoan ? calcInteretsAnneeN(montantCreditCF, taux, dureeAns, yr) : 0;
-                    const creditAn = inLoan ? mensualiteCF * 12 : 0;
-                    const assurAn = inLoan ? resultats.assuranceEmprunteurAnnuel : 0;
-                    let cf: number;
-                    if (selectedRegime === "reel") {
-                      const chargesDeduct = resultats.chargesAnnuelles + interetsAn + assurAn;
-                      const resultatAvAmort = resultats.recettesAnnuelles - chargesDeduct;
-                      const base = Math.max(0, resultatAvAmort - resultats.amortTotal);
-                      const impot = base * (form.tmi / 100 + 0.186);
-                      cf = (resultats.recettesAnnuelles - creditAn - resultats.chargesAnnuelles - assurAn - impot) / 12;
-                    } else {
-                      cf = (resultats.recettesAnnuelles - creditAn - resultats.chargesAnnuelles - assurAn - resultats.impotBIC) / 12;
-                    }
-                    data.push({ yr, cf });
-                  }
+                  // Moteur partagé avec les rapports PDF : mêmes chiffres partout
+                  const baseParams = {
+                    prix: prixG, travaux: travauxG, mobilier: mobilierG, notaire: notaireG,
+                    montantCredit: resultats.montantCredit,
+                    duree: dureeAns,
+                    taux,
+                    loyerAnnuel: resultats.loyerAnnuel,
+                    chargesLocatairesAnnuel: resultats.chargesLocatairesAnnuel,
+                    chargesAnnuelles: resultats.chargesAnnuelles,
+                    assuranceEmprunteurAnnuel: resultats.assuranceEmprunteurAnnuel,
+                    tmi: form.tmi,
+                    amortPct,
+                    amortMode: (amortMode ?? "ensemble") as "ensemble" | "composant",
+                    amortDureeEnsemble,
+                    composants,
+                    amortDureeMobilier, amortDureeTravaux, amortDureeNotaire,
+                    isSaisonnier,
+                    horizon: dureeAns + 1,
+                  };
+                  const projReel = computeProjection({ ...baseParams, isMicro: false });
+                  const projBic = computeProjection({ ...baseParams, isMicro: true });
 
-                  // Dimensions SVG
-                  const W = 600; const H = 180; const PAD = { t: 18, r: 16, b: 32, l: 52 };
-                  const chartW = W - PAD.l - PAD.r;
-                  const chartH = H - PAD.t - PAD.b;
-                  const minCF = Math.min(0, ...data.map(d => d.cf));
-                  const maxCF = Math.max(0, ...data.map(d => d.cf));
-                  const range = maxCF - minCF || 1;
-                  const xOf = (i: number) => PAD.l + (i / (data.length - 1)) * chartW;
-                  const yOf = (v: number) => PAD.t + (1 - (v - minCF) / range) * chartH;
-                  const zeroY = yOf(0);
+                  // Le graphe s'arrête à la dernière année de l'emprunt
+                  const sReel = projReel.slice(0, dureeAns).map(y => ({ x: y.year, v: y.cashflowMensuel }));
+                  const sBic = projBic.slice(0, dureeAns).map(y => ({ x: y.year, v: y.cashflowMensuel }));
 
-                  // Polyline points
-                  const pts = data.map((d, i) => `${xOf(i)},${yOf(d.cf)}`).join(" ");
+                  // Après l'emprunt : plus de mensualité, le cash-flow devient constant
+                  const apresReel = projReel[dureeAns]?.cashflowMensuel ?? 0;
+                  const apresBic = projBic[dureeAns]?.cashflowMensuel ?? 0;
 
-                  // Area path
-                  const areaPath = `M ${xOf(0)},${zeroY} ` +
-                    data.map((d, i) => `L ${xOf(i)},${yOf(d.cf)}`).join(" ") +
-                    ` L ${xOf(data.length - 1)},${zeroY} Z`;
+                  // Cumuls sur toute la durée de l'emprunt
+                  const cumulReel = projReel.slice(0, dureeAns).reduce((s, y) => s + y.cashflowAnnuel, 0);
+                  const cumulBic = projBic.slice(0, dureeAns).reduce((s, y) => s + y.cashflowAnnuel, 0);
 
-                  // Analyse
-                  const posYears = data.filter(d => d.cf >= 0).length;
-                  const negYears = data.filter(d => d.cf < 0).length;
-                  const endLoanCF = data[dureeAns] ? data[dureeAns].cf : null;
-                  const firstNegIdx = data.findIndex(d => d.cf < 0);
-                  const firstPosAfterNeg = firstNegIdx >= 0 ? data.findIndex((d, i) => i > firstNegIdx && d.cf >= 0) : -1;
+                  const showReel = selectedRegime !== "micro";
+                  const showBic = selectedRegime !== "reel";
+                  const visibles = [...(showReel ? sReel : []), ...(showBic ? sBic : [])];
+                  if (visibles.length === 0) return null;
 
-                  let bandMsg = "";
-                  if (negYears === 0) {
-                    bandMsg = `Cash-flow positif sur toute la durée (${totalYears} ans). `;
-                  } else if (posYears === 0) {
-                    bandMsg = `Cash-flow négatif sur toute la durée. `;
-                  } else if (firstNegIdx === 0) {
-                    const recovYear = firstPosAfterNeg >= 0 ? data[firstPosAfterNeg].yr : null;
-                    if (recovYear) {
-                      bandMsg = `Cash-flow négatif jusqu'à l'année ${recovYear - 1}${recovYear - 1 === dureeAns ? " (fin du prêt)" : ""}. Retour au positif dès l'année ${recovYear}.`;
-                    } else {
-                      bandMsg = `Cash-flow négatif sur ${negYears} années.`;
-                    }
+                  // ── Géométrie ──
+                  const W = 620, H = 236;
+                  const PAD = { t: 62, r: 22, b: 34, l: 60 };
+                  const cW = W - PAD.l - PAD.r;
+                  const cH = H - PAD.t - PAD.b;
+
+                  const niceScale = (lo: number, hi: number, wanted: number) => {
+                    if (hi - lo < 1) hi = lo + 1;
+                    const rawStep = (hi - lo) / wanted;
+                    const mag = Math.pow(10, Math.floor(Math.log10(rawStep)));
+                    const mult = [1, 2, 2.5, 5, 10].find(m => m * mag >= rawStep) ?? 10;
+                    const step = mult * mag;
+                    return { min: Math.floor(lo / step) * step, max: Math.ceil(hi / step) * step };
+                  };
+                  const vals = visibles.map(p => p.v);
+                  const nTicks = 4;
+                  const sc = niceScale(Math.min(0, ...vals), Math.max(0, ...vals), nTicks);
+                  const yMin = sc.min, yMax = sc.max, yRange = (yMax - yMin) || 1;
+
+                  const xOf = (yr: number) => PAD.l + ((yr - 1) / Math.max(dureeAns - 1, 1)) * cW;
+                  const yOf = (v: number) => PAD.t + (1 - (v - yMin) / yRange) * cH;
+
+                  const ticks = Array.from({ length: nTicks + 1 }, (_, i) => yMin + (i / nTicks) * yRange);
+
+                  // Repères d'années : 1, 5, 10, 15… et la dernière
+                  const stepX = dureeAns > 22 ? 5 : dureeAns > 12 ? 5 : dureeAns > 6 ? 2 : 1;
+                  const annees = new Set<number>([1, dureeAns]);
+                  for (let y = 5; y < dureeAns; y += stepX) if (Math.abs(y - dureeAns) >= 2) annees.add(y);
+
+                  const pathOf = (pts: { x: number; v: number }[]) =>
+                    pts.map((p, i) => `${i === 0 ? "M" : "L"}${xOf(p.x).toFixed(1)},${yOf(p.v).toFixed(1)}`).join(" ");
+
+                  // Étiquettes chiffrées : la plus haute au-dessus, la plus basse en dessous
+                  const etiquettes: { x: number; y: number; txt: string; color: string; anchor: "start" | "end" }[] = [];
+                  [1, dureeAns].forEach(yr => {
+                    const pr = showReel ? sReel.find(p => p.x === yr) : undefined;
+                    const pb = showBic ? sBic.find(p => p.x === yr) : undefined;
+                    const anchor: "start" | "end" = yr === 1 ? "start" : "end";
+                    const dx = yr === 1 ? 12 : -8;
+                    const both = pr && pb;
+                    const reelHaut = both ? pr.v >= pb.v : true;
+                    if (pr) etiquettes.push({ x: xOf(yr) + dx, y: yOf(pr.v) + (reelHaut ? -12 : 21), txt: `${pr.v >= 0 ? "+" : ""}${formatEuro(pr.v)}`, color: C_REEL, anchor });
+                    if (pb) etiquettes.push({ x: xOf(yr) + dx, y: yOf(pb.v) + (both ? (reelHaut ? 21 : -12) : -12), txt: `${pb.v >= 0 ? "+" : ""}${formatEuro(pb.v)}`, color: C_BIC, anchor });
+                  });
+
+                  // ── Commentaire ──
+                  const ecartCumul = Math.abs(cumulReel - cumulBic);
+                  const reelGagne = cumulReel >= cumulBic;
+                  const fmtSigne = (v: number) => `${v >= 0 ? "+" : ""}${formatEuro(v)}`;
+
+                  let titreCom: string;
+                  let corpsCom: React.ReactNode;
+                  if (selectedRegime === "reel" || selectedRegime === "micro") {
+                    const estReel = selectedRegime === "reel";
+                    const cumulChoisi = estReel ? cumulReel : cumulBic;
+                    const apresChoisi = estReel ? apresReel : apresBic;
+                    const cumulAutre = estReel ? cumulBic : cumulReel;
+                    const meilleur = cumulChoisi >= cumulAutre;
+                    titreCom = `Votre régime : ${estReel ? "réel simplifié" : "Micro-BIC"}`;
+                    corpsCom = (
+                      <>
+                        Sur les <strong>{dureeAns} ans</strong> de crédit, ce régime cumule{" "}
+                        <strong style={{ color: cumulChoisi >= 0 ? C_REEL : "#B03A2A" }}>{fmtSigne(cumulChoisi)}</strong> de trésorerie
+                        {aCredit && <> — soit <strong>{fmtSigne(cumulChoisi / dureeAns / 12)}/mois</strong> en moyenne</>}.{" "}
+                        {meilleur
+                          ? <>C&apos;est <strong>{formatEuro(ecartCumul)} de plus</strong> que l&apos;autre régime sur la même période.</>
+                          : <>L&apos;autre régime aurait dégagé <strong>{formatEuro(ecartCumul)} de plus</strong> sur la même période.</>}
+                        {aCredit && <> Une fois le crédit soldé, la mensualité disparaît et le cash-flow se stabilise autour de{" "}
+                          <strong style={{ color: apresChoisi >= 0 ? C_REEL : "#B03A2A" }}>{fmtSigne(apresChoisi)}/mois</strong>.</>}
+                      </>
+                    );
                   } else {
-                    bandMsg = `Cash-flow positif pendant ${firstNegIdx} an${firstNegIdx > 1 ? "s" : ""}`;
-                    if (firstNegIdx === dureeAns) {
-                      bandMsg += ", puis amélioration nette après la fin du prêt (plus de mensualité).";
-                    } else {
-                      bandMsg += ` puis légère pression fiscale croissante.`;
-                    }
-                  }
-                  if (endLoanCF !== null && endLoanCF > 0) {
-                    bandMsg += ` Après remboursement du prêt (an ${dureeAns}) : +${Math.round(endLoanCF).toLocaleString("fr-FR")} €/mois.`;
+                    titreCom = reelGagne ? "Le régime réel paraît le plus intéressant dans le temps" : "Le Micro-BIC paraît le plus intéressant dans le temps";
+                    corpsCom = (
+                      <>
+                        Sur les <strong>{dureeAns} ans</strong> de crédit, le <strong style={{ color: C_REEL }}>régime réel</strong> cumule{" "}
+                        <strong>{fmtSigne(cumulReel)}</strong> de trésorerie contre <strong>{fmtSigne(cumulBic)}</strong> au{" "}
+                        <strong style={{ color: C_BIC }}>Micro-BIC</strong> — un écart de{" "}
+                        <strong style={{ color: reelGagne ? C_REEL : C_BIC }}>{formatEuro(ecartCumul)}</strong> en faveur du{" "}
+                        {reelGagne ? "réel" : "Micro-BIC"}.
+                        {aCredit && <> Après l&apos;emprunt, le cash-flow estimé se stabilise à{" "}
+                          <strong style={{ color: C_REEL }}>{fmtSigne(apresReel)}/mois</strong> au réel et{" "}
+                          <strong style={{ color: C_BIC }}>{fmtSigne(apresBic)}/mois</strong> au Micro-BIC.</>}
+                      </>
+                    );
                   }
 
-                  // Y-axis ticks
-                  const tickStep = range <= 200 ? 50 : range <= 500 ? 100 : range <= 2000 ? 200 : 500;
-                  const tickMin = Math.ceil(minCF / tickStep) * tickStep;
-                  const tickMax = Math.floor(maxCF / tickStep) * tickStep;
-                  const ticks: number[] = [];
-                  for (let t = tickMin; t <= tickMax; t += tickStep) ticks.push(t);
-                  if (!ticks.includes(0)) ticks.push(0);
-
-                  // X-axis labels (every 5 years)
-                  const xLabels: number[] = [];
-                  for (let yr = 5; yr <= totalYears; yr += 5) xLabels.push(yr);
-                  if (!xLabels.includes(dureeAns)) xLabels.push(dureeAns);
+                  const CaseApres = ({ label, val, color, actif }: { label: string; val: number; color: string; actif: boolean }) => (
+                    <div className="rounded-lg px-3 py-2.5" style={{
+                      background: actif ? `${color}14` : "rgba(26,22,18,0.035)",
+                      border: actif ? `1.5px solid ${color}` : "1px solid rgba(26,22,18,0.10)",
+                      opacity: actif ? 1 : 0.75,
+                    }}>
+                      <div className="text-[11px] font-semibold" style={{ color, letterSpacing: "0.02em" }}>{label}</div>
+                      <div className="text-[19px] font-bold mt-0.5" style={{ color: val >= 0 ? color : "#B03A2A", letterSpacing: "-0.02em" }}>
+                        {val >= 0 ? "+" : ""}{formatEuro(val)}
+                        <span className="text-[12px] font-medium" style={{ color: "rgba(26,22,18,0.45)" }}> /mois</span>
+                      </div>
+                    </div>
+                  );
 
                   return (
                     <div className="mt-4">
-                      <div className="text-sm font-semibold mb-3" style={{ color: "rgba(26,22,18,0.65)" }}>Evolution des Cash-flow :</div>
-                      <div className="rounded-xl overflow-hidden" style={{ border: "1px solid rgba(42,112,128,0.15)", background: "#FDFAF6" }}>
-                        <div className="w-full overflow-x-auto">
-                          <svg viewBox={`0 0 ${W} ${H}`} style={{ width: "100%", minWidth: 280, display: "block" }}>
-                            {/* Grid lines */}
-                            {ticks.map(t => (
-                              <g key={t}>
-                                <line x1={PAD.l} x2={W - PAD.r} y1={yOf(t)} y2={yOf(t)}
-                                  stroke={t === 0 ? "rgba(42,112,128,0.35)" : "rgba(26,22,18,0.06)"} strokeWidth={t === 0 ? 1 : 0.75} strokeDasharray={t === 0 ? "none" : "3,3"}/>
-                                <text x={PAD.l - 5} y={yOf(t) + 4} textAnchor="end" fontSize={9} fill="rgba(26,22,18,0.4)">
-                                  {t >= 0 ? `+${t}` : `${t}`}
-                                </text>
-                              </g>
-                            ))}
-                            {/* Loan end vertical marker */}
-                            <line x1={xOf(dureeAns - 1)} x2={xOf(dureeAns - 1)} y1={PAD.t} y2={H - PAD.b}
-                              stroke="rgba(42,112,128,0.3)" strokeWidth={1} strokeDasharray="4,3"/>
-                            <text x={xOf(dureeAns - 1) + 3} y={PAD.t + 9} fontSize={8} fill="rgba(42,112,128,0.6)">fin prêt</text>
-                            {/* Area fill */}
-                            <path d={areaPath} fill={posYears >= negYears ? "rgba(42,112,128,0.12)" : "rgba(176,58,42,0.10)"} />
-                            {/* Line */}
-                            <polyline points={pts} fill="none" stroke={posYears >= negYears ? CF_COLOR : CF_NEG} strokeWidth={1.8} strokeLinejoin="round" strokeLinecap="round"/>
-                            {/* X-axis */}
-                            <line x1={PAD.l} x2={W - PAD.r} y1={H - PAD.b} y2={H - PAD.b} stroke="rgba(26,22,18,0.1)" strokeWidth={0.75}/>
-                            {xLabels.sort((a,b)=>a-b).map(yr => (
-                              <g key={yr}>
-                                <line x1={xOf(yr - 1)} x2={xOf(yr - 1)} y1={H - PAD.b} y2={H - PAD.b + 3} stroke="rgba(26,22,18,0.2)" strokeWidth={0.75}/>
-                                <text x={xOf(yr - 1)} y={H - PAD.b + 11} textAnchor="middle" fontSize={9} fill="rgba(26,22,18,0.45)">an {yr}</text>
-                              </g>
-                            ))}
-                          </svg>
+                      <div className="text-sm font-semibold mb-3" style={{ color: "rgba(26,22,18,0.65)" }}>Evolution des Cash-flow dans le temps</div>
+                      <div className="rounded-xl overflow-hidden" style={{ border: "1px solid rgba(26,22,18,0.10)", background: "#FDFAF6" }}>
+
+                        <div className="flex flex-col md:flex-row">
+                          {/* Graphe */}
+                          <div className="flex-1 min-w-0 p-3">
+                            <div className="w-full overflow-x-auto">
+                              <svg viewBox={`0 0 ${W} ${H}`} style={{ width: "100%", minWidth: 300, display: "block" }}>
+                                {/* Titre d'axe + repère fin de crédit */}
+                                <text x={PAD.l - 4} y={14} fontSize={11} fill="rgba(26,22,18,0.55)">Cash-flow après fiscalité · €/mois</text>
+                                {aCredit && (
+                                  <text x={W - PAD.r} y={14} textAnchor="end" fontSize={11} fontWeight={600} fill={C_BIC}>
+                                    Crédit soldé fin d&apos;année {dureeAns}
+                                  </text>
+                                )}
+                                {/* Légende */}
+                                {showReel && (
+                                  <g>
+                                    <line x1={PAD.l} x2={PAD.l + 20} y1={30} y2={30} stroke={C_REEL} strokeWidth={3.5} strokeLinecap="round" />
+                                    <text x={PAD.l + 26} y={34} fontSize={11.5} fontWeight={700} fill="rgba(26,22,18,0.75)">Régime réel</text>
+                                  </g>
+                                )}
+                                {showBic && (
+                                  <g>
+                                    <line x1={PAD.l + (showReel ? 115 : 0)} x2={PAD.l + (showReel ? 135 : 20)} y1={30} y2={30} stroke={C_BIC} strokeWidth={3.5} strokeLinecap="round" />
+                                    <text x={PAD.l + (showReel ? 141 : 26)} y={34} fontSize={11.5} fontWeight={700} fill="rgba(26,22,18,0.75)">Micro-BIC</text>
+                                  </g>
+                                )}
+                                {/* Grille */}
+                                {ticks.map((t, i) => (
+                                  <g key={i}>
+                                    <line x1={PAD.l} x2={W - PAD.r} y1={yOf(t)} y2={yOf(t)}
+                                      stroke="rgba(26,22,18,0.09)" strokeWidth={1} />
+                                    <text x={PAD.l - 8} y={yOf(t) + 4} textAnchor="end" fontSize={10.5} fill="rgba(26,22,18,0.45)">
+                                      {Math.round(t).toLocaleString("fr-FR")}
+                                    </text>
+                                  </g>
+                                ))}
+                                {/* Ligne du zéro */}
+                                {yMin < 0 && (
+                                  <line x1={PAD.l} x2={W - PAD.r} y1={yOf(0)} y2={yOf(0)}
+                                    stroke="rgba(26,22,18,0.35)" strokeWidth={1.2} strokeDasharray="4 3" />
+                                )}
+                                {/* Repère vertical fin de crédit */}
+                                {aCredit && (
+                                  <line x1={xOf(dureeAns)} x2={xOf(dureeAns)} y1={PAD.t - 6} y2={PAD.t + cH}
+                                    stroke={C_BIC} strokeWidth={1.2} strokeDasharray="4 3" opacity={0.6} />
+                                )}
+                                {/* Courbes */}
+                                {showBic && <path d={pathOf(sBic)} fill="none" stroke={C_BIC} strokeWidth={3.4} strokeLinecap="round" strokeLinejoin="round" />}
+                                {showReel && <path d={pathOf(sReel)} fill="none" stroke={C_REEL} strokeWidth={3.4} strokeLinecap="round" strokeLinejoin="round" />}
+                                {/* Points aux années repères */}
+                                {showBic && sBic.filter(p => annees.has(p.x)).map(p => (
+                                  <circle key={`b${p.x}`} cx={xOf(p.x)} cy={yOf(p.v)} r={3.4} fill={C_BIC} stroke="#FDFAF6" strokeWidth={1.4} />
+                                ))}
+                                {showReel && sReel.filter(p => annees.has(p.x)).map(p => (
+                                  <circle key={`r${p.x}`} cx={xOf(p.x)} cy={yOf(p.v)} r={3.4} fill={C_REEL} stroke="#FDFAF6" strokeWidth={1.4} />
+                                ))}
+                                {/* Étiquettes chiffrées */}
+                                {etiquettes.map((e, i) => (
+                                  <text key={i} x={e.x} y={e.y} textAnchor={e.anchor} fontSize={14} fontWeight={800} fill={e.color}>{e.txt}</text>
+                                ))}
+                                {/* Axe X */}
+                                <line x1={PAD.l} x2={W - PAD.r} y1={PAD.t + cH} y2={PAD.t + cH} stroke="rgba(26,22,18,0.25)" strokeWidth={1.2} />
+                                {Array.from(annees).sort((a, b) => a - b).map(yr => (
+                                  <text key={yr} x={xOf(yr)} y={PAD.t + cH + 17} textAnchor="middle" fontSize={11} fontWeight={600} fill="rgba(26,22,18,0.5)">{yr}</text>
+                                ))}
+                                <text x={W - PAD.r} y={H - 2} textAnchor="end" fontSize={10.5} fill="rgba(26,22,18,0.4)">Année</text>
+                              </svg>
+                            </div>
+                          </div>
+
+                          {/* Cases « après emprunt » */}
+                          {aCredit && (
+                            <div className="md:w-[228px] flex-shrink-0 p-3 md:pl-0 flex flex-col justify-center gap-2.5">
+                              <div className="text-[11px] font-bold uppercase" style={{ color: "rgba(26,22,18,0.45)", letterSpacing: "0.09em", lineHeight: 1.35 }}>
+                                Cash-flow estimatif<br />après emprunt
+                              </div>
+                              <CaseApres label="Régime réel" val={apresReel} color={C_REEL} actif={selectedRegime !== "micro"} />
+                              <CaseApres label="Micro-BIC" val={apresBic} color={C_BIC} actif={selectedRegime !== "reel"} />
+                              <div className="text-[10px]" style={{ color: "rgba(26,22,18,0.4)", lineHeight: 1.45 }}>
+                                Dès l&apos;année {dureeAns + 1}, sans mensualité. Montant stable à loyer et charges constants.
+                              </div>
+                            </div>
+                          )}
                         </div>
-                        {/* Bande analyse */}
-                        <div className="px-4 py-2.5" style={{ borderTop: "1px solid rgba(42,112,128,0.12)", background: "rgba(42,112,128,0.05)" }}>
-                          <p className="text-[12px]" style={{ color: "#1A1612" }}>{bandMsg}</p>
+
+                        {/* Commentaire */}
+                        <div className="px-4 py-3" style={{ borderTop: "1px solid rgba(26,22,18,0.08)", background: "rgba(26,22,18,0.025)" }}>
+                          <div className="text-[13px] font-bold mb-1" style={{ color: selectedRegime ? (selectedRegime === "reel" ? C_REEL : C_BIC) : (reelGagne ? C_REEL : C_BIC) }}>{titreCom}</div>
+                          <p className="text-[12.5px]" style={{ color: "rgba(26,22,18,0.72)", lineHeight: 1.65 }}>{corpsCom}</p>
                         </div>
                         <div className="px-4 py-2" style={{ borderTop: "1px solid rgba(26,22,18,0.06)" }}>
                           <p className="text-[10px]" style={{ color: "rgba(26,22,18,0.4)" }}>* Projection sans évolution de loyer ni de charges dans le temps.</p>
