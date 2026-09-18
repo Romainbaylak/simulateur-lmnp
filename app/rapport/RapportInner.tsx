@@ -114,7 +114,7 @@ export default function RapportInner() {
   }, [sessionId, router]);
 
 
-  // ─── PDF BUILDER ────────────────────────────────────────────────────────────
+  // ─── SYNTHÈSE D'INVESTISSEMENT — RAPPORT COMPLET ────────────────────────────
   const buildPdfHtml = (f: SimulationForm, res: Resultats, bienInfo: BienInfo): string => {
     const amortPct = amortPctRef.current;
     const amortMode = amortModeRef.current;
@@ -124,19 +124,25 @@ export default function RapportInner() {
     const amortDureeNotaire = amortDureeNotaireRef.current;
     const composants = composantsRef.current;
     const isSaisonnier = isSaisonnierRef.current;
-    // abattPct = taux d'abattement (30% saisonnier non classé, 50% classique)
-    const abattPct = isSaisonnier ? 0.30 : 0.50;
-    const prixNuitee = prixNuiteeRef.current;
-    const tauxOccBas = tauxOccBasRef.current;
-    const tauxOccMoyen = tauxOccMoyenRef.current;
-    const tauxOccHaut = tauxOccHautRef.current;
-    const resultatsTriple = resultatsTripleRef.current;
     const selectedRegime = selectedRegimeRef.current;
     const isMicro = selectedRegime === "micro";
+    // Abattement micro-BIC : 30 % pour un meublé de tourisme non classé, 50 % sinon
+    const abattPct = isSaisonnier ? 0.30 : 0.50;
+    const abattLabel = isSaisonnier ? "30 %" : "50 %";
 
+    /* ── Mise en forme ──────────────────────────────────────────────────────── */
     const fE = (v: number) => new Intl.NumberFormat("fr-FR", { style: "currency", currency: "EUR", maximumFractionDigits: 0 }).format(v);
+    const fE2 = (v: number) => Math.abs(v - Math.round(v)) < 0.005
+      ? new Intl.NumberFormat("fr-FR", { style: "currency", currency: "EUR", maximumFractionDigits: 0 }).format(v)
+      : new Intl.NumberFormat("fr-FR", { style: "currency", currency: "EUR", minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(v);
+    const fN = (v: number) => Math.round(v).toLocaleString("fr-FR");
     const fP = (v: number, d = 2) => v.toFixed(d).replace(".", ",") + " %";
+    // pourcentage « propre » : pas de décimales quand la valeur est entière
+    const fPc = (v: number, d = 2) => (Math.abs(v - Math.round(v)) < 0.005 ? String(Math.round(v)) : v.toFixed(d).replace(".", ",")) + " %";
+    const sE = (v: number) => (v >= 0 ? "+" : "−") + fE(Math.abs(v));
+    const col = (v: number) => v >= 0 ? "#1A6644" : "#B03A2A";
 
+    /* ── Données saisies ────────────────────────────────────────────────────── */
     const prix = parseFloat(f.prix) || 0;
     const travaux = parseFloat(f.travaux) || 0;
     const notaire = parseFloat(f.notaire) || 0;
@@ -145,1115 +151,972 @@ export default function RapportInner() {
     const taux = parseFloat(f.taux) / 100 || 0;
     const duree = f.duree;
     const tmi = f.tmi;
+    const tauxGlobal = tmi / 100 + 0.186;
 
     const investTotal = res.investTotal;
     const montantCredit = res.montantCredit;
-    const mensualite = res.mensualite;
-    const creditAnnuel = res.creditAnnuel;
+    const mensualite = res.mensualite;                       // hors assurance
+    const creditAnnuel = res.creditAnnuel;                   // capital + intérêts
     const interetsAnnee1 = res.interetsAnnee1;
-    const capitalRembourseAn1 = Math.max(0, creditAnnuel - interetsAnnee1);
     const chargesAnnuelles = res.chargesAnnuelles;
     const assuranceEmprunteurAnnuel = res.assuranceEmprunteurAnnuel ?? 0;
     const loyerAnnuel = res.loyerAnnuel;
+    const loyerMensuel = loyerAnnuel / 12;
     const chargesLocatairesAnnuel = (parseFloat(f.chargesLoyer) || 0) * 12;
     const recettesAnnuelles = loyerAnnuel + chargesLocatairesAnnuel;
-    const amortTotalAn1 = res.amortTotal;
-    const chargesDeductibles = res.chargesDeductibles;
-    const resultatAvantAmort = res.resultatAvantAmort;
-    const baseImposableReel = res.baseImposableReel;
-    const impotReel = res.impotReel;
-    const cashflowReelMensuel = res.cashflowReelMensuel;
-    const baseBIC = res.baseBIC;
-    const impotBIC = res.impotBIC;
-    const cashflowBICMensuel = res.cashflowBICMensuel;
-    const rendementBrut = res.rendementBrut;
-    const rendementNet = res.rendementNet;
 
-    const coutTotalInteret = montantCredit > 0 && taux > 0
-      ? (mensualite * duree * 12) - montantCredit : 0;
-    const cashflowAvantImpot = (loyerAnnuel - creditAnnuel - chargesAnnuelles - assuranceEmprunteurAnnuel) / 12;
-    const rentaNetteAvFinancement = investTotal > 0 ? ((loyerAnnuel - chargesAnnuelles) / investTotal) * 100 : 0;
+    const taxeFonciere = parseFloat(f.taxeFonciere) || 0;
+    const chargesCopro = parseFloat(f.chargesCopro) || 0;
+    const pnoEur = loyerAnnuel * (parseFloat(f.assurancePNO) || 0) / 100;
+    const gestionEur = loyerAnnuel * (parseFloat(f.gestionLocativePct) || 0) / 100;
+    const entretien = parseFloat(f.entretienCourant) || 0;
+    const compta = parseFloat(f.comptabilite) || 0;
 
-    // Year-by-year projection
+    /* ── Amortissement : bases et durées ────────────────────────────────────── */
     const valeurAmortissable = prix * amortPct / 100;
-    const r = taux / 12;
-    const n = duree * 12;
-    const M = montantCredit > 0 && taux > 0
-      ? montantCredit * r * Math.pow(1 + r, n) / (Math.pow(1 + r, n) - 1)
-      : (duree > 0 ? montantCredit / n : 0);
+    const terrainVal = prix - valeurAmortissable;
+    const amortCols: { label: string; base: number; duree: number; annuel: number }[] = [];
+    if (amortMode === "ensemble") {
+      if (valeurAmortissable > 0 && amortDureeEnsemble > 0)
+        amortCols.push({ label: "Bien immobilier", base: valeurAmortissable, duree: amortDureeEnsemble, annuel: valeurAmortissable / amortDureeEnsemble });
+    } else {
+      for (const c of composants) {
+        const base = valeurAmortissable * c.pct / 100;
+        if (base > 0 && c.duree > 0) amortCols.push({ label: c.label, base, duree: c.duree, annuel: base / c.duree });
+      }
+    }
+    if (mobilier > 0 && amortDureeMobilier > 0) amortCols.push({ label: "Mobilier", base: mobilier, duree: amortDureeMobilier, annuel: mobilier / amortDureeMobilier });
+    if (travaux > 0 && amortDureeTravaux > 0) amortCols.push({ label: "Travaux", base: travaux, duree: amortDureeTravaux, annuel: travaux / amortDureeTravaux });
+    if (notaire > 0 && amortDureeNotaire > 0) amortCols.push({ label: "Frais de notaire", base: notaire, duree: amortDureeNotaire, annuel: notaire / amortDureeNotaire });
+    const baseAmortissableTotale = amortCols.reduce((s, c) => s + c.base, 0);
+    const amortMaxDuree = amortCols.length ? Math.max(...amortCols.map(c => c.duree)) : 0;
 
     const amortBienMaxDuree = amortMode === "ensemble"
       ? amortDureeEnsemble
-      : Math.max(...composants.map((c: { label: string; pct: number; duree: number }) => c.duree));
-    const maxAmortDuree = Math.max(amortBienMaxDuree, 20);
-    const totalYears = Math.max(duree, maxAmortDuree) + 5;
+      : (composants.length ? Math.max(...composants.map(c => c.duree)) : 0);
+    const HORIZON = Math.max(duree, amortBienMaxDuree, amortDureeMobilier, amortDureeTravaux, amortDureeNotaire, 20) + 5;
 
-    interface PdfRow {
-      year: number; capitalDebut: number; capitalFin: number; creditAnnuelR: number;
-      interetsAnnee: number; capitalRembourse: number; amortTotalA: number;
-      amortDisponible: number; reportEntrant: number; reportNplus1: number;
-      resultatAvantAmort: number; chargesDeductibles: number;
-      baseImposable: number; impot: number; cashflow: number;
-    }
-    // Projection issue du moteur unique (lib/computeResultats)
-    const projection = computeProjection({
+    /* ── Projection : moteur unique, partagé par les trois rapports ─────────── */
+    const projParams = {
       prix, travaux, mobilier, notaire,
       montantCredit, duree, taux,
       loyerAnnuel, chargesLocatairesAnnuel,
       chargesAnnuelles, assuranceEmprunteurAnnuel,
       tmi, amortPct, amortMode, amortDureeEnsemble, composants,
       amortDureeMobilier, amortDureeTravaux, amortDureeNotaire,
-      isMicro, isSaisonnier, horizon: totalYears,
-    });
-    const rows: PdfRow[] = projection.map(y => ({
-      year: y.year,
-      capitalDebut: y.capitalDebut,
-      capitalFin: y.capitalFin,
-      creditAnnuelR: y.creditAnnuel,
-      interetsAnnee: y.interets,
-      capitalRembourse: y.capitalRembourse,
-      amortTotalA: y.amortDotation,
-      amortDisponible: y.amortDisponible,
-      reportEntrant: y.reportEntrant,
-      reportNplus1: y.reportSortant,
-      resultatAvantAmort: y.resultatAvantAmort,
-      chargesDeductibles: y.chargesDeductibles,
-      baseImposable: y.baseImposable,
-      impot: y.impot,
-      cashflow: y.cashflowMensuel,
-    }));
+      isSaisonnier, horizon: HORIZON,
+    };
+    const projReel = computeProjection({ ...projParams, isMicro: false });
+    const projMicro = computeProjection({ ...projParams, isMicro: true });
+    const proj = isMicro ? projMicro : projReel;
+    const at = (y: number) => proj[Math.min(Math.max(y, 1), proj.length) - 1];
+    const y1 = at(1);
 
-    const zerosYears = rows.filter(ro => ro.baseImposable === 0).length;
-    const firstTaxRow = rows.find(ro => ro.baseImposable > 0);
+    /* ── Agrégats ───────────────────────────────────────────────────────────── */
+    const dureeCredit = Math.max(duree, 1);
+    const cumulCf = (p: typeof projReel, n: number) => p.slice(0, n).reduce((s, y) => s + y.cashflowAnnuel, 0);
+    const cumulCfReel = cumulCf(projReel, duree);
+    const cumulCfMicro = cumulCf(projMicro, duree);
+    const cumulCfChoisi = isMicro ? cumulCfMicro : cumulCfReel;
+    const apresReelMois = (projReel[duree]?.cashflowMensuel ?? projReel[projReel.length - 1].cashflowMensuel);
+    const apresMicroMois = (projMicro[duree]?.cashflowMensuel ?? projMicro[projMicro.length - 1].cashflowMensuel);
+    const apresChoisiMois = isMicro ? apresMicroMois : apresReelMois;
+    const cumulImpotCredit = proj.slice(0, duree).reduce((s, y) => s + y.impot, 0);
+    const ecartImpotAn1 = projMicro[0].impot - projReel[0].impot;      // > 0 : le réel coûte moins cher
+    const ecartCumulCf = cumulCfMicro - cumulCfReel;                   // > 0 : le micro laisse plus de trésorerie
+    const derniere = proj[proj.length - 1];
 
-    // Amort composants for display
-    const annexeCols: { label: string; annuel: number; duree: number; initial: number }[] = [];
-    if (amortMode === "ensemble") {
-      if (valeurAmortissable > 0) annexeCols.push({ label: "Bien immobilier", annuel: valeurAmortissable / amortDureeEnsemble, duree: amortDureeEnsemble, initial: valeurAmortissable });
-    } else {
-      for (const c of composants) {
-        const val = valeurAmortissable * c.pct / 100;
-        if (val > 0) annexeCols.push({ label: c.label, annuel: val / c.duree, duree: c.duree, initial: val });
+    // Financement
+    const interetsTotaux = proj.slice(0, duree).reduce((s, y) => s + y.interets, 0);
+    const capitalTotal = proj.slice(0, duree).reduce((s, y) => s + y.capitalRembourse, 0);
+    const assuranceTotale = assuranceEmprunteurAnnuel * duree;
+    const totalHorsAssurance = capitalTotal + interetsTotaux;
+    const totalVerse = totalHorsAssurance + assuranceTotale;
+    const coutFinancement = interetsTotaux + assuranceTotale;
+    const mensualiteAssurance = assuranceEmprunteurAnnuel / 12;
+    const sortieMensuelleCredit = mensualite + mensualiteAssurance;
+
+    // Rendements
+    const rendBrutPrix = prix > 0 ? (loyerAnnuel / prix) * 100 : 0;
+    const rendBrutActe = investTotal > 0 ? (loyerAnnuel / investTotal) * 100 : 0;
+    const rendNetCharges = investTotal > 0 ? ((loyerAnnuel - chargesAnnuelles) / investTotal) * 100 : 0;
+
+    // Cash-flow année 1
+    const cfMois1 = y1.cashflowMensuel;
+    const cfAn1 = y1.cashflowAnnuel;
+    const sortiesMois1 = loyerMensuel + chargesLocatairesAnnuel / 12 - cfMois1;
+    const chargesMois = chargesAnnuelles / 12;
+    const impotMois1 = y1.impot / 12;
+
+    /* ── Plus-value de cession ──────────────────────────────────────────────── */
+    const abattIR = (N: number) => N < 6 ? 0 : N >= 22 ? 1 : (N - 5) * 0.06;
+    const abattPS = (N: number) => { if (N < 6) return 0; if (N >= 30) return 1; if (N >= 22) return 0.28 + (N - 22) * 0.09; return (N - 5) * 0.0165; };
+    const prixRevente = prix;   // hypothèse centrale : valeur maintenue
+
+    interface Vente {
+      N: number; prixVente: number; amortReintegre: number; prixFiscal: number;
+      pvBrute: number; ir: number; ps: number; dette: number; net: number; forfait: number;
+    }
+    const calcVente = (N: number, prixVente: number, avecForfait = true): Vente => {
+      // art. 150 VB II CGI : forfait travaux de 15 % au-delà de 5 ans de détention
+      const forfait = avecForfait && N > 5 ? Math.max(travaux, prix * 0.15) : travaux;
+      const baseAcquisition = prix + notaire + forfait;
+      const amortReintegre = isMicro ? 0 : (at(N)?.amortImputeCumul ?? 0);
+      const prixFiscal = Math.max(0, baseAcquisition - amortReintegre);
+      const pvBrute = Math.max(0, prixVente - prixFiscal);
+      const ir = pvBrute * (1 - abattIR(N)) * TAUX_IR_PLUSVALUE;
+      const ps = pvBrute * (1 - abattPS(N)) * TAUX_PS_PLUSVALUE;
+      const dette = N <= duree ? (at(N)?.capitalFin ?? 0) : 0;
+      const net = prixVente - ir - ps - dette;
+      return { N, prixVente, amortReintegre, prixFiscal, pvBrute, ir, ps, dette, net, forfait };
+    };
+
+    const horizonsVente = Array.from(new Set([5, 15, 30].map(n => Math.min(n, HORIZON)))).sort((a, b) => a - b);
+    const ventes = horizonsVente.map(n => calcVente(n, prixRevente));
+    const venteFinCredit = calcVente(duree, prixRevente);
+    const totalProjetFinCredit = cumulCfChoisi + venteFinCredit.net;
+
+    /* ── Scénarios de stress (page 5) ───────────────────────────────────────── */
+    const stress = (yr: number, dLoyer: number, dCharges: number) => {
+      const row = at(yr);
+      const loyers = loyerAnnuel * dLoyer;
+      const charges = chargesAnnuelles + dCharges;
+      const recettes = loyers + chargesLocatairesAnnuel;
+      let impot: number;
+      if (isMicro) {
+        impot = recettes * (1 - abattPct) * tauxGlobal;
+      } else {
+        const raa = recettes - charges - row.interets - row.assuranceEmprunteur;
+        impot = Math.max(0, raa - row.amortDisponible) * tauxGlobal;
+      }
+      const cfAn = recettes - charges - row.creditAnnuel - row.assuranceEmprunteur - impot;
+      return { cfAn, cfMois: cfAn / 12, impot };
+    };
+    const anneeStress2 = Math.min(duree, HORIZON);
+    const scenarios = [
+      { label: "Scénario de départ", dLoyer: 1, dCharges: 0 },
+      { label: "Un mois sans loyer", dLoyer: 11 / 12, dCharges: 0 },
+      { label: "Loyer réduit de 10 %", dLoyer: 0.9, dCharges: 0 },
+      { label: "1 000 € de charges en plus / an", dLoyer: 1, dCharges: 1000 },
+      { label: "Deux mois sans loyer<br>+ 2 000 € de charges", dLoyer: 10 / 12, dCharges: 2000 },
+    ].map(s => ({ ...s, a1: stress(1, s.dLoyer, s.dCharges), a2: stress(anneeStress2, s.dLoyer, s.dCharges) }));
+    const pireA2 = scenarios[scenarios.length - 1].a2;
+
+    /* ── Paliers d'amortissement (page 3) ───────────────────────────────────── */
+    const paliers: { de: number; a: number; val: number }[] = [];
+    if (!isMicro) {
+      for (const y of proj) {
+        const v = Math.round(y.amortDotation);
+        const last = paliers[paliers.length - 1];
+        if (last && last.val === v) last.a = y.year;
+        else paliers.push({ de: y.year, a: y.year, val: v });
       }
     }
-    if (mobilier > 0) annexeCols.push({ label: "Mobilier", annuel: mobilier / amortDureeMobilier, duree: amortDureeMobilier, initial: mobilier });
-    if (travaux > 0) annexeCols.push({ label: "Travaux", annuel: travaux / amortDureeTravaux, duree: amortDureeTravaux, initial: travaux });
-    if (notaire > 0) annexeCols.push({ label: "Frais notaire", annuel: notaire / amortDureeNotaire, duree: amortDureeNotaire, initial: notaire });
+    const impotFinal = derniere.impot;
 
-    // Terrain (non amortissable)
-    const terrainVal = prix * (1 - amortPct / 100);
-    // Somme réelle des bases amortissables listées (bien hors terrain + mobilier + travaux + notaire)
-    const baseAmortissableTotale = annexeCols.reduce((sum, c) => sum + c.initial, 0);
+    /* ── Saisonnier : les trois estimations, dans les deux régimes ──────────── */
+    const triple = resultatsTripleRef.current;
+    const prixNuitee = parseFloat(prixNuiteeRef.current) || 0;
+    const occ = { bas: parseFloat(tauxOccBasRef.current) || 0, moyen: parseFloat(tauxOccMoyenRef.current) || 0, haut: parseFloat(tauxOccHautRef.current) || 0 };
+    const estimations = (["bas", "moyen", "haut"] as const).map(k => ({
+      cle: k,
+      label: k === "bas" ? "Estimation basse" : k === "moyen" ? "Estimation moyenne" : "Estimation haute",
+      occ: occ[k],
+      nuits: Math.round(365 * occ[k] / 100),
+      r: triple?.[k] ?? null,
+    }));
 
-    // ── SVG Charts ──────────────────────────────────────────────────────────
-
-    // Bar chart: amortissement par année
-    const makeAmortBarChart = () => {
-      const chartYears = Math.min(maxAmortDuree + 5, 40);
-      const barData = Array.from({ length: chartYears }, (_, i) => {
-        const yr = i + 1;
-        let a = 0;
-        if (amortMode === "ensemble") {
-          a = yr <= amortDureeEnsemble ? valeurAmortissable / amortDureeEnsemble : 0;
-        } else {
-          for (const c of composants) {
-            a += yr <= c.duree ? (valeurAmortissable * c.pct / 100) / c.duree : 0;
-          }
-        }
-        if (amortDureeMobilier > 0 && yr <= amortDureeMobilier && mobilier > 0) a += mobilier / amortDureeMobilier;
-        if (amortDureeTravaux > 0 && yr <= amortDureeTravaux && travaux > 0) a += travaux / amortDureeTravaux;
-        if (amortDureeNotaire > 0 && yr <= amortDureeNotaire && notaire > 0) a += notaire / amortDureeNotaire;
-        return { yr, a };
-      });
-      const maxVal = Math.max(...barData.map(d => d.a), 1);
-      const W = 680, H = 150, PL = 60, PR = 10, PT = 10, PB = 25;
-      const cW = W - PL - PR, cH = H - PT - PB;
-      const bW = Math.max(2, cW / chartYears - 1.5);
-      const bars = barData.map(({ yr, a }, i) => {
-        const bh = (a / maxVal) * cH;
-        const bx = PL + i * (cW / chartYears) + 0.5;
-        const by = PT + cH - bh;
-        return `<rect x="${bx.toFixed(1)}" y="${by.toFixed(1)}" width="${bW.toFixed(1)}" height="${Math.max(0, bh).toFixed(1)}" fill="${a > 0 ? "#C95B2A" : "#EDE7DC"}" opacity="${a > 0 ? 0.8 : 1}"/>
-${yr % 5 === 0 || yr === 1 ? `<text x="${(bx + bW / 2).toFixed(1)}" y="${(H - 6).toFixed(1)}" text-anchor="middle" font-size="7" fill="rgba(26,22,18,0.4)">${yr}</text>` : ""}`;
-      }).join("");
-      const ticks = [0, 0.25, 0.5, 0.75, 1].map(t => {
-        const y = PT + cH * (1 - t);
-        return `<line x1="${PL}" y1="${y.toFixed(1)}" x2="${W - PR}" y2="${y.toFixed(1)}" stroke="rgba(26,22,18,0.07)" stroke-width="0.5"/>
-<text x="${(PL - 4).toFixed(1)}" y="${(y + 3).toFixed(1)}" text-anchor="end" font-size="7" fill="rgba(26,22,18,0.35)">${fE(maxVal * t)}</text>`;
-      }).join("");
-      return `<svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg" style="width:100%;display:block;margin-top:8px">${ticks}${bars}<text x="${W / 2}" y="${H - 1}" text-anchor="middle" font-size="7" fill="rgba(26,22,18,0.3)">Année</text></svg>`;
+    /* ── Graphiques SVG ─────────────────────────────────────────────────────── */
+    const niceScale = (lo: number, hi: number, n: number) => {
+      if (hi - lo < 1) hi = lo + 1;
+      const raw = (hi - lo) / n;
+      const mag = Math.pow(10, Math.floor(Math.log10(raw)));
+      const mult = [1, 2, 2.5, 5, 10].find(m => m * mag >= raw) ?? 10;
+      const st = mult * mag;
+      return { min: Math.floor(lo / st) * st, max: Math.ceil(hi / st) * st };
     };
 
-    // Line chart: capital restant dû
-    const makeCapitalChart = () => {
-      // Année 0 = capital emprunté ; ensuite capital restant dû EN FIN d'année
-      const pts = [{ yr: 0, v: montantCredit }]
-        .concat(rows.filter(ro => ro.year <= duree).map(ro => ({ yr: ro.year, v: ro.capitalFin })));
-      if (pts.length === 0) return "";
-      const maxV = Math.max(...pts.map(p => p.v), 1);
-      const W = 680, H = 130, PL = 65, PR = 10, PT = 10, PB = 22;
-      const cW = W - PL - PR, cH = H - PT - PB;
-      const toX = (yr: number) => PL + (yr / Math.max(duree, 1)) * cW;
-      const toY = (v: number) => PT + cH - (v / maxV) * cH;
-      const pathD = pts.map((p, i) => `${i === 0 ? "M" : "L"}${toX(p.yr).toFixed(1)},${toY(p.v).toFixed(1)}`).join(" ");
-      const areaD = `${pathD} L${toX(pts[pts.length - 1].yr).toFixed(1)},${(PT + cH).toFixed(1)} L${toX(pts[0].yr).toFixed(1)},${(PT + cH).toFixed(1)} Z`;
-      const ticks = [0, 0.25, 0.5, 0.75, 1].map(t => {
-        const y = PT + cH * (1 - t);
-        return `<line x1="${PL}" y1="${y.toFixed(1)}" x2="${W - PR}" y2="${y.toFixed(1)}" stroke="rgba(26,22,18,0.06)" stroke-width="0.5"/>
-<text x="${(PL - 4).toFixed(1)}" y="${(y + 3).toFixed(1)}" text-anchor="end" font-size="7" fill="rgba(26,22,18,0.35)">${fE(maxV * t)}</text>`;
+    // Graphe page 2 : cash-flow mensuel des deux régimes sur crédit + 5 ans
+    const makeRegimeChart = (): string => {
+      const lastY = Math.min(duree + 5, HORIZON);
+      const ptsR = projReel.filter(y => y.year <= lastY);
+      const ptsM = projMicro.filter(y => y.year <= lastY);
+      const W = 690, H = 210, PL = 62, PR = 18, PT = 34, PB = 26;
+      const iW = W - PL - PR, iH = H - PT - PB;
+      const all = [...ptsR.map(p => p.cashflowMensuel), ...ptsM.map(p => p.cashflowMensuel)];
+      const sc = niceScale(Math.min(0, ...all), Math.max(...all, 1), 4);
+      const yR = (sc.max - sc.min) || 1;
+      const toX = (yr: number) => PL + ((yr - 1) / Math.max(lastY - 1, 1)) * iW;
+      const toY = (v: number) => PT + (1 - (v - sc.min) / yR) * iH;
+      const grid = Array.from({ length: 5 }, (_, i) => {
+        const t = i / 4, v = sc.min + t * yR, y = PT + (1 - t) * iH;
+        return `<line x1="${PL}" y1="${y.toFixed(1)}" x2="${PL + iW}" y2="${y.toFixed(1)}" stroke="rgba(26,22,18,0.10)" stroke-width="1"/><text x="${PL - 9}" y="${(y + 4).toFixed(1)}" text-anchor="end" font-size="12" fill="rgba(26,22,18,0.5)">${fN(v)}</text>`;
       }).join("");
-      const xLabels = [0, Math.round(duree / 3), Math.round(2 * duree / 3), duree].map(yr => {
-        return `<text x="${toX(yr).toFixed(1)}" y="${(H - 5).toFixed(1)}" text-anchor="middle" font-size="7" fill="rgba(26,22,18,0.4)">${yr === 0 ? "Départ" : `Fin an ${yr}`}</text>`;
-      }).join("");
-      return `<svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg" style="width:100%;display:block;margin-top:8px">${ticks}<path d="${areaD}" fill="#2A7080" opacity="0.08"/><path d="${pathD}" fill="none" stroke="#2A7080" stroke-width="2"/>${xLabels}</svg>`;
-    };
-
-    // Line chart: cashflow mensuel
-    const makeCashflowChart = () => {
-      const visYears = Math.min(totalYears, duree + 10);
-      const pts = rows.filter(ro => ro.year <= visYears).map(ro => ({ yr: ro.year, v: ro.cashflow }));
-      if (pts.length === 0) return "";
-      const allV = pts.map(p => p.v);
-      const minV = Math.min(...allV);
-      const maxV = Math.max(...allV, 1);
-      const range = maxV - minV || 1;
-      const W = 680, H = 130, PL = 65, PR = 10, PT = 10, PB = 22;
-      const cW = W - PL - PR, cH = H - PT - PB;
-      const toX = (yr: number) => PL + ((yr - 1) / Math.max(visYears - 1, 1)) * cW;
-      const toY = (v: number) => PT + cH - ((v - minV) / range) * cH;
-      const pathD = pts.map((p, i) => `${i === 0 ? "M" : "L"}${toX(p.yr).toFixed(1)},${toY(p.v).toFixed(1)}`).join(" ");
-      // Zero line
-      const zeroY = toY(0);
-      const zeroLine = zeroY >= PT && zeroY <= PT + cH
-        ? `<line x1="${PL}" y1="${zeroY.toFixed(1)}" x2="${W - PR}" y2="${zeroY.toFixed(1)}" stroke="#B03A2A" stroke-width="0.75" stroke-dasharray="4,3" opacity="0.5"/>`
+      const line = (pts: typeof ptsR, color: string) =>
+        `<path d="${pts.map((p, i) => `${i === 0 ? "M" : "L"}${toX(p.year).toFixed(1)},${toY(p.cashflowMensuel).toFixed(1)}`).join(" ")}" fill="none" stroke="${color}" stroke-width="2.6" stroke-linejoin="round" stroke-linecap="round"/>`;
+      const xFin = toX(Math.min(duree, lastY));
+      const finLine = montantCredit > 0 && duree <= lastY
+        ? `<line x1="${xFin.toFixed(1)}" y1="${PT - 12}" x2="${xFin.toFixed(1)}" y2="${PT + iH}" stroke="#C95B2A" stroke-width="1.3" stroke-dasharray="5 3"/><text x="${xFin.toFixed(1)}" y="${PT - 17}" text-anchor="middle" font-size="12" font-weight="700" fill="#C95B2A">Fin du prêt</text>`
         : "";
-      const ticks = [minV, (minV + maxV) / 2, maxV].map(v => {
-        const y = toY(v);
-        return `<line x1="${PL}" y1="${y.toFixed(1)}" x2="${W - PR}" y2="${y.toFixed(1)}" stroke="rgba(26,22,18,0.06)" stroke-width="0.5"/>
-<text x="${(PL - 4).toFixed(1)}" y="${(y + 3).toFixed(1)}" text-anchor="end" font-size="7" fill="rgba(26,22,18,0.35)">${fE(v)}</text>`;
-      }).join("");
-      const step = Math.max(5, Math.round(visYears / 5 / 5) * 5);
-      const xLabels = Array.from({ length: Math.floor(visYears / step) + 1 }, (_, i) => Math.min(i * step + 1, visYears)).map(yr => {
-        return `<text x="${toX(yr).toFixed(1)}" y="${(H - 5).toFixed(1)}" text-anchor="middle" font-size="7" fill="rgba(26,22,18,0.4)">An ${yr}</text>`;
-      }).join("");
-      return `<svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg" style="width:100%;display:block;margin-top:8px">${ticks}${zeroLine}<path d="${pathD}" fill="none" stroke="#1A7A52" stroke-width="2"/>${xLabels}</svg>`;
+      const marks = Array.from(new Set([1, 5, 10, 15, 20, 25, lastY].filter(y => y >= 1 && y <= lastY))).sort((a, b) => a - b);
+      const xL = marks.map(y => `<text x="${toX(y).toFixed(1)}" y="${PT + iH + 17}" text-anchor="middle" font-size="12" fill="rgba(26,22,18,0.55)">${y}</text>`).join("");
+      return `<div class="graph">
+  <div class="graph-lg"><span class="glbl"><i style="background:#1A6644"></i>Régime réel</span><span class="glbl"><i style="background:#C95B2A"></i>Micro-BIC</span></div>
+  <svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg" style="width:100%;display:block">
+    <text x="4" y="${PT - 6}" font-size="12" fill="rgba(26,22,18,0.45)">€/mois</text>
+    ${grid}${finLine}${line(ptsR, "#1A6644")}${line(ptsM, "#C95B2A")}${xL}
+  </svg></div>`;
     };
 
-    // Key years for page 6
-    const keyYears = [1, 5, 10, 15, 20, 21, 25, 30, 35, 40].filter(y => y <= totalYears);
+    // Graphe page 3 : impôt annuel (courbe) et amortissement (barres), même échelle
+    const makeImpotAmortChart = (): string => {
+      const pts = proj;
+      const lastY = pts[pts.length - 1].year;
+      const W = 690, H = 200, PL = 62, PR = 18, PT = 34, PB = 26;
+      const iW = W - PL - PR, iH = H - PT - PB;
+      const all = [...pts.map(p => p.impot), ...(isMicro ? [] : pts.map(p => p.amortDotation))];
+      const sc = niceScale(0, Math.max(...all, 1), 4);
+      const yR = (sc.max - sc.min) || 1;
+      const toX = (yr: number) => PL + ((yr - 1) / Math.max(lastY - 1, 1)) * iW;
+      const toY = (v: number) => PT + (1 - (v - sc.min) / yR) * iH;
+      const grid = Array.from({ length: 5 }, (_, i) => {
+        const t = i / 4, v = sc.min + t * yR, y = PT + (1 - t) * iH;
+        return `<line x1="${PL}" y1="${y.toFixed(1)}" x2="${PL + iW}" y2="${y.toFixed(1)}" stroke="rgba(26,22,18,0.10)" stroke-width="1"/><text x="${PL - 9}" y="${(y + 4).toFixed(1)}" text-anchor="end" font-size="12" fill="rgba(26,22,18,0.5)">${fN(v)}</text>`;
+      }).join("");
+      const bw = Math.max(2.5, Math.min(11, (iW / pts.length) * 0.55));
+      const bars = isMicro ? "" : pts.filter(p => p.amortDotation > 0).map(p =>
+        `<rect x="${(toX(p.year) - bw / 2).toFixed(1)}" y="${toY(p.amortDotation).toFixed(1)}" width="${bw.toFixed(1)}" height="${Math.max(1, toY(0) - toY(p.amortDotation)).toFixed(1)}" fill="rgba(42,92,138,0.32)" rx="1.5"/>`).join("");
+      const path = `<path d="${pts.map((p, i) => `${i === 0 ? "M" : "L"}${toX(p.year).toFixed(1)},${toY(p.impot).toFixed(1)}`).join(" ")}" fill="none" stroke="#C95B2A" stroke-width="2.6" stroke-linejoin="round"/>`;
+      const marks = Array.from(new Set([1, 10, 20, 30, 40, lastY].filter(y => y >= 1 && y <= lastY))).sort((a, b) => a - b);
+      const plat = Math.max(...pts.map(p => p.impot)) - Math.min(...pts.map(p => p.impot)) < 1;
+      const labels = (plat ? [1] : marks).map((y, k) => {
+        const p = at(y);
+        const anchor: "start" | "middle" | "end" = y === 1 ? "start" : y === lastY ? "end" : "middle";
+        // une étiquette sur deux est décalée vers le bas pour éviter les chevauchements
+        const dy = !plat && k % 2 === 1 ? 16 : -8;
+        return `<text x="${toX(y).toFixed(1)}" y="${(toY(p.impot) + dy).toFixed(1)}" text-anchor="${anchor}" font-size="12" font-weight="700" fill="#A8471F">${fE(p.impot)}</text>`;
+      }).join("");
+      const xFin = toX(Math.min(duree, lastY));
+      const finLine = montantCredit > 0 && duree <= lastY
+        ? `<line x1="${xFin.toFixed(1)}" y1="${PT - 12}" x2="${xFin.toFixed(1)}" y2="${PT + iH}" stroke="#C95B2A" stroke-width="1.1" stroke-dasharray="5 3" opacity=".7"/><text x="${xFin.toFixed(1)}" y="${PT - 17}" text-anchor="middle" font-size="12" font-weight="700" fill="#C95B2A">Fin du prêt</text>`
+        : "";
+      const xL = marks.map(y => `<text x="${toX(y).toFixed(1)}" y="${PT + iH + 17}" text-anchor="middle" font-size="12" fill="rgba(26,22,18,0.55)">${y}</text>`).join("");
+      return `<div class="graph">
+  <div class="graph-lg"><span class="glbl"><i style="background:#C95B2A"></i>Impôt : IR + PS</span>${isMicro ? "" : `<span class="glbl"><i style="background:rgba(42,92,138,0.42)"></i>Amortissement</span>`}</div>
+  <svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg" style="width:100%;display:block">
+    <text x="4" y="${PT - 6}" font-size="12" fill="rgba(26,22,18,0.45)">€/an</text>
+    ${grid}${finLine}${bars}${path}${labels}${xL}
+  </svg></div>`;
+    };
 
+    // Graphe page 4 : cash-flow mensuel après impôt sur tout l'horizon
+    const makeCashflowChart = (): string => {
+      const pts = proj;
+      const lastY = pts[pts.length - 1].year;
+      const W = 690, H = 200, PL = 62, PR = 24, PT = 34, PB = 26;
+      const iW = W - PL - PR, iH = H - PT - PB;
+      const vals = pts.map(p => p.cashflowMensuel);
+      const sc = niceScale(Math.min(0, ...vals), Math.max(...vals, 1), 3);
+      const yR = (sc.max - sc.min) || 1;
+      const toX = (yr: number) => PL + ((yr - 1) / Math.max(lastY - 1, 1)) * iW;
+      const toY = (v: number) => PT + (1 - (v - sc.min) / yR) * iH;
+      const grid = Array.from({ length: 4 }, (_, i) => {
+        const t = i / 3, v = sc.min + t * yR, y = PT + (1 - t) * iH;
+        return `<line x1="${PL}" y1="${y.toFixed(1)}" x2="${PL + iW}" y2="${y.toFixed(1)}" stroke="rgba(26,22,18,0.10)" stroke-width="1"/><text x="${PL - 9}" y="${(y + 4).toFixed(1)}" text-anchor="end" font-size="12" fill="rgba(26,22,18,0.5)">${fN(v)}</text>`;
+      }).join("");
+      const path = `<path d="${pts.map((p, i) => `${i === 0 ? "M" : "L"}${toX(p.year).toFixed(1)},${toY(p.cashflowMensuel).toFixed(1)}`).join(" ")}" fill="none" stroke="#1A6644" stroke-width="2.6" stroke-linejoin="round"/>`;
+      const marks = Array.from(new Set([1, 10, 20, 21, 30, 40, lastY].filter(y => y >= 1 && y <= lastY && (y !== 21 || duree + 1 <= lastY)))).sort((a, b) => a - b);
+      const shown = marks.filter((y, i) => i === 0 || y - marks[i - 1] >= 3 || y === duree + 1);
+      const pieces = shown.map(y => {
+        const p = at(y);
+        // le saut de fin de prêt fait se croiser les étiquettes : on écarte celles qui l'encadrent
+        const avantSaut = y === duree, apresSaut = y === duree + 1;
+        const anchor: "start" | "middle" | "end" = y === 1 || apresSaut ? "start" : y === lastY || avantSaut ? "end" : "middle";
+        const dy = avantSaut ? 17 : -9;
+        const dx = avantSaut ? -6 : apresSaut ? 6 : 0;
+        return `<circle cx="${toX(y).toFixed(1)}" cy="${toY(p.cashflowMensuel).toFixed(1)}" r="2.8" fill="#1A6644"/><text x="${(toX(y) + dx).toFixed(1)}" y="${(toY(p.cashflowMensuel) + dy).toFixed(1)}" text-anchor="${anchor}" font-size="12" font-weight="700" fill="#145136">${fE(p.cashflowMensuel)}</text>`;
+      }).join("");
+      const xFin = toX(Math.min(duree, lastY));
+      const finLine = montantCredit > 0 && duree <= lastY
+        ? `<line x1="${xFin.toFixed(1)}" y1="${PT - 12}" x2="${xFin.toFixed(1)}" y2="${PT + iH}" stroke="#C95B2A" stroke-width="1.1" stroke-dasharray="5 3" opacity=".75"/><text x="${xFin.toFixed(1)}" y="${PT - 17}" text-anchor="middle" font-size="12" font-weight="700" fill="#C95B2A">Fin du prêt</text>`
+        : "";
+      const xL = Array.from(new Set([1, 10, 20, 30, 40, lastY].filter(y => y >= 1 && y <= lastY))).sort((a, b) => a - b)
+        .map(y => `<text x="${toX(y).toFixed(1)}" y="${PT + iH + 17}" text-anchor="middle" font-size="12" fill="rgba(26,22,18,0.55)">${y}</text>`).join("");
+      return `<div class="graph">
+  <div class="graph-lg"><span class="glbl"><i style="background:#1A6644"></i>Cash-flow après impôt</span></div>
+  <svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg" style="width:100%;display:block">
+    <text x="4" y="${PT - 6}" font-size="12" fill="rgba(26,22,18,0.45)">€/mois</text>
+    ${grid}${finLine}${path}${pieces}${xL}
+  </svg></div>`;
+    };
+
+    // Graphe page 6 : net vendeur année par année
+    const makeNetVendeurChart = (): string => {
+      const lastY = Math.min(35, HORIZON);
+      const steps = Array.from({ length: Math.floor(lastY / 5) + 1 }, (_, i) => i === 0 ? 1 : i * 5).filter(y => y <= lastY);
+      const serie = Array.from({ length: lastY }, (_, i) => ({ year: i + 1, v: calcVente(i + 1, prixRevente).net }));
+      const W = 690, H = 170, PL = 76, PR = 24, PT = 18, PB = 26;
+      const iW = W - PL - PR, iH = H - PT - PB;
+      const sc = niceScale(Math.min(0, ...serie.map(p => p.v)), Math.max(...serie.map(p => p.v), 1), 3);
+      const yR = (sc.max - sc.min) || 1;
+      const toX = (yr: number) => PL + ((yr - 1) / Math.max(lastY - 1, 1)) * iW;
+      const toY = (v: number) => PT + (1 - (v - sc.min) / yR) * iH;
+      const grid = Array.from({ length: 4 }, (_, i) => {
+        const t = i / 3, v = sc.min + t * yR, y = PT + (1 - t) * iH;
+        return `<line x1="${PL}" y1="${y.toFixed(1)}" x2="${PL + iW}" y2="${y.toFixed(1)}" stroke="rgba(26,22,18,0.10)" stroke-width="1"/><text x="${PL - 9}" y="${(y + 4).toFixed(1)}" text-anchor="end" font-size="12" fill="rgba(26,22,18,0.5)">${fE(v)}</text>`;
+      }).join("");
+      const path = `<path d="${serie.map((p, i) => `${i === 0 ? "M" : "L"}${toX(p.year).toFixed(1)},${toY(p.v).toFixed(1)}`).join(" ")}" fill="none" stroke="#7B5EA7" stroke-width="2.6" stroke-linejoin="round"/>`;
+      const pieces = steps.map((y, k) => {
+        const v = calcVente(y, prixRevente).net;
+        const anchor: "start" | "middle" | "end" = y === 1 ? "start" : y === lastY ? "end" : "middle";
+        const dy = k % 2 === 1 ? 17 : -9;
+        return `<circle cx="${toX(y).toFixed(1)}" cy="${toY(v).toFixed(1)}" r="2.8" fill="#7B5EA7"/><text x="${toX(y).toFixed(1)}" y="${(toY(v) + dy).toFixed(1)}" text-anchor="${anchor}" font-size="12" font-weight="700" fill="#5C4184">${fE(v)}</text>`;
+      }).join("");
+      const xL = steps.map(y => `<text x="${toX(y).toFixed(1)}" y="${PT + iH + 17}" text-anchor="middle" font-size="12" fill="rgba(26,22,18,0.55)">${y}</text>`).join("");
+      return `<div class="graph">
+  <svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg" style="width:100%;display:block">${grid}${path}${pieces}${xL}</svg></div>`;
+    };
+
+    /* ── Identité du rapport ────────────────────────────────────────────────── */
     const today = new Date().toLocaleDateString("fr-FR");
-    const chargesLoyer = parseFloat(f.chargesLoyer ?? "0") || 0;
-    const taxeFonciere = parseFloat(f.taxeFonciere) || 0;
-    const chargesCopro = parseFloat(f.chargesCopro ?? "0") || 0;
+    const typeLabel = bienInfo.type === "ma" ? "Maison" : bienInfo.type === "im" ? "Immeuble" : "Appartement";
+    const typePieces = bienInfo.pieces ? `${typeLabel} T${bienInfo.pieces}` : typeLabel;
+    const bienLigne = [
+      typePieces,
+      bienInfo.surface ? `${bienInfo.surface} m²` : "",
+      bienInfo.ville ? `Localisation saisie : ${bienInfo.ville}` : "",
+    ].filter(Boolean).join(" · ");
+    const regimeLabel = isMicro ? "Micro-BIC" : "Régime réel simplifié";
+    const locationLabel = isSaisonnier ? "Location saisonnière" : "Meublée longue durée";
 
-    // Saisonnier scenario pages (Pages 1 & 2 for saisonnier)
-    const saisonnierPagesHtml = isSaisonnier && resultatsTriple ? (() => {
-      const scenarios = [
-        { label: "Estimation basse", color: "#2A7080", sr: resultatsTriple.bas, taux: tauxOccBas },
-        { label: "Estimation moyenne", color: "#C95B2A", sr: resultatsTriple.moyen, taux: tauxOccMoyen },
-        { label: "Estimation haute", color: "#1A7A52", sr: resultatsTriple.haut, taux: tauxOccHaut },
-      ];
-      const prixN = parseFloat(prixNuitee) || 0;
+    /* ── Briques HTML ───────────────────────────────────────────────────────── */
+    const infoClef = (ton: "neutre" | "favorable" | "defavorable", titre: string, texte: string) => {
+      const cls = ton === "favorable" ? "gr" : ton === "defavorable" ? "br" : "sl";
+      const mot = ton === "favorable" ? "FAVORABLE" : ton === "defavorable" ? "DÉFAVORABLE" : "NEUTRE";
+      return `<div class="info ${cls}"><div class="info-b">INFO CLEF</div><div class="info-c"><div class="info-t">${mot} · ${titre}</div><div class="info-x">${texte}</div></div></div>`;
+    };
+    const kpi = (l: string, v: string, s: string, tone = "") =>
+      `<div class="kpi"><div class="kpi-l">${l}</div><div class="kpi-v"${tone ? ` style="color:${tone}"` : ""}>${v}</div><div class="kpi-s">${s}</div></div>`;
+    const infoRow = (l: string, v: string, mute = false, accent = false) =>
+      `<div class="ir"><span class="ir-l"${mute ? ` style="color:rgba(26,22,18,0.38)"` : ""}>${l}</span><span class="ir-v"${accent ? ` style="color:#C95B2A"` : mute ? ` style="color:rgba(26,22,18,0.45)"` : ""}>${v}</span></div>`;
+    const star = (v: number) => v > 0 ? fE(v) : `${fE(0)}*`;
 
-      // Large scenario cards with breakdown table
-      const largeCards = scenarios.map(({ label, color, sr, taux: t }) => {
-        if (!sr) return `<div style="flex:1;background:#EDE7DC;border-radius:10px;overflow:hidden;border-top:3px solid ${color};opacity:.4"><div style="background:${color};padding:10px 14px"><div style="font-size:8px;font-weight:700;text-transform:uppercase;letter-spacing:.12em;color:rgba(255,255,255,.75)">${label}</div></div></div>`;
-        const nuits = Math.round(parseFloat(t) / 100 * 365);
-        const cfNet = isMicro ? sr.cashflowBICMensuel : sr.cashflowReelMensuel;
-        const cfAnnuel = cfNet * 12;
-        const baseImp = isMicro ? sr.loyerAnnuel * 0.70 : sr.baseImposableReel;
-        const impot = isMicro ? sr.impotBIC : sr.impotReel;
-        return `<div style="flex:1;background:#EDE7DC;border-radius:10px;overflow:hidden;border-top:3px solid ${color}">
-  <div style="background:${color};padding:10px 14px">
-    <div style="font-size:8px;font-weight:700;text-transform:uppercase;letter-spacing:.12em;color:rgba(255,255,255,.72);margin-bottom:2px">${label}</div>
-    <div style="font-size:19px;font-weight:700;color:#fff;line-height:1.1">${fE(cfNet)}<span style="font-size:9px;font-weight:400;margin-left:2px">/mois</span></div>
-    <div style="font-size:7.5px;color:rgba(255,255,255,.68);margin-top:3px">${t}% occ. · ${nuits} nuits · ${fE(prixN)}/nuit</div>
+    /* ── Pages ──────────────────────────────────────────────────────────────── */
+    const pages: { badge: string; titre: string; sous: string; corps: string }[] = [];
+
+    /* PAGE — Intro : votre projet en détail */
+    pages.push({
+      badge: "Intro :", titre: "Votre projet en détail",
+      sous: "Récapitulatif des données du dossier et des paramètres utilisés pour la simulation.",
+      corps: `
+<div class="sec">LE BIEN, SON ACQUISITION ET SES REVENUS</div>
+<div class="duo">
+  <div class="box gr">
+    <div class="box-h">LE BIEN ET LES REVENUS</div>
+    ${infoRow("Type de bien", typePieces)}
+    ${infoRow("Localisation", bienInfo.ville || "Non renseignée")}
+    ${infoRow("Surface", bienInfo.surface ? `${bienInfo.surface} m²` : "Non renseignée")}
+    ${infoRow("Location", `${locationLabel}<sup>1</sup>`)}
+    ${isSaisonnier
+        ? infoRow("Prix / nuitée · occupation", `${fE(prixNuitee)} · ${fP(occ.moyen, 0)}`, false, true)
+        : infoRow("Loyer HC mensuel", `${fE(loyerMensuel)}/mois`, false, true)}
+    ${infoRow("Loyers HC annuels", fE(loyerAnnuel))}
   </div>
-  <div style="padding:10px 14px">
-    <table style="width:100%;border-collapse:collapse">
-      <tr style="border-bottom:0.5px solid rgba(26,22,18,.1)"><td style="font-size:8px;color:rgba(26,22,18,.55);padding:3px 0">Revenus annuels</td><td style="font-size:8px;font-weight:600;text-align:right">${fE(sr.loyerAnnuel)}</td></tr>
-      <tr style="border-bottom:0.5px solid rgba(26,22,18,.1)"><td style="font-size:8px;color:rgba(26,22,18,.55);padding:3px 0">Emprunt (annuel)</td><td style="font-size:8px;text-align:right">−${fE(sr.creditAnnuel)}</td></tr>
-      <tr style="border-bottom:0.5px solid rgba(26,22,18,.1)"><td style="font-size:8px;color:rgba(26,22,18,.55);padding:3px 0">Charges propriétaire</td><td style="font-size:8px;text-align:right">−${fE(sr.chargesAnnuelles)}</td></tr>
-      ${!isMicro ? `<tr style="border-bottom:0.5px solid rgba(26,22,18,.1)"><td style="font-size:8px;color:rgba(26,22,18,.55);padding:3px 0">Amortissements</td><td style="font-size:8px;text-align:right">−${fE(sr.amortTotal)}</td></tr>` : `<tr style="border-bottom:0.5px solid rgba(26,22,18,.08)"><td style="font-size:7.5px;color:rgba(26,22,18,.38);padding:2px 0;font-style:italic">Abattement 30% (Micro-BIC)</td><td style="font-size:7.5px;text-align:right;color:rgba(26,22,18,.38)">−${fE(sr.loyerAnnuel * 0.30)}</td></tr>`}
-      <tr style="border-bottom:0.5px solid rgba(26,22,18,.1)"><td style="font-size:8px;color:rgba(26,22,18,.55);padding:3px 0">Base imposable</td><td style="font-size:8px;font-weight:600;text-align:right;color:${baseImp > 0 ? "#B03A2A" : "#1A7A52"}">${fE(baseImp)}</td></tr>
-      <tr style="border-bottom:1px solid rgba(26,22,18,.18)"><td style="font-size:8px;color:rgba(26,22,18,.55);padding:3px 0">Impôt estimé</td><td style="font-size:8px;text-align:right;color:#B03A2A">−${fE(impot)}</td></tr>
-      <tr><td style="font-size:8.5px;font-weight:700;padding:4px 0 1px">Cash-flow mensuel</td><td style="font-size:9.5px;font-weight:700;text-align:right;color:${cfNet >= 0 ? "#1A7A52" : "#B03A2A"}">${fE(cfNet)}/mois</td></tr>
-      <tr><td style="font-size:7.5px;color:rgba(26,22,18,.4)">Soit annuel</td><td style="font-size:8.5px;font-weight:600;text-align:right;color:${cfAnnuel >= 0 ? "#1A7A52" : "#B03A2A"}">${fE(cfAnnuel)}</td></tr>
-    </table>
+  <div class="box or">
+    <div class="box-h">ACQUISITION</div>
+    ${infoRow("Prix d'achat", fE(prix))}
+    ${infoRow("Frais de notaire", star(notaire), notaire === 0)}
+    ${infoRow("Travaux", star(travaux), travaux === 0)}
+    ${infoRow("Mobilier", star(mobilier), mobilier === 0)}
+    ${infoRow("Coût total saisi", fE(investTotal), false, true)}
+  </div>
+</div>
+
+<div class="sec tight">LES CHARGES ANNUELLES ET LE FINANCEMENT</div>
+<div class="duo">
+  <div class="box rd">
+    <div class="box-h">CHARGES ANNUELLES</div>
+    ${infoRow("Copropriété", star(chargesCopro), chargesCopro === 0)}
+    ${infoRow("Taxe foncière / CFE", star(taxeFonciere), taxeFonciere === 0)}
+    ${infoRow("Assurance propriétaire", star(pnoEur), pnoEur === 0)}
+    ${infoRow("Gestion / comptabilité", `${star(gestionEur)} / ${star(compta)}`, gestionEur === 0 && compta === 0)}
+    ${infoRow("Entretien / autres", star(entretien), entretien === 0)}
+    ${infoRow("Total retenu", fE(chargesAnnuelles), false, true)}
+  </div>
+  <div class="box bl">
+    <div class="box-h">FINANCEMENT</div>
+    ${infoRow("Apport / emprunt", `${fE(apport)} / ${fE(montantCredit)}`)}
+    ${infoRow("Taux / durée", montantCredit > 0 ? `${fP(taux * 100)} / ${duree} ans` : "Aucun crédit")}
+    ${infoRow("Assurance du prêt", assuranceEmprunteurAnnuel > 0 ? `${fE2(assuranceEmprunteurAnnuel)}/an` : `${fE(0)}*`, assuranceEmprunteurAnnuel === 0)}
+    ${infoRow("Mensualité hors ass.", fE2(mensualite), false, true)}
+    ${infoRow("Sortie mensuelle totale", fE2(sortieMensuelleCredit))}
+  </div>
+</div>
+
+<div class="sec tight">FISCALITÉ ET HYPOTHÈSES DE PROJECTION</div>
+<p class="para"><strong>Régime choisi :</strong> ${isMicro ? `micro-BIC` : `réel simplifié`} · <strong>TMI :</strong> ${tmi} % · <strong>Prélèvements sociaux locatifs :</strong> 18,6 %. <strong>Comparaison ${isMicro ? "régime réel" : "micro-BIC"} :</strong> ${isMicro ? `charges réelles et amortissements déduits` : `abattement de ${abattLabel}`}. <strong>Horizon :</strong> ${HORIZON} ans ; loyers et charges constants. <strong>Revente centrale :</strong> valeur du bien maintenue à ${fE(prixRevente)}. ${isMicro
+        ? `Aucun amortissement n'est déduit au micro-BIC ; la base est forfaitaire.`
+        : `Base amortissable : ${fE(baseAmortissableTotale)}, terrain exclu : ${fE(terrainVal)} ; détail en partie 3 et annexe B.`}</p>
+
+<p class="foot-note">* Montant non renseigné dans le dossier, affiché à 0 et non ajouté aux calculs. <sup>1</sup> Hypothèse de simulation. Les paramètres calculés ou déduits du rapport ne constituent pas de nouvelles saisies du client. Le statut LMNP et l'éligibilité aux deux régimes sont supposés.</p>
+
+${infoClef("neutre", "Le point de départ de votre simulation",
+        `Le budget saisi est de <strong>${fE(investTotal)}</strong>, pour <strong>${fE(loyerAnnuel)}</strong> de loyers par an. Les résultats reposent sur ces données et sur les montants affichés à 0 ; ils évolueront si ces postes sont complétés.`)}`,
+    });
+
+    /* PAGE 1 — Le financement */
+    pages.push({
+      badge: "1", titre: "Le financement",
+      sous: "De l'achat aux mensualités : distinguer le capital financé du coût du crédit.",
+      corps: `
+<div class="kpis">
+  ${kpi("APPORT", fE(apport), investTotal > 0 ? `${fP(apport / investTotal * 100, 0)} du budget` : "—")}
+  ${kpi("EMPRUNT", fE(montantCredit), investTotal > 0 ? `${fP(montantCredit / investTotal * 100, 0)} du budget` : "—")}
+  ${kpi("DURÉE / TAUX", montantCredit > 0 ? `${duree} ans` : "—", montantCredit > 0 ? `Taux nominal : ${fP(taux * 100)}` : "Achat comptant")}
+</div>
+
+<div class="sec tight">CHAQUE MOIS${montantCredit > 0 ? ` PENDANT ${duree} ANS` : ""}</div>
+<div class="kpis">
+  ${kpi("CAPITAL + INTÉRÊTS", fE2(mensualite), "Mensualité hors assurance")}
+  ${kpi("ASSURANCE", fE2(mensualiteAssurance), `${fE2(assuranceEmprunteurAnnuel)} par an`)}
+  ${kpi("SORTIE TOTALE", fE2(sortieMensuelleCredit), "Crédit et assurance")}
+</div>
+
+<div class="sec tight">AU TOTAL SUR LA DURÉE DE L'EMPRUNT</div>
+<table class="tbl">
+  <tr><th>Ce qui est remboursé ou payé</th><th class="r">Montant</th></tr>
+  <tr><td>Capital rendu à la banque</td><td class="r">${fE(capitalTotal)}</td></tr>
+  <tr><td>Intérêts du crédit</td><td class="r">${fE(interetsTotaux)}</td></tr>
+  <tr><td>Total remboursé hors assurance</td><td class="r">${fE(totalHorsAssurance)}</td></tr>
+  <tr><td>Assurance emprunteur cumulée</td><td class="r">${fE(assuranceTotale)}</td></tr>
+  <tr class="strong"><td>Total versé, assurance incluse</td><td class="r">${fE(totalVerse)}</td></tr>
+  <tr class="strong or"><td>Coût du financement : intérêts + assurance</td><td class="r">${fE(coutFinancement)}</td></tr>
+</table>
+
+<p class="para">${montantCredit > 0
+        ? `Le coût total de l'opération, acquisition et financement inclus, atteint <strong>${fE(totalVerse + apport)}</strong>. Il comprend déjà le prix du bien et les frais de notaire financés. Le capital n'est pas ajouté une seconde fois.`
+        : `Le projet est financé sans crédit : aucun intérêt ni assurance emprunteur n'est supporté.`}</p>
+
+${infoClef("neutre", montantCredit >= investTotal ? "Un financement intégral du budget saisi" : "Le poids du crédit dans le projet",
+        montantCredit > 0
+          ? `Le projet mobilise <strong>${fE2(sortieMensuelleCredit)} par mois</strong> pendant le prêt. Sur ${duree} ans, le financement coûte <strong>${fE(coutFinancement)}</strong> en intérêts et assurance, en plus des ${fE(capitalTotal)} de capital remboursé.`
+          : `Aucun emprunt n'est simulé : la totalité du budget de ${fE(investTotal)} est apportée au comptant. Le cash-flow n'est donc grevé d'aucune mensualité.`)}`,
+    });
+
+    /* PAGE 2 — Le choix du régime */
+    const cmpRow = (k: string, a: string, b: string, cls = "") =>
+      `<div class="cmp-r ${cls}"><span class="cmp-k">${k}</span><span class="cmp-v">${a}</span></div>|||<div class="cmp-r ${cls}"><span class="cmp-k">${k}</span><span class="cmp-v">${b}</span></div>`;
+    const rowsCmp = [
+      cmpRow("Loyers imposables", fE(recettesAnnuelles), fE(recettesAnnuelles)),
+      cmpRow("Charges / abattement", fE(res.chargesDeductibles), fE(recettesAnnuelles * abattPct)),
+      cmpRow("Amortissement déduit", fE(projReel[0].amortImpute), "Aucun"),
+      cmpRow("Base imposable", fE(projReel[0].baseImposable), fE(projMicro[0].baseImposable)),
+      cmpRow("Impôt + PS / an", fE(projReel[0].impot), fE(projMicro[0].impot)),
+      cmpRow("Cash-flow net / mois", sE(projReel[0].cashflowMensuel), sE(projMicro[0].cashflowMensuel), "cf"),
+    ];
+    const colReel = rowsCmp.map(r => r.split("|||")[0]).join("");
+    const colMicro = rowsCmp.map(r => r.split("|||")[1]).join("");
+
+    const tableauxSaisonniers = (regime: "reel" | "micro") => {
+      const micro = regime === "micro";
+      return `<div class="est3">${estimations.map(e => {
+        const rr = e.r;
+        const cf = rr ? (micro ? rr.cashflowBICMensuel : rr.cashflowReelMensuel) : 0;
+        const base = rr ? (micro ? rr.baseBIC : rr.baseImposableReel) : 0;
+        const imp = rr ? (micro ? rr.impotBIC : rr.impotReel) : 0;
+        const rev = rr?.loyerAnnuel ?? 0;
+        return `<div class="est">
+  <div class="est-h"><div class="est-t">${e.label}</div><div class="est-s">${fP(e.occ, 0)} occ. · ${e.nuits} nuits · ${fE(rev / 12)}/mois · ${fE(rev)}/an</div></div>
+  <div class="est-b">
+    <div class="er"><span>Revenus annuels</span><b>${fE(rev)}</b></div>
+    <div class="er"><span>Emprunt</span><b>${(rr?.creditAnnuel ?? 0) > 0.5 ? "−" : ""}${fE(rr?.creditAnnuel ?? 0)}</b></div>
+    <div class="er"><span>${micro ? `Abattement ${abattLabel}` : "Charges déduct."}</span><b>−${fE(micro ? rev * abattPct : (rr?.chargesDeductibles ?? 0))}</b></div>
+    ${micro ? "" : `<div class="er"><span>Résultat avant amort.</span><b>${fE(rr?.resultatAvantAmort ?? 0)}</b></div>
+    <div class="er"><span>Amortissements</span><b>−${fE(rr?.amortTotal ?? 0)}</b></div>`}
+    <div class="er"><span>Base imposable</span><b>${fE(base)}</b></div>
+    <div class="er"><span>Impôt estimé</span><b style="color:${imp > 0.5 ? "#B03A2A" : "rgba(26,22,18,0.6)"}">${imp > 0.5 ? "−" : ""}${fE(imp)}</b></div>
+    <div class="er tot"><span>Cash-flow mensuel</span><b style="color:${col(cf)}">${sE(cf)}</b></div>
+    <div class="er sub"><span>Soit annuel</span><b style="color:${col(cf)}">${sE(cf * 12)}</b></div>
   </div>
 </div>`;
-      }).join("");
+      }).join("")}</div>`;
+    };
 
-      const nuitsMoyen = Math.round(parseFloat(tauxOccMoyen) / 100 * 365);
-      const moyen = resultatsTriple.moyen;
-      const cfMoyen = moyen ? (isMicro ? moyen.cashflowBICMensuel : moyen.cashflowReelMensuel) : 0;
-
-      return `
-<!-- PAGE 1 SAISONNIER — COMPARAISON DES 3 SCÉNARIOS -->
-<div class="page">
-<div class="hdr">
-  <div>
-    <div class="hdr-brand"><span class="hdr-light">tout</span><span class="hdr-bold">lmnp</span></div>
-    <div class="hdr-sub">Rapport Client · Simulation LMNP · Location saisonnière</div>
-  </div>
-  <div class="hdr-right">Généré le ${today}<br>${isMicro ? "Micro-BIC" : "Régime réel simplifié"}</div>
+    pages.push({
+      badge: "2", titre: "Le choix du régime",
+      sous: "Le régime détermine la base imposable, donc l'impôt et le cash restant après fiscalité.",
+      corps: isSaisonnier && triple ? `
+<div class="sec">LES SIX ESTIMATIONS · ANNÉE 1 · ${fE(prixNuitee)} PAR NUITÉE</div>
+<div class="reg-bar gr">RÉGIME RÉEL SIMPLIFIÉ · charges réelles et amortissements déduits</div>
+${tableauxSaisonniers("reel")}
+<div class="reg-bar or">MICRO-BIC · abattement forfaitaire de ${abattLabel}</div>
+${tableauxSaisonniers("micro")}
+<p class="para">Les trois taux d'occupation saisis (${fP(occ.bas, 0)}, ${fP(occ.moyen, 0)} et ${fP(occ.haut, 0)}) sont repris tels quels de la simulation. <strong>La suite du rapport retient l'estimation moyenne</strong> (${fP(occ.moyen, 0)}, soit ${estimations[1].nuits} nuits par an) au ${regimeLabel.toLowerCase()}, régime que vous avez sélectionné.</p>
+${infoClef(cumulCfChoisi >= 0 ? "neutre" : "defavorable", `Régime choisi : ${isMicro ? "micro-BIC" : "réel simplifié"}`,
+        `En estimation moyenne, l'écart d'impôt en année 1 est de <strong>${fE(Math.abs(ecartImpotAn1))}</strong> ${ecartImpotAn1 >= 0 ? "en faveur du réel" : "en faveur du micro-BIC"}. Sur ${duree} ans, le ${ecartCumulCf >= 0 ? "micro-BIC" : "réel"} laisse <strong>${fE(Math.abs(ecartCumulCf))}</strong> de cash-flow supplémentaire dans cette simulation.`)}`
+        : `
+<div class="sec">COMPARAISON DES RÉGIMES · ANNÉE 1</div>
+<div class="cmp">
+  <div class="cmp-c on"><div class="cmp-h">RÉEL SIMPLIFIÉ${isMicro ? "" : ` <em>· retenu</em>`}</div>${colReel}</div>
+  <div class="vs">vs</div>
+  <div class="cmp-c on2"><div class="cmp-h">MICRO-BIC${isMicro ? ` <em>· retenu</em>` : ""}</div>${colMicro}</div>
 </div>
 
-<div style="margin:8px 0 12px">
-  <h1 style="font-size:17px;font-weight:700;color:#4E1F12;letter-spacing:-.02em;margin-bottom:6px">Synthèse · Location saisonnière</h1>
-  <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center">
-    ${bienInfo.type ? `<span class="bien-badge">${bienInfo.type === "ap" ? "Appartement" : bienInfo.type === "ma" ? "Maison" : "Immeuble"}</span>` : ""}
-    ${bienInfo.ville ? `<span class="bien-badge">📍 ${bienInfo.ville}</span>` : ""}
-    ${bienInfo.surface ? `<span class="bien-badge">📐 ${bienInfo.surface} m²</span>` : ""}
-    <span class="bien-badge">🏡 Location saisonnière</span>
-    <span class="bien-badge">${fE(prixN)}/nuit</span>
-    ${bienInfo.description ? `<span style="font-size:10px;color:#1A1612">${bienInfo.description}</span>` : ""}
-  </div>
+<div class="sec tight">CASH-FLOW APRÈS IMPÔT · CRÉDIT + 5 ANS</div>
+${makeRegimeChart()}
+
+<p class="para"><strong>Pendant les ${duree} ans de prêt :</strong> ${sE(cumulCfReel)} cumulés au réel, contre ${sE(cumulCfMicro)} au micro-BIC. <strong>Dès l'année ${duree + 1} :</strong> ${sE(apresReelMois)}/mois au réel, contre ${sE(apresMicroMois)}/mois au micro-BIC. Les régimes sont conservés sur toute la période ; comparaison hors frais comptables spécifiques et revente.</p>
+
+${infoClef("neutre", `Régime choisi : ${isMicro ? "micro-BIC" : "réel simplifié"}`,
+          isMicro
+            ? `Avantage : aucune comptabilité obligatoire et un abattement forfaitaire de ${abattLabel}, soit ${fE(recettesAnnuelles * abattPct)} déduits sans justificatif. Limite : ${ecartImpotAn1 >= 0 ? `le régime réel ferait économiser ${fE(ecartImpotAn1)} d'impôt dès l'année 1` : `aucune charge réelle ni amortissement ne vient en déduction`}. Sur ${duree} ans, l'écart de cash-flow cumulé entre les deux régimes est de ${fE(Math.abs(ecartCumulCf))}.`
+            : `Avantage : ${fE(Math.abs(ecartImpotAn1))} d'impôt ${ecartImpotAn1 >= 0 ? "en moins" : "en plus"} en année 1 grâce aux charges et à l'amortissement. Limite : cet avantage diminue ; sur ${duree} ans, le ${ecartCumulCf >= 0 ? "micro-BIC" : "réel"} laisse ${fE(Math.abs(ecartCumulCf))} de cash-flow supplémentaire dans cette simulation.`)}`,
+    });
+
+    /* PAGE 3 — L'impôt et l'amortissement */
+    const calculAn1 = isMicro ? `
+<table class="tbl">
+  <tr><th>Calcul au micro-BIC · année 1</th><th class="r">Montant</th></tr>
+  <tr><td>Recettes déclarées (loyers ${chargesLocatairesAnnuel > 0 ? "et charges locatives " : ""}encaissés)</td><td class="r">${fE(recettesAnnuelles)}</td></tr>
+  <tr><td>Abattement forfaitaire de ${abattLabel}</td><td class="r">−${fE(recettesAnnuelles * abattPct)}</td></tr>
+  <tr class="strong"><td>Base imposable</td><td class="r">${fE(projMicro[0].baseImposable)}</td></tr>
+  <tr><td>Impôt sur le revenu : base × TMI de ${tmi} %</td><td class="r">${fE(projMicro[0].baseImposable * tmi / 100)}</td></tr>
+  <tr><td>Prélèvements sociaux : base × 18,6 %</td><td class="r">${fE(projMicro[0].baseImposable * 0.186)}</td></tr>
+  <tr class="strong or"><td>Total fiscal : IR + prélèvements sociaux</td><td class="r">${fE(projMicro[0].impot)}/an</td></tr>
+</table>
+<p class="para">L'IR est estimé via la TMI, sans calcul complet du foyer ; les prélèvements sociaux s'y ajoutent. L'abattement de ${abattLabel} remplace <strong>toute</strong> déduction : ni charges réelles (${fE(chargesAnnuelles)}), ni intérêts d'emprunt (${fE(interetsAnnee1)} en année 1), ni amortissement ne viennent réduire la base. L'impôt reste donc stable tant que les recettes le sont.</p>`
+      : `
+<table class="tbl">
+  <tr><th>Calcul au réel · année 1</th><th class="r">Montant</th></tr>
+  <tr><td>Loyers − charges − intérêts − assurance</td><td class="r">${fN(recettesAnnuelles)} − ${fN(chargesAnnuelles)} − ${fN(y1.interets)} − ${fN(y1.assuranceEmprunteur)} €</td></tr>
+  <tr class="strong"><td>Résultat avant amortissement</td><td class="r">${fE(y1.resultatAvantAmort)}</td></tr>
+  <tr><td>Amortissement déduit</td><td class="r">−${fE(y1.amortImpute)}</td></tr>
+  <tr class="strong"><td>Base imposable</td><td class="r">${fE(y1.baseImposable)}</td></tr>
+  <tr><td>Impôt sur le revenu : base × TMI de ${tmi} %</td><td class="r">${fE(y1.baseImposable * tmi / 100)}</td></tr>
+  <tr><td>Prélèvements sociaux : base × 18,6 %</td><td class="r">${fE(y1.baseImposable * 0.186)}</td></tr>
+  <tr class="strong or"><td>Total fiscal : IR + prélèvements sociaux</td><td class="r">${fE(y1.impot)}/an</td></tr>
+</table>
+<p class="para">L'IR est estimé via la TMI, sans calcul complet du foyer ; les prélèvements sociaux s'y ajoutent. L'amortissement réduit le bénéfice taxable sans sortie de cash. ${y1.baseImposable > 0
+        ? `Il ne le ramène pas à zéro : vous payez donc encore de l'impôt. S'il absorbait tout le bénéfice, la base et l'impôt locatif seraient nuls.`
+        : `Ici il absorbe tout le bénéfice : la base et l'impôt locatif sont nuls, et la fraction non utilisée (${fE(y1.reportSortant)}) est reportée sans limitation de durée.`}</p>`;
+
+    const palierTable = (!isMicro && paliers.length) ? `
+<table class="tbl compact">
+  <tr><th>Amortissement / an</th>${paliers.slice(0, 6).map(p => `<th class="r">${p.de === p.a ? `Année ${p.de}` : `Années ${p.de}–${p.a}`}</th>`).join("")}</tr>
+  <tr><td>Total déduit</td>${paliers.slice(0, 6).map(p => `<td class="r">${fE(p.val)}</td>`).join("")}</tr>
+</table>` : "";
+
+    pages.push({
+      badge: "3", titre: isMicro ? "L'impôt au micro-BIC" : "L'impôt et l'amortissement",
+      sous: isMicro ? "Comprendre ce qui est taxé, et pourquoi la base ne bouge pas." : "Comprendre ce qui est taxé, puis pourquoi l'impôt augmente au fil des années.",
+      corps: `
+${calculAn1}
+
+<div class="sec tight">${isMicro ? "IMPÔT ANNUEL · STABLE SUR TOUT L'HORIZON" : "IMPÔT ET AMORTISSEMENT · MÊME ÉCHELLE ANNUELLE"}</div>
+${makeImpotAmortChart()}
+
+<p class="para">${isMicro
+        ? `À recettes constantes, la base forfaitaire ne varie pas : l'impôt reste de ${fE(projMicro[0].impot)} par an sur tout l'horizon. Ni la baisse des intérêts d'emprunt, ni la fin du crédit ne le modifient.`
+        : `Moins d'amortissement signifie moins de déduction : à autres données identiques, l'impôt augmente. Pendant le crédit, la baisse des intérêts déductibles contribue aussi à cette hausse.`}</p>
+
+${palierTable}
+<p class="foot-note">Référence : impots.gouv.fr · Régimes d'imposition. Montants arrondis après calcul.</p>
+
+${infoClef("neutre", isMicro ? "Un impôt forfaitaire, stable dans le temps" : "L'amortissement réduit l'impôt sans l'annuler",
+        isMicro
+          ? `L'impôt s'élève à <strong>${fE(projMicro[0].impot)}/an</strong> et totalise <strong>${fE(cumulImpotCredit)}</strong> pendant le prêt. Il ne dépend que des recettes déclarées, pas des dépenses réellement engagées.`
+          : `L'impôt passe de <strong>${fE(y1.impot)}/an</strong> au départ à <strong>${fE(impotFinal)}/an</strong> une fois l'amortissement terminé. Il totalise <strong>${fE(cumulImpotCredit)}</strong> pendant le prêt. ${derniere.reportSortant > 1 ? `Un report d'amortissement non déduit subsiste (${fE(derniere.reportSortant)}) ; il reste imputable sans limitation de durée.` : `Tous les amortissements sont déduits dans ce dossier`} ; détail par composant en annexe B.`)}`,
+    });
+
+    /* PAGE 4 — Cash-flow */
+    pages.push({
+      badge: "4", titre: "Cash-Flow : ce qu'il reste chaque mois",
+      sous: "Cash-flow = loyers encaissés − charges − crédit − assurance − impôt.",
+      corps: `
+<div class="kpis">
+  ${kpi("LOYERS", `${fE(loyerMensuel)}/mois`, chargesLocatairesAnnuel > 0 ? `+ ${fE(chargesLocatairesAnnuel / 12)} de charges locatives` : "Hors charges")}
+  ${kpi("SORTIES TOTALES", `${fE(sortiesMois1)}/mois`, "Année 1, impôt compris")}
+  ${kpi("CASH-FLOW", `${sE(cfMois1)}/mois`, `${sE(cfAn1)} en année 1`, col(cfMois1))}
 </div>
 
-<h2 class="ch">Récapitulatif</h2>
-<div class="info-grid" style="margin-bottom:14px">
-  <div class="info-col">
-    <div class="info-col-title">Acquisition</div>
-    <div class="info-row"><div class="ir-lbl">Prix d'achat</div><div class="ir-val">${fE(prix)}</div></div>
-    ${travaux > 0 ? `<div class="info-row"><div class="ir-lbl">Travaux</div><div class="ir-val">${fE(travaux)}</div></div>` : ""}
-    ${mobilier > 0 ? `<div class="info-row"><div class="ir-lbl">Mobilier</div><div class="ir-val">${fE(mobilier)}</div></div>` : ""}
-    <div class="info-row"><div class="ir-lbl">Frais de notaire</div><div class="ir-val">${fE(notaire)}</div></div>
-    <div class="info-row"><div class="ir-lbl">Coût total</div><div class="ir-val orange">${fE(investTotal)}</div></div>
-  </div>
-  <div class="info-col">
-    <div class="info-col-title">Revenus (est. moy.)</div>
-    <div class="info-row"><div class="ir-lbl">Prix par nuitée</div><div class="ir-val orange">${fE(prixN)}</div></div>
-    <div class="info-row"><div class="ir-lbl">Recettes moy./mois</div><div class="ir-val orange">${fE(loyerAnnuel / 12)}</div></div>
-    <div class="info-row"><div class="ir-lbl">Recettes moy./an</div><div class="ir-val">${fE(loyerAnnuel)}</div></div>
-    <div class="info-row"><div class="ir-lbl">Charges propri./an</div><div class="ir-val">${fE(chargesAnnuelles)}</div></div>
-    <div class="info-row"><div class="ir-lbl">Rentabilité brute</div><div class="ir-val">${fP(rendementBrut, 2)}</div></div>
-  </div>
-  <div class="info-col">
-    <div class="info-col-title">Financement</div>
-    <div class="info-row"><div class="ir-lbl">Apport personnel</div><div class="ir-val">${fE(apport)}</div></div>
-    <div class="info-row"><div class="ir-lbl">Montant emprunté</div><div class="ir-val">${fE(montantCredit)}</div></div>
-    <div class="info-row"><div class="ir-lbl">Taux · Durée</div><div class="ir-val">${f.taux} % · ${duree} ans</div></div>
-    <div class="info-row"><div class="ir-lbl">Mensualité</div><div class="ir-val">${fE(mensualite)}/mois</div></div>
-  </div>
+<p class="para">En année 1 : ${fE(loyerMensuel)}${chargesLocatairesAnnuel > 0 ? ` + ${fE(chargesLocatairesAnnuel / 12)} de charges locatives` : ""} − ${fE2(chargesMois)} de charges − ${fE2(y1.creditAnnuel / 12)} de crédit − ${fE2(y1.assuranceEmprunteur / 12)} d'assurance − ${fE2(impotMois1)} d'impôt. ${isMicro ? `L'abattement de ${abattLabel} est déjà pris en compte dans l'impôt.` : `L'amortissement est déjà pris en compte dans l'impôt : il n'est pas soustrait une seconde fois.`}</p>
+
+<div class="sec tight">LE CASH DISPONIBLE ÉVOLUE DANS LE TEMPS</div>
+${makeCashflowChart()}
+
+<p class="para"><strong>Année ${duree} : ${sE(at(duree).cashflowMensuel)}/mois.</strong> ${isMicro ? "Le cash disponible reste stable pendant le crédit, la base imposable étant forfaitaire." : "L'impôt augmente et réduit le cash disponible."} <strong>Année ${duree + 1} : ${sE(apresChoisiMois)}/mois.</strong> Le prêt et son assurance s'arrêtent.${!isMicro && amortMaxDuree < HORIZON ? ` <strong>Dès l'année ${amortMaxDuree + 1} : ${sE(at(Math.min(amortMaxDuree + 1, HORIZON)).cashflowMensuel)}/mois.</strong> La fin de l'amortissement augmente encore l'impôt.` : ""}</p>
+
+<div class="sec tight">LA RENTABILITÉ DU BIEN · AVANT CRÉDIT ET IMPÔT</div>
+<div class="kpis">
+  ${kpi("BRUTE SUR PRIX", fP(rendBrutPrix), `${fN(loyerAnnuel)} / ${fN(prix)}`)}
+  ${kpi("BRUTE ACTE EN MAIN", fP(rendBrutActe), `${fN(loyerAnnuel)} / ${fN(investTotal)}`)}
+  ${kpi("NETTE DES CHARGES", fP(rendNetCharges), `${fN(loyerAnnuel - chargesAnnuelles)} / ${fN(investTotal)}`, "#1A6644")}
 </div>
 
-<h2 class="ch">Les 3 estimations · ${isMicro ? "Micro-BIC" : "Régime réel simplifié"}</h2>
-<div style="display:flex;gap:10px;margin-bottom:14px">
-  ${largeCards}
+${infoClef(cfMois1 >= 0 ? "favorable" : "defavorable", cfMois1 >= 0 ? "Un excédent dans le scénario central" : "Un effort d'épargne dans le scénario central",
+        cfMois1 >= 0
+          ? `Les loyers couvrent les sorties saisies ${proj.slice(0, duree).every(y => y.cashflowAnnuel >= 0) ? "pendant toute la projection" : "la plupart des années"}. Le cash-flow cumulé atteint <strong>${sE(cumulCfChoisi)}</strong> à la fin du prêt. Les rendements mesurent le revenu du bien ; ils ne sont pas le cash réellement disponible.`
+          : `Les loyers ne couvrent pas les sorties : l'effort est de <strong>${fE(Math.abs(cfMois1))}/mois</strong> en année 1. Sur la durée du prêt, le cumul s'établit à <strong>${sE(cumulCfChoisi)}</strong>. Les rendements mesurent le revenu du bien ; ils ne sont pas le cash réellement disponible.`)}`,
+    });
+
+    /* PAGE 5 — La marge face aux imprévus */
+    pages.push({
+      badge: "5", titre: "La marge face aux imprévus",
+      sous: "Combien de cash reste-t-il si les revenus baissent ou si les dépenses augmentent ?",
+      corps: `
+<div class="recap">
+  <p><strong>Charges du bien maintenues chaque année dans la simulation :</strong> ${[
+          chargesCopro > 0 ? `copropriété ${fE(chargesCopro)}/an` : "",
+          taxeFonciere > 0 ? `taxe foncière ${fE(taxeFonciere)}/an` : "",
+          pnoEur > 0 ? `assurance propriétaire ${fE(pnoEur)}/an` : "",
+          gestionEur > 0 ? `gestion locative ${fE(gestionEur)}/an` : "",
+          compta > 0 ? `comptabilité ${fE(compta)}/an` : "",
+          entretien > 0 ? `entretien ${fE(entretien)}/an` : "",
+        ].filter(Boolean).join(", ") || "aucune charge saisie"}. Les postes non renseignés sont retenus à 0 €. Total retenu : <strong>${fE2(chargesMois)}/mois</strong>. Ces charges sont supposées constantes pendant la détention.</p>
+  ${montantCredit > 0 ? `<p style="margin-top:7px"><strong>Pendant le prêt seulement :</strong> ${fE2(mensualite)}/mois de crédit + ${fE2(mensualiteAssurance)}/mois d'assurance.</p>` : ""}
 </div>
 
-<div class="beige-note">
-  <strong>Loi de Finances 2024 :</strong> Pour les meublés de tourisme non classés, l'abattement Micro-BIC est de <strong>30 %</strong> (contre 50 % en location nue). Le régime réel reste souvent plus avantageux grâce aux amortissements. TMI appliquée : <strong>${tmi} %</strong> + prélèvements sociaux <strong>18,6 %</strong>.
-</div>
-</div>
+<p class="para">Chaque encadré montre le <strong>cash-flow après impôt : l'argent restant en moyenne à la fin de chaque mois</strong>.${!isMicro ? ` L'année ${anneeStress2} est plus fragile, car l'impôt y est plus élevé.` : ""}</p>
 
-<!-- PAGE 2 SAISONNIER — PIVOT ESTIMATION MOYENNE -->
-<div class="page">
-<div class="hdr">
-  <div>
-    <div class="hdr-brand"><span class="hdr-light">tout</span><span class="hdr-bold">lmnp</span></div>
-    <div class="hdr-sub">Rapport Client · Simulation LMNP · Location saisonnière</div>
-  </div>
-  <div class="hdr-right">${today}<br>${isMicro ? "Micro-BIC" : "Régime réel simplifié"}</div>
-</div>
+<div class="scn-h"><span>SCÉNARIO TESTÉ</span><span>ANNÉE 1</span><span>ANNÉE ${anneeStress2}</span></div>
+${scenarios.map((s, i) => `<div class="scn${i === scenarios.length - 1 ? " last" : ""}">
+  <span class="scn-l">${s.label}</span>
+  <span class="scn-v"><b style="color:${col(s.a1.cfMois)}">${sE(s.a1.cfMois)}</b><em>par mois</em></span>
+  <span class="scn-v"><b style="color:${col(s.a2.cfMois)}">${sE(s.a2.cfMois)}</b><em>par mois</em></span>
+</div>`).join("")}
 
-<div style="text-align:center;margin:24px 0 28px;padding:28px 32px;background:#4E1F12;border-radius:12px">
-  <div style="font-size:20px;font-weight:700;color:#F5F0E8;line-height:1.4;letter-spacing:-.02em;margin-bottom:12px">
-    Pour la suite de ce rapport,<br>nous utilisons l'<span style="color:#C95B2A">Estimation Moyenne</span>
-  </div>
-  <div style="display:flex;justify-content:center;gap:24px">
-    <div style="text-align:center"><div style="font-size:8px;text-transform:uppercase;letter-spacing:.12em;color:rgba(245,240,232,.55);margin-bottom:3px">Taux d'occupation</div><div style="font-size:14px;font-weight:700;color:#C95B2A">${tauxOccMoyen}%</div></div>
-    <div style="width:1px;background:rgba(245,240,232,.2)"></div>
-    <div style="text-align:center"><div style="font-size:8px;text-transform:uppercase;letter-spacing:.12em;color:rgba(245,240,232,.55);margin-bottom:3px">Nuits/an</div><div style="font-size:14px;font-weight:700;color:#C95B2A">${nuitsMoyen}</div></div>
-    <div style="width:1px;background:rgba(245,240,232,.2)"></div>
-    <div style="text-align:center"><div style="font-size:8px;text-transform:uppercase;letter-spacing:.12em;color:rgba(245,240,232,.55);margin-bottom:3px">Prix/nuit</div><div style="font-size:14px;font-weight:700;color:#C95B2A">${fE(prixN)}</div></div>
-    <div style="width:1px;background:rgba(245,240,232,.2)"></div>
-    <div style="text-align:center"><div style="font-size:8px;text-transform:uppercase;letter-spacing:.12em;color:rgba(245,240,232,.55);margin-bottom:3px">Loyers annuels</div><div style="font-size:14px;font-weight:700;color:#C95B2A">${moyen ? fE(moyen.loyerAnnuel) : "—"}</div></div>
-  </div>
-</div>
+<p class="foot-note">Tests indépendants, sauf le dernier qui cumule deux aléas. Impôt recalculé avec des charges supposées déductibles. Moyennes mensuelles sur l'année testée, et non solde bancaire minimum.</p>
 
-<div class="kpi-row">
-  <div class="kpi">
-    <div class="kpi-lbl">Coût total projet</div>
-    <div class="kpi-val">${fE(investTotal)}</div>
-    <div class="kpi-unit">acquisition + travaux + notaire</div>
-  </div>
-  <div class="kpi">
-    <div class="kpi-lbl">Rentabilité brute acte en main</div>
-    <div class="kpi-val">${fP(rendementBrut, 2)}</div>
-    <div class="kpi-unit">loyer annuel / coût total</div>
-  </div>
-  <div class="kpi">
-    <div class="kpi-lbl">Cash-flow mensuel après fiscalité</div>
-    <div class="kpi-val" style="color:${cfMoyen >= 0 ? "#4ADE80" : "#FCA5A5"}">${fE(cfMoyen)}</div>
-    <div class="kpi-unit">année 1 · ${isMicro ? "Micro-BIC" : "régime réel"} · est. moyenne</div>
-  </div>
-  <div class="kpi">
-    <div class="kpi-lbl">Capital remboursé année 1</div>
-    <div class="kpi-val">${fE(capitalRembourseAn1)}</div>
-    <div class="kpi-unit">annuité − intérêts</div>
-  </div>
-</div>
+${infoClef(pireA2.cfMois >= 0 ? "neutre" : "defavorable", pireA2.cfMois >= 0 ? "La marge absorbe les aléas testés" : "La marge se resserre en fin de crédit",
+        pireA2.cfMois >= 0
+          ? `Même le scénario le plus dur laisse <strong>${sE(scenarios[4].a1.cfMois)}/mois</strong> en année 1 et <strong>${sE(pireA2.cfMois)}/mois</strong> en année ${anneeStress2}. Le scénario central reste positif dans tous les tests présentés.`
+          : `Le dernier scénario laisse encore <strong>${sE(scenarios[4].a1.cfMois)}/mois</strong> en année 1, mais exige <strong>${fE(Math.abs(pireA2.cfMois))}/mois</strong> d'effort en année ${anneeStress2}, soit environ ${fE(Math.abs(pireA2.cfAn))} sur l'année. ${cfMois1 >= 0 ? "Le scénario central reste positif ; les aléas peuvent absorber son excédent." : "Le scénario central est déjà négatif ; les aléas l'aggravent."}`)}`,
+    });
 
-<div class="info-grid">
-  <div class="info-col">
-    <div class="info-col-title">Revenus (estimation moyenne)</div>
-    <div class="info-row"><div class="ir-lbl">Prix par nuitée</div><div class="ir-val orange">${fE(prixN)}</div></div>
-    <div class="info-row"><div class="ir-lbl">Recettes moy./mois</div><div class="ir-val orange">${fE(loyerAnnuel / 12)}</div></div>
-    <div class="info-row"><div class="ir-lbl">Recettes moy./an</div><div class="ir-val">${fE(loyerAnnuel)}</div></div>
-    <div class="info-row"><div class="ir-lbl">Charges propriétaire/an</div><div class="ir-val">${fE(chargesAnnuelles)}</div></div>
-    ${assuranceEmprunteurAnnuel > 0 ? `<div class="info-row"><div class="ir-lbl">Ass. emprunteur/an</div><div class="ir-val">${fE(assuranceEmprunteurAnnuel)}</div></div>` : ""}
-  </div>
-  <div class="info-col">
-    <div class="info-col-title">Acquisition</div>
-    <div class="info-row"><div class="ir-lbl">Prix d'achat</div><div class="ir-val">${fE(prix)}</div></div>
-    ${travaux > 0 ? `<div class="info-row"><div class="ir-lbl">Travaux</div><div class="ir-val">${fE(travaux)}</div></div>` : ""}
-    ${mobilier > 0 ? `<div class="info-row"><div class="ir-lbl">Mobilier</div><div class="ir-val">${fE(mobilier)}</div></div>` : ""}
-    <div class="info-row"><div class="ir-lbl">Frais de notaire</div><div class="ir-val">${fE(notaire)}</div></div>
-    <div class="info-row"><div class="ir-lbl">Coût total</div><div class="ir-val orange">${fE(investTotal)}</div></div>
-  </div>
-  <div class="info-col">
-    <div class="info-col-title">Financement</div>
-    <div class="info-row"><div class="ir-lbl">Apport personnel</div><div class="ir-val">${fE(apport)}</div></div>
-    <div class="info-row"><div class="ir-lbl">Montant emprunté</div><div class="ir-val">${fE(montantCredit)}</div></div>
-    <div class="info-row"><div class="ir-lbl">Taux · Durée</div><div class="ir-val">${f.taux} % · ${duree} ans</div></div>
-    <div class="info-row"><div class="ir-lbl">Mensualité (hors ass.)</div><div class="ir-val">${fE(mensualite)}/mois</div></div>
-  </div>
-</div>
-</div>`;
-    })() : "";
+    /* PAGE 6 — Scénarios de revente */
+    const noteAbatt = (N: number) => {
+      const i = abattIR(N), p = abattPS(N);
+      if (i >= 1 && p >= 1) return `Exonération totale à ${N} ans.`;
+      if (i === 0 && p === 0) return `Aucun abattement à ${N} ans.`;
+      return `Abattements : IR ${fPc(i * 100)} ; PS ${fPc(p * 100)}.`;
+    };
+    pages.push({
+      badge: "6", titre: "Scénarios de revente",
+      sous: `${ventes.length === 3 ? "Trois horizons" : "Plusieurs horizons"}, avec un prix supposé stable à ${fE(prixRevente)} : que récupérez-vous ?`,
+      corps: `
+<p class="para">${isMicro
+        ? `<strong>Au micro-BIC, aucun amortissement n'est réintégré</strong> dans l'assiette de plus-value : le prix d'acquisition retenu reste le prix payé, majoré des frais. Les abattements de durée s'appliquent ensuite : <strong>exonération d'IR après 22 ans, de prélèvements sociaux après 30 ans</strong>.`
+        : `<strong>Au réel, les amortissements déduits augmentent la plus-value fiscale</strong> en diminuant le prix d'acquisition retenu. Une vente au prix d'achat peut donc être imposée. Les abattements de durée s'appliquent ensuite : <strong>exonération d'IR après 22 ans, de prélèvements sociaux après 30 ans</strong>. Il ne s'agit pas d'une exonération séparée des amortissements.`}</p>
+<p class="para">Hypothèses du dossier : LMNP conservé ; IR de cession ${fP(TAUX_IR_PLUSVALUE * 100, 0)}, prélèvements sociaux ${fP(TAUX_PS_PLUSVALUE * 100, 1)}. Forfait travaux de 15 % au-delà de 5 ans : retenu à ${ventes.filter(v => v.N > 5).map(v => `${v.N}`).join(" et ")} ans${ventes.some(v => v.N <= 5) ? `, pas à exactement ${ventes.filter(v => v.N <= 5).map(v => v.N).join(" ni ")} ans` : ""}. Frais de vente : 0 € renseigné.</p>
 
-    // Annexe B table
-    const annexeMaxDuree = annexeCols.length > 0 ? Math.max(...annexeCols.map(c => c.duree)) : 0;
-    const afs = 9;
-    const annexeBRows = Array.from({ length: annexeMaxDuree }, (_, i) => {
-      const year = i + 1;
-      let total = 0;
-      const cells = annexeCols.map(c => {
-        if (year <= c.duree) {
-          const reste = Math.max(0, c.initial - year * c.annuel);
-          total += c.annuel;
-          return `<td style="font-size:${afs}px;padding:5px 6px">${fE(c.annuel)}</td>
-<td style="font-size:${afs}px;padding:5px 6px;color:${reste <= 0.01 ? "#1A7A52" : "rgba(26,22,18,0.45)"};border-right:1px solid rgba(26,22,18,0.07)">${fE(reste)}</td>`;
-        }
-        return `<td style="font-size:${afs}px;padding:5px 6px;color:#1A1612">—</td><td style="border-right:1px solid rgba(26,22,18,0.07)"></td>`;
-      }).join("");
-      return `<tr><td class="can" style="font-size:${afs}px">${year}</td>${cells}<td style="font-weight:700;color:#C95B2A;font-size:${afs}px;padding:5px 6px">${fE(total)}</td></tr>`;
+<div class="vnt3">${ventes.map(v => `<div class="vnt">
+  <div class="vnt-t">REVENTE À ${v.N} ANS</div>
+  <div class="vr"><span>Prix de vente</span><b>${fE(v.prixVente)}</b></div>
+  ${isMicro ? "" : `<div class="vr"><span>Amortissements déduits</span><b>${fE(v.amortReintegre)}</b></div>`}
+  <div class="vr"><span>Plus-value avant abattement</span><b>${fE(v.pvBrute)}</b></div>
+  <div class="vr"><span>IR sur la plus-value</span><b style="color:#B03A2A">${fE(v.ir)}</b></div>
+  <div class="vr"><span>Prélèvements sociaux</span><b style="color:#B03A2A">${fE(v.ps)}</b></div>
+  <div class="vr"><span>Dette à solder</span><b>${fE(v.dette)}</b></div>
+  <div class="vnt-f"><span>NET VENDEUR APRÈS DETTE</span><b style="color:${col(v.net)}">${fE(v.net)}</b></div>
+</div>`).join("")}</div>
+<div class="vnt-caps">${ventes.map(v => `<span>${noteAbatt(v.N)}</span>`).join("")}</div>
+
+<div class="sec tight">ÉVOLUTION DU NET VENDEUR · ANNÉES 1 À ${Math.min(35, HORIZON)}</div>
+${makeNetVendeurChart()}
+<p class="foot-note">Net vendeur = prix − impôt de cession − dette ; hors cash-flows cumulés et avant frais de vente. Référence : impots.gouv.fr.</p>
+
+${infoClef("favorable", "La durée réduit la fiscalité de sortie",
+        `À ${ventes[1]?.N ?? ventes[0].N} ans, la vente laisse <strong>${fE(ventes[1]?.net ?? ventes[0].net)}</strong> après impôt et remboursement du prêt. À ${ventes[ventes.length - 1].N} ans, ${ventes[ventes.length - 1].dette <= 1 ? "la dette est soldée" : `il reste ${fE(ventes[ventes.length - 1].dette)} de dette`} et ${abattIR(ventes[ventes.length - 1].N) >= 1 && abattPS(ventes[ventes.length - 1].N) >= 1 ? `l'exonération totale laisse les ${fE(prixRevente)} de prix supposé` : `le net vendeur atteint ${fE(ventes[ventes.length - 1].net)}`}, avant frais de vente.`)}`,
+    });
+
+    /* PAGE 7 — Le projet en un regard */
+    const regard = (v: string, t: string, d: string, tone = "") =>
+      `<div class="rg"><div class="rg-v"${tone ? ` style="color:${tone}"` : ""}>${v}</div><div class="rg-c"><div class="rg-t">${t}</div><div class="rg-d">${d}</div></div></div>`;
+    pages.push({
+      badge: "7", titre: "Le projet en un regard",
+      sous: "Les chiffres à retenir, de l'acquisition à la sortie à la fin du prêt.",
+      corps: `
+<div class="sec">AU DÉPART · BUDGET ET PERFORMANCE EN ANNÉE 1</div>
+${regard(fE(investTotal), "LE BUDGET DU PROJET", `<strong>${fE(prix)}</strong> pour le bien${notaire > 0 ? ` et <strong>${fE(notaire)}</strong> de frais de notaire` : ""}${travaux + mobilier > 0 ? `, <strong>${fE(travaux + mobilier)}</strong> de travaux et mobilier` : ""} ; apport saisi : <strong>${fE(apport)}</strong>.`)}
+${regard(fP(rendNetCharges), "LA RENTABILITÉ NETTE DES CHARGES", `Loyers annuels nets des charges saisies / coût d'acquisition ; avant crédit et impôt.`)}
+${regard(`${sE(cfMois1)}/mois`, "LE CASH DISPONIBLE EN ANNÉE 1", `Après charges, prêt, assurance et impôt : <strong style="color:${col(cfAn1)}">${sE(cfAn1)}</strong> sur l'année.`, col(cfMois1))}
+${regard(`${fE(y1.impot)}/an`, "L'IMPÔT EN ANNÉE 1", `IR + prélèvements sociaux au ${isMicro ? "micro-BIC" : "réel"} : <strong style="color:#B03A2A">${fE2(impotMois1)}/mois</strong> en moyenne.`, "#B03A2A")}
+
+<div class="sep"></div>
+<div class="sec">À ${duree} ANS · CUMULS ET SCÉNARIO DE SORTIE</div>
+${regard(fE(totalVerse), `LE PRIX DE L'EMPRUNT PENDANT ${duree} ANS`, `Capital, intérêts et assurance : <strong>${fE2(sortieMensuelleCredit)}/mois</strong>. Dont <strong>${fE(coutFinancement)}</strong> de coût de financement.`)}
+${regard(fE(cumulImpotCredit), `L'IMPÔT CUMULÉ SUR ${duree} ANS`, `IR + prélèvements sociaux au ${isMicro ? "micro-BIC" : "réel"} : <strong style="color:#B03A2A">${fE2(cumulImpotCredit / (duree * 12))}/mois</strong> en moyenne.${isMicro ? "" : " Le montant évolue pendant le crédit."}`, "#B03A2A")}
+${regard(sE(cumulCfChoisi), `LE CASH-FLOW CUMULÉ SUR ${duree} ANS`, `Argent généré progressivement, disponible à la fin seulement s'il a été conservé.`, col(cumulCfChoisi))}
+${regard(fE(venteFinCredit.net), `LE PRODUIT NET DE VENTE À ${duree} ANS`, `Prix supposé : <strong>${fE(prixRevente)}</strong> ; dette : <strong>${fE(venteFinCredit.dette)}</strong> ; impôt de cession : <strong>${fE(venteFinCredit.ir + venteFinCredit.ps)}</strong>. Avant frais.`)}
+${regard(fE(totalProjetFinCredit), `TOTAL CASH ENCAISSÉ DU PROJET SUR ${duree} ANS`, `<strong>${fE(venteFinCredit.net)}</strong> de vente ${cumulCfChoisi >= 0 ? "+" : ""} <strong style="color:${col(cumulCfChoisi)}">${sE(cumulCfChoisi)}</strong> de cash-flow. Total nominal, sans double comptage.`, col(totalProjetFinCredit))}
+
+<div class="sep"></div>
+${infoClef(cfMois1 >= 0 ? "favorable" : "neutre", cfMois1 >= 0 ? "Les points forts du scénario" : "Les points de vigilance du scénario",
+        cfMois1 >= 0
+          ? `Les loyers couvrent les sorties saisies et dégagent du cash dès la première année. Le crédit rembourse progressivement le bien ; une fois soldé, le cash-flow passe à <strong>${sE(apresChoisiMois)}/mois</strong>. Ces atouts restent liés aux hypothèses renseignées.`
+          : `Le projet demande un effort de <strong>${fE(Math.abs(cfMois1))}/mois</strong> en année 1. Il devient excédentaire une fois le prêt soldé, à <strong>${sE(apresChoisiMois)}/mois</strong>. Le patrimoine se constitue pendant ce temps par le remboursement du capital.`)}`,
+    });
+
+    /* ANNEXE A — Projection annuelle complète */
+    const blocsA: number[][] = [];
+    for (let s = 1; s <= HORIZON; s += 15) blocsA.push(Array.from({ length: Math.min(15, HORIZON - s + 1) }, (_, i) => s + i));
+    for (const bloc of blocsA) {
+      const ligne = (yr: number) => {
+        const y = at(yr);
+        return `<tr><td class="c">${yr}</td><td class="r">${fN(loyerAnnuel)}</td><td class="r">${fN(chargesAnnuelles)}</td><td class="r">${fN(y.creditAnnuel)}</td><td class="r">${fN(y.assuranceEmprunteur)}</td><td class="r">${fN(y.interets)}</td><td class="r">${fN(y.capitalRembourse)}</td><td class="r">${fN(y.capitalFin)}</td>${isMicro
+          ? `<td class="r">${fN(recettesAnnuelles * abattPct)}</td>`
+          : `<td class="r">${fN(y.resultatAvantAmort)}</td><td class="r">${fN(y.amortImpute)}</td>`}<td class="r">${fN(y.baseImposable)}</td><td class="r">${fN(y.impot)}</td><td class="r" style="color:${col(y.cashflowAnnuel)}">${fN(y.cashflowAnnuel)}</td><td class="r" style="color:${col(y.cashflowMensuel)};font-weight:700">${fN(y.cashflowMensuel)}</td></tr>`;
+      };
+      pages.push({
+        badge: "A", titre: "Projection annuelle complète",
+        sous: `Années ${bloc[0]} à ${bloc[bloc.length - 1]} sur ${HORIZON} · ${regimeLabel} · Montants en euros · Loyers et charges constants.`,
+        corps: `
+<table class="tbl dense">
+  <tr><th class="c">An</th><th class="r">Loyers HC</th><th class="r">Charges</th><th class="r">Annuité hors ass.</th><th class="r">Assurance</th><th class="r">Intérêts</th><th class="r">Capital remb.</th><th class="r">Dette fin an</th>${isMicro
+            ? `<th class="r">Abattement</th>`
+            : `<th class="r">Résultat avant amort.</th><th class="r">Amort. déduit</th>`}<th class="r">Base imposable</th><th class="r">Impôt + PS</th><th class="r">Cash-flow / an</th><th class="r">Cash-flow / mois</th></tr>
+  ${bloc.map(ligne).join("")}
+</table>
+<p class="foot-note">Annuité = capital remboursé + intérêts. ${isMicro ? `Base imposable = recettes − abattement de ${abattLabel}.` : `Résultat avant amortissement = loyers − charges − intérêts − assurance.`} Cash-flow = loyers − charges − annuité − assurance − impôt. Les zéros après l'année ${duree} correspondent à un prêt soldé.</p>
+<p class="foot-note">Le capital remboursé n'est pas une charge fiscale.${isMicro ? "" : " L'amortissement n'est pas une sortie de trésorerie."} Montants arrondis après calcul.</p>`,
+      });
+    }
+
+    /* ANNEXE B — Amortissement par composant (régime réel uniquement) */
+    if (!isMicro && amortCols.length > 0) {
+      const detail = amortCols.length <= 6;   // au-delà, on n'affiche que la dotation
+      const blocsB: number[][] = [];
+      for (let s = 1; s <= amortMaxDuree; s += 20) blocsB.push(Array.from({ length: Math.min(20, amortMaxDuree - s + 1) }, (_, i) => s + i));
+      for (const bloc of blocsB) {
+        pages.push({
+          badge: "B", titre: "Amortissement par composant",
+          sous: `Années ${bloc[0]} à ${bloc[bloc.length - 1]} · Dotation annuelle${detail ? " et base restant à amortir en fin d'année" : ""} · Montants en euros.`,
+          corps: `
+<table class="tbl dense">
+  <tr><th class="c" rowspan="2">An</th>${amortCols.map(c => `<th class="c" colspan="${detail ? 2 : 1}">${c.label}</th>`).join("")}<th class="r" rowspan="2">Total dotation</th><th class="r" rowspan="2">Total restant</th></tr>
+  <tr>${amortCols.map(() => detail ? `<th class="r sub">Dotation</th><th class="r sub">Reste</th>` : `<th class="r sub">Dotation</th>`).join("")}</tr>
+  ${bloc.map(yr => {
+            let totD = 0, totR = 0;
+            const cells = amortCols.map(c => {
+              const d = yr <= c.duree ? c.annuel : 0;
+              const reste = Math.max(0, c.base - c.annuel * Math.min(yr, c.duree));
+              totD += d; totR += reste;
+              return detail ? `<td class="r">${fN(d)}</td><td class="r mute">${fN(reste)}</td>` : `<td class="r">${fN(d)}</td>`;
+            }).join("");
+            return `<tr><td class="c">${yr}</td>${cells}<td class="r" style="font-weight:700">${fN(totD)}</td><td class="r">${fN(totR)}</td></tr>`;
+          }).join("")}
+</table>
+<p class="foot-note">Bases : ${amortCols.map(c => `${c.label.toLowerCase()} ${fE(c.base)} / ${c.duree} ans`).join(" ; ")}.</p>
+<p class="foot-note">Base totale : ${fE(baseAmortissableTotale)}. Terrain exclu : ${fE(terrainVal)}.${amortMaxDuree < HORIZON ? ` Années ${amortMaxDuree + 1} à ${HORIZON} : dotations et bases restantes nulles.` : ""} Plan du dossier à confirmer comptablement. La dotation effectivement déduite chaque année figure en annexe A, colonne « Amort. déduit ».</p>`,
+        });
+      }
+    }
+
+    /* ANNEXE C — Revente : calculs et hypothèses */
+    const horizonsC = Array.from(new Set([10, duree, Math.min(35, HORIZON)].filter(n => n >= 1 && n <= HORIZON))).sort((a, b) => a - b);
+    const lignesC = horizonsC.flatMap(N => [false, true].map(hausse => {
+      const pv = hausse ? prixRevente * Math.pow(1.01, N) : prixRevente;
+      const v = calcVente(N, pv);
+      const cum = cumulCf(proj, N);
+      return `<tr${hausse ? "" : ` class="grp"`}><td class="c">${N} ans</td><td class="r">${fN(v.prixVente)}</td><td class="r">${fN(v.dette)}</td><td class="r">${isMicro ? "—" : fN(v.amortReintegre)}</td><td class="r">${fN(v.prixFiscal)}</td><td class="r">${fN(v.pvBrute)}</td><td class="r">${fN(v.ir)}</td><td class="r">${fN(v.ps)}</td><td class="r" style="font-weight:700">${fN(v.net)}</td><td class="r" style="color:${col(cum)}">${fN(cum)}</td><td class="r" style="font-weight:700;color:${col(v.net + cum)}">${fN(v.net + cum)}</td></tr>`;
+    }));
+    const sensibilite = horizonsC.map(N => {
+      const a = calcVente(N, prixRevente, true).net;
+      const b = calcVente(N, prixRevente, false).net;
+      return `<tr><td>${N} ans · prix stable</td><td class="r">${fE(a)}</td><td class="r">${fE(b)}</td><td class="r" style="color:${col(a - b)}">${sE(a - b)}</td></tr>`;
     }).join("");
-    const annexeBHeaderCols = annexeCols.map(c =>
-      `<th colspan="2" style="text-align:center;font-size:9px;padding:6px 5px;border-right:1px solid rgba(255,255,255,0.12)">
-        <div style="font-weight:700">${c.label}</div>
-        <div style="font-weight:400;opacity:.7;font-size:8px;margin-top:2px">${fE(c.initial)} · ${c.duree} ans · ${fE(c.annuel)}/an</div>
-      </th>`).join("");
-    const annexeBHeaderSub = annexeCols.map(() =>
-      `<th style="font-size:8px;background:#3a1509;padding:4px 5px">Amort.</th><th style="font-size:8px;background:#3a1509;padding:4px 5px;border-right:1px solid rgba(255,255,255,0.1)">Reste</th>`
-    ).join("");
+    const forfaitRetenu = Math.max(travaux, prix * 0.15);
 
-    return `<!DOCTYPE html><html lang="fr"><head><meta charset="UTF-8">
-<title>Rapport LMNP – toutlmnp</title>
-<style>
-@page{size:A4;margin:0}
-@page landscape{size:A4 landscape;margin:0}
+    pages.push({
+      badge: "C", titre: "Revente : calculs et hypothèses",
+      sous: `Ventes après ${horizonsC.join(", ")} années pleines · ${regimeLabel} conservé · Montants en euros, avant frais de vente.`,
+      corps: `
+<table class="tbl dense">
+  <tr><th class="c">Durée</th><th class="r">Prix de vente</th><th class="r">Dette restante</th><th class="r">Amort. réintégré</th><th class="r">Prix fiscal ajusté<sup>1</sup></th><th class="r">Plus-value brute</th><th class="r">IR sur plus-value</th><th class="r">PS sur plus-value</th><th class="r">Net de revente</th><th class="r">Cash-flow cumulé</th><th class="r">Total projet<sup>2</sup></th></tr>
+  ${lignesC.join("")}
+</table>
+<p class="foot-note">Pour chaque durée : première ligne à prix stable ; deuxième ligne avec une hausse de 1 % par an. <sup>1</sup> Prix fiscal ajusté = ${fN(prix)} + ${fN(notaire)} de frais${travaux > 0 || forfaitRetenu > 0 ? ` + travaux réels ou forfait de 15 % (${fN(forfaitRetenu)}) au-delà de 5 ans` : ""}${isMicro ? "" : ` − amortissements déduits`}. <sup>2</sup> Total projet = produit net de revente + cash-flow cumulé ; l'apport saisi ${apport > 0 ? `de ${fE(apport)} n'en est pas déduit` : `est nul`}.</p>
+<p class="foot-note">Abattements retenus : ${horizonsC.map(N => `à ${N} ans, IR ${fPc(abattIR(N) * 100)} et PS ${fPc(abattPS(N) * 100)}`).join(" ; ")}. Taux : IR ${fP(TAUX_IR_PLUSVALUE * 100, 0)}, PS ${fP(TAUX_PS_PLUSVALUE * 100, 1)}. Aucune surtaxe de plus-value n'est déclenchée dans les scénarios présentés.</p>
+
+<div class="sec tight">SENSIBILITÉ AU FORFAIT FISCAL TRAVAUX DE 15 %</div>
+<table class="tbl">
+  <tr><th>Produit net à prix stable</th><th class="r">Avec forfait retenu</th><th class="r">Sans forfait</th><th class="r">Écart</th></tr>
+  ${sensibilite}
+</table>
+<p class="foot-note">Art. 150 VB II 4° du CGI : au-delà de cinq ans de détention, le vendeur peut retenir un forfait de 15 % du prix d'acquisition au titre des travaux, sans justificatif, s'il lui est plus favorable que ses travaux réels.</p>`,
+    });
+
+    /* ── Assemblage ─────────────────────────────────────────────────────────── */
+    const nb = pages.length;
+    const body = pages.map((p, i) => `
+<div class="page">
+  <div class="hdr">
+    <div><div class="hdr-t">TOUTLMNP · RAPPORT COMPLET</div><div class="hdr-s">${bienLigne}</div></div>
+    <div><div class="hdr-d">Données du ${today}</div><div class="hdr-d">${regimeLabel}</div></div>
+  </div>
+  <div class="ptitle"><div class="ptitle-n${p.badge.length > 2 ? " wide" : ""}">${p.badge}</div><div class="ptitle-l">${p.titre}</div></div>
+  <div class="psub">${p.sous}</div>
+  ${p.corps}
+  <div class="ftr"><span>toutlmnp.fr · Simulation indicative</span><span>${i + 1} / ${nb}</span><span>${today}</span></div>
+</div>`).join("");
+
+    const css = `
+@page{size:A4 portrait;margin:0}
 *{box-sizing:border-box;margin:0;padding:0}
-html,body{background:#5a5a5a;margin:0;padding:0;font-family:'Helvetica Neue',Arial,sans-serif;color:#1A1612;font-size:11px;line-height:1.55;-webkit-print-color-adjust:exact;print-color-adjust:exact}
-body{padding:0 0 32px}
-.page{width:210mm;min-height:297mm;background:#F5F0E8;margin:0 auto 24px;padding:14mm 15mm;box-shadow:0 8px 40px rgba(0,0,0,0.5);position:relative}
-.page.landscape{width:297mm;min-height:210mm;page:landscape}
-.no-print{position:sticky;top:0;z-index:100;background:#3a1509;padding:10px 20px;display:flex;align-items:center;justify-content:space-between;margin-bottom:0}
-.hdr{display:flex;align-items:center;justify-content:space-between;background:#4E1F12;color:#F5F0E8;
-  padding:6px 14px;border-radius:5px;margin-bottom:14px}
-.hdr-brand{display:flex;align-items:baseline;gap:0}
-.hdr-light{font-weight:300;font-size:14px}.hdr-bold{font-weight:700;font-size:14px;color:#C95B2A}
-.hdr-sub{font-size:8px;letter-spacing:.12em;opacity:.5;text-transform:uppercase;margin-top:2px}
-.hdr-right{font-size:9px;opacity:.5;text-align:right}
-h2.ch{font-size:12px;font-weight:700;color:#4E1F12;border-bottom:2px solid #C95B2A;padding-bottom:5px;margin:22px 0 10px;letter-spacing:-.01em}
-h2.ch .num{color:#C95B2A;margin-right:5px}
-.cover-title{text-align:center;margin:10px 0 20px}
-.cover-title h1{font-size:22px;font-weight:700;color:#4E1F12;letter-spacing:-.025em;margin-bottom:5px}
-.cover-title .sub{font-size:9px;text-transform:uppercase;letter-spacing:.14em;color:#1A1612}
-.info-grid{display:flex;gap:10px;margin-bottom:14px}
-.info-col{flex:1;background:#EDE7DC;border-radius:7px;padding:12px 14px}
-.info-col.orange{background:rgba(201,91,42,0.08);border:1px solid rgba(201,91,42,0.2)}
-.info-col-title{font-size:8px;font-weight:700;text-transform:uppercase;letter-spacing:.12em;color:#1A1612;margin-bottom:10px}
-.info-row{display:flex;justify-content:space-between;align-items:baseline;gap:8px;margin-bottom:5px}
-.info-row:last-child{margin-bottom:0}
-.ir-lbl{font-size:8px;text-transform:uppercase;letter-spacing:.09em;color:rgba(26,22,18,0.55);flex-shrink:0}
-.ir-val{font-size:10px;font-weight:700;color:#1A1612;text-align:right}
-.ir-val.orange{color:#C95B2A}
-.kpi-row{display:flex;gap:8px;margin-bottom:14px}
-.kpi{flex:1;background:#4E1F12;color:#F5F0E8;border-radius:7px;padding:12px 10px;text-align:center}
-.kpi-lbl{font-size:7.5px;text-transform:uppercase;letter-spacing:.1em;opacity:.6;margin-bottom:6px;line-height:1.4}
-.kpi-val{font-size:17px;font-weight:700;color:#C95B2A;letter-spacing:-.02em}
-.kpi-unit{font-size:8px;opacity:.55;margin-top:3px}
-table.tbl{width:100%;border-collapse:collapse;font-size:10.5px;margin-bottom:6px}
-table.tbl th{background:#4E1F12;color:#F5F0E8;padding:6px 8px;text-align:left;font-weight:500;font-size:9.5px}
+html,body{background:#D0C9BC;font-family:'Helvetica Neue',Arial,sans-serif;color:#1A1612;font-size:12px;line-height:1.5;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+.page{width:210mm;min-height:297mm;background:#FDF9F3;margin:14px auto;padding:11mm 13mm 16mm;position:relative;page-break-after:always;box-shadow:0 3px 24px rgba(0,0,0,0.22)}
+.page:last-child{page-break-after:avoid}
+.no-print{position:sticky;top:0;z-index:100;background:#1A4A35;padding:10px 20px;display:flex;align-items:center;justify-content:space-between}
+.no-print button{background:#C95B2A;color:#fff;border:none;border-radius:6px;padding:8px 18px;font-size:13px;font-weight:700;cursor:pointer}
+.no-print span{color:#F5F0E8;font-size:13px}
+
+.hdr{background:#4E1F12;border-radius:8px;padding:9px 16px;display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:11px}
+.hdr-t{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.11em;color:#F5F0E8}
+.hdr-s{font-size:12px;color:rgba(245,240,232,0.62);margin-top:2px}
+.hdr-d{font-size:12px;color:rgba(245,240,232,0.72);text-align:right;line-height:1.5}
+
+.ptitle{display:flex;align-items:center;gap:13px;margin-bottom:5px}
+.ptitle-n{min-width:34px;height:32px;padding:0 9px;border-radius:7px;background:#C95B2A;color:#F5F0E8;font-size:16px;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.ptitle-n.wide{font-size:14px}
+.ptitle-l{font-size:25px;font-weight:800;color:#C95B2A;letter-spacing:-.02em;line-height:1.1}
+.psub{font-size:12px;color:rgba(26,22,18,0.5);margin-bottom:11px}
+
+.sec{font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.09em;color:#C95B2A;text-align:center;margin:7px 0 7px}
+.sec.tight{margin-top:13px}
+
+.duo{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.box{border-radius:8px;padding:9px 13px 10px;border-left:3px solid transparent}
+.box.gr{background:#E9EFE9;border-left-color:#1A6644}
+.box.or{background:#FAECE2;border-left-color:#C95B2A}
+.box.rd{background:#F6EBE7;border-left-color:#B03A2A}
+.box.bl{background:#E9EEF2;border-left-color:#2A5C8A}
+.box-h{font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.07em;color:#1A1612;margin-bottom:5px}
+.ir{display:flex;justify-content:space-between;align-items:baseline;gap:10px;padding:2.5px 0;border-bottom:.5px solid rgba(26,22,18,0.07)}
+.ir:last-child{border-bottom:none}
+.ir-l{font-size:12px;color:rgba(26,22,18,0.58)}
+.ir-v{font-size:12px;font-weight:700;color:#1A1612;text-align:right;white-space:nowrap}
+
+.para{font-size:12px;line-height:1.55;color:rgba(26,22,18,0.78);margin-top:8px}
+.foot-note{font-size:12px;line-height:1.5;color:rgba(26,22,18,0.45);margin-top:6px}
+
+.kpis{display:grid;grid-template-columns:1fr 1fr 1fr;gap:11px}
+.kpi{border-radius:8px;padding:9px 14px;background:#F1EDE5}
+.kpi-l{font-size:12px;text-transform:uppercase;letter-spacing:.07em;color:rgba(26,22,18,0.5);margin-bottom:6px}
+.kpi-v{font-size:21px;font-weight:800;letter-spacing:-.025em;color:#1A1612;line-height:1}
+.kpi-s{font-size:12px;color:rgba(26,22,18,0.45);margin-top:6px}
+
+table.tbl{width:100%;border-collapse:collapse;font-size:12px;margin-top:4px}
+table.tbl th{background:#4E1F12;color:#F5F0E8;padding:5px 8px;text-align:left;font-weight:700;font-size:12px}
 table.tbl th.r{text-align:right}
-table.tbl td{padding:6px 8px;border-bottom:.5px solid rgba(26,22,18,.07);vertical-align:middle}
-table.tbl td.r{text-align:right}
-table.tbl td.lbl{color:#1A1612;font-size:10px}
-table.tbl tr:nth-child(even){background:rgba(201,91,42,.03)}
-table.tbl tr.sep td{border-top:1.5px solid rgba(26,22,18,.12);font-weight:700}
-table.tbl tr.total td{background:rgba(78,31,18,.07);font-weight:700}
-.can{text-align:left!important;font-weight:600;width:24px;white-space:nowrap}
-.green{color:#1A7A52}.red{color:#B03A2A}.orange{color:#C95B2A}
-.note{background:rgba(201,91,42,.07);border:1px solid rgba(201,91,42,.18);border-radius:6px;padding:10px 13px;font-size:9.5px;line-height:1.65;color:#1A1612;margin-top:10px}
-.note strong{color:#1A1612}
-.beige-note{background:#EDE7DC;border-radius:6px;padding:10px 13px;font-size:9.5px;line-height:1.65;color:#1A1612;margin-top:10px}
-.two-col{display:flex;gap:14px}
-.two-col > div{flex:1}
-.section-label{font-size:8px;font-weight:700;text-transform:uppercase;letter-spacing:.12em;color:#C95B2A;margin-bottom:6px}
-.chart-title{font-size:9px;font-weight:700;color:#1A1612;text-transform:uppercase;letter-spacing:.08em;margin:14px 0 2px}
-.big-result{background:#4E1F12;color:#F5F0E8;border-radius:7px;padding:12px 16px;margin-top:10px;display:flex;align-items:center;gap:12px}
-.big-result .lbl{font-size:9px;opacity:.6}
-.big-result .val{font-size:16px;font-weight:700;color:#C95B2A}
-.bien-badge{display:inline-block;background:#EDE7DC;border-radius:4px;padding:2px 7px;font-size:9px;color:#1A1612;margin-right:6px}
+table.tbl th.c{text-align:center}
+table.tbl td{padding:4px 8px;border-bottom:.5px solid rgba(26,22,18,0.09);font-size:12px}
+table.tbl tr:nth-child(even) td{background:rgba(26,22,18,0.028)}
+table.tbl .r{text-align:right}
+table.tbl .c{text-align:center}
+table.tbl tr.strong td{font-weight:800}
+table.tbl tr.or td{color:#C95B2A}
+table.tbl.compact td,table.tbl.compact th{padding:4px 7px}
+table.tbl.dense{font-size:10.5px;margin-top:2px}
+table.tbl.dense th{font-size:10px;padding:4px 3px;line-height:1.25}
+table.tbl.dense th.sub{font-size:9.5px;font-weight:600;background:#6B3423}
+table.tbl.dense td{font-size:10.5px;padding:2.6px 3px;white-space:nowrap}
+table.tbl.dense td.mute{color:rgba(26,22,18,0.45)}
+table.tbl.dense tr.grp td{border-top:1px solid rgba(26,22,18,0.22)}
+
+.cmp{display:grid;grid-template-columns:1fr 34px 1fr;align-items:stretch}
+.cmp-c{border-radius:8px;overflow:hidden;background:#F1EDE5}
+.cmp-h{font-size:13px;font-weight:800;text-transform:uppercase;letter-spacing:.05em;text-align:center;padding:7px 8px;color:#F5F0E8;background:rgba(26,22,18,0.4)}
+.cmp-h em{font-style:normal;font-weight:700;opacity:.8}
+.cmp-c.on .cmp-h,.cmp-c.on2 .cmp-h{}
+.cmp-c.on{background:#E9EFE9}
+.cmp-c.on .cmp-h{background:#1A6644}
+.cmp-c.on2{background:#FAECE2}
+.cmp-c.on2 .cmp-h{background:#C95B2A}
+.cmp-c.off .cmp-h{background:#8A7F74}
+.cmp-r{display:flex;justify-content:space-between;align-items:baseline;gap:8px;padding:5px 13px;font-size:12px;border-bottom:.5px solid rgba(26,22,18,0.08)}
+.cmp-k{color:rgba(26,22,18,0.62)}
+.cmp-v{font-weight:700;color:#1A1612;white-space:nowrap}
+.cmp-r.cf{border-bottom:none}
+.cmp-r.cf .cmp-k{font-weight:700;color:#1A1612}
+.cmp-c.on .cmp-r.cf .cmp-v{color:#1A6644}
+.cmp-c.on2 .cmp-r.cf .cmp-v{color:#C95B2A}
+.vs{display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;color:rgba(26,22,18,0.35)}
+
+.graph{background:#F1EDE5;border-radius:8px;padding:9px 11px 6px;margin-top:4px}
+.graph-lg{display:flex;gap:26px;justify-content:center;flex-wrap:wrap;margin-bottom:2px}
+.glbl{font-size:12px;font-weight:700;color:rgba(26,22,18,0.72)}
+.glbl i{display:inline-block;width:18px;height:3.5px;vertical-align:middle;margin-right:7px;border-radius:2px}
+
+.reg-bar{font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:#F5F0E8;border-radius:6px;padding:5px 12px;margin:9px 0 6px}
+.reg-bar.gr{background:#1A6644}
+.reg-bar.or{background:#C95B2A}
+.est3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:9px}
+.est{background:#F1EDE5;border-radius:7px;overflow:hidden}
+.est-h{background:rgba(26,22,18,0.07);padding:5px 9px}
+.est-t{font-size:12px;font-weight:800;color:#1A1612}
+.est-s{font-size:12px;color:rgba(26,22,18,0.5);margin-top:1px}
+.est-b{padding:5px 9px 7px}
+.er{display:flex;justify-content:space-between;gap:6px;font-size:12px;padding:2px 0;border-bottom:.5px solid rgba(26,22,18,0.07)}
+.er span{color:rgba(26,22,18,0.58)}
+.er b{font-weight:700;white-space:nowrap}
+.er.tot{border-bottom:none;border-top:1px solid rgba(26,22,18,0.18);margin-top:3px;padding-top:4px}
+.er.tot span{font-weight:700;color:#1A1612}
+.er.sub{border-bottom:none;padding-top:0}
+.er.sub span{color:rgba(26,22,18,0.42)}
+
+.recap{background:#F1EDE5;border-radius:8px;padding:10px 14px;font-size:12px;line-height:1.55;color:rgba(26,22,18,0.78)}
+.scn-h{margin-top:11px;display:grid;grid-template-columns:1fr 150px 150px;gap:8px;font-size:12px;font-weight:800;letter-spacing:.07em;color:#C95B2A;padding:0 14px 5px}
+.scn-h span:not(:first-child){text-align:center}
+.scn{display:grid;grid-template-columns:1fr 150px 150px;gap:8px;align-items:center;background:#E9EFE9;border-radius:7px;padding:8px 14px;margin-bottom:6px}
+.scn.last{background:#F6EBE7}
+.scn-l{font-size:12px;font-weight:700;color:#1A1612}
+.scn-v{text-align:center}
+.scn-v b{display:block;font-size:17px;font-weight:800}
+.scn-v em{display:block;font-size:12px;font-style:normal;color:rgba(26,22,18,0.42);margin-top:1px}
+
+.vnt3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-top:4px}
+.vnt{background:#F1EDE5;border-radius:8px;padding:9px 12px 10px}
+.vnt-t{font-size:16px;font-weight:800;color:#C95B2A;letter-spacing:-.01em;margin-bottom:6px}
+.vr{margin-bottom:4px}
+.vr span{display:block;font-size:12px;color:rgba(26,22,18,0.52)}
+.vr b{display:block;font-size:12px;font-weight:700;color:#1A1612}
+.vnt-f{border-top:1px solid rgba(26,22,18,0.16);padding-top:6px;margin-top:6px}
+.vnt-f span{display:block;font-size:12px;font-weight:800;color:#1A6644;letter-spacing:.03em}
+.vnt-f b{display:block;font-size:19px;font-weight:800;margin-top:2px}
+.vnt-caps{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-top:5px}
+.vnt-caps span{font-size:12px;color:rgba(26,22,18,0.48);text-align:center}
+
+.sep{height:1.5px;background:rgba(201,91,42,0.35);margin:11px 0 3px}
+.rg{display:grid;grid-template-columns:185px 1fr;gap:14px;align-items:center;background:#F1EDE5;border-radius:7px;padding:8px 14px;margin-bottom:7px}
+.rg-v{font-size:19px;font-weight:800;letter-spacing:-.02em;color:#1A1612;white-space:nowrap}
+.rg-t{font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:#C95B2A;margin-bottom:2px}
+.rg-d{font-size:12px;line-height:1.5;color:rgba(26,22,18,0.72)}
+
+.info{border-radius:8px;padding:10px 15px;display:flex;align-items:center;gap:15px;margin-top:11px}
+.info.gr{background:#1A6644}
+.info.br{background:#4E1F12}
+.info.sl{background:#4A5D6B}
+.info-b{flex:0 0 auto;border-radius:20px;padding:7px 17px;font-size:12px;font-weight:800;letter-spacing:.09em;color:#F5F0E8;background:rgba(245,240,232,0.18);white-space:nowrap}
+.info.br .info-b{background:rgba(201,91,42,0.55)}
+.info-c{flex:1;min-width:0}
+.info-t{font-size:13px;font-weight:700;color:#F5F0E8;margin-bottom:4px}
+.info-x{font-size:12px;color:rgba(245,240,232,0.84);line-height:1.5}
+.info-x strong{color:#F5F0E8}
+
+.ftr{position:absolute;bottom:10mm;left:13mm;right:13mm;display:flex;justify-content:space-between;align-items:center;font-size:12px;color:rgba(26,22,18,0.4);border-top:.5px solid rgba(26,22,18,0.12);padding-top:6px}
+
 @media print{
-  html,body{background:#F5F0E8;padding:0;margin:0}
-  body{padding:0}
+  html,body{background:#FDF9F3;padding:0;margin:0}
   .no-print{display:none}
-  .page{margin:0;box-shadow:none;padding:14mm 15mm;page-break-after:always;min-height:297mm;width:100%;background:#F5F0E8}
-  .page.landscape{padding:12mm 14mm}
+  .page{margin:0;box-shadow:none;min-height:297mm;background:#FDF9F3}
   .page:last-child{page-break-after:avoid}
 }
-</style></head><body>
-<div class="no-print">
-  <div style="font-size:12px;font-weight:600;color:#F5F0E8;letter-spacing:.02em">Rapport LMNP – <span style="color:#C95B2A">toutlmnp</span></div>
-  <button onclick="window.print()" style="background:#C95B2A;color:#F5F0E8;border:none;border-radius:6px;padding:8px 20px;font-size:12px;font-weight:600;cursor:pointer;letter-spacing:.02em">⬇ Imprimer / Enregistrer en PDF</button>
-</div>
+`;
 
-${saisonnierPagesHtml}
-
-${!isSaisonnier ? `<!-- ═══════════════════════════════════════════════════════
-     PAGE 1 — COUVERTURE / SYNTHÈSE
-═══════════════════════════════════════════════════════ -->
-<div class="page">
-<div class="hdr">
-  <div>
-    <div class="hdr-brand"><span class="hdr-light">tout</span><span class="hdr-bold">lmnp</span></div>
-    <div class="hdr-sub">Rapport Client · Simulation LMNP</div>
-  </div>
-  <div class="hdr-right">Généré le ${today}<br>${isMicro ? "Micro-BIC" : "Régime réel simplifié"}</div>
-</div>
-
-<div class="cover-title">
-  <h1>Synthèse de votre investissement LMNP</h1>
-  <div class="sub">Estimation de la rentabilité, du cash-flow et de la fiscalité du projet</div>
-</div>
-
-<div style="background:#EDE7DC;border-radius:7px;padding:10px 14px;margin-bottom:14px;display:flex;gap:16px;flex-wrap:wrap">
-  ${bienInfo.type ? `<span class="bien-badge">${bienInfo.type === "ap" ? "Appartement" : bienInfo.type === "ma" ? "Maison" : "Immeuble"}</span>` : ""}
-  ${bienInfo.ville ? `<span class="bien-badge">📍 ${bienInfo.ville}</span>` : ""}
-  ${bienInfo.surface ? `<span class="bien-badge">📐 ${bienInfo.surface} m²</span>` : ""}
-  ${bienInfo.description ? `<span style="font-size:10px;color:#1A1612">${bienInfo.description}</span>` : ""}
-  ${!bienInfo.type && !bienInfo.ville && !bienInfo.surface && !bienInfo.description ? `<span style="font-size:10px;color:#1A1612">Bien immobilier – simulation LMNP ${isMicro ? "Micro-BIC" : "régime réel simplifié"}</span>` : ""}
-</div>
-
-<div class="info-grid">
-  <div class="info-col">
-    <div class="info-col-title">Le bien et les revenus</div>
-    <div class="info-row"><div class="ir-lbl">Loyer HC mensuel</div><div class="ir-val orange">${fE(loyerAnnuel / 12)}/mois</div></div>
-    <div class="info-row"><div class="ir-lbl">Loyer HC annuel</div><div class="ir-val">${fE(loyerAnnuel)}</div></div>
-    ${chargesLoyer > 0 ? `<div class="info-row"><div class="ir-lbl">Charges locataire</div><div class="ir-val">${fE(chargesLoyer)}/mois</div></div>` : ""}
-    <div class="info-row"><div class="ir-lbl">Charges propriétaire/an</div><div class="ir-val">${fE(chargesAnnuelles)}</div></div>
-  </div>
-  <div class="info-col">
-    <div class="info-col-title">Acquisition</div>
-    <div class="info-row"><div class="ir-lbl">Prix d'achat</div><div class="ir-val">${fE(prix)}</div></div>
-    ${travaux > 0 ? `<div class="info-row"><div class="ir-lbl">Travaux</div><div class="ir-val">${fE(travaux)}</div></div>` : ""}
-    ${mobilier > 0 ? `<div class="info-row"><div class="ir-lbl">Mobilier</div><div class="ir-val">${fE(mobilier)}</div></div>` : ""}
-    <div class="info-row"><div class="ir-lbl">Frais de notaire</div><div class="ir-val">${fE(notaire)}</div></div>
-    <div class="info-row"><div class="ir-lbl">Coût total</div><div class="ir-val orange">${fE(investTotal)}</div></div>
-  </div>
-  <div class="info-col">
-    <div class="info-col-title">Financement</div>
-    <div class="info-row"><div class="ir-lbl">Apport personnel</div><div class="ir-val">${fE(apport)}</div></div>
-    <div class="info-row"><div class="ir-lbl">Montant emprunté</div><div class="ir-val">${fE(montantCredit)}</div></div>
-    <div class="info-row"><div class="ir-lbl">Taux · Durée</div><div class="ir-val">${f.taux} % · ${duree} ans</div></div>
-    <div class="info-row"><div class="ir-lbl">Mensualité (hors ass.)</div><div class="ir-val">${fE(mensualite)}/mois</div></div>
-  </div>
-</div>
-
-<div class="kpi-row">
-  <div class="kpi">
-    <div class="kpi-lbl">Coût total projet</div>
-    <div class="kpi-val">${fE(investTotal)}</div>
-    <div class="kpi-unit">acquisition + travaux + notaire</div>
-  </div>
-  <div class="kpi">
-    <div class="kpi-lbl">Rentabilité brute acte en main</div>
-    <div class="kpi-val">${fP(rendementBrut, 2)}</div>
-    <div class="kpi-unit">loyer annuel / coût total</div>
-  </div>
-  <div class="kpi">
-    <div class="kpi-lbl">Cash-flow mensuel après fiscalité</div>
-    <div class="kpi-val" style="color:${(isMicro ? cashflowBICMensuel : cashflowReelMensuel) >= 0 ? "#4ADE80" : "#FCA5A5"}">${fE(isMicro ? cashflowBICMensuel : cashflowReelMensuel)}</div>
-    <div class="kpi-unit">année 1 · ${isMicro ? "Micro-BIC" : "régime réel"}</div>
-  </div>
-  <div class="kpi">
-    <div class="kpi-lbl">Capital remboursé année 1</div>
-    <div class="kpi-val">${fE(capitalRembourseAn1)}</div>
-    <div class="kpi-unit">annuité − intérêts</div>
-  </div>
-</div>
-
-<h2 class="ch">Comparaison des régimes fiscaux – année 1</h2>
-<table class="tbl">
-  <thead><tr>
-    <th>Indicateur</th>
-    <th class="r">Régime réel simplifié</th>
-    <th class="r">Micro-BIC</th>
-  </tr></thead>
-  <tbody>
-    <tr><td class="lbl">Loyers imposables</td><td class="r">${fE(loyerAnnuel)}</td><td class="r">${fE(loyerAnnuel)}</td></tr>
-    <tr><td class="lbl">Charges / abattement</td><td class="r">Charges réelles : ${fE(chargesDeductibles)}</td><td class="r">Abattement ${isSaisonnier ? "30" : "50"} % : ${fE(loyerAnnuel * abattPct)}</td></tr>
-    <tr style="background:rgba(139,26,26,0.04)"><td class="lbl" style="font-weight:700;color:#8B1A1A">Amortissements déduits</td><td class="r" style="font-weight:700;color:#8B1A1A">${fE(amortTotalAn1)}</td><td class="r" style="color:rgba(26,22,18,0.35)">—</td></tr>
-    <tr class="sep"><td class="lbl">Base imposable</td>
-      <td class="r" style="color:${baseImposableReel === 0 ? "#1A7A52" : "#B03A2A"}">${fE(baseImposableReel)}</td>
-      <td class="r">${fE(baseBIC)}</td>
-    </tr>
-    <tr><td class="lbl">Impôt IR estimé (TMI ${tmi} %)</td><td class="r">${fE(impotReel * tmi / (tmi + 18.6))}</td><td class="r">${fE(impotBIC * tmi / (tmi + 18.6))}</td></tr>
-    <tr><td class="lbl">Prélèvements sociaux (18,6 %)</td><td class="r">${fE(impotReel * 18.6 / (tmi + 18.6))}</td><td class="r">${fE(impotBIC * 18.6 / (tmi + 18.6))}</td></tr>
-    <tr class="total"><td>Fiscalité totale estimée</td><td class="r" style="color:${impotReel === 0 ? "#1A7A52" : "#B03A2A"}">${fE(impotReel)}</td><td class="r">${fE(impotBIC)}</td></tr>
-    <tr class="total"><td>Cash-flow mensuel net</td>
-      <td class="r" style="color:${cashflowReelMensuel >= 0 ? "#1A7A52" : "#B03A2A"}">${fE(cashflowReelMensuel)}/mois</td>
-      <td class="r" style="color:${cashflowBICMensuel >= 0 ? "#1A7A52" : "#B03A2A"}">${fE(cashflowBICMensuel)}/mois</td>
-    </tr>
-  </tbody>
-</table>
-
-<div class="beige-note">
-  <strong>Hypothèse :</strong> Simulation sur ${totalYears} ans en ${isMicro ? "Micro-BIC" : "régime réel simplifié"}. Loyers, charges et valeur du bien supposés constants.${isMicro ? ` Abattement forfaitaire ${isSaisonnier ? "30" : "50"} % appliqué sur les loyers.` : " L'amortissement est calculé selon les durées fiscalement reconnues."} TMI appliquée : <strong>${tmi} %</strong> + prélèvements sociaux <strong>18,6 %</strong> sur les revenus locatifs ; les plus-values immobilières relèvent quant à elles de <strong>17,2 %</strong> — ce sont deux prélèvements distincts. Cette simulation est indicative et ne constitue pas un conseil fiscal.
-</div>
-
-<!-- Recap fiscal + barre régime choisi -->
-<div style="margin-top:18px;background:#EDE7DC;border-radius:10px;padding:16px 20px;display:flex;gap:0;align-items:stretch">
-  <div style="text-align:center;flex:1;padding:0 16px">
-    <div style="font-size:9px;font-weight:600;text-transform:uppercase;letter-spacing:.12em;color:#1A1612;margin-bottom:6px">Impôt Micro-BIC</div>
-    <div style="font-size:20px;font-weight:700;color:#B03A2A">${fE(impotBIC)}</div>
-    <div style="font-size:9px;color:#1A1612;margin-top:2px">par an</div>
-  </div>
-  <div style="width:1px;background:rgba(26,22,18,.12)"></div>
-  <div style="text-align:center;flex:1;padding:0 16px">
-    <div style="font-size:9px;font-weight:600;text-transform:uppercase;letter-spacing:.12em;color:#1A1612;margin-bottom:6px">Impôt Régime réel</div>
-    <div style="font-size:20px;font-weight:700;color:${impotReel === 0 ? "#1A7A52" : "#C95B2A"}">${fE(impotReel)}</div>
-    <div style="font-size:9px;color:#1A1612;margin-top:2px">par an</div>
-  </div>
-  <div style="width:1px;background:rgba(26,22,18,.12)"></div>
-  <div style="text-align:center;flex:1;padding:0 16px">
-    <div style="font-size:9px;font-weight:600;text-transform:uppercase;letter-spacing:.12em;color:#1A1612;margin-bottom:6px">Économie fiscale an. 1</div>
-    <div style="font-size:22px;font-weight:700;color:#1A7A52">${fE(Math.max(0, impotBIC - impotReel))}</div>
-    <div style="font-size:9px;color:#1A1612;margin-top:2px">en faveur du réel</div>
-  </div>
-</div>
-
-<div style="margin-top:12px;background:${isMicro ? "#2A5C8A" : "#1A6644"};border-radius:10px;padding:14px 20px;color:#fff;display:flex;align-items:center;gap:16px">
-  <div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.14em;white-space:nowrap;opacity:.7;flex-shrink:0">Régime<br>choisi</div>
-  <div style="width:1px;background:rgba(255,255,255,.25);align-self:stretch"></div>
-  <div>
-    <div style="font-size:13px;font-weight:700;margin-bottom:4px">${isMicro ? "Micro-BIC" : "Régime réel simplifié"}</div>
-    <div style="font-size:9px;opacity:.85;line-height:1.6">${isMicro
-      ? `Abattement forfaitaire ${isSaisonnier ? "30" : "50"} % · Déclaration simplifiée · Aucune comptabilité obligatoire · Idéal si charges réelles inférieures à l'abattement`
-      : "Déduction des charges réelles · Amortissement du bien, mobilier, travaux et notaire · Report illimité du déficit · Optimisation fiscale sur le long terme"
-    }</div>
-  </div>
-</div>
-
-
-<!-- ═══════════════════════════════════════════════════════
-     PAGE 2 — CHAPITRE 1 : PROJET ET FINANCEMENT
-═══════════════════════════════════════════════════════ -->
-</div>` : ""}
-<div class="page">
-<div class="hdr"><div><div class="hdr-brand"><span class="hdr-light">tout</span><span class="hdr-bold">lmnp</span></div><div class="hdr-sub">Rapport Client · Simulation LMNP${isSaisonnier ? " · Estimation Moyenne" : ""}</div></div><div class="hdr-right">${today}</div></div>
-<h2 class="ch"><span class="num">1.</span>Votre projet et son financement${isSaisonnier ? " <span style=\"font-size:9px;font-weight:400;color:#C95B2A;margin-left:6px\">(Estimation Moyenne)</span>" : ""}</h2>
-
-<div class="two-col" style="margin-bottom:14px">
-  <div>
-    <div class="section-label">Le bien</div>
-    <table class="tbl">
-      <thead><tr><th>Élément</th><th class="r">Montant</th></tr></thead>
-      <tbody>
-        <tr><td class="lbl">Prix d'achat</td><td class="r">${fE(prix)}</td></tr>
-        ${travaux > 0 ? `<tr><td class="lbl">Travaux</td><td class="r">${fE(travaux)}</td></tr>` : ""}
-        ${mobilier > 0 ? `<tr><td class="lbl">Mobilier</td><td class="r">${fE(mobilier)}</td></tr>` : ""}
-        <tr><td class="lbl">Frais de notaire</td><td class="r">${fE(notaire)}</td></tr>
-        <tr class="total"><td>Coût total projet</td><td class="r">${fE(investTotal)}</td></tr>
-      </tbody>
-    </table>
-  </div>
-  <div>
-    <div class="section-label">Les revenus</div>
-    <table class="tbl">
-      <thead><tr><th>Élément</th><th class="r">Montant</th></tr></thead>
-      <tbody>
-        <tr><td class="lbl">Loyer HC mensuel</td><td class="r orange">${fE(loyerAnnuel / 12)}/mois</td></tr>
-        ${chargesLoyer > 0 ? `<tr><td class="lbl">Charges locataire</td><td class="r">${fE(chargesLoyer)}/mois</td></tr>` : ""}
-        <tr><td class="lbl">Loyer HC annuel</td><td class="r">${fE(loyerAnnuel)}</td></tr>
-        ${taxeFonciere > 0 ? `<tr><td class="lbl">Taxe foncière</td><td class="r">${fE(taxeFonciere)}</td></tr>` : ""}
-        ${chargesCopro > 0 ? `<tr><td class="lbl">Charges copropriété</td><td class="r">${fE(chargesCopro)}</td></tr>` : ""}
-        <tr><td class="lbl">Total charges annuelles</td><td class="r">${fE(chargesAnnuelles)}</td></tr>
-        ${assuranceEmprunteurAnnuel > 0 ? `<tr><td class="lbl">Assurance emprunteur</td><td class="r">${fE(assuranceEmprunteurAnnuel)}/an</td></tr>` : ""}
-      </tbody>
-    </table>
-  </div>
-</div>
-
-<div class="section-label">Le crédit : remboursement et coût</div>
-<table class="tbl">
-  <thead><tr><th>Financement</th><th class="r">Montant</th><th>Traitement dans les calculs</th></tr></thead>
-  <tbody>
-    <tr><td class="lbl">Apport personnel</td><td class="r">${fE(apport)}</td><td style="font-size:9px;color:#1A1612">Non déduit des revenus locatifs</td></tr>
-    <tr><td class="lbl">Montant emprunté</td><td class="r">${fE(montantCredit)}</td><td style="font-size:9px;color:#1A1612">Base du tableau d'amortissement</td></tr>
-    <tr><td class="lbl">Taux nominal · durée</td><td class="r">${f.taux} % · ${duree} ans</td><td></td></tr>
-    <tr><td class="lbl">Mensualité hors assurance</td><td class="r">${fE(mensualite)}/mois</td><td style="font-size:9px;color:#1A1612">Déduite du cash-flow mais pas fiscalement</td></tr>
-    <tr><td class="lbl">Annuité de crédit</td><td class="r">${fE(creditAnnuel)}</td><td style="font-size:9px;color:#1A1612">Capital + intérêts annuels</td></tr>
-    <tr><td class="lbl">Intérêts année 1</td><td class="r">${fE(interetsAnnee1)}</td><td style="font-size:9px;color:#1A1612">${isMicro ? "Non déductibles en Micro-BIC (abattement forfaitaire)" : "Déductibles des revenus locatifs"}</td></tr>
-    <tr><td class="lbl">Capital remboursé année 1</td><td class="r">${fE(capitalRembourseAn1)}</td><td style="font-size:9px;color:#1A1612">Non déductible · enrichissement net</td></tr>
-    ${coutTotalInteret > 0 ? `<tr><td class="lbl">Coût total estimé des intérêts</td><td class="r">${fE(coutTotalInteret)}</td><td style="font-size:9px;color:#1A1612">Sur ${duree} ans</td></tr>` : ""}
-    ${assuranceEmprunteurAnnuel > 0 ? `<tr><td class="lbl">Assurance emprunteur</td><td class="r">${fE(assuranceEmprunteurAnnuel)}/an</td><td style="font-size:9px;color:#1A1612">${isMicro ? "Non déductible en Micro-BIC" : "Déductible des revenus locatifs"}</td></tr>` : ""}
-  </tbody>
-</table>
-
-<div class="note">
-  ${isMicro
-    ? `<strong>À retenir :</strong> En <strong>Micro-BIC</strong>, un abattement forfaitaire de <strong>${isSaisonnier ? "30" : "50"} %</strong> remplace toutes les déductions (charges réelles, intérêts, amortissements). Le remboursement du capital (${fE(capitalRembourseAn1)}/an en année 1) constitue un enrichissement patrimonial : vous reconstituez votre capital tout au long du crédit.`
-    : `<strong>À retenir :</strong> Seuls les <strong>intérêts d'emprunt</strong> et l'<strong>assurance emprunteur</strong> sont déductibles fiscalement. Le remboursement du capital (${fE(capitalRembourseAn1)}/an en année 1) constitue un enrichissement patrimonial : vous reconstituez votre capital tout au long du crédit.`
-  }
-</div>
-</div>
-
-
-<!-- ═══════════════════════════════════════════════════════
-     PAGE 3 — CHAPITRE 2 : RENTABILITÉ ET CASH-FLOW
-═══════════════════════════════════════════════════════ -->
-</div><div class="page">
-<div class="hdr"><div><div class="hdr-brand"><span class="hdr-light">tout</span><span class="hdr-bold">lmnp</span></div><div class="hdr-sub">Rapport Client · Simulation LMNP</div></div><div class="hdr-right">${today}</div></div>
-<h2 class="ch"><span class="num">2.</span>Rentabilité et calcul du cash-flow</h2>
-
-<table class="tbl" style="margin-bottom:14px">
-  <thead><tr><th>Indicateur</th><th>Calcul</th><th class="r">Résultat</th></tr></thead>
-  <tbody>
-    <tr>
-      <td class="lbl">Rentabilité brute sur prix d'achat</td>
-      <td style="font-size:9px;color:#1A1612">${fE(loyerAnnuel)} / ${fE(prix)} × 100</td>
-      <td class="r"><strong>${fP((loyerAnnuel / prix) * 100, 2)}</strong></td>
-    </tr>
-    <tr>
-      <td class="lbl">Rentabilité brute acte en main</td>
-      <td style="font-size:9px;color:#1A1612">${fE(loyerAnnuel)} / ${fE(investTotal)} × 100</td>
-      <td class="r"><strong>${fP(rendementBrut, 2)}</strong></td>
-    </tr>
-    <tr>
-      <td class="lbl">Rentabilité nette</td>
-      <td style="font-size:9px;color:#1A1612">(${fE(loyerAnnuel)} − ${fE(chargesAnnuelles)}) / ${fE(investTotal)} × 100</td>
-      <td class="r"><strong>${fP(rentaNetteAvFinancement, 2)}</strong></td>
-    </tr>
-    <tr>
-      <td class="lbl">Cash-flow avant impôt</td>
-      <td style="font-size:9px;color:#1A1612">Loyers − crédit − charges − ass. emprunteur</td>
-      <td class="r" style="color:${cashflowAvantImpot >= 0 ? "#1A7A52" : "#B03A2A"}"><strong>${fE(cashflowAvantImpot)}/mois</strong></td>
-    </tr>
-    <tr>
-      <td class="lbl">Cash-flow après impôt (an. 1)</td>
-      <td style="font-size:9px;color:#1A1612">Cash-flow av. impôt − impôt estimé (${fE((isMicro ? impotBIC : impotReel) / 12)}/mois)</td>
-      <td class="r" style="color:${(isMicro ? cashflowBICMensuel : cashflowReelMensuel) >= 0 ? "#1A7A52" : "#B03A2A"}"><strong>${fE(isMicro ? cashflowBICMensuel : cashflowReelMensuel)}/mois</strong></td>
-    </tr>
-  </tbody>
-</table>
-
-<div class="section-label">Comment le cash-flow est-il calculé ?</div>
-<table class="tbl">
-  <thead><tr><th>Flux de trésorerie</th><th class="r">Annuel</th><th class="r">Mensuel</th></tr></thead>
-  <tbody>
-    <tr><td class="lbl">+ Loyers encaissés (HC)</td><td class="r green">${fE(loyerAnnuel)}</td><td class="r green">${fE(loyerAnnuel / 12)}</td></tr>
-    <tr><td class="lbl">− Charges propriétaire</td><td class="r red">−${fE(chargesAnnuelles)}</td><td class="r red">−${fE(chargesAnnuelles / 12)}</td></tr>
-    ${assuranceEmprunteurAnnuel > 0 ? `<tr><td class="lbl">− Assurance emprunteur</td><td class="r red">−${fE(assuranceEmprunteurAnnuel)}</td><td class="r red">−${fE(assuranceEmprunteurAnnuel / 12)}</td></tr>` : ""}
-    <tr><td class="lbl">− Mensualités de crédit</td><td class="r red">−${fE(creditAnnuel)}</td><td class="r red">−${fE(mensualite)}</td></tr>
-    <tr><td class="lbl">− Impôt estimé (année 1)</td><td class="r red">−${fE(isMicro ? impotBIC : impotReel)}</td><td class="r red">−${fE((isMicro ? impotBIC : impotReel) / 12)}</td></tr>
-    <tr class="total"><td>= Trésorerie nette</td>
-      <td class="r" style="color:${(isMicro ? cashflowBICMensuel : cashflowReelMensuel) >= 0 ? "#1A7A52" : "#B03A2A"}">${fE((isMicro ? cashflowBICMensuel : cashflowReelMensuel) * 12)}</td>
-      <td class="r" style="color:${(isMicro ? cashflowBICMensuel : cashflowReelMensuel) >= 0 ? "#1A7A52" : "#B03A2A"}">${fE(isMicro ? cashflowBICMensuel : cashflowReelMensuel)}/mois</td>
-    </tr>
-  </tbody>
-</table>
-
-<div class="note" style="margin-top:12px">
-  <strong>Bon à savoir :</strong> Un cash-flow négatif n'est pas nécessairement rédhibitoire. Il mesure la trésorerie mensuelle nette, mais votre investissement crée simultanément de la <strong>valeur patrimoniale</strong> : remboursement de capital (${fE(capitalRembourseAn1)}/an en an. 1) et potentielle valorisation du bien.${!isMicro ? " Les amortissements génèrent également une économie fiscale qui ne ressort pas dans le cash-flow mais dans la fiscalité." : ""} La rentabilité globale s'apprécie sur l'ensemble de la durée de détention.
-</div>
-</div>
-
-
-<!-- ═══════════════════════════════════════════════════════
-     PAGE 4 — CHAPITRE 3 : FISCALITÉ
-═══════════════════════════════════════════════════════ -->
-</div><div class="page">
-<div class="hdr"><div><div class="hdr-brand"><span class="hdr-light">tout</span><span class="hdr-bold">lmnp</span></div><div class="hdr-sub">Rapport Client · Simulation LMNP</div></div><div class="hdr-right">${today}</div></div>
-<h2 class="ch"><span class="num">3.</span>Fiscalité : calcul de l'impôt estimé</h2>
-
-${isMicro ? `
-<div class="section-label" style="margin-bottom:6px">Calcul fiscal – année 1 (Micro-BIC)</div>
-<table class="tbl" style="margin-bottom:14px">
-  <thead><tr><th>Étape</th><th class="r">Montant</th></tr></thead>
-  <tbody>
-    <tr><td class="lbl">Revenus locatifs annuels (HC)</td><td class="r">${fE(loyerAnnuel)}</td></tr>
-    <tr><td class="lbl">− Abattement forfaitaire (${isSaisonnier ? "30" : "50"} %)</td><td class="r red">−${fE(loyerAnnuel * abattPct)}</td></tr>
-    <tr class="sep"><td class="lbl">= Base imposable</td><td class="r">${fE(baseBIC)}</td></tr>
-    <tr><td class="lbl">Impôt IR estimé (TMI ${tmi} %)</td><td class="r">${fE(impotBIC * (tmi / (tmi + 18.6)))}</td></tr>
-    <tr><td class="lbl">Prélèvements sociaux (18,6 %)</td><td class="r">${fE(impotBIC * (18.6 / (tmi + 18.6)))}</td></tr>
-    <tr class="total"><td>= Fiscalité totale estimée</td><td class="r" style="color:${impotBIC === 0 ? "#1A7A52" : "#B03A2A"}">${fE(impotBIC)}</td></tr>
-    <tr class="total"><td>Cash-flow mensuel</td><td class="r" style="color:${cashflowBICMensuel >= 0 ? "#1A7A52" : "#B03A2A"}">${fE(cashflowBICMensuel)}/mois</td></tr>
-  </tbody>
-</table>
-<div class="note">
-  <strong>Comment est calculé l'impôt ?</strong> En Micro-BIC, un abattement forfaitaire de <strong>${isSaisonnier ? "30" : "50"} %</strong> est appliqué sur vos revenus. La base imposable restante est taxée au taux global TMI + PS = <strong>${(tmi + 18.6).toFixed(1)} %</strong>. Ce régime est simple mais ne permet pas de déduire les charges réelles ni les amortissements.
-</div>
-` : `
-<div class="section-label" style="margin-bottom:6px">Calcul fiscal – année 1 (régime réel simplifié)</div>
-<table class="tbl">
-  <thead><tr><th>Étape</th><th class="r">Montant</th></tr></thead>
-  <tbody>
-    <tr><td class="lbl">Loyers imposables (HC)</td><td class="r">${fE(loyerAnnuel)}</td></tr>
-    <tr><td class="lbl">− Charges annuelles déductibles</td><td class="r red">−${fE(chargesAnnuelles)}</td></tr>
-    <tr><td class="lbl">− Intérêts d'emprunt</td><td class="r red">−${fE(interetsAnnee1)}</td></tr>
-    ${assuranceEmprunteurAnnuel > 0 ? `<tr><td class="lbl">− Assurance emprunteur</td><td class="r red">−${fE(assuranceEmprunteurAnnuel)}</td></tr>` : ""}
-    <tr class="sep"><td class="lbl">= Résultat avant amortissement</td><td class="r">${fE(resultatAvantAmort)}</td></tr>
-    <tr style="background:rgba(139,26,26,0.04)"><td class="lbl" style="font-weight:700;color:#8B1A1A">− Amortissements déduits (an. 1)</td><td class="r" style="font-weight:700;color:#8B1A1A">−${fE(amortTotalAn1)}</td></tr>
-    <tr class="total"><td>= Base imposable</td><td class="r" style="color:${baseImposableReel === 0 ? "#1A7A52" : "#B03A2A"}">${fE(baseImposableReel)}</td></tr>
-    <tr><td class="lbl">Impôt IR estimé (TMI ${tmi} %)</td><td class="r">${fE(impotReel * (tmi / (tmi + 18.6)))}</td></tr>
-    <tr><td class="lbl">Prélèvements sociaux (18,6 %)</td><td class="r">${fE(impotReel * (18.6 / (tmi + 18.6)))}</td></tr>
-    <tr class="total"><td>= Fiscalité totale estimée</td><td class="r" style="color:${impotReel === 0 ? "#1A7A52" : "#B03A2A"}">${fE(impotReel)}</td></tr>
-  </tbody>
-</table>
-
-<div class="note" style="margin-top:14px">
-  <strong>Comment est calculé l'impôt ?</strong> TMI (Tranche Marginale d'Imposition) : taux appliqué à votre dernière tranche de revenus — ici <strong>${tmi} %</strong>. Prélèvements Sociaux : <strong>18,6 %</strong> prélevés sur les revenus du patrimoine. Impôt total = base imposable × (TMI + PS) = base × <strong>${(tmi + 18.6).toFixed(1)} %</strong>. <span style="display:inline-block;background:rgba(42,112,128,0.10);border-left:2px solid #2A7080;border-radius:0 4px 4px 0;padding:2px 7px;margin-top:4px"><strong>Pourquoi 18,6 % ici et 17,2 % à la revente ?</strong> Les prélèvements sociaux applicables aux <strong>revenus locatifs meublés</strong> (18,6 %) et ceux applicables aux <strong>plus-values immobilières</strong> (17,2 %) ne sont pas identiques. Ce ne sont pas les mêmes prélèvements.</span>
-  ${firstTaxRow ? ` En régime réel, vous commencez à payer de l'impôt à partir de l'année <strong>${firstTaxRow.year}</strong> avec une base imposable de ${fE(firstTaxRow.baseImposable)}.` : zerosYears >= totalYears ? " Sur toute la période analysée, la base imposable reste à 0 € grâce aux amortissements reportables." : ""}
-</div>
-`}
-</div>
-
-
-<!-- ═══════════════════════════════════════════════════════
-     PAGE 5 — CHAPITRE 4 : AMORTISSEMENT (réel uniquement)
-═══════════════════════════════════════════════════════ -->
-${!isMicro ? `</div><div class="page">
-<div class="hdr"><div><div class="hdr-brand"><span class="hdr-light">tout</span><span class="hdr-bold">lmnp</span></div><div class="hdr-sub">Rapport Client · Simulation LMNP</div></div><div class="hdr-right">${today}</div></div>
-<h2 class="ch"><span class="num">4.</span>L'amortissement, expliqué simplement</h2>
-
-<div style="font-size:10px;line-height:1.7;color:#1A1612;margin-bottom:14px">
-  En LMNP au régime réel, vous pouvez <strong>déduire chaque année une fraction de la valeur du bien de vos revenus locatifs</strong> — c'est l'amortissement. Contrairement aux charges réelles, il ne s'agit pas d'une dépense effective : c'est un avantage fiscal pur. Le terrain (non dégradable) n'est jamais amortissable. Seule la fraction immobilière du bien est amortie, selon des durées reconnues par l'administration fiscale.
-</div>
-
-<table class="tbl" style="margin-bottom:6px">
-  <thead><tr><th>Composant</th><th class="r">Valeur retenue</th><th class="r">Durée</th><th class="r">Amortissement annuel</th></tr></thead>
-  <tbody>
-    ${annexeCols.map(c => `<tr><td class="lbl">${c.label}</td><td class="r">${fE(c.initial)}</td><td class="r">${c.duree} ans</td><td class="r"><strong>${fE(c.annuel)}/an</strong></td></tr>`).join("")}
-    <tr><td class="lbl" style="color:#1A1612">Terrain (non amortissable)</td><td class="r" style="color:#1A1612">${fE(terrainVal)}</td><td class="r" style="color:#1A1612">—</td><td class="r" style="color:#1A1612">0 €</td></tr>
-    <tr class="total" style="background:rgba(139,26,26,0.06)"><td style="color:#8B1A1A;font-weight:700">Total base amortissable · dotation an. 1</td><td class="r" style="font-weight:700">${fE(baseAmortissableTotale)}</td><td></td><td class="r" style="color:#8B1A1A;font-weight:700;font-size:12px">${fE(amortTotalAn1)}/an</td></tr>
-  </tbody>
-</table>
-
-<div class="beige-note" style="margin-bottom:12px">
-  <strong>Part amortissable :</strong> ${amortPct} % du prix d'achat (${fE(valeurAmortissable)}) est amortissable. Les ${100 - amortPct} % restants (${fE(terrainVal)}) représentent le terrain. En cas d'excédent d'amortissement (amortissement &gt; résultat), le surplus est <strong>reporté sans limitation de durée</strong> sur les exercices suivants — à ne pas confondre avec un <strong>déficit LMNP</strong>, imputable quant à lui sur les bénéfices de même nature des <strong>10 années suivantes</strong> seulement.
-</div>
-
-<div class="chart-title">Amortissement théorique annuel (€/an)</div>
-${makeAmortBarChart()}
-
-<div class="note" style="margin-top:10px;font-size:9px">
-  Le graphique représente l'amortissement annuel cumulé (bien + mobilier + travaux + notaire) par année fiscale. Les années sans colonne correspondent à la période post-amortissement. L'amortissement non absorbé une année est reporté gratuitement sur les années suivantes — aucune perte fiscale.
-</div>
-</div>` : ""}
-
-
-<!-- ═══════════════════════════════════════════════════════
-     PAGE 6 — CHAPITRE 5 : ÉVOLUTION DANS LE TEMPS
-═══════════════════════════════════════════════════════ -->
-</div><div class="page">
-<div class="hdr"><div><div class="hdr-brand"><span class="hdr-light">tout</span><span class="hdr-bold">lmnp</span></div><div class="hdr-sub">Rapport Client · Simulation LMNP</div></div><div class="hdr-right">${today}</div></div>
-<h2 class="ch"><span class="num">5.</span>Évolution de l'investissement dans le temps</h2>
-
-${(() => {
-  if (isMicro) {
-    const bicBase = recettesAnnuelles * (1 - abattPct);
-    const bicImpot = bicBase * (tmi / 100 + 0.186);
-    return `<table class="tbl" style="margin-bottom:14px">
-  <thead><tr>
-    <th>Année</th>
-    <th class="r">Capital restant dû<br><span style="font-weight:400;opacity:.7">fin d'année</span></th>
-    <th class="r">Intérêts</th>
-    <th class="r">Base imposable BIC</th>
-    <th class="r">Impôt</th>
-    <th class="r">Cash-flow/mois</th>
-  </tr></thead>
-  <tbody>
-    ${keyYears.map(yr => {
-      const ro = rows.find(r => r.year === yr);
-      if (!ro) return "";
-      const cfBic = ro.cashflow; // issu du moteur (projection déjà calculée en Micro-BIC)
-      return `<tr>
-        <td class="can">An ${yr}</td>
-        <td class="r">${yr <= duree ? fE(ro.capitalFin) : "—"}</td>
-        <td class="r">${yr <= duree ? fE(ro.interetsAnnee) : "—"}</td>
-        <td class="r" style="color:#B03A2A">${fE(bicBase)}</td>
-        <td class="r" style="color:${bicImpot === 0 ? "#1A7A52" : "#B03A2A"}">${fE(bicImpot)}</td>
-        <td class="r" style="color:${cfBic >= 0 ? "#1A7A52" : "#B03A2A"}"><strong>${fE(cfBic)}/mois</strong></td>
-      </tr>`;
-    }).join("")}
-  </tbody>
-</table>`;
-  }
-  return `<table class="tbl" style="margin-bottom:14px">
-  <thead><tr>
-    <th>Année</th>
-    <th class="r">Capital restant dû<br><span style="font-weight:400;opacity:.7">fin d'année</span></th>
-    <th class="r">Intérêts</th>
-    <th class="r">Amortissement</th>
-    <th class="r">Base imposable</th>
-    <th class="r">Impôt</th>
-    <th class="r">Cash-flow/mois</th>
-  </tr></thead>
-  <tbody>
-    ${keyYears.map(yr => {
-      const ro = rows.find(r => r.year === yr);
-      if (!ro) return "";
-      return `<tr>
-        <td class="can">An ${yr}</td>
-        <td class="r">${yr <= duree ? fE(ro.capitalFin) : "—"}</td>
-        <td class="r">${yr <= duree ? fE(ro.interetsAnnee) : "—"}</td>
-        <td class="r">${fE(ro.amortTotalA)}</td>
-        <td class="r" style="color:${ro.baseImposable === 0 ? "#1A7A52" : "#B03A2A"}">${fE(ro.baseImposable)}</td>
-        <td class="r" style="color:${ro.impot === 0 ? "#1A7A52" : "#B03A2A"}">${fE(ro.impot)}</td>
-        <td class="r" style="color:${ro.cashflow >= 0 ? "#1A7A52" : "#B03A2A"}"><strong>${fE(ro.cashflow)}/mois</strong></td>
-      </tr>`;
-    }).join("")}
-  </tbody>
-</table>`;
-})()}
-
-<div class="chart-title">Capital restant dû en fin d'année (€)</div>
-${makeCapitalChart()}
-
-<div class="chart-title" style="margin-top:14px">Cash-flow mensuel après fiscalité estimée (€/mois)</div>
-${makeCashflowChart()}
-</div>
-
-
-<!-- ═══════════════════════════════════════════════════════
-     PAGE 7 — CHAPITRE 6 : SCÉNARIOS DE REVENTE
-═══════════════════════════════════════════════════════ -->
-${(() => {
-  // Abattements plus-value immobilière (particuliers LMNP)
-  const abattIR = (N: number) => N < 6 ? 0 : N >= 22 ? 1 : (N - 5) * 0.06;
-  const abattPS = (N: number) => {
-    if (N < 6) return 0;
-    if (N >= 30) return 1;
-    if (N >= 22) return 0.28 + (N - 22) * 0.09;
-    return (N - 5) * 0.0165;
-  };
-
-  // Amortissements cumulés au fil des ans (réintégration Loi de finances 2025 pour LMNP réel)
-  const amortCumulByYear: Record<number, number> = {};
-  let cumul = 0;
-  // Seuls les amortissements effectivement déduits sont réintégrés (LF 2025)
-  for (const ro of rows) { cumul += Math.max(0, ro.amortDisponible - ro.reportNplus1); amortCumulByYear[ro.year] = cumul; }
-
-  const reventeYears = [10, 20, 35];
-  const growthScenarios = [
-    { label: "Valeur stable (0 %/an)", pct: 0, color: "#6B4226" },
-    { label: "Revalorisation +1 %/an", pct: 0.01, color: "#2A7080" },
-  ];
-
-  const getRow = (year: number) => rows.find(ro => ro.year === year) ?? rows[rows.length - 1];
-
-  const yearCards = reventeYears.map(yr => {
-    const abIR = abattIR(yr);
-    const abPS = abattPS(yr);
-    const exoIRTag = abIR >= 1 ? `<span style="display:inline-block;font-size:7.5px;background:#1A7A52;color:#fff;border-radius:3px;padding:1px 5px;margin-left:6px;font-weight:600">IR exonéré</span>` : abIR > 0 ? `<span style="display:inline-block;font-size:7.5px;background:rgba(176,138,42,0.18);color:#B08A2A;border-radius:3px;padding:1px 5px;margin-left:6px">Abatt. IR ${Math.round(abIR*100)} %</span>` : "";
-    const exoPSTag = abPS >= 1 ? `<span style="display:inline-block;font-size:7.5px;background:#1A7A52;color:#fff;border-radius:3px;padding:1px 5px;margin-left:4px;font-weight:600">Prél. soc. exonérés</span>` : "";
-    const row = getRow(yr);
-    const crd = yr <= duree ? (row?.capitalFin ?? 0) : 0;
-    // Réintégration des amortissements dans l'assiette de plus-value (Loi de finances 2025 — LMNP réel)
-    const amortCumul = isMicro ? 0 : (amortCumulByYear[yr] ?? amortCumulByYear[Math.max(...Object.keys(amortCumulByYear).map(Number).filter(k => k <= yr))] ?? 0);
-    const scenRows = growthScenarios.map((sc, si) => {
-      // Valeur du BIEN (les frais d'acquisition ne sont pas de la valeur immobilière)
-      const prixVente = prix * Math.pow(1 + sc.pct, yr);
-      // Plus-value brute = prix de vente − (prix d'acquisition fiscal − amortissements réintégrés)
-      const pvBrute = Math.max(0, prixVente - investTotal + amortCumul);
-      const taxIR = pvBrute * (1 - abattIR(yr)) * 0.19;
-      const taxPS = pvBrute * (1 - abattPS(yr)) * 0.172;
-      const impotTotal = taxIR + taxPS;
-      const net = prixVente - crd - impotTotal;
-      const netColor = net >= investTotal ? "#1A7A52" : net >= 0 ? "#B08A2A" : "#B03A2A";
-      return `<tr style="background:${si === 0 ? "#F5F0E8" : "#EDE7DC"}">
-        <td style="padding:7px 10px;font-size:9px;font-weight:600;color:${sc.color};border-right:1px solid rgba(26,22,18,0.08);white-space:nowrap">${sc.label}</td>
-        <td style="padding:7px 8px;font-size:9px;text-align:right;color:#1A1612;border-right:1px solid rgba(26,22,18,0.08)">${fE(prixVente)}</td>
-        <td style="padding:7px 8px;font-size:9px;text-align:right;color:${crd > 0 ? "#B03A2A" : "rgba(26,22,18,0.3)"};border-right:1px solid rgba(26,22,18,0.08)">${crd > 0 ? `−${fE(crd)}` : "—"}</td>
-        <td style="padding:7px 8px;font-size:9px;text-align:right;color:${taxIR > 0 ? "#B03A2A" : "#1A7A52"};border-right:1px solid rgba(26,22,18,0.08)">${taxIR > 0 ? `−${fE(taxIR)}` : "0 € ✓"}</td>
-        <td style="padding:7px 8px;font-size:9px;text-align:right;color:${taxPS > 0 ? "#B03A2A" : "#1A7A52"};border-right:1px solid rgba(26,22,18,0.08)">${taxPS > 0 ? `−${fE(taxPS)}` : "0 € ✓"}</td>
-        <td style="padding:7px 10px;text-align:right"><span style="font-size:12px;font-weight:800;color:${netColor}">${fE(net)}</span></td>
-      </tr>`;
-    }).join("");
-    return `<div style="margin-bottom:14px;border-radius:8px;overflow:hidden;border:0.5px solid rgba(26,22,18,0.12)">
-      <div style="background:#4E1F12;padding:9px 12px;display:flex;align-items:center">
-        <span style="color:#F5F0E8;font-size:12px;font-weight:700">Revente à ${yr} ans</span>
-        ${exoIRTag}${exoPSTag}
-      </div>
-      <table style="width:100%;border-collapse:collapse">
-        <thead><tr style="background:rgba(26,22,18,0.04)">
-          <th style="padding:6px 10px;font-size:8px;font-weight:500;color:#1A1612;text-align:left;border-right:1px solid rgba(26,22,18,0.08)">Scénario</th>
-          <th style="padding:6px 8px;font-size:8px;font-weight:500;color:#1A1612;text-align:right;border-right:1px solid rgba(26,22,18,0.08)">Prix de vente</th>
-          <th style="padding:6px 8px;font-size:8px;font-weight:500;color:#1A1612;text-align:right;border-right:1px solid rgba(26,22,18,0.08)">Crédit restant dû</th>
-          <th style="padding:6px 8px;font-size:8px;font-weight:500;color:#1A1612;text-align:right;border-right:1px solid rgba(26,22,18,0.08)">Impôt sur la plus-value (IR 19 %)*</th>
-          <th style="padding:6px 8px;font-size:8px;font-weight:500;color:#1A1612;text-align:right;border-right:1px solid rgba(26,22,18,0.08)">Prélèvements sociaux (17,2 %)**</th>
-          <th style="padding:6px 10px;font-size:8px;font-weight:600;color:#4E1F12;text-align:right">Net dans la poche</th>
-        </tr></thead>
-        <tbody>${scenRows}</tbody>
-      </table>
-    </div>`;
-  }).join("");
-
-  return `<div class="page">
-<div class="hdr"><div><div class="hdr-brand"><span class="hdr-light">tout</span><span class="hdr-bold">lmnp</span></div><div class="hdr-sub">Rapport Client · Simulation LMNP</div></div><div class="hdr-right">${today}</div></div>
-<h2 class="ch"><span class="num">6.</span>Scénarios de revente</h2>
-
-<div style="font-size:10px;line-height:1.7;color:#1A1612;margin-bottom:16px;background:#EDE7DC;border-radius:7px;padding:12px 14px">
-  ${isMicro
-    ? `<strong>Plus-value en Micro-BIC :</strong> Aucun amortissement n'est réintégré dans l'assiette de plus-value. La plus-value brute = prix de vente − prix d'acquisition initial. Les abattements pour durée de détention s'appliquent dès la 6<sup>e</sup> année — <strong>exonération Impôt sur le Revenu totale à 22 ans, Prélèvements sociaux totaux à 30 ans</strong>.`
-    : `<strong>Plus-value en régime réel (Loi de finances 2025) :</strong> Depuis 2025, les amortissements déduits fiscalement sont <strong>réintégrés</strong> dans le calcul de la plus-value imposable. La plus-value brute = prix de vente − (prix d'acquisition − amortissements cumulés déduits). Les abattements pour durée de détention s'appliquent dès la 6<sup>e</sup> année — <strong>exonération Impôt sur le Revenu totale à 22 ans, Prélèvements sociaux totaux à 30 ans</strong>.`
-  }
-</div>
-
-${yearCards}
-
-<div style="font-size:9px;color:#1A1612;line-height:1.7;margin-bottom:10px;display:grid;grid-template-columns:1fr 1fr;gap:8px">
-  <div style="background:#EDE7DC;border-radius:6px;padding:9px 11px">
-    <div style="font-weight:700;color:#4E1F12;margin-bottom:4px">* Impôt sur le Revenu — plus-value immobilière (taux fixe : 19 %)</div>
-    <div>Ans 1–5 : 0 %</div>
-    <div>Ans 6–21 : 6 % d'abattement par an (max 96 %)</div>
-    <div>An 22 : + 4 % → <strong>100 % exonéré</strong></div>
-  </div>
-  <div style="background:#EDE7DC;border-radius:6px;padding:9px 11px">
-    <div style="font-weight:700;color:#4E1F12;margin-bottom:4px">** Prélèvements sociaux — plus-value immobilière (taux : 17,2 %)</div>
-    <div>Ans 1–5 : 0 %</div>
-    <div>Ans 6–21 : 1,65 % d'abattement par an · An 22 : 1,6 %</div>
-    <div>Ans 23–30 : 9 % par an → <strong>100 % exonéré à 30 ans</strong></div>
-  </div>
-</div>
-
-<div class="beige-note">
-  <strong>Hypothèses.</strong> Deux notions distinctes : la <strong>valeur du bien</strong> au départ (${fE(prix)}), à laquelle s'applique la revalorisation, et le <strong>prix d'acquisition fiscal</strong> (${fE(investTotal)} — bien, frais de notaire, travaux et mobilier), qui sert de base au calcul de la plus-value. Les frais d'acquisition entrent dans le calcul fiscal mais ne constituent pas de la valeur immobilière : à 0 %/an, le bien vaut donc toujours ${fE(prix)}.${!isMicro ? ` Amortissements cumulés réintégrés (Loi de finances 2025).` : ""} Le crédit restant dû est déduit si la revente intervient avant la fin du crédit (${duree} ans). Simulation indicative — consulter un expert-comptable LMNP.
-</div>
-</div>`;
-})()}
-
-
-<!-- ═══════════════════════════════════════════════════════
-     ANNEXE A — PROJECTION DÉTAILLÉE (réel uniquement)
-═══════════════════════════════════════════════════════ -->
-<div class="page landscape">
-<div class="hdr"><div><div class="hdr-brand"><span class="hdr-light">tout</span><span class="hdr-bold">lmnp</span></div><div class="hdr-sub">Rapport Client · Simulation LMNP</div></div><div class="hdr-right">${today}</div></div>
-<h2 class="ch">Annexe A — Projection détaillée sur ${totalYears} ans</h2>
-<p style="font-size:9px;color:#1A1612;margin-bottom:8px">${isMicro ? `Micro-BIC · Abattement ${isSaisonnier ? "30" : "50"} % constant · Loyers et charges supposés constants` : "Régime réel simplifié · Loyers et charges constants · Amortissement variable selon les durées"}</p>
-
-${isMicro ? (() => {
-  const bicBase = recettesAnnuelles * (1 - abattPct);
-  const bicImpot = bicBase * (tmi / 100 + 0.186);
-  return `<table class="tbl">
-  <thead><tr>
-    <th class="can">An</th>
-    <th class="r" style="font-size:8.5px">Capital restant dû</th>
-    <th class="r" style="font-size:8.5px">Annuité</th>
-    <th class="r" style="font-size:8.5px">Intérêts</th>
-    <th class="r" style="font-size:8.5px">Capital remb.</th>
-    <th class="r" style="font-size:8.5px">Charges</th>
-    <th class="r" style="font-size:8.5px">Base impos. BIC</th>
-    <th class="r" style="font-size:8.5px">Impôt</th>
-    <th class="r" style="font-size:8.5px">CF/mois</th>
-  </tr></thead>
-  <tbody>
-    ${rows.map(ro => {
-      const cfBic = ro.cashflow; // issu du moteur (projection déjà calculée en Micro-BIC)
-      return `<tr>
-        <td class="can" style="font-size:9px">${ro.year}</td>
-        <td class="r" style="font-size:9px">${ro.year <= duree ? fE(ro.capitalFin) : "—"}</td>
-        <td class="r" style="font-size:9px">${ro.year <= duree ? fE(ro.creditAnnuelR) : "—"}</td>
-        <td class="r" style="font-size:9px">${ro.year <= duree ? fE(ro.interetsAnnee) : "—"}</td>
-        <td class="r" style="font-size:9px">${ro.year <= duree ? fE(ro.capitalRembourse) : "—"}</td>
-        <td class="r" style="font-size:9px">${fE(chargesAnnuelles)}</td>
-        <td class="r" style="font-size:9px;color:#B03A2A">${fE(bicBase)}</td>
-        <td class="r" style="font-size:9px;color:${bicImpot === 0 ? "#1A7A52" : "#B03A2A"}">${fE(bicImpot)}</td>
-        <td class="r" style="font-size:9px;color:${cfBic >= 0 ? "#1A7A52" : "#B03A2A"};font-weight:600">${fE(cfBic)}</td>
-      </tr>`;
-    }).join("")}
-  </tbody>
-</table>`;
-})() : `<table class="tbl">
-  <thead><tr>
-    <th class="can">An</th>
-    <th class="r" style="font-size:8.5px">Capital restant dû</th>
-    <th class="r" style="font-size:8.5px">Annuité</th>
-    <th class="r" style="font-size:8.5px">Intérêts</th>
-    <th class="r" style="font-size:8.5px">Capital remb.</th>
-    <th class="r" style="font-size:8.5px">Charges</th>
-    <th class="r" style="font-size:8.5px">Résultat av. amort.</th>
-    <th class="r" style="font-size:8.5px">Amort. déduit</th>
-    <th class="r" style="font-size:8.5px">Base impos.</th>
-    <th class="r" style="font-size:8.5px">Impôt</th>
-    <th class="r" style="font-size:8.5px">CF/mois</th>
-  </tr></thead>
-  <tbody>
-    ${rows.map(ro => `<tr>
-      <td class="can" style="font-size:9px">${ro.year}</td>
-      <td class="r" style="font-size:9px">${ro.year <= duree ? fE(ro.capitalFin) : "—"}</td>
-      <td class="r" style="font-size:9px">${ro.year <= duree ? fE(ro.creditAnnuelR) : "—"}</td>
-      <td class="r" style="font-size:9px">${ro.year <= duree ? fE(ro.interetsAnnee) : "—"}</td>
-      <td class="r" style="font-size:9px">${ro.year <= duree ? fE(ro.capitalRembourse) : "—"}</td>
-      <td class="r" style="font-size:9px">${fE(chargesAnnuelles)}</td>
-      <td class="r" style="font-size:9px">${fE(ro.resultatAvantAmort)}</td>
-      <td class="r" style="font-size:9px;font-weight:600">${fE(ro.amortDisponible)}${ro.reportNplus1 > 0 ? `<div style="font-size:7.5px;color:#B08A2A">→ N+1: ${fE(ro.reportNplus1)}</div>` : ""}</td>
-      <td class="r" style="font-size:9px;color:${ro.baseImposable === 0 ? "#1A7A52" : "#B03A2A"};font-weight:600">${fE(ro.baseImposable)}</td>
-      <td class="r" style="font-size:9px;color:${ro.impot === 0 ? "#1A7A52" : "#B03A2A"}">${fE(ro.impot)}</td>
-      <td class="r" style="font-size:9px;color:${ro.cashflow >= 0 ? "#1A7A52" : "#B03A2A"};font-weight:600">${fE(ro.cashflow)}</td>
-    </tr>`).join("")}
-  </tbody>
-</table>`}
-</div>
-
-
-<!-- ═══════════════════════════════════════════════════════
-     ANNEXE B — AMORTISSEMENT DÉTAILLÉ (réel uniquement)
-═══════════════════════════════════════════════════════ -->
-${!isMicro && annexeCols.length > 0 ? `<div class="page landscape">
-<div class="hdr"><div><div class="hdr-brand"><span class="hdr-light">tout</span><span class="hdr-bold">lmnp</span></div><div class="hdr-sub">Rapport Client · Simulation LMNP</div></div><div class="hdr-right">${today}</div></div>
-<h2 class="ch">Annexe B — Amortissement détaillé par composant</h2>
-
-<table class="tbl" style="font-size:${afs}px">
-  <thead>
-    <tr>
-      <th class="can" rowspan="2" style="font-size:8.5px">An</th>
-      ${annexeBHeaderCols}
-      <th rowspan="2" style="background:#C95B2A;color:#1A1612;font-size:8.5px;text-align:center;padding:5px">Total<br>/an</th>
-    </tr>
-    <tr>${annexeBHeaderSub}</tr>
-  </thead>
-  <tbody>${annexeBRows}</tbody>
-</table>
-
-<div class="beige-note" style="margin-top:12px">
-  <strong>Récapitulatif des composants :</strong>
-  <table class="tbl" style="margin-top:8px">
-    <thead><tr><th>Composant</th><th class="r">Valeur initiale</th><th class="r">Durée</th><th class="r">Dotation annuelle</th></tr></thead>
-    <tbody>
-      ${annexeCols.map(c => `<tr><td class="lbl">${c.label}</td><td class="r">${fE(c.initial)}</td><td class="r">${c.duree} ans</td><td class="r"><strong>${fE(c.annuel)}</strong></td></tr>`).join("")}
-      <tr class="total"><td>Total an. 1</td><td class="r">${fE(annexeCols.reduce((s, c) => s + c.initial, 0))}</td><td></td><td class="r">${fE(amortTotalAn1)}</td></tr>
-    </tbody>
-  </table>
-</div>
-</div>` : ""}
-
+    return `<!DOCTYPE html><html lang="fr"><head><meta charset="utf-8"><title>ToutLMNP · Rapport complet — ${bienLigne}</title><style>${css}</style></head>
+<body>
+<div class="no-print"><span>Rapport complet · ${nb} pages · Utilisez « Enregistrer au format PDF »</span><button onclick="window.print()">Imprimer / Enregistrer en PDF</button></div>
+${body}
 </body></html>`;
   };
 
