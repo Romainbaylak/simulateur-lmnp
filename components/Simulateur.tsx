@@ -646,7 +646,7 @@ export default function Simulateur({ onShowResults }: { onShowResults?: () => vo
     ? resultats.rendementNet > 5 && displayCashflow > 0
       ? { label: "Excellent investissement", bg: "#1A7A52", icon: "✓" }
       : resultats.rendementNet > 3
-      ? { label: "Investissement correct", bg: "#2A9060", icon: "~" }
+      ? { label: "Investissement correct", bg: "#25845A", icon: "~" }
       : { label: "Rentabilité faible", bg: "#B03A2A", icon: "✗" }
     : null;
 
