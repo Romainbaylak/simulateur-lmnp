@@ -16,6 +16,9 @@ import {
   type Resultats,
 } from "@/lib/computeResultats";
 import { defaultBienInfo, type BienInfo } from "@/components/PopupBienInfo";
+import { usePlan } from "@/components/PlanBadge";
+import PopupPaiementUnite from "@/components/PopupPaiementUnite";
+import PopupPDFStarter from "@/components/PopupPDFStarter";
 
 const SESSION_TTL_MS = 2 * 60 * 60 * 1000;
 
@@ -54,6 +57,15 @@ export default function RapportInner() {
   const tauxOccHautRef = useRef("45");
   const resultatsTripleRef = useRef<{ bas: Resultats | null; moyen: Resultats | null; haut: Resultats | null } | null>(null);
   const selectedRegimeRef = useRef<"micro" | "reel" | null>(null);
+
+  const { plan: currentPlan } = usePlan();
+  // Les trois rapports détaillés restent réservés aux abonnés ; la page, elle,
+  // est désormais accessible à tout le monde.
+  const estAbonne = currentPlan === "starter" || currentPlan === "pro" || currentPlan === "rapport";
+  const [showPayPopup, setShowPayPopup] = useState(false);
+  const [showPDFStarter, setShowPDFStarter] = useState(false);
+  const [pdfWeekCount, setPdfWeekCount] = useState(0);
+  const [pendingPdf, setPendingPdf] = useState<"synthese-pdf" | "banque-pdf" | "resume-pdf" | null>(null);
 
   const sessionId = params.get("session_id") ?? "";
 
@@ -3056,6 +3068,229 @@ ${body}
 </body></html>`;
   };
 
+  // ─── VOTRE SIMULATION : ONE PAGE (rapport gratuit) ──────────────────────────
+  const buildOnePagePdfHtml = (f: SimulationForm, res: Resultats, bienInfo: BienInfo): string => {
+    const amortPct = amortPctRef.current;
+    const amortMode = amortModeRef.current;
+    const amortDureeEnsemble = amortDureeEnsembleRef.current;
+    const amortDureeMobilier = amortDureeMobilierRef.current;
+    const amortDureeTravaux = amortDureeTravauxRef.current;
+    const amortDureeNotaire = amortDureeNotaireRef.current;
+    const composants = composantsRef.current;
+    const isSaisonnier = isSaisonnierRef.current;
+    const selectedRegime = selectedRegimeRef.current;
+    const isMicro = selectedRegime === "micro";
+    const abattPct = isSaisonnier ? 0.30 : 0.50;
+    const regimeLabel = isMicro ? "Micro-BIC" : "Régime réel simplifié";
+
+    const fE = (v: number) => new Intl.NumberFormat("fr-FR", { style: "currency", currency: "EUR", maximumFractionDigits: 0 }).format(v);
+    const fE2 = (v: number) => Math.abs(v - Math.round(v)) < 0.005
+      ? new Intl.NumberFormat("fr-FR", { style: "currency", currency: "EUR", maximumFractionDigits: 0 }).format(v)
+      : new Intl.NumberFormat("fr-FR", { style: "currency", currency: "EUR", minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(v);
+    const fP = (v: number, d = 2) => v.toFixed(d).replace(".", ",") + " %";
+    const sE = (v: number) => (v >= 0 ? "+" : "−") + fE(Math.abs(v));
+    const col = (v: number) => v >= 0 ? "#1A6644" : "#B03A2A";
+
+    const prix = parseFloat(f.prix) || 0;
+    const travaux = parseFloat(f.travaux) || 0;
+    const notaire = parseFloat(f.notaire) || 0;
+    const mobilier = parseFloat(f.mobilier) || 0;
+    const apport = parseFloat(f.apport) || 0;
+    const taux = parseFloat(f.taux) / 100 || 0;
+    const duree = f.duree;
+    const tmi = f.tmi;
+
+    const investTotal = res.investTotal;
+    const montantCredit = res.montantCredit;
+    const mensualite = res.mensualite;
+    const chargesAnnuelles = res.chargesAnnuelles;
+    const assuranceAn = res.assuranceEmprunteurAnnuel ?? 0;
+    const loyerAnnuel = res.loyerAnnuel;
+    const chargesLocatairesAnnuel = (parseFloat(f.chargesLoyer) || 0) * 12;
+    const recettes = loyerAnnuel + chargesLocatairesAnnuel;
+
+    const amortBienMaxDuree = amortMode === "ensemble"
+      ? amortDureeEnsemble
+      : (composants.length ? Math.max(...composants.map(c => c.duree)) : 0);
+    const HORIZON = Math.max(duree, amortBienMaxDuree, amortDureeMobilier, amortDureeTravaux, amortDureeNotaire, 20) + 5;
+
+    const projParams = {
+      prix, travaux, mobilier, notaire,
+      montantCredit, duree, taux,
+      loyerAnnuel, chargesLocatairesAnnuel,
+      chargesAnnuelles, assuranceEmprunteurAnnuel: assuranceAn,
+      tmi, amortPct, amortMode, amortDureeEnsemble, composants,
+      amortDureeMobilier, amortDureeTravaux, amortDureeNotaire,
+      isSaisonnier, horizon: HORIZON,
+    };
+    const proj = computeProjection({ ...projParams, isMicro });
+    const y1 = proj[0];
+    const cumulCf = proj.slice(0, duree).reduce((s, y) => s + y.cashflowAnnuel, 0);
+    const cumulImpot = proj.slice(0, duree).reduce((s, y) => s + y.impot, 0);
+    const apresPret = proj[duree]?.cashflowMensuel ?? proj[proj.length - 1].cashflowMensuel;
+
+    const rendBrut = investTotal > 0 ? loyerAnnuel / investTotal * 100 : 0;
+    const rendNet = investTotal > 0 ? (loyerAnnuel - chargesAnnuelles) / investTotal * 100 : 0;
+
+    const today = new Date().toLocaleDateString("fr-FR");
+    const typeLabel = bienInfo.type === "ma" ? "Maison" : bienInfo.type === "im" ? "Immeuble" : "Appartement";
+    const bienLigne = [
+      bienInfo.pieces ? `${typeLabel} T${bienInfo.pieces}` : typeLabel,
+      bienInfo.surface ? `${bienInfo.surface} m²` : "",
+      bienInfo.ville || "",
+      isSaisonnier ? "Location saisonnière" : "Meublé longue durée",
+    ].filter(Boolean).join(" · ");
+
+    /* Saisonnier : les trois estimations d'occupation */
+    const triple = resultatsTripleRef.current;
+    const prixNuitee = parseFloat(prixNuiteeRef.current) || 0;
+    const occ = { bas: parseFloat(tauxOccBasRef.current) || 0, moyen: parseFloat(tauxOccMoyenRef.current) || 0, haut: parseFloat(tauxOccHautRef.current) || 0 };
+    const estimations = isSaisonnier && triple ? ([
+      { lbl: "Basse", t: occ.bas, r: triple.bas },
+      { lbl: "Moyenne", t: occ.moyen, r: triple.moyen },
+      { lbl: "Haute", t: occ.haut, r: triple.haut },
+    ]) : [];
+
+    const row = (l: string, v: string, fort = false) =>
+      `<div class="ir"><span class="ir-l">${l}</span><span class="ir-v"${fort ? ` style="color:#C95B2A"` : ""}>${v}</span></div>`;
+
+    const verdict = y1.cashflowMensuel >= 0
+      ? { titre: "Le bien s'autofinance dès la première année", ton: "#1A6644" }
+      : { titre: `Un effort d'épargne de ${fE(Math.abs(y1.cashflowMensuel))} par mois`, ton: "#B03A2A" };
+
+    const css = `
+@page{size:A4 portrait;margin:0}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{background:#D0C9BC;font-family:'Helvetica Neue',Arial,sans-serif;color:#1A1612;font-size:12px;line-height:1.5;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+.page{width:210mm;min-height:297mm;background:#FDF9F3;margin:14px auto;padding:12mm 13mm 16mm;position:relative;box-shadow:0 3px 24px rgba(0,0,0,0.22)}
+.no-print{position:sticky;top:0;z-index:100;background:#1A4A35;padding:10px 20px;display:flex;align-items:center;justify-content:space-between}
+.no-print button{background:#C95B2A;color:#fff;border:none;border-radius:6px;padding:8px 18px;font-size:13px;font-weight:700;cursor:pointer}
+.no-print span{color:#F5F0E8;font-size:13px}
+.hdr{background:#4E1F12;border-radius:8px;padding:10px 16px;display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:12px}
+.hdr-t{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.12em;color:#F5F0E8}
+.hdr-s{font-size:12px;color:rgba(245,240,232,0.62);margin-top:2px}
+.hdr-d{font-size:12px;color:rgba(245,240,232,0.72);text-align:right;line-height:1.5}
+h1{font-size:26px;font-weight:800;color:#C95B2A;letter-spacing:-.02em;line-height:1.1}
+.sub{font-size:12px;color:rgba(26,22,18,0.5);margin:4px 0 12px}
+.sec{font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.09em;color:#C95B2A;text-align:center;margin:14px 0 7px}
+.kpis{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:10px}
+.kpi{border-radius:8px;padding:9px 13px;background:#F1EDE5}
+.kpi.gr{background:#E9EFE9}
+.kpi.rd{background:#F6EBE7}
+.kpi-l{font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:rgba(26,22,18,0.5);margin-bottom:5px}
+.kpi-v{font-size:20px;font-weight:800;letter-spacing:-.025em;line-height:1.05}
+.kpi-s{font-size:12px;color:rgba(26,22,18,0.45);margin-top:5px}
+.duo{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.box{border-radius:8px;padding:9px 13px 10px;border-left:3px solid transparent}
+.box.or{background:#FAECE2;border-left-color:#C95B2A}
+.box.gr{background:#E9EFE9;border-left-color:#1A6644}
+.box-h{font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.07em;margin-bottom:5px}
+.ir{display:flex;justify-content:space-between;gap:10px;padding:3px 0;border-bottom:.5px solid rgba(26,22,18,0.07)}
+.ir:last-child{border-bottom:none}
+.ir-l{font-size:12px;color:rgba(26,22,18,0.58)}
+.ir-v{font-size:12px;font-weight:700;white-space:nowrap}
+table.tbl{width:100%;border-collapse:collapse;font-size:12px;margin-top:4px}
+table.tbl th{background:#4E1F12;color:#F5F0E8;padding:5px 8px;text-align:left;font-weight:700;font-size:12px}
+table.tbl th.r{text-align:right}
+table.tbl td{padding:4.5px 8px;border-bottom:.5px solid rgba(26,22,18,0.09)}
+table.tbl tr:nth-child(even) td{background:rgba(26,22,18,0.03)}
+table.tbl .r{text-align:right}
+table.tbl tr.tot td{font-weight:800;background:#E9EFE9}
+.para{font-size:12px;line-height:1.6;color:rgba(26,22,18,0.78);margin-top:9px}
+.verdict{border-radius:9px;padding:11px 16px;margin-top:13px;background:#4E1F12;display:flex;align-items:center;gap:15px}
+.verdict-b{flex:0 0 auto;border-radius:20px;padding:7px 16px;font-size:12px;font-weight:800;letter-spacing:.09em;color:#F5F0E8;background:rgba(201,91,42,0.55);white-space:nowrap}
+.verdict-t{font-size:14px;font-weight:700;color:#F5F0E8;margin-bottom:3px}
+.verdict-x{font-size:12px;color:rgba(245,240,232,0.85);line-height:1.55}
+.verdict-x strong{color:#fff}
+.cta{margin-top:13px;border:1.5px dashed rgba(201,91,42,0.45);border-radius:9px;padding:10px 16px;background:rgba(201,91,42,0.05)}
+.cta-t{font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.08em;color:#C95B2A;margin-bottom:4px}
+.cta-x{font-size:12px;line-height:1.6;color:rgba(26,22,18,0.72)}
+.ftr{position:absolute;bottom:10mm;left:13mm;right:13mm;display:flex;justify-content:space-between;font-size:12px;color:rgba(26,22,18,0.4);border-top:.5px solid rgba(26,22,18,0.12);padding-top:6px}
+@media print{html,body{background:#FDF9F3;margin:0}.no-print{display:none}.page{margin:0;box-shadow:none}}
+`;
+
+    return `<!DOCTYPE html><html lang="fr"><head><meta charset="utf-8"><title>ToutLMNP · Votre simulation en une page</title><style>${css}</style></head>
+<body>
+<div class="no-print"><span>Votre simulation · one page · Utilisez « Enregistrer au format PDF »</span><button onclick="window.print()">Imprimer / Enregistrer en PDF</button></div>
+<div class="page">
+  <div class="hdr">
+    <div><div class="hdr-t">TOUTLMNP · VOTRE SIMULATION</div><div class="hdr-s">${bienLigne}</div></div>
+    <div><div class="hdr-d">Données du ${today}</div><div class="hdr-d">${regimeLabel}</div></div>
+  </div>
+
+  <h1>Votre simulation en une page</h1>
+  <div class="sub">L'essentiel de votre projet LMNP : budget, revenus, fiscalité et trésorerie.</div>
+
+  <div class="kpis">
+    <div class="kpi"><div class="kpi-l">Coût du projet</div><div class="kpi-v">${fE(investTotal)}</div><div class="kpi-s">${apport > 0 ? `dont ${fE(apport)} d'apport` : "financé sans apport"}</div></div>
+    <div class="kpi"><div class="kpi-l">Loyers annuels</div><div class="kpi-v">${fE(loyerAnnuel)}</div><div class="kpi-s">${fE(loyerAnnuel / 12)} par mois</div></div>
+    <div class="kpi ${y1.cashflowMensuel >= 0 ? "gr" : "rd"}"><div class="kpi-l">Cash-flow année 1</div><div class="kpi-v" style="color:${col(y1.cashflowMensuel)}">${sE(y1.cashflowMensuel)}</div><div class="kpi-s">par mois, après impôt</div></div>
+    <div class="kpi"><div class="kpi-l">Rendement net</div><div class="kpi-v" style="color:#1A6644">${fP(rendNet)}</div><div class="kpi-s">brut : ${fP(rendBrut)}</div></div>
+  </div>
+
+  <div class="sec">LE BIEN, SON FINANCEMENT ET SON EXPLOITATION</div>
+  <div class="duo">
+    <div class="box or">
+      <div class="box-h">ACQUISITION ET FINANCEMENT</div>
+      ${row("Prix d'achat", fE(prix))}
+      ${row("Frais de notaire", fE(notaire))}
+      ${travaux + mobilier > 0 ? row("Travaux / mobilier", fE(travaux + mobilier)) : ""}
+      ${row("Apport / emprunt", `${fE(apport)} / ${fE(montantCredit)}`)}
+      ${row("Taux / durée", montantCredit > 0 ? `${fP(taux * 100)} / ${duree} ans` : "Aucun crédit")}
+      ${row("Mensualité hors assurance", fE2(mensualite), true)}
+    </div>
+    <div class="box gr">
+      <div class="box-h">EXPLOITATION · ANNÉE 1</div>
+      ${row("Recettes encaissées", fE(recettes))}
+      ${row("Charges d'exploitation", `−${fE(chargesAnnuelles)}`)}
+      ${row("Crédit et assurance", `−${fE(y1.creditAnnuel + y1.assuranceEmprunteur)}`)}
+      ${isMicro
+        ? row(`Abattement ${isSaisonnier ? "30 %" : "50 %"}`, `−${fE(recettes * abattPct)}`)
+        : row("Amortissement déduit", `−${fE(y1.amortImpute)}`)}
+      ${row("Impôt + prélèvements sociaux", `−${fE(y1.impot)}`)}
+      ${row("Cash-flow annuel", sE(y1.cashflowAnnuel), true)}
+    </div>
+  </div>
+
+  ${estimations.length ? `
+  <div class="sec">LES TROIS HYPOTHÈSES D'OCCUPATION · ${fE(prixNuitee)} PAR NUITÉE</div>
+  <table class="tbl">
+    <tr><th>Estimation</th><th class="r">Occupation</th><th class="r">Nuits / an</th><th class="r">Recettes / an</th><th class="r">Impôt / an</th><th class="r">Cash-flow / mois</th></tr>
+    ${estimations.map(e => {
+        const cf = e.r ? (isMicro ? e.r.cashflowBICMensuel : e.r.cashflowReelMensuel) : 0;
+        const imp = e.r ? (isMicro ? e.r.impotBIC : e.r.impotReel) : 0;
+        return `<tr class="${e.lbl === "Moyenne" ? "tot" : ""}"><td>${e.lbl}${e.lbl === "Moyenne" ? " · retenue" : ""}</td><td class="r">${fP(e.t, 0)}</td><td class="r">${Math.round(365 * e.t / 100)}</td><td class="r">${fE(e.r?.loyerAnnuel ?? 0)}</td><td class="r">${fE(imp)}</td><td class="r" style="color:${col(cf)};font-weight:700">${sE(cf)}</td></tr>`;
+      }).join("")}
+  </table>
+  <p class="para">Les projections de ce document retiennent l'<strong>estimation moyenne</strong> (${fP(occ.moyen, 0)} d'occupation).</p>` : ""}
+
+  ${montantCredit > 0 ? `
+  <div class="sec">CE QUE DONNE LE PROJET SUR LA DURÉE DU CRÉDIT</div>
+  <div class="kpis">
+    <div class="kpi"><div class="kpi-l">Cash-flow cumulé</div><div class="kpi-v" style="color:${col(cumulCf)}">${sE(cumulCf)}</div><div class="kpi-s">sur ${duree} ans</div></div>
+    <div class="kpi"><div class="kpi-l">Impôt cumulé</div><div class="kpi-v" style="color:#B03A2A">${fE(cumulImpot)}</div><div class="kpi-s">IR + prélèvements sociaux</div></div>
+    <div class="kpi"><div class="kpi-l">Capital remboursé</div><div class="kpi-v">${fE(montantCredit)}</div><div class="kpi-s">dette nulle à ${duree} ans</div></div>
+    <div class="kpi gr"><div class="kpi-l">Après le crédit</div><div class="kpi-v" style="color:${col(apresPret)}">${sE(apresPret)}</div><div class="kpi-s">par mois, dès l'année ${duree + 1}</div></div>
+  </div>` : ""}
+
+  <div class="verdict">
+    <div class="verdict-b">EN RÉSUMÉ</div>
+    <div>
+      <div class="verdict-t">${verdict.titre}</div>
+      <div class="verdict-x">Pour ${fE(investTotal)} investis et ${fE(loyerAnnuel)} de loyers annuels, le projet dégage <strong>${sE(y1.cashflowMensuel)} par mois</strong> après charges, crédit et impôt en année 1${montantCredit > 0 ? `, puis <strong>${sE(apresPret)} par mois</strong> une fois le crédit soldé` : ""}. Régime retenu : <strong>${regimeLabel}</strong>, TMI ${tmi} % et prélèvements sociaux 18,6 %.</div>
+    </div>
+  </div>
+
+  <div class="cta">
+    <div class="cta-t">Pour aller plus loin</div>
+    <div class="cta-x">Ce document reprend l'essentiel. Les rapports <strong>Synthèse</strong>, <strong>Rapport Complet</strong> et <strong>Rapport Banque</strong> détaillent la projection année par année${isMicro ? "" : ", le plan d'amortissement par composant"}, les scénarios de revente, la résistance aux imprévus et les ratios attendus par un financeur.</div>
+  </div>
+
+  <div class="ftr"><span>toutlmnp.fr · Simulation indicative</span><span>1 / 1</span><span>${today}</span></div>
+</div>
+</body></html>`;
+  };
+
   // ── Render states ──────────────────────────────────────────────────────────
   if (status === "loading" || status === "ready") {
     return (
@@ -3088,13 +3323,48 @@ ${body}
   // status === "done"
   const getBienInfo = (): BienInfo => ({ type: bienType, ville: bienVille, surface: bienSurface, pieces: bienPieces, description: bienDescription });
 
-  const generatePdf = (choix: "synthese-pdf" | "banque-pdf" | "resume-pdf") => {
+  const getWeekStart = (): string => {
+    const d = new Date();
+    const day = d.getDay();
+    const diff = d.getDate() - day + (day === 0 ? -6 : 1);
+    return new Date(d.setDate(diff)).toISOString().slice(0, 10);
+  };
+  const getPdfWeekCount = (): number => {
+    if (typeof window === "undefined") return 0;
+    try {
+      const stored = localStorage.getItem("lmnp_pdf_week_count");
+      if (!stored) return 0;
+      const { count, weekStart } = JSON.parse(stored);
+      return weekStart === getWeekStart() ? (count ?? 0) : 0;
+    } catch { return 0; }
+  };
+  const incrementPdfWeekCount = () => {
+    if (typeof window === "undefined") return;
+    localStorage.setItem("lmnp_pdf_week_count", JSON.stringify({ count: getPdfWeekCount() + 1, weekStart: getWeekStart() }));
+  };
+
+  // Clic sur l'un des trois rapports détaillés : ouvert aux abonnés,
+  // sinon le popup d'abonnement s'affiche à la place.
+  const demanderPdf = (choix: "synthese-pdf" | "banque-pdf" | "resume-pdf") => {
+    if (!estAbonne) { setPendingPdf(choix); setShowPayPopup(true); return; }
+    if (currentPlan === "starter") {
+      setPendingPdf(choix);
+      setPdfWeekCount(getPdfWeekCount());
+      setShowPDFStarter(true);
+      return;
+    }
+    generatePdf(choix);
+  };
+
+  const generatePdf = (choix: "synthese-pdf" | "banque-pdf" | "resume-pdf" | "onepage-pdf") => {
     if (!form || !resultats) return;
     const html = choix === "banque-pdf"
       ? buildBanquePdfHtml(form, resultats, getBienInfo())
-      : choix === "resume-pdf"
-        ? buildResumePdfHtml(form, resultats, getBienInfo())
-        : buildPdfHtml(form, resultats, getBienInfo());
+      : choix === "onepage-pdf"
+        ? buildOnePagePdfHtml(form, resultats, getBienInfo())
+        : choix === "resume-pdf"
+          ? buildResumePdfHtml(form, resultats, getBienInfo())
+          : buildPdfHtml(form, resultats, getBienInfo());
     const win = window.open("", "_blank");
     if (win) {
       win.document.write(html);
@@ -3107,6 +3377,53 @@ ${body}
       setTimeout(() => URL.revokeObjectURL(url), 10000);
     }
   };
+
+  // ── Les trois rapports détaillés et ce qu'ils contiennent ────────────────
+  const saison = isSaisonnierRef.current;
+  const reel = selectedRegimeRef.current !== "micro";
+  const RAPPORTS: {
+    cle: "resume-pdf" | "synthese-pdf" | "banque-pdf";
+    nom: string; bg: string; accent: string; points: string[];
+  }[] = [
+    {
+      cle: "resume-pdf", nom: "Synthèse", bg: "#1A4A35", accent: "#2ECC71",
+      points: [
+        "Vue d'ensemble : budget, financement et cash-flow en un coup d'œil",
+        "Le détail de vos charges et de l'impôt de la première année",
+        "Les deux régimes comparés sur toute la durée du crédit",
+        "Année 1 face à la fin d'emprunt, puis les scénarios de revente",
+        saison
+          ? "Une page dédiée aux trois estimations d'occupation saisonnière"
+          : "Le graphe d'évolution de la trésorerie dans le temps",
+      ],
+    },
+    {
+      cle: "synthese-pdf", nom: "Rapport Complet", bg: "#6B2D12", accent: "#C95B2A",
+      points: [
+        "Huit chapitres : financement, régime, impôt, cash-flow, imprévus, revente",
+        "La projection annuelle complète, année par année sur tout l'horizon",
+        reel
+          ? "Le plan d'amortissement détaillé, composant par composant"
+          : "Le calcul du micro-BIC et son effet sur la trésorerie, année par année",
+        "La revente à 5, 15 et 30 ans, avec le net vendeur après dette et impôt",
+        saison
+          ? "Les six estimations saisonnières : bas, moyen et haut dans les deux régimes"
+          : "La marge face aux imprévus : vacance locative et hausse de charges",
+      ],
+    },
+    {
+      cle: "banque-pdf", nom: "Rapport Banque", bg: "#1A2D45", accent: "#4A9FCA",
+      points: [
+        "Le plan de financement présenté en emplois et ressources",
+        "Les ratios attendus par un financeur : DSCR, debt yield, LTC, dette / prix",
+        "Le compte d'exploitation et le passage au cash réellement disponible",
+        "La structure de la dette : capital restant dû et coût du financement",
+        saison
+          ? "Toute l'analyse déclinée sur les estimations basse et moyenne"
+          : "La résistance aux imprévus, chiffrée scénario par scénario",
+      ],
+    },
+  ];
 
   const FIELD = "w-full px-3 py-2.5 text-sm rounded-xl focus:outline-none focus:ring-2 focus:ring-[#C95B2A]";
   const FSTYLE = { background: "#EDE7DC", border: "1.5px solid transparent", color: "#1A1612" };
@@ -3135,7 +3452,7 @@ ${body}
       </header>
 
       {/* Single centred column layout */}
-      <div className="flex flex-col items-center flex-1 px-6 py-10" style={{ maxWidth: 620, margin: "0 auto", width: "100%" }}>
+      <div className="flex flex-col items-center px-6 pt-10" style={{ maxWidth: 620, margin: "0 auto", width: "100%" }}>
 
         {/* TOP — form fields (no title) */}
         <div className="w-full space-y-5 mb-12">
@@ -3196,60 +3513,146 @@ ${body}
         </div>
 
         {/* Divider */}
-        <div className="w-full mb-10" style={{ height: "1.5px", background: "rgba(26,22,18,0.1)" }} />
+        <div className="w-full" style={{ height: "1.5px", background: "rgba(26,22,18,0.1)" }} />
+      </div>
 
-        {/* BOTTOM — rapport prêt + buttons */}
-        <div className="w-full text-center">
-          <div className="flex items-center justify-center gap-4 mb-8">
+      {/* BOTTOM — rapport gratuit puis rapports détaillés, sur une colonne plus large */}
+      <div className="flex-1 px-6 pt-10 pb-14" style={{ maxWidth: 1000, margin: "0 auto", width: "100%" }}>
+        <div className="w-full">
+          <div className="flex items-center justify-center gap-4 mb-7">
             <div className="w-11 h-11 rounded-full flex items-center justify-center text-lg font-bold flex-shrink-0"
               style={{ background: "#1A7A52", color: "#fff" }}>✓</div>
-            <h1 className="font-bold" style={{ fontSize: "clamp(1.6rem,2.8vw,2.2rem)", color: "#4E1F12", letterSpacing: "-0.03em", lineHeight: 1.1 }}>
+            <h1 className="font-bold text-center" style={{ fontSize: "clamp(1.6rem,2.8vw,2.2rem)", color: "#4E1F12", letterSpacing: "-0.03em", lineHeight: 1.1 }}>
               Votre rapport est prêt
             </h1>
           </div>
 
-          {/* 3 boutons : empilés sur mobile, en colonnes égales dès md */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-
-            {/* Rapport Invest */}
-            <button onClick={() => generatePdf("resume-pdf")}
-              className="rounded-xl flex items-center gap-3 text-left transition-all hover:scale-[1.01] active:scale-[0.99]"
-              style={{ background: "#1A4A35", padding: "16px 20px", border: "none", cursor: "pointer", minHeight: 72 }}>
+          {/* ── Rapport gratuit, bouton principal et centré ── */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="hidden md:block" />
+            <button onClick={() => generatePdf("onepage-pdf")}
+              className="rounded-xl flex items-center gap-3 text-left transition-all hover:scale-[1.02] active:scale-[0.99]"
+              style={{ background: "#1A7A52", padding: "16px 20px", border: "none", cursor: "pointer", minHeight: 72, boxShadow: "0 6px 18px rgba(26,122,82,0.28)" }}>
               <span className="text-xs font-bold px-2.5 py-0.5 rounded-full flex-shrink-0"
-                style={{ background: "#2ECC71", color: "#1A4A35" }}>PDF</span>
+                style={{ background: "#F5F0E8", color: "#1A7A52" }}>GRATUIT</span>
               <span className="text-sm font-bold leading-snug flex-1" style={{ color: "#F5F0E8" }}>
-                Rapport<br />Invest
+                Votre simulation :<br />one page
               </span>
-              <span style={{ color: "#2ECC71", fontSize: 18, fontWeight: 800, lineHeight: 1, flexShrink: 0 }}>→</span>
+              <span style={{ color: "#F5F0E8", fontSize: 18, fontWeight: 800, lineHeight: 1, flexShrink: 0 }}>→</span>
             </button>
+            <div className="hidden md:block" />
+          </div>
+          <p className="text-center text-[12px] mt-2.5" style={{ color: "rgba(26,22,18,0.45)" }}>
+            Une page, sans inscription : budget, revenus, fiscalité et trésorerie de votre projet.
+          </p>
 
-            {/* Synthèse PDF */}
-            <button onClick={() => generatePdf("synthese-pdf")}
-              className="rounded-xl flex items-center gap-3 text-left transition-all hover:scale-[1.01] active:scale-[0.99]"
-              style={{ background: "#6B2D12", padding: "16px 20px", border: "none", cursor: "pointer", minHeight: 72 }}>
-              <span className="text-xs font-bold px-2.5 py-0.5 rounded-full flex-shrink-0"
-                style={{ background: "#C95B2A", color: "#F5F0E8" }}>PDF</span>
-              <span className="text-sm font-bold leading-snug flex-1" style={{ color: "#F5F0E8" }}>
-                Synthèse<br />d&apos;investissement
-              </span>
-              <span style={{ color: "#C95B2A", fontSize: 18, fontWeight: 800, lineHeight: 1, flexShrink: 0 }}>→</span>
-            </button>
+          {/* ── Section premium ── */}
+          <div className="rounded-2xl mt-10 overflow-hidden" style={{ background: "#241008", border: "1.5px solid rgba(201,91,42,0.45)", boxShadow: "0 14px 40px rgba(26,22,18,0.22)" }}>
 
-            {/* Banque PDF */}
-            <button onClick={() => generatePdf("banque-pdf")}
-              className="rounded-xl flex items-center gap-3 text-left transition-all hover:scale-[1.01] active:scale-[0.99]"
-              style={{ background: "#1A2D45", padding: "16px 20px", border: "none", cursor: "pointer", minHeight: 72 }}>
-              <span className="text-xs font-bold px-2.5 py-0.5 rounded-full flex-shrink-0"
-                style={{ background: "#4A9FCA", color: "#1A2D45" }}>PDF</span>
-              <span className="text-sm font-bold leading-snug flex-1" style={{ color: "#F5F0E8" }}>
-                Synthèse financière<br />– Banque
-              </span>
-              <span style={{ color: "#4A9FCA", fontSize: 18, fontWeight: 800, lineHeight: 1, flexShrink: 0 }}>→</span>
-            </button>
+            {/* Bandeau */}
+            <div className="px-5 py-4 md:px-7 md:py-5" style={{ background: "linear-gradient(135deg,#3A1608 0%,#4E1F12 55%,#6B2D12 100%)", borderBottom: "1px solid rgba(201,91,42,0.35)" }}>
+              <div className="flex flex-wrap items-center justify-center gap-2.5 mb-2">
+                <span className="text-[11px] font-bold px-3 py-1 rounded-full tracking-[0.16em]"
+                  style={{ background: "#C95B2A", color: "#F5F0E8" }}>★ PREMIUM</span>
+                {!estAbonne && (
+                  <span className="text-[11px] font-semibold px-3 py-1 rounded-full"
+                    style={{ background: "rgba(245,240,232,0.12)", color: "rgba(245,240,232,0.8)" }}>Réservé aux abonnés</span>
+                )}
+              </div>
+              <h2 className="text-center font-bold" style={{ fontSize: "clamp(1.25rem,2.2vw,1.6rem)", color: "#F5F0E8", letterSpacing: "-0.02em", lineHeight: 1.15 }}>
+                Les trois rapports détaillés
+              </h2>
+              <p className="text-center text-[13px] mt-2 mx-auto" style={{ color: "rgba(245,240,232,0.62)", maxWidth: 480, lineHeight: 1.55 }}>
+                Toute votre simulation développée : projection année par année, fiscalité, revente et dossier prêt à présenter à votre banque.
+              </p>
+            </div>
 
+            {/* Les trois rapports */}
+            <div className="p-4 md:p-5 grid grid-cols-1 md:grid-cols-3 gap-4">
+              {RAPPORTS.map(r => (
+                <div key={r.cle} className="rounded-xl flex flex-col overflow-hidden"
+                  style={{ background: "rgba(245,240,232,0.05)", border: "1px solid rgba(245,240,232,0.12)" }}>
+
+                  {/* En-tête coloré du rapport */}
+                  <div className="px-4 py-3 flex items-center gap-2.5" style={{ background: r.bg }}>
+                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full flex-shrink-0"
+                      style={{ background: r.accent, color: r.bg }}>PDF</span>
+                    <span className="text-[15px] font-bold flex-1" style={{ color: "#F5F0E8", letterSpacing: "-0.01em" }}>{r.nom}</span>
+                    {!estAbonne && <span style={{ fontSize: 14, lineHeight: 1, flexShrink: 0 }}>🔒</span>}
+                  </div>
+
+                  {/* Ce que contient le rapport */}
+                  <ul className="px-4 py-3.5 space-y-2 flex-1">
+                    {r.points.map((pt, i) => (
+                      <li key={i} className="flex gap-2 text-[12.5px]" style={{ color: "rgba(245,240,232,0.78)", lineHeight: 1.5 }}>
+                        <span style={{ color: r.accent, flexShrink: 0, fontWeight: 800 }}>·</span>
+                        <span>{pt}</span>
+                      </li>
+                    ))}
+                  </ul>
+
+                  {/* Action */}
+                  <button onClick={() => demanderPdf(r.cle)}
+                    className="mx-4 mb-4 rounded-lg py-2.5 text-[13px] font-bold transition-all hover:opacity-[0.88] active:scale-[0.99]"
+                    style={{ background: estAbonne ? r.accent : "rgba(245,240,232,0.10)", color: estAbonne ? r.bg : "#F5F0E8", border: estAbonne ? "none" : "1px solid rgba(245,240,232,0.22)", cursor: "pointer" }}>
+                    {estAbonne ? "Générer le PDF →" : "🔒 Débloquer"}
+                  </button>
+                </div>
+              ))}
+            </div>
+
+            {!estAbonne && (
+              <div className="px-5 pb-5 md:px-7 md:pb-6 text-center">
+                <button onClick={() => { setPendingPdf(null); setShowPayPopup(true); }}
+                  className="w-full md:w-auto md:px-10 py-3.5 rounded-xl text-[15px] font-bold transition-opacity hover:opacity-[0.88]"
+                  style={{ background: "#C95B2A", color: "#F5F0E8", border: "none", cursor: "pointer" }}>
+                  Débloquer les trois rapports
+                </button>
+                <p className="text-[12px] mt-3" style={{ color: "rgba(245,240,232,0.5)" }}>
+                  Déjà abonné ? <Link href="/tarifs" className="underline" style={{ color: "rgba(245,240,232,0.75)" }}>Voir les abonnements</Link>
+                </p>
+              </div>
+            )}
           </div>
         </div>
       </div>
+
+      {showPayPopup && form && (
+        <PopupPaiementUnite
+          onClose={() => { setShowPayPopup(false); setPendingPdf(null); }}
+          simulationData={{
+            form,
+            amortPct: amortPctRef.current,
+            amortMode: amortModeRef.current,
+            amortDureeEnsemble: amortDureeEnsembleRef.current,
+            amortDureeMobilier: amortDureeMobilierRef.current,
+            amortDureeTravaux: amortDureeTravauxRef.current,
+            amortDureeNotaire: amortDureeNotaireRef.current,
+            composants: composantsRef.current,
+            isSaisonnier: isSaisonnierRef.current,
+            prixNuitee: prixNuiteeRef.current,
+            tauxOccBas: tauxOccBasRef.current,
+            tauxOccMoyen: tauxOccMoyenRef.current,
+            tauxOccHaut: tauxOccHautRef.current,
+            resultatsTriple: resultatsTripleRef.current,
+            selectedRegime: selectedRegimeRef.current,
+            savedAt: Date.now(),
+          }}
+        />
+      )}
+      {showPDFStarter && (
+        <PopupPDFStarter
+          weekCount={pdfWeekCount}
+          onClose={() => { setShowPDFStarter(false); setPendingPdf(null); }}
+          onGenerate={() => {
+            incrementPdfWeekCount();
+            setShowPDFStarter(false);
+            if (pendingPdf) generatePdf(pendingPdf);
+            setPendingPdf(null);
+          }}
+          onPayUnit={() => { setShowPDFStarter(false); setShowPayPopup(true); }}
+        />
+      )}
 
       <footer style={{ borderTop: "0.5px solid rgba(26,22,18,0.08)" }} className="py-8 px-4">
         <div className="max-w-6xl mx-auto flex justify-between items-center">

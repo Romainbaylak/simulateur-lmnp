@@ -2163,9 +2163,9 @@ export default function Simulateur({ onShowResults }: { onShowResults?: () => vo
                 {/* Boutons PDF + Sauvegarder */}
                 <div className="flex flex-wrap justify-center items-center gap-3 pt-2">
                   <button onClick={() => {
-                    if (currentPlan === "pro") { redirectToRapport(); return; }
-                    if (currentPlan === "starter") { setPdfWeekCount(getPdfWeekCount()); setShowPDFStarter(true); return; }
-                    setShowPayPopup(true);
+                    // La page des rapports est ouverte à tous : le paywall s'applique
+                    // désormais sur les trois rapports détaillés, sur la page elle-même.
+                    redirectToRapport();
                   }}
                     className="px-10 py-4 text-base font-medium transition-opacity hover:opacity-[0.88] rounded-lg"
                     style={{ background: "#1A4A35", color: "#F5F0E8", letterSpacing: "0.02em" }}>
