@@ -3080,16 +3080,18 @@ ${body}
     const isSaisonnier = isSaisonnierRef.current;
     const selectedRegime = selectedRegimeRef.current;
     const isMicro = selectedRegime === "micro";
-    const abattPct = isSaisonnier ? 0.30 : 0.50;
     const regimeLabel = isMicro ? "Micro-BIC" : "Régime réel simplifié";
 
     const fE = (v: number) => new Intl.NumberFormat("fr-FR", { style: "currency", currency: "EUR", maximumFractionDigits: 0 }).format(v);
     const fE2 = (v: number) => Math.abs(v - Math.round(v)) < 0.005
       ? new Intl.NumberFormat("fr-FR", { style: "currency", currency: "EUR", maximumFractionDigits: 0 }).format(v)
       : new Intl.NumberFormat("fr-FR", { style: "currency", currency: "EUR", minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(v);
+    const fN = (v: number) => Math.round(v).toLocaleString("fr-FR");
     const fP = (v: number, d = 2) => v.toFixed(d).replace(".", ",") + " %";
     const sE = (v: number) => (v >= 0 ? "+" : "−") + fE(Math.abs(v));
-    const col = (v: number) => v >= 0 ? "#1A6644" : "#B03A2A";
+
+    /* ── Couleurs ─────────────────────────────────────────────────────────── */
+    const OR = "#C95B2A", BR = "#4A1E10", VE = "#1A6644", RG = "#B03A2A", SA = "#9A7B52";
 
     const prix = parseFloat(f.prix) || 0;
     const travaux = parseFloat(f.travaux) || 0;
@@ -3105,188 +3107,395 @@ ${body}
     const mensualite = res.mensualite;
     const chargesAnnuelles = res.chargesAnnuelles;
     const assuranceAn = res.assuranceEmprunteurAnnuel ?? 0;
-    const loyerAnnuel = res.loyerAnnuel;
     const chargesLocatairesAnnuel = (parseFloat(f.chargesLoyer) || 0) * 12;
-    const recettes = loyerAnnuel + chargesLocatairesAnnuel;
 
     const amortBienMaxDuree = amortMode === "ensemble"
       ? amortDureeEnsemble
       : (composants.length ? Math.max(...composants.map(c => c.duree)) : 0);
     const HORIZON = Math.max(duree, amortBienMaxDuree, amortDureeMobilier, amortDureeTravaux, amortDureeNotaire, 20) + 5;
 
-    const projParams = {
+    const projBase = {
       prix, travaux, mobilier, notaire,
       montantCredit, duree, taux,
-      loyerAnnuel, chargesLocatairesAnnuel,
-      chargesAnnuelles, assuranceEmprunteurAnnuel: assuranceAn,
+      chargesLocatairesAnnuel, chargesAnnuelles,
+      assuranceEmprunteurAnnuel: assuranceAn,
       tmi, amortPct, amortMode, amortDureeEnsemble, composants,
       amortDureeMobilier, amortDureeTravaux, amortDureeNotaire,
-      isSaisonnier, horizon: HORIZON,
+      isMicro, isSaisonnier, horizon: HORIZON,
     };
-    const proj = computeProjection({ ...projParams, isMicro });
-    const y1 = proj[0];
-    const cumulCf = proj.slice(0, duree).reduce((s, y) => s + y.cashflowAnnuel, 0);
-    const cumulImpot = proj.slice(0, duree).reduce((s, y) => s + y.impot, 0);
-    const apresPret = proj[duree]?.cashflowMensuel ?? proj[proj.length - 1].cashflowMensuel;
 
-    const rendBrut = investTotal > 0 ? loyerAnnuel / investTotal * 100 : 0;
-    const rendNet = investTotal > 0 ? (loyerAnnuel - chargesAnnuelles) / investTotal * 100 : 0;
+    /* Tout ce qui découle d'un niveau de loyers — sert aussi aux 3 estimations */
+    const faireCas = (loyerAn: number) => {
+      const proj = computeProjection({ ...projBase, loyerAnnuel: loyerAn });
+      const y1 = proj[0];
+      const recettes = loyerAn + chargesLocatairesAnnuel;
+      const noi = recettes - chargesAnnuelles;
+      return {
+        loyerAn, loyerMois: loyerAn / 12, recettes, noi, proj, y1,
+        rendBrut: investTotal > 0 ? loyerAn / investTotal * 100 : 0,
+        rendNet: investTotal > 0 ? noi / investTotal * 100 : 0,
+        impotMois: y1.impot / 12,
+        cashMois: y1.cashflowMensuel,
+        cashAn: y1.cashflowAnnuel,
+        cumul: proj.slice(0, duree).reduce((s, y) => s + y.cashflowAnnuel, 0),
+        apres: proj[duree]?.cashflowMensuel ?? proj[proj.length - 1].cashflowMensuel,
+      };
+    };
 
-    const today = new Date().toLocaleDateString("fr-FR");
-    const typeLabel = bienInfo.type === "ma" ? "Maison" : bienInfo.type === "im" ? "Immeuble" : "Appartement";
-    const bienLigne = [
-      bienInfo.pieces ? `${typeLabel} T${bienInfo.pieces}` : typeLabel,
-      bienInfo.surface ? `${bienInfo.surface} m²` : "",
-      bienInfo.ville || "",
-      isSaisonnier ? "Location saisonnière" : "Meublé longue durée",
-    ].filter(Boolean).join(" · ");
-
-    /* Saisonnier : les trois estimations d'occupation */
+    /* Saisonnier : les trois hypothèses d'occupation */
     const triple = resultatsTripleRef.current;
     const prixNuitee = parseFloat(prixNuiteeRef.current) || 0;
     const occ = { bas: parseFloat(tauxOccBasRef.current) || 0, moyen: parseFloat(tauxOccMoyenRef.current) || 0, haut: parseFloat(tauxOccHautRef.current) || 0 };
-    const estimations = isSaisonnier && triple ? ([
-      { lbl: "Basse", t: occ.bas, r: triple.bas },
-      { lbl: "Moyenne", t: occ.moyen, r: triple.moyen },
-      { lbl: "Haute", t: occ.haut, r: triple.haut },
+    const saison = isSaisonnier && !!triple;
+    const estimations = saison ? ([
+      { lbl: "Estimation basse", t: occ.bas, cas: faireCas(triple?.bas?.loyerAnnuel ?? 0), ton: "#2A5C8A" },
+      { lbl: "Estimation moyenne", t: occ.moyen, cas: faireCas(triple?.moyen?.loyerAnnuel ?? 0), ton: OR },
+      { lbl: "Estimation haute", t: occ.haut, cas: faireCas(triple?.haut?.loyerAnnuel ?? 0), ton: VE },
     ]) : [];
 
-    const row = (l: string, v: string, fort = false) =>
-      `<div class="ir"><span class="ir-l">${l}</span><span class="ir-v"${fort ? ` style="color:#C95B2A"` : ""}>${v}</span></div>`;
+    // Le corps du document retient l'estimation moyenne en saisonnier
+    const C = saison ? estimations[1].cas : faireCas(res.loyerAnnuel);
 
-    const verdict = y1.cashflowMensuel >= 0
-      ? { titre: "Le bien s'autofinance dès la première année", ton: "#1A6644" }
-      : { titre: `Un effort d'épargne de ${fE(Math.abs(y1.cashflowMensuel))} par mois`, ton: "#B03A2A" };
+    const interetsTotaux = C.proj.slice(0, duree).reduce((s, y) => s + y.interets, 0);
+    const assuranceTotale = assuranceAn * duree;
+    const coutEmprunt = interetsTotaux + assuranceTotale;
+    const echeance = mensualite + assuranceAn / 12;
+    const chargesMois = chargesAnnuelles / 12;
+    const detteFin = C.proj[duree - 1]?.capitalFin ?? 0;
 
+    /* ── Répartition mensuelle du loyer ───────────────────────────────────── */
+    const recettesMois = C.recettes / 12;
+    const creditMois = (C.y1.creditAnnuel + C.y1.assuranceEmprunteur) / 12;
+    const sorties = chargesMois + creditMois + C.impotMois;
+    const cashPositif = C.cashMois >= 0;
+    const totalBarre = cashPositif ? recettesMois : sorties;
+    const pc = (v: number) => totalBarre > 0 ? Math.max(0, v / totalBarre * 100) : 0;
+    const segments = [
+      { l: "Charges", v: chargesMois, c: SA },
+      { l: "Crédit +<br>assurance", v: creditMois, c: BR },
+      { l: "Impôt +<br>prél. sociaux", v: C.impotMois, c: OR },
+      ...(cashPositif ? [{ l: "Cash conservé", v: C.cashMois, c: VE }] : []),
+    ].filter(s => s.v > 0.5 || s.l === "Cash conservé");
+
+    /* ── Graphe du cash-flow mensuel ──────────────────────────────────────── */
+    const makeChart = (): string => {
+      const lastY = Math.min(duree + 5, HORIZON);
+      const pts = C.proj.filter(y => y.year <= lastY);
+      const W = 700, H = 104, PL = 52, PR = 30, PT = 20, PB = 19;
+      const iW = W - PL - PR, iH = H - PT - PB;
+      const vals = pts.map(p => p.cashflowMensuel);
+      const lo = Math.min(0, ...vals), hi = Math.max(0, ...vals);
+      const amp = hi - lo, marge = Math.max(amp * 0.18, 20);
+      const niceScale = (a: number, b: number, n: number) => {
+        if (b - a < 1) b = a + 1;
+        const raw = (b - a) / n;
+        const mag = Math.pow(10, Math.floor(Math.log10(raw)));
+        const mult = [1, 2, 2.5, 5, 10].find(m => m * mag >= raw) ?? 10;
+        const st = mult * mag;
+        return { min: Math.floor(a / st) * st, max: Math.ceil(b / st) * st };
+      };
+      const brut = niceScale(lo - marge, hi + marge, 3);
+      // on ne descend pas sous zéro si la trésorerie ne le fait jamais
+      const sc = { min: lo >= 0 ? 0 : brut.min, max: brut.max };
+      const yR = (sc.max - sc.min) || 1;
+      const toX = (yr: number) => PL + ((yr - 1) / Math.max(lastY - 1, 1)) * iW;
+      const toY = (v: number) => PT + (1 - (v - sc.min) / yR) * iH;
+      const grid = Array.from({ length: 3 }, (_, i) => {
+        const t = i / 2, v = sc.min + t * yR, y = PT + (1 - t) * iH;
+        return `<line x1="${PL}" y1="${y.toFixed(1)}" x2="${PL + iW}" y2="${y.toFixed(1)}" stroke="rgba(26,22,18,0.10)" stroke-width="1"/><text x="${PL - 8}" y="${(y + 4).toFixed(1)}" text-anchor="end" font-size="12" fill="rgba(26,22,18,0.45)">${fN(v)}</text>`;
+      }).join("");
+      const path = `<path d="${pts.map((p, i) => `${i === 0 ? "M" : "L"}${toX(p.year).toFixed(1)},${toY(p.cashflowMensuel).toFixed(1)}`).join(" ")}" fill="none" stroke="${VE}" stroke-width="2.6" stroke-linejoin="round" stroke-linecap="round"/>`;
+      const reperes = Array.from(new Set([1, 5, 10, 15, 20, 25, 30, 35, 40, lastY].filter(y => y >= 1 && y <= lastY))).sort((a, b) => a - b)
+        .filter((y, i, arr) => i === 0 || y === lastY || y - arr[i - 1] >= Math.max(2, lastY / 8));
+      const pieces = reperes.map(yr => {
+        const v = C.proj[yr - 1].cashflowMensuel;
+        const anchor: "start" | "middle" | "end" = yr === 1 ? "start" : yr === lastY ? "end" : "middle";
+        // étiquettes au-dessus du point, sauf si l'on touche le haut du cadre
+        const dy = toY(v) - PT < 16 ? 17 : -10;
+        return `<circle cx="${toX(yr).toFixed(1)}" cy="${toY(v).toFixed(1)}" r="3" fill="${VE}"/><text x="${toX(yr).toFixed(1)}" y="${(toY(v) + dy).toFixed(1)}" text-anchor="${anchor}" font-size="12.5" font-weight="800" fill="#145136">${fE(v)}</text>`;
+      }).join("");
+      const xL = reperes.map(yr => `<text x="${toX(yr).toFixed(1)}" y="${PT + iH + 16}" text-anchor="middle" font-size="12" fill="rgba(26,22,18,0.45)">${yr}</text>`).join("");
+      return `<svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg" style="width:100%;display:block">
+  <text x="0" y="${PT - 9}" font-size="12" fill="rgba(26,22,18,0.5)">€/mois après impôt</text>
+  <text x="${W}" y="${PT - 9}" text-anchor="end" font-size="12" fill="rgba(26,22,18,0.5)">Années</text>
+  ${grid}${path}${pieces}${xL}
+</svg>`;
+    };
+
+    /* ── Identité ─────────────────────────────────────────────────────────── */
+    const today = new Date().toLocaleDateString("fr-FR");
+    const typeLabel = bienInfo.type === "ma" ? "Maison" : bienInfo.type === "im" ? "Immeuble" : "Appartement";
+    const bienLigne = [
+      typeLabel,
+      bienInfo.pieces ? `T${bienInfo.pieces}` : "",
+      bienInfo.surface ? `${bienInfo.surface} m²` : "",
+      bienInfo.ville || "",
+    ].filter(Boolean).join(" · ");
+
+    const entete = `<div class="hdr">
+  <div><div class="hdr-t">ToutLMNP · Votre synthèse</div><div class="hdr-s">${bienLigne}</div></div>
+  <div><div class="hdr-d">${regimeLabel}</div><div class="hdr-d2">Données du ${today}</div></div>
+</div>`;
+    const pied = `<div class="ftr"><span>toutlmnp.fr · Simulation indicative</span><span class="ftr-c">Explorez vos rapports détaillés sur ToutLMNP →</span></div>`;
+    const titre = (n: string, t: string, s?: string) =>
+      `<div class="sc"><div class="sc-n">${n}</div><div class="sc-t">${t}</div></div>${s ? `<div class="sc-s">${s}</div>` : ""}`;
+
+    /* ── Page saisonnière : les trois estimations ─────────────────────────── */
+    const pageSaison = saison ? `
+<div class="page">
+  ${entete}
+  ${titre("1", "Vos trois estimations", `Location saisonnière à ${fE(prixNuitee)} la nuitée · ${regimeLabel} · ce que produit chaque hypothèse d'occupation.`)}
+
+  <div class="est3">
+    ${estimations.map((e, i) => `<div class="est${i === 1 ? " on" : ""}">
+      <div class="est-h" style="background:${e.ton}">
+        <div class="est-l">${e.lbl}${i === 1 ? " · retenue" : ""}</div>
+        <div class="est-o">${fP(e.t, 0)} d'occupation · ${Math.round(365 * e.t / 100)} nuits</div>
+      </div>
+      <div class="est-b">
+        <div class="est-big" style="color:${e.ton}">${fE(e.cas.loyerAn)}<span>/an</span></div>
+        <div class="est-sub">${fE(e.cas.loyerMois)} de recettes par mois</div>
+        <div class="er"><span>Charges du bien</span><b>−${fE(chargesAnnuelles)}</b></div>
+        <div class="er"><span>Crédit + assurance</span><b>−${fE(e.cas.y1.creditAnnuel + e.cas.y1.assuranceEmprunteur)}</b></div>
+        <div class="er"><span>Impôt + prél. sociaux</span><b>−${fE(e.cas.y1.impot)}</b></div>
+        <div class="er tot"><span>Cash-flow / mois</span><b style="color:${e.cas.cashMois >= 0 ? VE : RG}">${sE(e.cas.cashMois)}</b></div>
+        <div class="er sub"><span>Soit sur l'année</span><b style="color:${e.cas.cashAn >= 0 ? VE : RG}">${sE(e.cas.cashAn)}</b></div>
+        <div class="est-r">
+          <div><div class="est-rl">Rendement brut</div><div class="est-rv">${fP(e.cas.rendBrut)}</div></div>
+          <div><div class="est-rl">Rendement net des charges</div><div class="est-rv" style="color:${OR}">${fP(e.cas.rendNet)}</div></div>
+        </div>
+      </div>
+    </div>`).join("")}
+  </div>
+
+  <div class="band">
+    <div class="band-t">L'estimation moyenne sert de base à la suite du document</div>
+    <div class="band-x">Les pages suivantes sont calculées sur <strong>${fP(occ.moyen, 0)} d'occupation</strong>, soit ${Math.round(365 * occ.moyen / 100)} nuits et ${fE(estimations[1].cas.loyerAn)} de recettes annuelles. L'écart de recettes entre l'hypothèse basse et l'hypothèse haute est de <strong>${fE(estimations[2].cas.loyerAn - estimations[0].cas.loyerAn)}</strong> par an ; les charges et l'échéance de crédit, elles, ne bougent pas.</div>
+  </div>
+
+  <div class="info">
+    <div class="info-b">Info clef</div>
+    <div>
+      <div class="info-t">${estimations[0].cas.cashMois >= 0
+        ? "Le projet tient même dans l'hypothèse la plus prudente"
+        : `L'équilibre est atteint à partir de ${Math.ceil((chargesAnnuelles + C.y1.creditAnnuel + C.y1.assuranceEmprunteur + C.y1.impot) / Math.max(prixNuitee, 1))} nuits par an`}</div>
+      <div class="info-x">${estimations[0].cas.cashMois >= 0
+        ? `À ${fP(occ.bas, 0)} d'occupation seulement, le cash-flow reste de <strong>${sE(estimations[0].cas.cashMois)}/mois</strong>. Chaque nuit louée au-delà de ${Math.round(365 * occ.bas / 100)} vient s'ajouter à cette marge : l'hypothèse moyenne porte le cash à ${sE(estimations[1].cas.cashMois)}/mois, la haute à ${sE(estimations[2].cas.cashMois)}/mois.`
+        : `À ${fP(occ.bas, 0)} d'occupation, le projet demande ${fE(Math.abs(estimations[0].cas.cashMois))}/mois d'effort ; à ${fP(occ.moyen, 0)} il ${estimations[1].cas.cashMois >= 0 ? `dégage ${sE(estimations[1].cas.cashMois)}/mois` : `en demande encore ${fE(Math.abs(estimations[1].cas.cashMois))}`} et à ${fP(occ.haut, 0)} ${estimations[2].cas.cashMois >= 0 ? `${sE(estimations[2].cas.cashMois)}/mois` : `${fE(Math.abs(estimations[2].cas.cashMois))}/mois d'effort`}. Le niveau d'occupation est donc le paramètre déterminant du dossier.`}</div>
+    </div>
+  </div>
+  ${pied}
+</div>` : "";
+
+    const n1 = saison ? "2" : "1", n2 = saison ? "3" : "2", n3 = saison ? "4" : "3";
+
+    /* ── CSS ──────────────────────────────────────────────────────────────── */
     const css = `
 @page{size:A4 portrait;margin:0}
 *{box-sizing:border-box;margin:0;padding:0}
 html,body{background:#D0C9BC;font-family:'Helvetica Neue',Arial,sans-serif;color:#1A1612;font-size:12px;line-height:1.5;-webkit-print-color-adjust:exact;print-color-adjust:exact}
-.page{width:210mm;min-height:297mm;background:#FDF9F3;margin:14px auto;padding:12mm 13mm 16mm;position:relative;box-shadow:0 3px 24px rgba(0,0,0,0.22)}
-.no-print{position:sticky;top:0;z-index:100;background:#1A4A35;padding:10px 20px;display:flex;align-items:center;justify-content:space-between}
-.no-print button{background:#C95B2A;color:#fff;border:none;border-radius:6px;padding:8px 18px;font-size:13px;font-weight:700;cursor:pointer}
+.page{width:210mm;min-height:297mm;background:#F7F2E9;margin:14px auto;padding:10mm 12mm 13mm;position:relative;page-break-after:always;box-shadow:0 3px 24px rgba(0,0,0,0.22)}
+.page:last-child{page-break-after:avoid}
+.no-print{position:sticky;top:0;z-index:100;background:${VE};padding:10px 20px;display:flex;align-items:center;justify-content:space-between}
+.no-print button{background:${OR};color:#fff;border:none;border-radius:6px;padding:8px 18px;font-size:13px;font-weight:700;cursor:pointer}
 .no-print span{color:#F5F0E8;font-size:13px}
-.hdr{background:#4E1F12;border-radius:8px;padding:10px 16px;display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:12px}
-.hdr-t{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.12em;color:#F5F0E8}
-.hdr-s{font-size:12px;color:rgba(245,240,232,0.62);margin-top:2px}
-.hdr-d{font-size:12px;color:rgba(245,240,232,0.72);text-align:right;line-height:1.5}
-h1{font-size:26px;font-weight:800;color:#C95B2A;letter-spacing:-.02em;line-height:1.1}
-.sub{font-size:12px;color:rgba(26,22,18,0.5);margin:4px 0 12px}
-.sec{font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.09em;color:#C95B2A;text-align:center;margin:14px 0 7px}
-.kpis{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:10px}
-.kpi{border-radius:8px;padding:9px 13px;background:#F1EDE5}
-.kpi.gr{background:#E9EFE9}
-.kpi.rd{background:#F6EBE7}
-.kpi-l{font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:rgba(26,22,18,0.5);margin-bottom:5px}
-.kpi-v{font-size:20px;font-weight:800;letter-spacing:-.025em;line-height:1.05}
-.kpi-s{font-size:12px;color:rgba(26,22,18,0.45);margin-top:5px}
-.duo{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-.box{border-radius:8px;padding:9px 13px 10px;border-left:3px solid transparent}
-.box.or{background:#FAECE2;border-left-color:#C95B2A}
-.box.gr{background:#E9EFE9;border-left-color:#1A6644}
-.box-h{font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.07em;margin-bottom:5px}
-.ir{display:flex;justify-content:space-between;gap:10px;padding:3px 0;border-bottom:.5px solid rgba(26,22,18,0.07)}
-.ir:last-child{border-bottom:none}
-.ir-l{font-size:12px;color:rgba(26,22,18,0.58)}
-.ir-v{font-size:12px;font-weight:700;white-space:nowrap}
-table.tbl{width:100%;border-collapse:collapse;font-size:12px;margin-top:4px}
-table.tbl th{background:#4E1F12;color:#F5F0E8;padding:5px 8px;text-align:left;font-weight:700;font-size:12px}
-table.tbl th.r{text-align:right}
-table.tbl td{padding:4.5px 8px;border-bottom:.5px solid rgba(26,22,18,0.09)}
-table.tbl tr:nth-child(even) td{background:rgba(26,22,18,0.03)}
-table.tbl .r{text-align:right}
-table.tbl tr.tot td{font-weight:800;background:#E9EFE9}
-.para{font-size:12px;line-height:1.6;color:rgba(26,22,18,0.78);margin-top:9px}
-.verdict{border-radius:9px;padding:11px 16px;margin-top:13px;background:#4E1F12;display:flex;align-items:center;gap:15px}
-.verdict-b{flex:0 0 auto;border-radius:20px;padding:7px 16px;font-size:12px;font-weight:800;letter-spacing:.09em;color:#F5F0E8;background:rgba(201,91,42,0.55);white-space:nowrap}
-.verdict-t{font-size:14px;font-weight:700;color:#F5F0E8;margin-bottom:3px}
-.verdict-x{font-size:12px;color:rgba(245,240,232,0.85);line-height:1.55}
-.verdict-x strong{color:#fff}
-.cta{margin-top:13px;border:1.5px dashed rgba(201,91,42,0.45);border-radius:9px;padding:10px 16px;background:rgba(201,91,42,0.05)}
-.cta-t{font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.08em;color:#C95B2A;margin-bottom:4px}
-.cta-x{font-size:12px;line-height:1.6;color:rgba(26,22,18,0.72)}
-.ftr{position:absolute;bottom:10mm;left:13mm;right:13mm;display:flex;justify-content:space-between;font-size:12px;color:rgba(26,22,18,0.4);border-top:.5px solid rgba(26,22,18,0.12);padding-top:6px}
-@media print{html,body{background:#FDF9F3;margin:0}.no-print{display:none}.page{margin:0;box-shadow:none}}
+
+.hdr{background:${BR};border-radius:7px;padding:8px 16px;display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:10px}
+.hdr-t{font-size:13px;font-weight:700;color:#F5F0E8}
+.hdr-s{font-size:12px;color:rgba(245,240,232,0.6);margin-top:2px}
+.hdr-d{font-size:13px;color:#F5F0E8;text-align:right}
+.hdr-d2{font-size:12px;color:rgba(245,240,232,0.6);text-align:right;margin-top:2px}
+
+.sc{display:flex;align-items:center;gap:11px;margin-top:7px}
+.sc-n{width:27px;height:27px;border-radius:6px;background:${OR};color:#F5F0E8;font-size:14px;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.sc-t{font-size:21px;font-weight:800;color:${OR};letter-spacing:-.02em;line-height:1.1}
+.sc-s{font-size:12px;color:rgba(26,22,18,0.5);margin:2px 0 6px 0}
+
+.k4{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:9px}
+.k{background:#F1ECE2;border-radius:7px;padding:8px 13px 9px}
+.k-l{font-size:12px;color:rgba(26,22,18,0.55);margin-bottom:4px}
+.k-v{font-size:18px;font-weight:800;letter-spacing:-.025em;line-height:1.1}
+.k-s{font-size:12px;color:rgba(26,22,18,0.5);margin-top:3px;line-height:1.38}
+.k-s b{font-weight:700;color:#1A1612}
+
+.loyer{background:#F8E9DB;border-radius:7px;padding:9px 14px 10px;margin-top:8px}
+.loyer-top{display:flex;align-items:center;gap:14px}
+.loyer-l{flex:0 0 auto;min-width:132px}
+.loyer-lb{font-size:12px;color:rgba(26,22,18,0.55)}
+.loyer-v{font-size:19px;font-weight:800;letter-spacing:-.025em}
+.loyer-v span{font-size:12px;font-weight:500;color:rgba(26,22,18,0.5);margin-left:3px}
+.bar{flex:1;display:flex;height:17px;border-radius:3px;overflow:hidden}
+.leg{display:flex;gap:0;margin-top:6px;padding-left:146px}
+.leg-i{flex:1 1 0;min-width:0;padding-left:9px;border-left:2.5px solid}
+.leg-l{font-size:12px;color:rgba(26,22,18,0.55);line-height:1.3;min-height:28px}
+.leg-v{font-size:16px;font-weight:800;letter-spacing:-.02em;margin-top:2px}
+
+.rend{display:grid;grid-template-columns:1fr 1.3fr;gap:0;background:#F1ECE2;border-radius:7px;margin-top:8px;overflow:hidden}
+.rend-l{padding:9px 16px 10px}
+.rend-r{padding:9px 16px 10px;border-left:1px solid rgba(26,22,18,0.12)}
+.rend-t{font-size:12px;font-weight:700;color:#1A1612;margin-bottom:3px}
+.rend-big{font-size:22px;font-weight:800;color:${OR};letter-spacing:-.03em;line-height:1.05}
+.rend-s{font-size:12px;color:rgba(26,22,18,0.5);margin-top:5px}
+.rend-s2{font-size:16px;font-weight:800;letter-spacing:-.02em}
+.rend-v{font-size:19px;font-weight:800;letter-spacing:-.02em;margin-top:2px}
+.rend-x{font-size:12px;color:rgba(26,22,18,0.55);margin-top:5px;line-height:1.45}
+
+.cf{background:${VE};border-radius:7px;padding:9px 18px 10px;margin-top:1px;display:flex;align-items:flex-end;gap:18px}
+.cf-l{flex:1;min-width:0}
+.cf-t{font-size:12.5px;font-weight:700;color:rgba(245,240,232,0.85);margin-bottom:5px}
+.cf-v{font-size:24px;font-weight:800;color:#F5F0E8;letter-spacing:-.03em;line-height:1}
+.cf-s{font-size:12px;color:rgba(245,240,232,0.72);margin-top:5px}
+.cf-r{flex:0 0 auto;text-align:right}
+.cf-rv{font-size:21px;font-weight:800;color:#F5F0E8;letter-spacing:-.025em}
+.cf-rs{font-size:12px;color:rgba(245,240,232,0.72);margin-top:3px;line-height:1.4}
+
+.chart{margin-top:7px}
+
+.fin2{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:2px}
+.fin{border-radius:7px;padding:9px 14px 10px}
+.fin.gr{background:#E7EFE7}
+.fin.be{background:#F1ECE2}
+.fin-l{font-size:12px;color:rgba(26,22,18,0.55)}
+.fin-v{font-size:21px;font-weight:800;letter-spacing:-.025em;margin-top:2px}
+.fin-x{font-size:12px;color:rgba(26,22,18,0.55);margin-top:4px;line-height:1.45}
+.fin-x b{color:#1A1612;font-weight:700}
+
+.info{background:${BR};border-radius:7px;padding:9px 16px;margin-top:8px;display:flex;align-items:center;gap:16px}
+.info-b{flex:0 0 auto;background:#8A6A4A;color:#F5F0E8;border-radius:5px;padding:7px 15px;font-size:12.5px;font-weight:700;white-space:nowrap}
+.info-t{font-size:13px;font-weight:700;color:#F5F0E8;margin-bottom:3px}
+.info-x{font-size:12px;color:rgba(245,240,232,0.82);line-height:1.5}
+.info-x strong{color:#fff}
+
+.hyp{font-size:12px;color:rgba(26,22,18,0.45);line-height:1.4;margin-top:6px}
+
+.ftr{position:absolute;bottom:8mm;left:12mm;right:12mm;display:flex;justify-content:space-between;align-items:center;font-size:12px;color:rgba(26,22,18,0.42);border-top:.5px solid rgba(26,22,18,0.12);padding-top:7px}
+.ftr-c{color:${OR};font-weight:700}
+
+/* Page saisonnière */
+.est3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
+.est{background:#F1ECE2;border-radius:8px;overflow:hidden}
+.est.on{box-shadow:0 0 0 2px ${OR}}
+.est-h{padding:8px 12px}
+.est-l{font-size:12.5px;font-weight:800;color:#F5F0E8}
+.est-o{font-size:12px;color:rgba(245,240,232,0.78);margin-top:1px}
+.est-b{padding:9px 12px 11px}
+.est-big{font-size:21px;font-weight:800;letter-spacing:-.025em;line-height:1.1}
+.est-big span{font-size:12px;font-weight:500;color:rgba(26,22,18,0.45);margin-left:2px}
+.est-sub{font-size:12px;color:rgba(26,22,18,0.5);margin:1px 0 7px}
+.er{display:flex;justify-content:space-between;gap:6px;font-size:12px;padding:3px 0;border-bottom:.5px solid rgba(26,22,18,0.08)}
+.er span{color:rgba(26,22,18,0.58)}
+.er b{font-weight:700;white-space:nowrap}
+.er.tot{border-bottom:none;border-top:1px solid rgba(26,22,18,0.18);margin-top:4px;padding-top:6px}
+.er.tot span{font-weight:700;color:#1A1612}
+.er.tot b{font-size:14px}
+.er.sub{border-bottom:none;padding-top:0}
+.er.sub span{color:rgba(26,22,18,0.42)}
+.est-r{display:flex;gap:12px;margin-top:9px;padding-top:8px;border-top:1px solid rgba(26,22,18,0.12)}
+.est-r>div{flex:1;min-width:0}
+.est-rl{font-size:12px;color:rgba(26,22,18,0.5);line-height:1.3}
+.est-rv{font-size:15px;font-weight:800;letter-spacing:-.02em;margin-top:2px}
+.band{background:#F8E9DB;border-radius:7px;padding:11px 16px;margin-top:11px}
+.band-t{font-size:13px;font-weight:800;color:${OR};margin-bottom:4px}
+.band-x{font-size:12px;color:rgba(26,22,18,0.72);line-height:1.6}
+
+@media print{html,body{background:#F7F2E9;margin:0}.no-print{display:none}.page{margin:0;box-shadow:none}}
 `;
 
-    return `<!DOCTYPE html><html lang="fr"><head><meta charset="utf-8"><title>ToutLMNP · Votre simulation en une page</title><style>${css}</style></head>
+    return `<!DOCTYPE html><html lang="fr"><head><meta charset="utf-8"><title>ToutLMNP · Votre synthèse — ${bienLigne}</title><style>${css}</style></head>
 <body>
-<div class="no-print"><span>Votre simulation · one page · Utilisez « Enregistrer au format PDF »</span><button onclick="window.print()">Imprimer / Enregistrer en PDF</button></div>
+<div class="no-print"><span>Votre synthèse · one page · Utilisez « Enregistrer au format PDF »</span><button onclick="window.print()">Imprimer / Enregistrer en PDF</button></div>
+${pageSaison}
 <div class="page">
-  <div class="hdr">
-    <div><div class="hdr-t">TOUTLMNP · VOTRE SIMULATION</div><div class="hdr-s">${bienLigne}</div></div>
-    <div><div class="hdr-d">Données du ${today}</div><div class="hdr-d">${regimeLabel}</div></div>
+  ${entete}
+
+  ${titre(n1, "Rendement", "Le projet, le cash disponible et son évolution pendant le crédit.")}
+
+  <div class="k4">
+    <div class="k"><div class="k-l">Budget total</div><div class="k-v" style="color:${OR}">${fE(investTotal)}</div></div>
+    <div class="k"><div class="k-l">Apport</div><div class="k-v">${fE(apport)}</div>${apport > 0 && investTotal > 0 ? `<div class="k-s">${fP(apport / investTotal * 100, 0)} du budget</div>` : ""}</div>
+    <div class="k"><div class="k-l">Crédit</div><div class="k-v">${fE(montantCredit)}</div>${montantCredit > 0 ? `<div class="k-s">${duree} ans · ${fP(taux * 100)}<br><b>${fE2(echeance)}/mois</b><br>assurance incluse</div>` : ""}</div>
+    <div class="k"><div class="k-l">Coût de l'emprunt</div><div class="k-v">${fE(coutEmprunt)}</div>${montantCredit > 0 ? `<div class="k-s">Intérêts + assurance<br>sur ${duree} ans</div>` : ""}</div>
   </div>
 
-  <h1>Votre simulation en une page</h1>
-  <div class="sub">L'essentiel de votre projet LMNP : budget, revenus, fiscalité et trésorerie.</div>
-
-  <div class="kpis">
-    <div class="kpi"><div class="kpi-l">Coût du projet</div><div class="kpi-v">${fE(investTotal)}</div><div class="kpi-s">${apport > 0 ? `dont ${fE(apport)} d'apport` : "financé sans apport"}</div></div>
-    <div class="kpi"><div class="kpi-l">Loyers annuels</div><div class="kpi-v">${fE(loyerAnnuel)}</div><div class="kpi-s">${fE(loyerAnnuel / 12)} par mois</div></div>
-    <div class="kpi ${y1.cashflowMensuel >= 0 ? "gr" : "rd"}"><div class="kpi-l">Cash-flow année 1</div><div class="kpi-v" style="color:${col(y1.cashflowMensuel)}">${sE(y1.cashflowMensuel)}</div><div class="kpi-s">par mois, après impôt</div></div>
-    <div class="kpi"><div class="kpi-l">Rendement net</div><div class="kpi-v" style="color:#1A6644">${fP(rendNet)}</div><div class="kpi-s">brut : ${fP(rendBrut)}</div></div>
-  </div>
-
-  <div class="sec">LE BIEN, SON FINANCEMENT ET SON EXPLOITATION</div>
-  <div class="duo">
-    <div class="box or">
-      <div class="box-h">ACQUISITION ET FINANCEMENT</div>
-      ${row("Prix d'achat", fE(prix))}
-      ${row("Frais de notaire", fE(notaire))}
-      ${travaux + mobilier > 0 ? row("Travaux / mobilier", fE(travaux + mobilier)) : ""}
-      ${row("Apport / emprunt", `${fE(apport)} / ${fE(montantCredit)}`)}
-      ${row("Taux / durée", montantCredit > 0 ? `${fP(taux * 100)} / ${duree} ans` : "Aucun crédit")}
-      ${row("Mensualité hors assurance", fE2(mensualite), true)}
+  <div class="loyer">
+    <div class="loyer-top">
+      <div class="loyer-l">
+        <div class="loyer-lb">${saison ? "Recettes" : "Loyer HC"}</div>
+        <div class="loyer-v">${fE(recettesMois)}<span>/mois</span></div>
+      </div>
+      <div class="bar">
+        ${segments.map(s => `<div style="width:${pc(Math.abs(s.v)).toFixed(2)}%;background:${s.c}"></div>`).join("")}
+      </div>
     </div>
-    <div class="box gr">
-      <div class="box-h">EXPLOITATION · ANNÉE 1</div>
-      ${row("Recettes encaissées", fE(recettes))}
-      ${row("Charges d'exploitation", `−${fE(chargesAnnuelles)}`)}
-      ${row("Crédit et assurance", `−${fE(y1.creditAnnuel + y1.assuranceEmprunteur)}`)}
-      ${isMicro
-        ? row(`Abattement ${isSaisonnier ? "30 %" : "50 %"}`, `−${fE(recettes * abattPct)}`)
-        : row("Amortissement déduit", `−${fE(y1.amortImpute)}`)}
-      ${row("Impôt + prélèvements sociaux", `−${fE(y1.impot)}`)}
-      ${row("Cash-flow annuel", sE(y1.cashflowAnnuel), true)}
+    <div class="leg">
+      ${segments.map(s => `<div class="leg-i" style="border-color:${s.c}"><div class="leg-l">${s.l}</div><div class="leg-v" style="color:${s.c}">${fE(Math.abs(s.v))}</div></div>`).join("")}
+      ${cashPositif ? "" : `<div class="leg-i" style="border-color:${RG}"><div class="leg-l">Effort à<br>financer</div><div class="leg-v" style="color:${RG}">${fE(Math.abs(C.cashMois))}</div></div>`}
     </div>
   </div>
 
-  ${estimations.length ? `
-  <div class="sec">LES TROIS HYPOTHÈSES D'OCCUPATION · ${fE(prixNuitee)} PAR NUITÉE</div>
-  <table class="tbl">
-    <tr><th>Estimation</th><th class="r">Occupation</th><th class="r">Nuits / an</th><th class="r">Recettes / an</th><th class="r">Impôt / an</th><th class="r">Cash-flow / mois</th></tr>
-    ${estimations.map(e => {
-        const cf = e.r ? (isMicro ? e.r.cashflowBICMensuel : e.r.cashflowReelMensuel) : 0;
-        const imp = e.r ? (isMicro ? e.r.impotBIC : e.r.impotReel) : 0;
-        return `<tr class="${e.lbl === "Moyenne" ? "tot" : ""}"><td>${e.lbl}${e.lbl === "Moyenne" ? " · retenue" : ""}</td><td class="r">${fP(e.t, 0)}</td><td class="r">${Math.round(365 * e.t / 100)}</td><td class="r">${fE(e.r?.loyerAnnuel ?? 0)}</td><td class="r">${fE(imp)}</td><td class="r" style="color:${col(cf)};font-weight:700">${sE(cf)}</td></tr>`;
-      }).join("")}
-  </table>
-  <p class="para">Les projections de ce document retiennent l'<strong>estimation moyenne</strong> (${fP(occ.moyen, 0)} d'occupation).</p>` : ""}
+  <div class="rend">
+    <div class="rend-l">
+      <div class="rend-t">Rendement net des charges</div>
+      <div class="rend-big">${fP(C.rendNet)}</div>
+      <div class="rend-s">Rendement brut</div>
+      <div class="rend-s2">${fP(C.rendBrut)}</div>
+    </div>
+    <div class="rend-r">
+      <div class="rend-t">Revenu net d'exploitation</div>
+      <div class="rend-v">${fE(C.noi)}<span style="font-size:12px;font-weight:500;color:rgba(26,22,18,0.5)">/an</span></div>
+      <div class="rend-x">${fE(C.recettes)} de ${saison ? "recettes" : "loyers"} − ${fE(chargesAnnuelles)} de charges du bien.<br>Avant crédit et impôt.</div>
+    </div>
+  </div>
 
-  ${montantCredit > 0 ? `
-  <div class="sec">CE QUE DONNE LE PROJET SUR LA DURÉE DU CRÉDIT</div>
-  <div class="kpis">
-    <div class="kpi"><div class="kpi-l">Cash-flow cumulé</div><div class="kpi-v" style="color:${col(cumulCf)}">${sE(cumulCf)}</div><div class="kpi-s">sur ${duree} ans</div></div>
-    <div class="kpi"><div class="kpi-l">Impôt cumulé</div><div class="kpi-v" style="color:#B03A2A">${fE(cumulImpot)}</div><div class="kpi-s">IR + prélèvements sociaux</div></div>
-    <div class="kpi"><div class="kpi-l">Capital remboursé</div><div class="kpi-v">${fE(montantCredit)}</div><div class="kpi-s">dette nulle à ${duree} ans</div></div>
-    <div class="kpi gr"><div class="kpi-l">Après le crédit</div><div class="kpi-v" style="color:${col(apresPret)}">${sE(apresPret)}</div><div class="kpi-s">par mois, dès l'année ${duree + 1}</div></div>
-  </div>` : ""}
+  ${titre(n2, "Cash-flow")}
 
-  <div class="verdict">
-    <div class="verdict-b">EN RÉSUMÉ</div>
+  <div class="cf">
+    <div class="cf-l">
+      <div class="cf-t">Votre excédent après impôt · Année 1</div>
+      <div class="cf-v">${sE(C.cashMois)}/mois</div>
+      <div class="cf-s">${C.cashMois >= 0
+        ? `Effort à financer : ${fE(0)}/mois dans le scénario central`
+        : `Effort à financer : ${fE(Math.abs(C.cashMois))}/mois dans le scénario central`}</div>
+    </div>
+    <div class="cf-r">
+      <div class="cf-rv">${sE(C.cashAn)}/an</div>
+      <div class="cf-rs">Après charges, crédit,<br>assurance et fiscalité.</div>
+    </div>
+  </div>
+
+  <div class="chart">${makeChart()}</div>
+
+  ${titre(n3, "In fine")}
+
+  <div class="fin2">
+    <div class="fin gr">
+      <div class="fin-l">Cash-flows cumulés sur ${duree} ans</div>
+      <div class="fin-v" style="color:${C.cumul >= 0 ? VE : RG}">${sE(C.cumul)}</div>
+      <div class="fin-x">Après charges, crédit, assurance et impôt.<br><b>Aucun produit de revente inclus.</b></div>
+    </div>
+    <div class="fin be">
+      <div class="fin-l">Dette restante à ${duree} ans</div>
+      <div class="fin-v">${fE(detteFin)}</div>
+      <div class="fin-x">${fE(montantCredit)} de capital remboursés.<br>Ce capital ne s'ajoute pas au cash-flow.</div>
+    </div>
+  </div>
+
+  <div class="info">
+    <div class="info-b">Info clef</div>
     <div>
-      <div class="verdict-t">${verdict.titre}</div>
-      <div class="verdict-x">Pour ${fE(investTotal)} investis et ${fE(loyerAnnuel)} de loyers annuels, le projet dégage <strong>${sE(y1.cashflowMensuel)} par mois</strong> après charges, crédit et impôt en année 1${montantCredit > 0 ? `, puis <strong>${sE(apresPret)} par mois</strong> une fois le crédit soldé` : ""}. Régime retenu : <strong>${regimeLabel}</strong>, TMI ${tmi} % et prélèvements sociaux 18,6 %.</div>
+      <div class="info-t">${C.cumul >= 0 && C.cashMois >= 0
+        ? "Un excédent pendant toute la durée du crédit"
+        : C.cashMois >= 0 ? "Un excédent qui se resserre en fin de crédit"
+          : "Un effort d'épargne pendant le crédit, un excédent ensuite"}</div>
+      <div class="info-x">${C.cashMois >= 0
+        ? `Le cash reste positif, malgré une marge réduite à ${fE(C.proj[duree - 1].cashflowMensuel)}/mois en année ${duree}.${montantCredit > 0 ? ` Dès l'année ${duree + 1}, après le prêt, il atteint ${fE(C.apres)}/mois.` : ""}`
+        : `Le projet demande ${fE(Math.abs(C.cashMois))}/mois d'effort en année 1, soit ${fE(Math.abs(C.cashAn))} sur l'année.${montantCredit > 0 ? ` Dès l'année ${duree + 1}, le prêt soldé, le cash-flow passe à ${sE(C.apres)}/mois ; entre-temps ${fE(montantCredit)} de capital sont remboursés par les loyers.` : ""}`}</div>
     </div>
   </div>
 
-  <div class="cta">
-    <div class="cta-t">Pour aller plus loin</div>
-    <div class="cta-x">Ce document reprend l'essentiel. Les rapports <strong>Synthèse</strong>, <strong>Rapport Complet</strong> et <strong>Rapport Banque</strong> détaillent la projection année par année${isMicro ? "" : ", le plan d'amortissement par composant"}, les scénarios de revente, la résistance aux imprévus et les ratios attendus par un financeur.</div>
-  </div>
+  <div class="hyp">Hypothèses : loyers et charges constants ; postes non saisis = 0 €. Régime retenu : ${regimeLabel}. TMI : ${tmi} % ; PS : 18,6 %. Moyennes arrondies après calcul.<br>Cash cumulé disponible à la fin seulement s'il a été conservé.</div>
 
-  <div class="ftr"><span>toutlmnp.fr · Simulation indicative</span><span>1 / 1</span><span>${today}</span></div>
+  ${pied}
 </div>
 </body></html>`;
   };
